@@ -9,30 +9,6 @@
   }
 }
 
-.appHeader {
-  margin-bottom: var(--space-16);
-
-  @media (min-width: 640px) {
-    margin-bottom: var(--space-24);
-  }
-
-  h1 {
-    font-size: var(--font-size-xl);
-    font-weight: 700;
-    color: var(--color-primary);
-    margin: 0 0 var(--space-4) 0;
-
-    @media (min-width: 640px) {
-      font-size: var(--font-size-2xl);
-    }
-  }
-
-  p {
-    color: var(--color-text-muted);
-    margin: 0;
-  }
-}
-
 .appMain {
   /* Main content area */
 }

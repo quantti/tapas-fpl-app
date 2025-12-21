@@ -19,10 +19,8 @@ test.describe('Responsive Layout', () => {
     expect(bodyWidth).toBeLessThanOrEqual(viewportWidth + 5)
   })
 
-  test('header is visible', async ({ page }) => {
-    const header = page.locator('h1')
-    await expect(header).toBeVisible()
-    await expect(header).toContainText('Tapas FPL')
+  test('page title is correct', async ({ page }) => {
+    await expect(page).toHaveTitle('Tapas and Tackles')
   })
 
   test('status bar is visible when loaded', async ({ page }) => {
@@ -65,18 +63,6 @@ test.describe('Mobile layout (375px)', () => {
     expect(appPadding).toMatch(/12px/)
   })
 
-  test('header font size is smaller on mobile', async ({ page }) => {
-    await page.goto('/')
-
-    const h1FontSize = await page.locator('h1').evaluate((el) => {
-      return window.getComputedStyle(el).fontSize
-    })
-
-    // 1.25rem = 20px at base 16px
-    const fontSizePx = parseFloat(h1FontSize)
-    expect(fontSizePx).toBeLessThanOrEqual(20)
-  })
-
   test('no horizontal overflow on mobile', async ({ page }) => {
     await page.goto('/')
     await page.waitForTimeout(500)
@@ -103,17 +89,6 @@ test.describe('Desktop layout (1280px)', () => {
     expect(appPadding).toMatch(/24px/)
   })
 
-  test('header font size is larger on desktop', async ({ page }) => {
-    await page.goto('/')
-
-    const h1FontSize = await page.locator('h1').evaluate((el) => {
-      return window.getComputedStyle(el).fontSize
-    })
-
-    // 1.5rem = 24px at base 16px
-    const fontSizePx = parseFloat(h1FontSize)
-    expect(fontSizePx).toBeGreaterThanOrEqual(24)
-  })
 })
 
 test.describe('Tablet layout (768px)', () => {
