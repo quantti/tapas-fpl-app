@@ -79,9 +79,9 @@ export function GameweekDetails({ gameweek, managerDetails }: Props) {
                     <div className={styles.transferMoves}>
                       {m.transfersIn.map((playerIn, idx) => (
                         <span key={playerIn.id} className={styles.transferMove}>
-                          <span className={styles.out}>{m.transfersOut[idx]?.web_name || '?'}</span>
+                          <span className={styles.playerOut}>{m.transfersOut[idx]?.web_name || '?'}</span>
                           <span className={styles.arrow}>→</span>
-                          <span className={styles.in}>{playerIn.web_name}</span>
+                          <span className={styles.playerIn}>{playerIn.web_name}</span>
                         </span>
                       ))}
                     </div>

@@ -53,20 +53,11 @@ export function useFplData() {
     lastUpdated: null,
   });
 
-  const refreshTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const playersMapRef = useRef<Map<number, Player>>(new Map());
   const teamsMapRef = useRef<Map<number, Team>>(new Map());
 
   const fetchData = useCallback(async (isInitialLoad = false) => {
-    if (LEAGUE_ID === 0) {
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: 'League ID not configured. Update LEAGUE_ID in src/config.ts',
-      }));
-      return;
-    }
-
     try {
       if (isInitialLoad) {
         setState(prev => ({ ...prev, loading: true, error: null }));
