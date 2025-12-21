@@ -1,0 +1,119 @@
+import type {
+  BootstrapStatic,
+  Fixture,
+  Entry,
+  LeagueStandings,
+  LiveGameweek,
+} from '../types/fpl';
+
+// API base URL - in development, we'll use the worker locally
+// In production, this will be your deployed Cloudflare Worker URL
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+
+async function fetchApi<T>(endpoint: string): Promise<T> {
+  const response = await fetch(`${API_BASE}/api${endpoint}`);
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export const fplApi = {
+  /**
+   * Get all static game data - players, teams, gameweeks, settings
+   * This is the most important endpoint - cache it!
+   */
+  getBootstrapStatic: () => fetchApi<BootstrapStatic>('/bootstrap-static'),
+
+  /**
+   * Get all fixtures for the season
+   * Optionally filter by gameweek
+   */
+  getFixtures: (gameweek?: number) => {
+    const endpoint = gameweek ? `/fixtures?event=${gameweek}` : '/fixtures';
+    return fetchApi<Fixture[]>(endpoint);
+  },
+
+  /**
+   * Get a manager's team info
+   */
+  getEntry: (teamId: number) => fetchApi<Entry>(`/entry/${teamId}`),
+
+  /**
+   * Get a manager's history (points per gameweek, past seasons)
+   */
+  getEntryHistory: (teamId: number) =>
+    fetchApi<{
+      current: {
+        event: number;
+        points: number;
+        total_points: number;
+        rank: number;
+        overall_rank: number;
+        event_transfers: number;
+        event_transfers_cost: number;
+        value: number;
+        bank: number;
+      }[];
+      past: { season_name: string; total_points: number; rank: number }[];
+      chips: { name: string; time: string; event: number }[];
+    }>(`/entry/${teamId}/history`),
+
+  /**
+   * Get a manager's picks for a specific gameweek
+   */
+  getEntryPicks: (teamId: number, gameweek: number) =>
+    fetchApi<{
+      active_chip: string | null;
+      automatic_subs: { entry: number; element_in: number; element_out: number; event: number }[];
+      entry_history: {
+        event: number;
+        points: number;
+        total_points: number;
+        rank: number;
+        overall_rank: number;
+        value: number;
+        bank: number;
+        event_transfers: number;
+        event_transfers_cost: number;
+      };
+      picks: { element: number; position: number; multiplier: number; is_captain: boolean; is_vice_captain: boolean }[];
+    }>(`/entry/${teamId}/event/${gameweek}/picks`),
+
+  /**
+   * Get classic league standings
+   */
+  getLeagueStandings: (leagueId: number, page = 1) =>
+    fetchApi<LeagueStandings>(`/leagues-classic/${leagueId}/standings?page_standings=${page}`),
+
+  /**
+   * Get live gameweek data (player points during matches)
+   */
+  getLiveGameweek: (gameweek: number) => fetchApi<LiveGameweek>(`/event/${gameweek}/live`),
+
+  /**
+   * Get detailed player info including fixture history and upcoming
+   */
+  getPlayerSummary: (playerId: number) =>
+    fetchApi<{
+      fixtures: { id: number; event: number; difficulty: number; is_home: boolean; team_h: number; team_a: number }[];
+      history: { element: number; fixture: number; total_points: number; round: number; minutes: number }[];
+      history_past: { season_name: string; element_code: number; total_points: number }[];
+    }>(`/element-summary/${playerId}`),
+
+  /**
+   * Get all transfers made by a manager this season
+   */
+  getEntryTransfers: (teamId: number) =>
+    fetchApi<{
+      element_in: number;
+      element_in_cost: number;
+      element_out: number;
+      element_out_cost: number;
+      entry: number;
+      event: number;
+      time: string;
+    }[]>(`/entry/${teamId}/transfers`),
+};

@@ -1,0 +1,183 @@
+# Tapas FPL App
+
+A Fantasy Premier League companion app for tracking league standings, player stats, and live gameweek data.
+
+## Tech Stack
+
+- **Frontend**: Vite + React + TypeScript
+- **Backend/Proxy**: Cloudflare Workers (with Hono framework)
+- **Hosting**: Vercel or Netlify (frontend), Cloudflare (workers)
+- **Database**: None initially (designed for future addition)
+
+## Architecture
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Vite + React  │────▶│  Cloudflare      │────▶│    FPL API      │
+│   TypeScript    │     │  Workers + Hono  │     │                 │
+│                 │     │  (CORS proxy +   │     │                 │
+│   Vercel/       │     │   caching)       │     │                 │
+│   Netlify       │     │                  │     │                 │
+└─────────────────┘     └────────┬─────────┘     └─────────────────┘
+                                 │
+                                 ▼ (future)
+                        ┌─────────────────┐
+                        │   Database      │
+                        │   (Supabase/    │
+                        │    Neon)        │
+                        └─────────────────┘
+```
+
+## Features (MVP)
+
+- [ ] Live standings during gameweeks
+- [ ] Mini-league standings and comparisons
+- [ ] Player ownership statistics
+- [ ] Basic player/team stats
+
+## Future Features (requires database)
+
+- [ ] Historical data tracking across gameweeks
+- [ ] Ownership trends over time
+- [ ] Season-over-season comparisons
+- [ ] Scheduled data snapshots via Cloudflare Workers cron
+
+## FPL API Reference
+
+Base URL: `https://fantasy.premierleague.com/api/`
+
+### Key Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `/bootstrap-static/` | All players, teams, gameweeks, game settings |
+| `/entry/{team_id}/` | Manager's team info |
+| `/entry/{team_id}/history/` | Manager's season history |
+| `/entry/{team_id}/event/{gw}/picks/` | Manager's picks for a gameweek |
+| `/leagues-classic/{league_id}/standings/` | Classic league standings |
+| `/event/{gw}/live/` | Live gameweek data (points, bonus, etc.) |
+| `/element-summary/{player_id}/` | Individual player detailed stats |
+
+### Notes
+
+- No official documentation — API is unofficial
+- No CORS headers — requires backend proxy
+- Rate limiting exists but is undocumented — implement caching
+- Data updates a few times per day during active gameweeks
+
+## Styling - CSS Modules
+
+We use CSS Modules with native CSS nesting for component styling.
+
+### File Naming
+- Component: `ComponentName.tsx`
+- Styles: `ComponentName.module.css`
+- Types (auto-generated): `ComponentName.module.css.d.ts`
+
+### CSS Structure Pattern
+```css
+.Container {
+  /* Root container styles */
+
+  .childElement {
+    /* Nested child styles */
+  }
+
+  .element {
+    /* Base element */
+
+    &.-modifier {
+      /* Modifier variant (BEM-like) */
+    }
+
+    &:hover {
+      /* Pseudo-states */
+    }
+  }
+}
+```
+
+### Usage in Components
+```tsx
+import * as styles from './ComponentName.module.css';
+
+// Single class
+<div className={styles.container}>
+
+// Multiple classes (base + modifier)
+<div className={`${styles.cell} ${styles.center}`}>
+
+// Conditional modifier
+<tr className={`${styles.row} ${isActive ? styles.active : ''}`}>
+```
+
+### Commands
+```bash
+npm run css:types        # Generate .d.ts files for all CSS modules
+npm run css:types:watch  # Watch mode for development
+```
+
+### CSS Variables
+Global CSS variables are defined in `src/styles/variables.css` and imported in `index.css`.
+Use variables for colors, spacing, typography, and other design tokens.
+
+## Project Structure
+
+```
+tapas-fpl-app/
+├── frontend/                 # Vite + React app
+│   ├── src/
+│   │   ├── components/      # React components with co-located .module.css
+│   │   ├── hooks/
+│   │   ├── services/        # API client
+│   │   ├── styles/          # Global styles and CSS variables
+│   │   ├── types/           # TypeScript types for FPL data
+│   │   └── utils/
+│   ├── package.json
+│   └── vite.config.ts
+├── worker/                   # Cloudflare Worker
+│   ├── src/
+│   │   └── index.ts         # Hono app with FPL proxy routes
+│   ├── package.json
+│   └── wrangler.toml
+└── CLAUDE.md
+```
+
+## Development Commands
+
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev          # Start dev server
+npm run build        # Production build
+npm run preview      # Preview production build
+```
+
+### Worker
+```bash
+cd worker
+npm install
+npm run dev          # Start local worker
+npm run deploy       # Deploy to Cloudflare
+```
+
+## Design Principles
+
+- Keep it simple — avoid over-engineering
+- Cache aggressively — FPL data doesn't change frequently
+- Design for extensibility — database can be added later
+- Mobile-friendly — friends will likely view on phones
+
+## Environment Variables
+
+### Frontend (.env)
+```
+VITE_API_URL=https://your-worker.workers.dev
+```
+
+### Worker (wrangler.toml / secrets)
+```
+# Future: database connection string
+# DATABASE_URL=...
+```

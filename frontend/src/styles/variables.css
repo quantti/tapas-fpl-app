@@ -1,0 +1,62 @@
+:root {
+  /* Colors - FPL theme inspired */
+  --color-primary: #37003c;
+  --color-secondary: #00ff87;
+  --color-accent: #04f5ff;
+
+  /* Grays */
+  --gray-25: #fafafa;
+  --gray-50: #f5f5f5;
+  --gray-100: #e5e5e5;
+  --gray-200: #d4d4d4;
+  --gray-300: #a3a3a3;
+  --gray-400: #737373;
+  --gray-500: #525252;
+  --gray-600: #404040;
+  --gray-700: #262626;
+  --gray-800: #171717;
+  --gray-900: #0a0a0a;
+
+  /* Semantic colors */
+  --color-border-light: var(--gray-200);
+  --color-border: var(--gray-300);
+  --color-text: var(--gray-800);
+  --color-text-muted: var(--gray-500);
+  --color-background: #ffffff;
+  --color-background-alt: var(--gray-50);
+
+  /* Status colors */
+  --color-success: #22c55e;
+  --color-warning: #eab308;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  /* Spacing */
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+
+  /* Typography */
+  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+}

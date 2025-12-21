@@ -1,0 +1,161 @@
+.container {
+  background: var(--color-background);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-16) var(--space-20);
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--gray-50);
+
+  .title {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0;
+  }
+
+  .liveBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-4) var(--space-8);
+    background: var(--color-success);
+    color: white;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+    animation: pulse 2s infinite;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableHead {
+  background: var(--gray-25);
+  border-bottom: 2px solid var(--color-border-light);
+
+  .headerCell {
+    padding: var(--space-12) var(--space-16);
+    text-align: left;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+
+    &.center {
+      text-align: center;
+    }
+  }
+}
+
+.tableBody {
+  .row {
+    border-bottom: 1px solid var(--color-border-light);
+    transition: background-color 0.15s ease;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: var(--gray-25);
+    }
+  }
+
+  .cell {
+    padding: var(--space-12) var(--space-16);
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    vertical-align: middle;
+
+    &.center {
+      text-align: center;
+    }
+  }
+}
+
+.rank {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+
+  .rankNumber {
+    font-weight: 600;
+    min-width: 24px;
+  }
+
+  .rankChange {
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+
+    &.up {
+      color: var(--color-success);
+    }
+
+    &.down {
+      color: var(--color-error);
+    }
+  }
+}
+
+.manager {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+
+  .teamName {
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  .playerName {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+}
+
+.gwPoints {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.totalPoints {
+  font-weight: 500;
+}
+
+.captain {
+  display: inline-block;
+  padding: var(--space-2) var(--space-8);
+  background: var(--gray-100);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.chip {
+  display: inline-block;
+  padding: var(--space-2) var(--space-8);
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
