@@ -26,7 +26,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error {
@@ -64,18 +66,30 @@
 
 .statusBar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: var(--space-8);
   padding: var(--space-12) var(--space-16);
   background: var(--color-background);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-20);
   box-shadow: var(--shadow-sm);
 
+  @media (min-width: 640px) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0;
+  }
+
   .statusInfo {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--space-12);
+    gap: var(--space-8);
+
+    @media (min-width: 640px) {
+      gap: var(--space-12);
+    }
 
     .gameweekLabel {
       font-weight: 600;
@@ -116,8 +130,13 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 .grid {

@@ -3,6 +3,12 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   overflow: hidden;
+
+  /* Allow horizontal scroll on mobile for wide table */
+  @media (max-width: 640px) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .header {
@@ -34,13 +40,22 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
+
+  @media (max-width: 640px) {
+    min-width: 600px;
+  }
 }
 
 .tableHead {
