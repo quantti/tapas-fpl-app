@@ -27,3 +27,6 @@ firebase-debug.log
 
 # Local Claude files
 .claude/
+
+# Test outputs
+test-results/
