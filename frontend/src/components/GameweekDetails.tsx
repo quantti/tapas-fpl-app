@@ -1,14 +1,14 @@
-import type { Gameweek } from '../types/fpl';
-import type { ManagerGameweekData } from '../hooks/useFplData';
-import * as styles from './GameweekDetails.module.css';
+import type { Gameweek } from '../types/fpl'
+import type { ManagerGameweekData } from '../hooks/useFplData'
+import * as styles from './GameweekDetails.module.css'
 
 interface Props {
-  gameweek: Gameweek;
-  managerDetails: ManagerGameweekData[];
+  gameweek: Gameweek
+  managerDetails: ManagerGameweekData[]
 }
 
 export function GameweekDetails({ gameweek, managerDetails }: Props) {
-  const sortedManagers = [...managerDetails].sort((a, b) => b.gameweekPoints - a.gameweekPoints);
+  const sortedManagers = [...managerDetails].sort((a, b) => b.gameweekPoints - a.gameweekPoints)
 
   return (
     <div className={styles.container}>
@@ -27,13 +27,13 @@ export function GameweekDetails({ gameweek, managerDetails }: Props) {
       <div className={styles.topRow}>
         <div className={styles.miniSection}>
           <h3 className={styles.miniTitle}>🎯 Chips</h3>
-          {managerDetails.filter(m => m.activeChip).length === 0 ? (
+          {managerDetails.filter((m) => m.activeChip).length === 0 ? (
             <span className={styles.emptyMessage}>None</span>
           ) : (
             <div className={styles.tagList}>
               {managerDetails
-                .filter(m => m.activeChip)
-                .map(m => (
+                .filter((m) => m.activeChip)
+                .map((m) => (
                   <div key={m.managerId} className={styles.tag}>
                     <span className={styles.tagBadge}>{formatChipShort(m.activeChip!)}</span>
                     <span className={styles.tagName}>{m.teamName}</span>
@@ -45,14 +45,14 @@ export function GameweekDetails({ gameweek, managerDetails }: Props) {
 
         <div className={styles.miniSection}>
           <h3 className={styles.miniTitle}>💸 Hits</h3>
-          {managerDetails.filter(m => m.transfersCost > 0).length === 0 ? (
+          {managerDetails.filter((m) => m.transfersCost > 0).length === 0 ? (
             <span className={styles.emptyMessage}>None</span>
           ) : (
             <div className={styles.tagList}>
               {managerDetails
-                .filter(m => m.transfersCost > 0)
+                .filter((m) => m.transfersCost > 0)
                 .sort((a, b) => b.transfersCost - a.transfersCost)
-                .map(m => (
+                .map((m) => (
                   <div key={m.managerId} className={`${styles.tag} ${styles.hitTag}`}>
                     <span className={styles.hitBadge}>-{m.transfersCost}</span>
                     <span className={styles.tagName}>{m.teamName}</span>
@@ -67,19 +67,21 @@ export function GameweekDetails({ gameweek, managerDetails }: Props) {
       <div className={styles.mainRow}>
         <div className={styles.transfersPanel}>
           <h3 className={styles.panelTitle}>🔄 Transfers</h3>
-          {managerDetails.filter(m => m.transfersIn.length > 0).length === 0 ? (
+          {managerDetails.filter((m) => m.transfersIn.length > 0).length === 0 ? (
             <p className={styles.emptyMessage}>No transfers this GW</p>
           ) : (
             <div className={styles.transfersList}>
               {managerDetails
-                .filter(m => m.transfersIn.length > 0)
-                .map(m => (
+                .filter((m) => m.transfersIn.length > 0)
+                .map((m) => (
                   <div key={m.managerId} className={styles.transferItem}>
                     <span className={styles.transferTeam}>{m.teamName}</span>
                     <div className={styles.transferMoves}>
                       {m.transfersIn.map((playerIn, idx) => (
                         <span key={playerIn.id} className={styles.transferMove}>
-                          <span className={styles.playerOut}>{m.transfersOut[idx]?.web_name || '?'}</span>
+                          <span className={styles.playerOut}>
+                            {m.transfersOut[idx]?.web_name || '?'}
+                          </span>
                           <span className={styles.arrow}>→</span>
                           <span className={styles.playerIn}>{playerIn.web_name}</span>
                         </span>
@@ -94,7 +96,7 @@ export function GameweekDetails({ gameweek, managerDetails }: Props) {
         <div className={styles.captainsPanel}>
           <h3 className={styles.panelTitle}>©️ Captains</h3>
           <div className={styles.captainsList}>
-            {sortedManagers.map(m => (
+            {sortedManagers.map((m) => (
               <div key={m.managerId} className={styles.captainRow}>
                 <span className={styles.teamName}>{m.teamName}</span>
                 <span className={styles.captainName}>{m.captain?.web_name || '—'}</span>
@@ -110,7 +112,7 @@ export function GameweekDetails({ gameweek, managerDetails }: Props) {
           <h3 className={styles.panelTitle}>💰 Team Values</h3>
           <div className={styles.valuesList}>
             {[...sortedManagers]
-              .sort((a, b) => (b.teamValue + b.bank) - (a.teamValue + a.bank))
+              .sort((a, b) => b.teamValue + b.bank - (a.teamValue + a.bank))
               .map((m, index) => (
                 <div key={m.managerId} className={styles.valueRow}>
                   <span className={styles.valueRank}>{index + 1}</span>
@@ -137,7 +139,7 @@ export function GameweekDetails({ gameweek, managerDetails }: Props) {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function formatChipShort(chip: string): string {
@@ -146,6 +148,6 @@ function formatChipShort(chip: string): string {
     '3xc': 'TC',
     freehit: 'FH',
     wildcard: 'WC',
-  };
-  return chips[chip] || chip.toUpperCase();
+  }
+  return chips[chip] || chip.toUpperCase()
 }

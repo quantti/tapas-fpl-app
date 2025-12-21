@@ -1,22 +1,25 @@
-import type { LeagueStandings as LeagueStandingsType } from '../types/fpl';
-import type { ManagerGameweekData } from '../hooks/useFplData';
-import * as styles from './LeagueStandings.module.css';
+import type { LeagueStandings as LeagueStandingsType } from '../types/fpl'
+import type { ManagerGameweekData } from '../hooks/useFplData'
+import * as styles from './LeagueStandings.module.css'
 
 interface Props {
-  standings: LeagueStandingsType;
-  managerDetails: ManagerGameweekData[];
-  isLive: boolean;
+  standings: LeagueStandingsType
+  managerDetails: ManagerGameweekData[]
+  isLive: boolean
 }
 
-function getRankChange(current: number, last: number): { direction: 'up' | 'down' | 'same'; diff: number } {
-  if (last === 0 || current === last) return { direction: 'same', diff: 0 };
+function getRankChange(
+  current: number,
+  last: number
+): { direction: 'up' | 'down' | 'same'; diff: number } {
+  if (last === 0 || current === last) return { direction: 'same', diff: 0 }
   return current < last
     ? { direction: 'up', diff: last - current }
-    : { direction: 'down', diff: current - last };
+    : { direction: 'down', diff: current - last }
 }
 
 export function LeagueStandings({ standings, managerDetails, isLive }: Props) {
-  const detailsMap = new Map(managerDetails.map(m => [m.managerId, m]));
+  const detailsMap = new Map(managerDetails.map((m) => [m.managerId, m]))
 
   return (
     <div className={styles.container}>
@@ -38,8 +41,8 @@ export function LeagueStandings({ standings, managerDetails, isLive }: Props) {
         </thead>
         <tbody className={styles.tableBody}>
           {standings.standings.results.map((entry) => {
-            const details = detailsMap.get(entry.entry);
-            const rankChange = getRankChange(entry.rank, entry.last_rank);
+            const details = detailsMap.get(entry.entry)
+            const rankChange = getRankChange(entry.rank, entry.last_rank)
 
             return (
               <tr key={entry.entry} className={styles.row}>
@@ -80,12 +83,12 @@ export function LeagueStandings({ standings, managerDetails, isLive }: Props) {
                   )}
                 </td>
               </tr>
-            );
+            )
           })}
         </tbody>
       </table>
     </div>
-  );
+  )
 }
 
 function formatChip(chip: string): string {
@@ -94,6 +97,6 @@ function formatChip(chip: string): string {
     '3xc': 'TC',
     freehit: 'FH',
     wildcard: 'WC',
-  };
-  return chips[chip] || chip.toUpperCase();
+  }
+  return chips[chip] || chip.toUpperCase()
 }

@@ -1,7 +1,7 @@
-import { useFplData } from '../hooks/useFplData';
-import { LeagueStandings } from './LeagueStandings';
-import { GameweekDetails } from './GameweekDetails';
-import * as styles from './Dashboard.module.css';
+import { useFplData } from '../hooks/useFplData'
+import { LeagueStandings } from './LeagueStandings'
+import { GameweekDetails } from './GameweekDetails'
+import * as styles from './Dashboard.module.css'
 
 export function Dashboard() {
   const {
@@ -13,7 +13,7 @@ export function Dashboard() {
     error,
     lastUpdated,
     refresh,
-  } = useFplData();
+  } = useFplData()
 
   if (loading) {
     return (
@@ -23,7 +23,7 @@ export function Dashboard() {
           <p>Loading league data...</p>
         </div>
       </div>
-    );
+    )
   }
 
   if (error) {
@@ -37,7 +37,7 @@ export function Dashboard() {
           </button>
         </div>
       </div>
-    );
+    )
   }
 
   if (!standings || !currentGameweek) {
@@ -48,7 +48,7 @@ export function Dashboard() {
           <p>Could not load league standings.</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -59,9 +59,7 @@ export function Dashboard() {
           <span className={styles.gameweekLabel}>GW{currentGameweek.id}</span>
           {isLive && <span className={styles.liveIndicator}>● Live</span>}
           {lastUpdated && (
-            <span className={styles.lastUpdated}>
-              Updated {formatTimeAgo(lastUpdated)}
-            </span>
+            <span className={styles.lastUpdated}>Updated {formatTimeAgo(lastUpdated)}</span>
           )}
         </div>
         <button onClick={refresh} className={styles.refreshButton}>
@@ -72,28 +70,21 @@ export function Dashboard() {
       {/* Main Content */}
       <div className={styles.grid}>
         <div className={styles.mainColumn}>
-          <LeagueStandings
-            standings={standings}
-            managerDetails={managerDetails}
-            isLive={isLive}
-          />
+          <LeagueStandings standings={standings} managerDetails={managerDetails} isLive={isLive} />
         </div>
         <div className={styles.sideColumn}>
-          <GameweekDetails
-            gameweek={currentGameweek}
-            managerDetails={managerDetails}
-          />
+          <GameweekDetails gameweek={currentGameweek} managerDetails={managerDetails} />
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function formatTimeAgo(date: Date): string {
-  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000)
 
-  if (seconds < 60) return 'just now';
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  return date.toLocaleDateString();
+  if (seconds < 60) return 'just now'
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
+  return date.toLocaleDateString()
 }

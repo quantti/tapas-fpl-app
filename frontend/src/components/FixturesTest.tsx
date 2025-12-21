@@ -1,45 +1,43 @@
-import { useEffect, useState } from 'react';
-import { fplApi } from '../services/api';
-import type { Fixture, Team } from '../types/fpl';
-import * as styles from './FixturesTest.module.css';
+import { useEffect, useState } from 'react'
+import { fplApi } from '../services/api'
+import type { Fixture, Team } from '../types/fpl'
+import * as styles from './FixturesTest.module.css'
 
 export function FixturesTest() {
-  const [fixtures, setFixtures] = useState<Fixture[]>([]);
-  const [teams, setTeams] = useState<Map<number, Team>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [fixtures, setFixtures] = useState<Fixture[]>([])
+  const [teams, setTeams] = useState<Map<number, Team>>(new Map())
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadData() {
       try {
         // Load teams first for team names
-        const bootstrap = await fplApi.getBootstrapStatic();
-        const teamsMap = new Map(bootstrap.teams.map(t => [t.id, t]));
-        setTeams(teamsMap);
+        const bootstrap = await fplApi.getBootstrapStatic()
+        const teamsMap = new Map(bootstrap.teams.map((t) => [t.id, t]))
+        setTeams(teamsMap)
 
         // Load fixtures
-        const fixtureData = await fplApi.getFixtures();
+        const fixtureData = await fplApi.getFixtures()
         // Show only upcoming fixtures (not finished, with kickoff time)
-        const upcoming = fixtureData
-          .filter(f => !f.finished && f.kickoff_time)
-          .slice(0, 10);
-        setFixtures(upcoming);
+        const upcoming = fixtureData.filter((f) => !f.finished && f.kickoff_time).slice(0, 10)
+        setFixtures(upcoming)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data');
+        setError(err instanceof Error ? err.message : 'Failed to load data')
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
     }
 
-    loadData();
-  }, []);
+    loadData()
+  }, [])
 
   if (loading) {
     return (
       <div className={styles.container}>
         <div className={styles.loading}>Loading fixtures...</div>
       </div>
-    );
+    )
   }
 
   if (error) {
@@ -53,7 +51,7 @@ export function FixturesTest() {
           </p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -72,22 +70,17 @@ export function FixturesTest() {
           </tr>
         </thead>
         <tbody className={styles.tableBody}>
-          {fixtures.map(fixture => {
-            const homeTeam = teams.get(fixture.team_h);
-            const awayTeam = teams.get(fixture.team_a);
+          {fixtures.map((fixture) => {
+            const homeTeam = teams.get(fixture.team_h)
+            const awayTeam = teams.get(fixture.team_a)
             const kickoff = fixture.kickoff_time
               ? new Date(fixture.kickoff_time).toLocaleString()
-              : 'TBD';
-            const isLive = fixture.started && !fixture.finished;
+              : 'TBD'
+            const isLive = fixture.started && !fixture.finished
 
             return (
-              <tr
-                key={fixture.id}
-                className={`${styles.row} ${isLive ? styles.live : ''}`}
-              >
-                <td className={styles.cell}>
-                  {homeTeam?.name || fixture.team_h}
-                </td>
+              <tr key={fixture.id} className={`${styles.row} ${isLive ? styles.live : ''}`}>
+                <td className={styles.cell}>{homeTeam?.name || fixture.team_h}</td>
                 <td className={`${styles.cell} ${styles.center}`}>
                   <span className={styles.score}>
                     {fixture.started
@@ -95,17 +88,13 @@ export function FixturesTest() {
                       : 'vs'}
                   </span>
                 </td>
-                <td className={styles.cell}>
-                  {awayTeam?.name || fixture.team_a}
-                </td>
-                <td className={`${styles.cell} ${styles.muted}`}>
-                  {kickoff}
-                </td>
+                <td className={styles.cell}>{awayTeam?.name || fixture.team_a}</td>
+                <td className={`${styles.cell} ${styles.muted}`}>{kickoff}</td>
               </tr>
-            );
+            )
           })}
         </tbody>
       </table>
     </div>
-  );
+  )
 }
