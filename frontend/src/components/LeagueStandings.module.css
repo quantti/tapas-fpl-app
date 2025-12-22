@@ -216,7 +216,9 @@
   .teamNameIcon {
     flex-shrink: 0;
     opacity: 0.6;
-    transition: transform 0.15s ease, opacity 0.15s ease;
+    transition:
+      transform 0.15s ease,
+      opacity 0.15s ease;
 
     .teamName:hover & {
       opacity: 1;

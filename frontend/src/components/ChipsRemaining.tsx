@@ -22,9 +22,7 @@ function getRemainingChips(chipsUsed: string[], currentGameweek: number): string
   // Before GW20, only first half chips are available
   // From GW20 onwards, both sets are available
   const availableChips =
-    currentGameweek >= 20
-      ? [...FIRST_HALF_CHIPS, ...SECOND_HALF_CHIPS]
-      : [...FIRST_HALF_CHIPS]
+    currentGameweek >= 20 ? [...FIRST_HALF_CHIPS, ...SECOND_HALF_CHIPS] : [...FIRST_HALF_CHIPS]
 
   const remaining = [...availableChips]
 
@@ -40,7 +38,6 @@ function getRemainingChips(chipsUsed: string[], currentGameweek: number): string
 }
 
 export function ChipsRemaining({ managerDetails, currentGameweek }: Props) {
-
   // Calculate remaining chips for each manager
   const managersWithChips = managerDetails
     .map((manager) => ({

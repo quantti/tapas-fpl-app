@@ -32,15 +32,12 @@ export function Dashboard() {
   // Fetch live scoring data when games are in progress
   const { liveData, fixtures } = useLiveScoring(currentGameweek?.id ?? 0, isLive)
 
-
   // Check if any games are actually in progress (not just deadline passed)
   // Use finished_provisional as it updates immediately; finished waits for bonus confirmation
   const hasGamesInProgress = fixtures.some((f) => f.started && !f.finished_provisional)
 
   // Modal state from URL for shareability
-  const selectedManagerId = searchParams.get('manager')
-    ? Number(searchParams.get('manager'))
-    : null
+  const selectedManagerId = searchParams.get('manager') ? Number(searchParams.get('manager')) : null
 
   const handleManagerClick = useCallback(
     (managerId: number) => {
@@ -114,7 +111,11 @@ export function Dashboard() {
           />
         </div>
         <div className={styles.sideColumn}>
-          <GameweekDetails gameweek={currentGameweek} managerDetails={managerDetails} fixtures={fixtures} />
+          <GameweekDetails
+            gameweek={currentGameweek}
+            managerDetails={managerDetails}
+            fixtures={fixtures}
+          />
         </div>
       </div>
 
@@ -154,10 +155,7 @@ export function Dashboard() {
       {/* Bottom Stats */}
       <div className={styles.bottomSection}>
         <StatsCards managerDetails={managerDetails} />
-        <BenchPoints
-          managerDetails={managerDetails}
-          currentGameweek={currentGameweek.id}
-        />
+        <BenchPoints managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
         <CaptainSuccess
           managerDetails={managerDetails}
           currentGameweek={currentGameweek.id}
@@ -165,10 +163,7 @@ export function Dashboard() {
           playersMap={playersMap}
         />
         <ChipsRemaining managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
-        <LeaguePositionChart
-          managerDetails={managerDetails}
-          currentGameweek={currentGameweek.id}
-        />
+        <LeaguePositionChart managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
         <PlayerOwnership
           managerDetails={managerDetails}
           playersMap={playersMap}

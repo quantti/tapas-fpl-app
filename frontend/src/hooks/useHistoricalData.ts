@@ -43,9 +43,7 @@ export function useHistoricalData({
 }: UseHistoricalDataParams): UseHistoricalDataReturn {
   // Calculate completed gameweeks (all except current)
   const completedGameweeks =
-    currentGameweek > 1
-      ? Array.from({ length: currentGameweek - 1 }, (_, i) => i + 1)
-      : []
+    currentGameweek > 1 ? Array.from({ length: currentGameweek - 1 }, (_, i) => i + 1) : []
 
   // Fetch live data for all completed gameweeks
   // These are immutable - staleTime: Infinity means we never refetch
@@ -110,14 +108,11 @@ export function useHistoricalData({
   }
 
   // Calculate loading state
-  const isLoading =
-    liveQueries.some((q) => q.isLoading) || picksQueries.some((q) => q.isLoading)
+  const isLoading = liveQueries.some((q) => q.isLoading) || picksQueries.some((q) => q.isLoading)
 
   // Find first error if any
   const error =
-    liveQueries.find((q) => q.error)?.error ||
-    picksQueries.find((q) => q.error)?.error ||
-    null
+    liveQueries.find((q) => q.error)?.error || picksQueries.find((q) => q.error)?.error || null
 
   return {
     liveDataByGw,

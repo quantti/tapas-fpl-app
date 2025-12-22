@@ -88,7 +88,6 @@ test.describe('Desktop layout (1280px)', () => {
     // Should be 24px on desktop (var(--space-24))
     expect(appPadding).toMatch(/24px/)
   })
-
 })
 
 test.describe('Tablet layout (768px)', () => {

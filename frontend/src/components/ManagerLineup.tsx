@@ -50,13 +50,14 @@ export function ManagerLineup() {
         setLoading(true)
         setError(null)
 
-        const [bootstrapData, picksData, managerData, liveGameweek, fixturesData] = await Promise.all([
-          fplApi.getBootstrapStatic(),
-          fplApi.getEntryPicks(Number(managerId), Number(gameweek)),
-          fplApi.getEntry(Number(managerId)),
-          fplApi.getLiveGameweek(Number(gameweek)),
-          fplApi.getFixtures(Number(gameweek)),
-        ])
+        const [bootstrapData, picksData, managerData, liveGameweek, fixturesData] =
+          await Promise.all([
+            fplApi.getBootstrapStatic(),
+            fplApi.getEntryPicks(Number(managerId), Number(gameweek)),
+            fplApi.getEntry(Number(managerId)),
+            fplApi.getLiveGameweek(Number(gameweek)),
+            fplApi.getFixtures(Number(gameweek)),
+          ])
 
         setBootstrap(bootstrapData)
         setPicks(picksData)
@@ -144,11 +145,7 @@ export function ManagerLineup() {
     }))
     .filter((p) => p.player)
 
-  const renderPlayer = (
-    pick: Pick,
-    player: Player,
-    showPoints = true
-  ) => {
+  const renderPlayer = (pick: Pick, player: Player, showPoints = true) => {
     const team = teamsMap.get(player.team)
     const live = liveMap.get(player.id)
     const fixtureStarted = hasFixtureStarted(player.team)
@@ -164,11 +161,7 @@ export function ManagerLineup() {
         </div>
         <div className={styles.playerName}>{player.web_name}</div>
         <div className={styles.playerTeam}>{team?.short_name}</div>
-        {showPoints && (
-          <div className={styles.playerPoints}>
-            {fixtureStarted ? points : '–'}
-          </div>
-        )}
+        {showPoints && <div className={styles.playerPoints}>{fixtureStarted ? points : '–'}</div>}
       </div>
     )
   }
@@ -188,9 +181,7 @@ export function ManagerLineup() {
           <span className={styles.stat}>
             <strong>{picks.entry_history.points}</strong> pts
           </span>
-          {picks.active_chip && (
-            <span className={styles.chip}>{picks.active_chip}</span>
-          )}
+          {picks.active_chip && <span className={styles.chip}>{picks.active_chip}</span>}
         </div>
       </div>
 

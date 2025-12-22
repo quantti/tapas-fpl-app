@@ -283,7 +283,7 @@
 
   &::before,
   &::after {
-    content: '';
+    content: "";
     height: 32px;
     background: var(--color-surface);
     border-radius: var(--radius-sm);

@@ -75,7 +75,9 @@ export function useFplData() {
   // Check if games are live (deadline passed and gameweek not finished)
   const isLive = useMemo(() => {
     if (!currentGameweek) return false
-    return currentGameweek.finished === false && new Date(currentGameweek.deadline_time) < new Date()
+    return (
+      currentGameweek.finished === false && new Date(currentGameweek.deadline_time) < new Date()
+    )
   }, [currentGameweek])
 
   // 2. Fetch league standings
@@ -156,9 +158,7 @@ export function useFplData() {
             totalPoints: manager.total,
             picks: managerPicks,
             captain: captainPick ? playersMap.get(captainPick.element) || null : null,
-            viceCaptain: viceCaptainPick
-              ? playersMap.get(viceCaptainPick.element) || null
-              : null,
+            viceCaptain: viceCaptainPick ? playersMap.get(viceCaptainPick.element) || null : null,
             activeChip: picks.active_chip,
             transfersIn,
             transfersOut,
@@ -181,9 +181,7 @@ export function useFplData() {
 
   // Combine manager details results
   const managerDetails = useMemo(() => {
-    return managerQueries
-      .map((q) => q.data)
-      .filter((d): d is ManagerGameweekData => d !== null)
+    return managerQueries.map((q) => q.data).filter((d): d is ManagerGameweekData => d !== null)
   }, [managerQueries])
 
   // Detect "awaiting update" period
@@ -197,9 +195,7 @@ export function useFplData() {
 
   // Compute loading state
   const loading =
-    bootstrapQuery.isLoading ||
-    standingsQuery.isLoading ||
-    managerQueries.some((q) => q.isLoading)
+    bootstrapQuery.isLoading || standingsQuery.isLoading || managerQueries.some((q) => q.isLoading)
 
   // Compute error state
   const error =

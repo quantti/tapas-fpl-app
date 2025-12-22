@@ -136,9 +136,7 @@ export function ManagerModal({
 
     const playersMap = new Map(bootstrap.elements.map((p) => [p.id, p]))
     const teamsMap = new Map(bootstrap.teams.map((t) => [t.id, t]))
-    const liveMap = liveData
-      ? new Map(liveData.elements.map((e) => [e.id, e]))
-      : new Map()
+    const liveMap = liveData ? new Map(liveData.elements.map((e) => [e.id, e])) : new Map()
 
     // Filter fixtures to only current gameweek
     const gwFixtures = fixtures.filter((f) => f.event === gameweek)
@@ -159,9 +157,7 @@ export function ManagerModal({
     }
 
     // Get opponent info for a player's fixture
-    const getOpponentInfo = (
-      teamId: number
-    ): { shortName: string; isHome: boolean } | null => {
+    const getOpponentInfo = (teamId: number): { shortName: string; isHome: boolean } | null => {
       const fixture = teamFixtureMap.get(teamId)
       if (!fixture) return null
 

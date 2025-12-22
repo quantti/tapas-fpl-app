@@ -15,7 +15,9 @@ export function StatsCards({ managerDetails }: Props) {
   return (
     <div className={styles.container}>
       <div className={styles.card}>
-        <h3 className={styles.title}><Coins size={16} color="#FFD700" /> Team Values</h3>
+        <h3 className={styles.title}>
+          <Coins size={16} color="#FFD700" /> Team Values
+        </h3>
         <div className={styles.list}>
           {sortedByValue.map((m, index) => (
             <div key={m.managerId} className={styles.row}>
@@ -28,7 +30,9 @@ export function StatsCards({ managerDetails }: Props) {
       </div>
 
       <div className={styles.card}>
-        <h3 className={styles.title}><TrendingDown size={16} color="var(--color-error)" /> Total Hits</h3>
+        <h3 className={styles.title}>
+          <TrendingDown size={16} color="var(--color-error)" /> Total Hits
+        </h3>
         <div className={styles.list}>
           {sortedByHits.map((m, index) => (
             <div key={m.managerId} className={styles.row}>

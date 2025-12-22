@@ -36,10 +36,7 @@ const mockTeam = (id: number, shortName: string): Team => ({
   strength_defence_away: 1200,
 })
 
-const mockManagerData = (
-  managerId: number,
-  playerIds: number[]
-): ManagerGameweekData => ({
+const mockManagerData = (managerId: number, playerIds: number[]): ManagerGameweekData => ({
   managerId,
   teamName: `Manager ${managerId}`,
   playerName: `Player ${managerId}`,
@@ -65,11 +62,7 @@ const mockManagerData = (
 describe('PlayerOwnership', () => {
   it('renders nothing when no managers', () => {
     const { container } = render(
-      <PlayerOwnership
-        managerDetails={[]}
-        playersMap={new Map()}
-        teamsMap={new Map()}
-      />
+      <PlayerOwnership managerDetails={[]} playersMap={new Map()} teamsMap={new Map()} />
     )
 
     expect(container.firstChild).toBeNull()

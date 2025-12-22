@@ -34,7 +34,12 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
     [managerDetails]
   )
 
-  const { stats, loading, error } = useCaptainDifferential(managerIds, currentGameweek, gameweeks, playersMap)
+  const { stats, loading, error } = useCaptainDifferential(
+    managerIds,
+    currentGameweek,
+    gameweeks,
+    playersMap
+  )
 
   // Sort by differential gain (highest first - best differential pickers)
   const sortedData = useMemo(
@@ -66,12 +71,14 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
                 key={data.managerId}
                 type="button"
                 className={styles.row}
-                onClick={() => setModal({
-                  isOpen: true,
-                  teamName: data.teamName,
-                  details: data.details,
-                  totalGain: data.differentialGain,
-                })}
+                onClick={() =>
+                  setModal({
+                    isOpen: true,
+                    teamName: data.teamName,
+                    details: data.details,
+                    totalGain: data.differentialGain,
+                  })
+                }
               >
                 <span className={styles.rank}>{index + 1}</span>
                 <span className={styles.name}>
@@ -83,7 +90,8 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
                   <span
                     className={`${styles.gain} ${data.differentialGain >= 0 ? styles.positive : styles.negative}`}
                   >
-                    {data.differentialGain >= 0 ? '+' : ''}{data.differentialGain}
+                    {data.differentialGain >= 0 ? '+' : ''}
+                    {data.differentialGain}
                   </span>
                 </span>
               </button>

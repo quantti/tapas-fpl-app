@@ -47,10 +47,7 @@ export function useCaptainDifferential(
       managerIds,
       currentGameweek,
       enabled:
-        managerIds.length > 0 &&
-        currentGameweek > 1 &&
-        gameweeks.length > 0 &&
-        playersMap.size > 0,
+        managerIds.length > 0 && currentGameweek > 1 && gameweeks.length > 0 && playersMap.size > 0,
     })
 
   // Build map of gameweek -> most captained player (template captain)

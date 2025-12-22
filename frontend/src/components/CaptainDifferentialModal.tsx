@@ -36,17 +36,25 @@ export function CaptainDifferentialModal({ isOpen, onClose, teamName, details, t
                 <td className={styles.templateCell}>{d.templateName}</td>
                 <td className={styles.numCol}>{d.captainPoints}</td>
                 <td className={styles.numCol}>{d.templatePoints}</td>
-                <td className={`${styles.numCol} ${d.gain >= 0 ? styles.positive : styles.negative}`}>
-                  {d.gain >= 0 ? '+' : ''}{d.gain}
+                <td
+                  className={`${styles.numCol} ${d.gain >= 0 ? styles.positive : styles.negative}`}
+                >
+                  {d.gain >= 0 ? '+' : ''}
+                  {d.gain}
                 </td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr className={styles.totalRow}>
-              <td colSpan={5} className={styles.totalLabel}>Total</td>
-              <td className={`${styles.numCol} ${totalGain >= 0 ? styles.positive : styles.negative}`}>
-                {totalGain >= 0 ? '+' : ''}{totalGain}
+              <td colSpan={5} className={styles.totalLabel}>
+                Total
+              </td>
+              <td
+                className={`${styles.numCol} ${totalGain >= 0 ? styles.positive : styles.negative}`}
+              >
+                {totalGain >= 0 ? '+' : ''}
+                {totalGain}
               </td>
             </tr>
           </tfoot>
