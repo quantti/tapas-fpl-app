@@ -1,6 +1,7 @@
 import { useFplData } from '../hooks/useFplData'
 import { LeagueStandings } from './LeagueStandings'
 import { GameweekDetails } from './GameweekDetails'
+import { ChipsRemaining } from './ChipsRemaining'
 import * as styles from './Dashboard.module.css'
 
 export function Dashboard() {
@@ -74,6 +75,7 @@ export function Dashboard() {
         </div>
         <div className={styles.sideColumn}>
           <GameweekDetails gameweek={currentGameweek} managerDetails={managerDetails} />
+          <ChipsRemaining managerDetails={managerDetails} />
         </div>
       </div>
     </div>

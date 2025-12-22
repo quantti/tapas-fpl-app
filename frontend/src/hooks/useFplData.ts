@@ -22,6 +22,8 @@ export interface ManagerGameweekData {
   totalHitsCost: number
   teamValue: number
   bank: number
+  // Chips data
+  chipsUsed: string[]
 }
 
 interface FplDataState {
@@ -134,6 +136,7 @@ export function useFplData() {
               totalHitsCost,
               teamValue: (picks.entry_history.value || 0) / 10,
               bank: (picks.entry_history.bank || 0) / 10,
+              chipsUsed: history.chips.map((c) => c.name),
             })
           } catch (err) {
             console.warn(`Failed to fetch data for manager ${manager.entry}:`, err)
