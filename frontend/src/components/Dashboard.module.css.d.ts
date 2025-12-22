@@ -2,6 +2,7 @@ export const __esModule: true;
 export const bottomSection: string;
 export const container: string;
 export const error: string;
+export const errorHint: string;
 export const gameweekLabel: string;
 export const grid: string;
 export const lastUpdated: string;

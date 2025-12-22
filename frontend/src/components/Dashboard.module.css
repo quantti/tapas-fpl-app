@@ -47,6 +47,12 @@
     margin: 0 0 var(--space-16) 0;
   }
 
+  .errorHint {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin: var(--space-8) 0 0 0;
+  }
+
   .retryButton {
     padding: var(--space-8) var(--space-16);
     background: var(--color-primary);

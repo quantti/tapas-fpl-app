@@ -1,13 +1,16 @@
-import { Link } from 'react-router-dom'
-import type { LeagueStandings as LeagueStandingsType } from '../types/fpl'
+import { ChevronRight } from 'lucide-react'
+import type { LeagueStandings as LeagueStandingsType, LiveGameweek, Fixture } from '../types/fpl'
 import type { ManagerGameweekData } from '../hooks/useFplData'
+import { calculateLiveManagerPoints } from '../utils/liveScoring'
 import * as styles from './LeagueStandings.module.css'
 
 interface Props {
   standings: LeagueStandingsType
   managerDetails: ManagerGameweekData[]
   isLive: boolean
-  gameweek: number
+  liveData?: LiveGameweek | null
+  fixtures?: Fixture[]
+  onManagerClick?: (managerId: number) => void
 }
 
 function getRankChange(
@@ -20,14 +23,41 @@ function getRankChange(
     : { direction: 'down', diff: current - last }
 }
 
-export function LeagueStandings({ standings, managerDetails, isLive, gameweek }: Props) {
+export function LeagueStandings({
+  standings,
+  managerDetails,
+  isLive,
+  liveData,
+  fixtures = [],
+  onManagerClick,
+}: Props) {
   const detailsMap = new Map(managerDetails.map((m) => [m.managerId, m]))
+
+  // Check if any games are actually in progress
+  const hasGamesInProgress = fixtures.some((f) => f.started && !f.finished)
+
+  // Calculate live points for each manager when live
+  const livePointsMap = new Map<number, { points: number; bonus: number }>()
+  if (isLive && liveData) {
+    for (const manager of managerDetails) {
+      const livePoints = calculateLiveManagerPoints(
+        manager.picks,
+        liveData,
+        fixtures,
+        manager.transfersCost
+      )
+      livePointsMap.set(manager.managerId, {
+        points: livePoints.netPoints,
+        bonus: livePoints.provisionalBonus,
+      })
+    }
+  }
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h2 className={styles.title}>{standings.league.name}</h2>
-        {isLive && <span className={styles.liveBadge}>LIVE</span>}
+        {hasGamesInProgress && <span className={styles.liveBadge}>LIVE</span>}
       </div>
 
       <table className={styles.table}>
@@ -60,14 +90,30 @@ export function LeagueStandings({ standings, managerDetails, isLive, gameweek }:
                 </td>
                 <td className={`${styles.cell} ${styles.colManager}`}>
                   <div className={styles.manager}>
-                    <Link to={`/manager/${entry.entry}/${gameweek}`} className={styles.teamName}>
+                    <button
+                      type="button"
+                      className={styles.teamName}
+                      onClick={() => onManagerClick?.(entry.entry)}
+                    >
                       {entry.entry_name}
-                    </Link>
+                      <ChevronRight size={14} className={styles.teamNameIcon} />
+                    </button>
                     <span className={styles.playerName}>{entry.player_name}</span>
                   </div>
                 </td>
                 <td className={`${styles.cell} ${styles.center} ${styles.colGw}`}>
-                  <span className={styles.gwPoints}>{entry.event_total}</span>
+                  {isLive && livePointsMap.has(entry.entry) ? (
+                    <span className={styles.gwPoints}>
+                      {livePointsMap.get(entry.entry)!.points}
+                      {livePointsMap.get(entry.entry)!.bonus > 0 && (
+                        <span className={styles.provisionalBonus}>
+                          +{livePointsMap.get(entry.entry)!.bonus}
+                        </span>
+                      )}
+                    </span>
+                  ) : (
+                    <span className={styles.gwPoints}>{entry.event_total}</span>
+                  )}
                 </td>
                 <td className={`${styles.cell} ${styles.center} ${styles.colTotal}`}>
                   <span className={styles.totalPoints}>{entry.total}</span>

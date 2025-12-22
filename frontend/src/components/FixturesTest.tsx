@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fplApi } from '../services/api'
 import type { Fixture, Team } from '../types/fpl'
+import { formatDateTime } from '../config/locale'
 import * as styles from './FixturesTest.module.css'
 
 export function FixturesTest() {
@@ -74,8 +75,7 @@ export function FixturesTest() {
             const homeTeam = teams.get(fixture.team_h)
             const awayTeam = teams.get(fixture.team_a)
             const kickoff = fixture.kickoff_time
-              ? new Date(fixture.kickoff_time).toLocaleString('es-ES', {
-                  timeZone: 'Europe/Madrid',
+              ? formatDateTime(fixture.kickoff_time, {
                   day: 'numeric',
                   month: 'short',
                   hour: '2-digit',

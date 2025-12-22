@@ -65,6 +65,27 @@ Base URL: `https://fantasy.premierleague.com/api/`
 - Rate limiting exists but is undocumented — implement caching
 - Data updates a few times per day during active gameweeks
 
+### Data Display Requirements
+
+**Player Points Display Logic:**
+- Show "–" (dash) for players whose fixture hasn't started yet
+- Show actual points (including 0) only after fixture has started or finished
+- The `/event/{gw}/live/` endpoint returns `total_points: 0` for all players before their fixtures start — this should NOT be displayed as "0"
+- Use the fixture's `started` or `finished` flags from `/fixtures/` to determine display state
+- Captain/vice-captain multipliers apply to displayed points
+
+**Fixture State Detection:**
+```typescript
+// Build a map of team -> fixture from /fixtures/ endpoint
+const hasFixtureStarted = (teamId: number): boolean => {
+  const fixture = teamFixtureMap.get(teamId)
+  return fixture ? fixture.started || fixture.finished : false
+}
+
+// Only show points once fixture has started
+const showPoints = fixtureStarted
+```
+
 ## Styling - CSS Modules
 
 We use CSS Modules with native CSS nesting for component styling.

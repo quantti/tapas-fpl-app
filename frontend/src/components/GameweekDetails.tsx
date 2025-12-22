@@ -1,5 +1,6 @@
 import type { Gameweek } from '../types/fpl'
 import type { ManagerGameweekData } from '../hooks/useFplData'
+import { formatDate } from '../config/locale'
 import * as styles from './GameweekDetails.module.css'
 
 interface Props {
@@ -15,8 +16,7 @@ export function GameweekDetails({ gameweek, managerDetails }: Props) {
       <div className={styles.header}>
         <h2 className={styles.title}>Gameweek {gameweek.id}</h2>
         <span className={styles.deadline}>
-          {new Date(gameweek.deadline_time).toLocaleDateString('es-ES', {
-            timeZone: 'Europe/Madrid',
+          {formatDate(gameweek.deadline_time, {
             weekday: 'short',
             day: 'numeric',
             month: 'short',

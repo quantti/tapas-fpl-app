@@ -131,4 +131,14 @@ export const fplApi = {
         time: string
       }[]
     >(`/entry/${teamId}/transfers`),
+
+  /**
+   * Get event status - indicates processing state for bonus points and leagues
+   * Useful for detecting if the gameweek data is still being processed
+   */
+  getEventStatus: () =>
+    fetchApi<{
+      status: { bonus_added: boolean; date: string; event: number; points: string }[]
+      leagues: string
+    }>('/event-status'),
 }
