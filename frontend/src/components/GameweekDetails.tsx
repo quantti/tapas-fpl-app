@@ -107,38 +107,6 @@ export function GameweekDetails({ gameweek, managerDetails }: Props) {
         </div>
       </div>
 
-      {/* Bottom row: Team values and Total Hits */}
-      <div className={styles.bottomRow}>
-        <div className={styles.valuesPanel}>
-          <h3 className={styles.panelTitle}>💰 Team Values</h3>
-          <div className={styles.valuesList}>
-            {[...sortedManagers]
-              .sort((a, b) => b.teamValue + b.bank - (a.teamValue + a.bank))
-              .map((m, index) => (
-                <div key={m.managerId} className={styles.valueRow}>
-                  <span className={styles.valueRank}>{index + 1}</span>
-                  <span className={styles.valueName}>{m.teamName}</span>
-                  <span className={styles.valueAmount}>£{(m.teamValue + m.bank).toFixed(1)}m</span>
-                </div>
-              ))}
-          </div>
-        </div>
-
-        <div className={styles.hitsPanel}>
-          <h3 className={styles.panelTitle}>🔥 Total Hits</h3>
-          <div className={styles.hitsList}>
-            {[...managerDetails]
-              .sort((a, b) => b.totalHitsCost - a.totalHitsCost)
-              .map((m, index) => (
-                <div key={m.managerId} className={styles.hitsRow}>
-                  <span className={styles.hitsRank}>{index + 1}</span>
-                  <span className={styles.hitsName}>{m.teamName}</span>
-                  <span className={styles.hitsAmount}>-{m.totalHitsCost}</span>
-                </div>
-              ))}
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

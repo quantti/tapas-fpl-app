@@ -159,3 +159,14 @@
     gap: var(--space-16);
   }
 }
+
+.bottomSection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-20);
+  margin-top: var(--space-20);
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
