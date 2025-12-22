@@ -53,7 +53,7 @@
     width: 70px;
 
     @media (max-width: 640px) {
-      width: 50px;
+      width: 56px;
     }
   }
 
@@ -61,19 +61,11 @@
     /* Takes remaining space */
   }
 
-  .colGw {
-    width: 60px;
-  }
-
-  .colTotal {
-    width: 70px;
-  }
-
   .colCaptain {
-    width: 100px;
+    width: 90px;
 
     @media (max-width: 640px) {
-      display: none;
+      width: 70px;
     }
   }
 
@@ -81,7 +73,23 @@
     width: 50px;
 
     @media (max-width: 640px) {
-      display: none;
+      width: 40px;
+    }
+  }
+
+  .colGw {
+    width: 55px;
+
+    @media (max-width: 640px) {
+      width: 48px;
+    }
+  }
+
+  .colTotal {
+    width: 70px;
+
+    @media (max-width: 640px) {
+      width: 58px;
     }
   }
 }
@@ -143,11 +151,12 @@
 .rank {
   display: flex;
   align-items: center;
-  gap: var(--space-8);
+  gap: var(--space-4);
+  white-space: nowrap;
 
   .rankNumber {
     font-weight: 600;
-    min-width: 24px;
+    min-width: 18px;
   }
 
   .rankChange {

@@ -37,8 +37,8 @@ export function LeagueStandings({ standings, managerDetails, isLive, gameweek }:
             <th className={`${styles.headerCell} ${styles.colManager}`}>Manager</th>
             <th className={`${styles.headerCell} ${styles.center} ${styles.colGw}`}>GW</th>
             <th className={`${styles.headerCell} ${styles.center} ${styles.colTotal}`}>Total</th>
-            <th className={`${styles.headerCell} ${styles.center} ${styles.colCaptain}`}>Captain</th>
-            <th className={`${styles.headerCell} ${styles.center} ${styles.colChip}`}>Chip</th>
+            <th className={`${styles.headerCell} ${styles.center} ${styles.colCaptain}`}>C</th>
+            <th className={`${styles.headerCell} ${styles.center} ${styles.colChip}`}></th>
           </tr>
         </thead>
         <tbody className={styles.tableBody}>
