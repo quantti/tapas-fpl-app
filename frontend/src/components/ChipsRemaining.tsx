@@ -1,3 +1,4 @@
+import { Zap } from 'lucide-react'
 import type { ManagerGameweekData } from '../hooks/useFplData'
 import * as styles from './ChipsRemaining.module.css'
 
@@ -55,7 +56,9 @@ export function ChipsRemaining({ managerDetails, currentGameweek }: Props) {
 
   return (
     <div className={styles.container}>
-      <h3 className={styles.title}>Chips Remaining</h3>
+      <h3 className={styles.title}>
+        <Zap size={16} color="#FFE033" fill="#FFE033" /> Chips Remaining
+      </h3>
       <div className={styles.list}>
         {managersWithChips.map((manager) => (
           <div key={manager.managerId} className={styles.row}>

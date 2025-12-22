@@ -26,7 +26,7 @@
   --color-background: #ffffff;
   --color-background-alt: var(--gray-50);
   --color-surface: var(--gray-50);
-  --color-surface-hover: var(--gray-25);
+  --color-surface-hover: var(--gray-100);
   --color-primary-text: var(--color-primary);
 
   /* Status colors */

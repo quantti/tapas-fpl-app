@@ -8,6 +8,8 @@ import { GameweekDetails } from './GameweekDetails'
 import { ChipsRemaining } from './ChipsRemaining'
 import { StatsCards } from './StatsCards'
 import { PlayerOwnership } from './PlayerOwnership'
+import { BenchPoints } from './BenchPoints'
+import { CaptainSuccess } from './CaptainSuccess'
 import { ManagerModal } from './ManagerModal'
 import { ThemeToggle } from './ThemeToggle'
 import * as styles from './Dashboard.module.css'
@@ -116,6 +118,16 @@ export function Dashboard() {
       {/* Bottom Stats */}
       <div className={styles.bottomSection}>
         <StatsCards managerDetails={managerDetails} />
+        <BenchPoints
+          managerDetails={managerDetails}
+          currentGameweek={currentGameweek.id}
+        />
+        <CaptainSuccess
+          managerDetails={managerDetails}
+          currentGameweek={currentGameweek.id}
+          gameweeks={bootstrap?.events ?? []}
+          playersMap={playersMap}
+        />
         <ChipsRemaining managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
         <PlayerOwnership
           managerDetails={managerDetails}

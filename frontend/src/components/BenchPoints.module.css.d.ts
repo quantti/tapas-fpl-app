@@ -1,0 +1,12 @@
+export const __esModule: true;
+export const card: string;
+export const error: string;
+export const list: string;
+export const loading: string;
+export const name: string;
+export const rank: string;
+export const row: string;
+export const title: string;
+export const total: string;
+export const value: string;
+

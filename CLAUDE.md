@@ -30,10 +30,13 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 
 ## Features (MVP)
 
-- [ ] Live standings during gameweeks
-- [ ] Mini-league standings and comparisons
-- [ ] Player ownership statistics
-- [ ] Basic player/team stats
+- [x] Live standings during gameweeks
+- [x] Mini-league standings and comparisons
+- [x] Player ownership statistics
+- [x] Basic player/team stats
+- [x] Dark mode with system preference detection
+- [x] Bench points tracking (cumulative from previous GWs)
+- [x] Captain differential tracker (differential captain picks)
 
 ## Future Features (requires database)
 
@@ -142,6 +145,65 @@ npm run css:types:watch  # Watch mode for development
 Global CSS variables are defined in `src/styles/variables.css` and imported in `index.css`.
 Use variables for colors, spacing, typography, and other design tokens.
 
+### Dark Theme
+Dark theme is implemented using CSS custom properties with a `[data-theme="dark"]` selector.
+
+**Key files:**
+- `src/styles/variables.css` - Dark theme color overrides
+- `src/hooks/useTheme.ts` - Theme state management with system preference detection
+- `src/components/ThemeToggle.tsx` - Sun/Moon toggle button
+- `index.html` - Flash prevention script in `<head>`
+
+**Theme variables:**
+```css
+[data-theme="dark"] {
+  --color-background: var(--gray-900);
+  --color-surface: var(--gray-800);
+  --color-text: var(--gray-100);
+  --color-primary-text: #a855f7; /* Brighter purple for dark mode */
+}
+```
+
+**Flash prevention:** Inline script in `<head>` sets `data-theme` before first render to prevent white flash.
+
+### Bench Points Feature
+Tracks cumulative "wasted" points left on the bench across all completed gameweeks.
+
+**Key files:**
+- `src/hooks/useBenchPoints.ts` - Fetches historical picks and calculates bench points
+- `src/components/BenchPoints.tsx` - Displays ranked list
+
+**Implementation notes:**
+- Fetches picks for each manager for all gameweeks 1 to (current - 1)
+- Bench players are positions 12-15 (multiplier=0)
+- Excludes bench boost weeks (those points actually counted)
+- Uses `/event/{gw}/live/` for player points per gameweek
+
+### Captain Differential Feature
+Tracks when managers pick a captain different from the global template (most-captained player) and whether it paid off.
+
+**Key files:**
+- `src/hooks/useCaptainSuccess.ts` - `useCaptainDifferential` hook fetches historical picks
+- `src/components/CaptainSuccess.tsx` - Displays "Differential Captains" card
+- `src/components/CaptainDifferentialModal.tsx` - Per-GW breakdown modal
+
+**Metrics calculated:**
+- **Differential Picks**: Count of times a manager picked a non-template captain
+- **Differential Gain**: Net points gained/lost compared to if they'd captained the template
+
+**Modal detail view:**
+Clicking a manager row opens a modal showing:
+- Each gameweek where they made a differential pick
+- Their captain choice vs the template captain
+- Points scored by each
+- Gain/loss for that specific gameweek
+
+**Implementation notes:**
+- Template captain = `most_captained` from bootstrap-static (global FPL, not just league)
+- Handles Triple Captain (3× multiplier for both actual and template comparison)
+- Only shows managers who made at least one differential pick
+- Sorted by highest differential gain (best differential pickers first)
+
 ## Icons
 
 We use [Lucide React](https://lucide.dev/) for SVG icons. This ensures dark theme compatibility (no emojis).
@@ -164,7 +226,8 @@ import { IconName } from 'lucide-react'
 
 | Section | Icon | Color | Notes |
 |---------|------|-------|-------|
-| Chips | `Zap` | `#FFE033` (electric yellow) | Filled |
+| Chips (Used) | `Zap` | `#FFE033` (electric yellow) | Filled |
+| Chips Remaining | `Zap` | `#FFE033` (electric yellow) | Filled |
 | Hits (GW) | `TrendingDown` | `var(--color-error)` | Red for negative |
 | Transfers | `ArrowRight` + `ArrowLeft` | green + red | Stacked vertically, stretched 1.3x |
 | Captains | `Copyright` | default | C symbol |
@@ -174,6 +237,10 @@ import { IconName } from 'lucide-react'
 | Rank up | `CircleChevronUp` | `var(--color-success)` | |
 | Rank down | `CircleChevronDown` | `var(--color-error)` | |
 | Team link | `ChevronRight` | default | In standings table |
+| Bench Points | `Armchair` | `#6B8CAE` (steel blue) | |
+| Differential Captains | `Crown` | `#FFD700` (gold) | |
+| Player Ownership | `Users` | `#14B8A6` (teal) | |
+| Theme toggle | `Sun` / `Moon` | default | Light/dark mode |
 
 ### Custom Icon Compositions
 

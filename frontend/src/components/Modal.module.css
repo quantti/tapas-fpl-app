@@ -54,7 +54,7 @@
   justify-content: space-between;
   padding: var(--space-16) var(--space-20);
   border-bottom: 1px solid var(--color-border-light);
-  background: var(--gray-50);
+  background: var(--color-surface);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
@@ -82,7 +82,7 @@
   transition: background-color 0.15s ease, color 0.15s ease;
 
   &:hover {
-    background: var(--gray-100);
+    background: var(--color-surface-hover);
     color: var(--color-text);
   }
 

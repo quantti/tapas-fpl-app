@@ -22,8 +22,8 @@
 - [ ] More statistics and views
   - [ ] Head-to-head comparison between managers
   - [ ] Points breakdown by position
-  - [ ] Bench points tracking
-  - [ ] Captain pick success rates
+  - [x] Bench points tracking
+  - [x] Captain pick success rates
   - [ ] Transfer history timeline
 - [ ] Historical data tracking (requires database)
 - [ ] Season-over-season comparisons
@@ -35,9 +35,12 @@
 - [x] Gameweek details (chips, hits, transfers, captains)
 - [x] Stats cards (team values, total hits)
 - [x] Replace emojis with Lucide SVG icons
-- [x] Icon coloring (gold coins, electric zap, colored arrows)
+- [x] Icon coloring (gold coins, electric zap, colored arrows, teal users, steel blue armchair)
 - [x] Custom domain setup (tapas-and-tackles.live)
 - [x] Player ownership feature
 - [x] Dark mode with system preference detection
 - [x] Theme toggle (Sun/Moon icons)
 - [x] Gameweek date range display
+- [x] Bench points tracking (cumulative from previous GWs)
+- [x] Captain differential tracker
+  - [x] Captain differential detail modal (per-GW breakdown)

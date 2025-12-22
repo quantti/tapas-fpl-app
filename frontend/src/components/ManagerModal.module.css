@@ -125,7 +125,7 @@
 
 .bench {
   margin-top: var(--space-12);
-  background: var(--gray-100);
+  background: var(--color-surface);
   border-radius: var(--radius-md);
   padding: var(--space-12);
 }
@@ -152,7 +152,7 @@
   }
 
   .playerPoints {
-    background: var(--gray-200);
+    background: var(--color-surface-hover);
     color: var(--color-text);
   }
 }

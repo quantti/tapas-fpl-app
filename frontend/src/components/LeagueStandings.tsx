@@ -64,7 +64,7 @@ export function LeagueStandings({
         <thead className={styles.tableHead}>
           <tr>
             <th className={`${styles.headerCell} ${styles.colRank}`}>#</th>
-            <th className={`${styles.headerCell} ${styles.colManager}`}>Manager</th>
+            <th className={`${styles.headerCell} ${styles.colManager}`}>Team & Manager</th>
             <th className={`${styles.headerCell} ${styles.center} ${styles.colGw}`}>GW</th>
             <th className={`${styles.headerCell} ${styles.center} ${styles.colTotal}`}>Total</th>
             <th className={`${styles.headerCell} ${styles.center} ${styles.colCaptain}`}>C</th>
