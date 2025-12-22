@@ -3,12 +3,6 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   overflow: hidden;
-
-  /* Allow horizontal scroll on mobile for wide table */
-  @media (max-width: 640px) {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
 }
 
 .header {
@@ -52,9 +46,43 @@
 .table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 
-  @media (max-width: 640px) {
-    min-width: 600px;
+  /* Column widths */
+  .colRank {
+    width: 70px;
+
+    @media (max-width: 640px) {
+      width: 50px;
+    }
+  }
+
+  .colManager {
+    /* Takes remaining space */
+  }
+
+  .colGw {
+    width: 60px;
+  }
+
+  .colTotal {
+    width: 70px;
+  }
+
+  .colCaptain {
+    width: 100px;
+
+    @media (max-width: 640px) {
+      display: none;
+    }
+  }
+
+  .colChip {
+    width: 50px;
+
+    @media (max-width: 640px) {
+      display: none;
+    }
   }
 }
 
@@ -70,6 +98,10 @@
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+
+    @media (max-width: 640px) {
+      padding: var(--space-8) var(--space-8);
+    }
 
     &.center {
       text-align: center;
@@ -96,6 +128,11 @@
     font-size: var(--font-size-sm);
     color: var(--color-text);
     vertical-align: middle;
+
+    @media (max-width: 640px) {
+      padding: var(--space-8) var(--space-8);
+      font-size: var(--font-size-xs);
+    }
 
     &.center {
       text-align: center;

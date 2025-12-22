@@ -33,12 +33,12 @@ export function LeagueStandings({ standings, managerDetails, isLive, gameweek }:
       <table className={styles.table}>
         <thead className={styles.tableHead}>
           <tr>
-            <th className={styles.headerCell}>Rank</th>
-            <th className={styles.headerCell}>Manager</th>
-            <th className={`${styles.headerCell} ${styles.center}`}>GW</th>
-            <th className={`${styles.headerCell} ${styles.center}`}>Total</th>
-            <th className={`${styles.headerCell} ${styles.center}`}>Captain</th>
-            <th className={`${styles.headerCell} ${styles.center}`}>Chip</th>
+            <th className={`${styles.headerCell} ${styles.colRank}`}>#</th>
+            <th className={`${styles.headerCell} ${styles.colManager}`}>Manager</th>
+            <th className={`${styles.headerCell} ${styles.center} ${styles.colGw}`}>GW</th>
+            <th className={`${styles.headerCell} ${styles.center} ${styles.colTotal}`}>Total</th>
+            <th className={`${styles.headerCell} ${styles.center} ${styles.colCaptain}`}>Captain</th>
+            <th className={`${styles.headerCell} ${styles.center} ${styles.colChip}`}>Chip</th>
           </tr>
         </thead>
         <tbody className={styles.tableBody}>
@@ -48,17 +48,17 @@ export function LeagueStandings({ standings, managerDetails, isLive, gameweek }:
 
             return (
               <tr key={entry.entry} className={styles.row}>
-                <td className={styles.cell}>
+                <td className={`${styles.cell} ${styles.colRank}`}>
                   <div className={styles.rank}>
                     <span className={styles.rankNumber}>{entry.rank}</span>
                     {rankChange.direction !== 'same' && (
                       <span className={`${styles.rankChange} ${styles[rankChange.direction]}`}>
-                        {rankChange.direction === 'up' ? '▲' : '▼'} {rankChange.diff}
+                        {rankChange.direction === 'up' ? '▲' : '▼'}{rankChange.diff}
                       </span>
                     )}
                   </div>
                 </td>
-                <td className={styles.cell}>
+                <td className={`${styles.cell} ${styles.colManager}`}>
                   <div className={styles.manager}>
                     <Link to={`/manager/${entry.entry}/${gameweek}`} className={styles.teamName}>
                       {entry.entry_name}
@@ -66,20 +66,20 @@ export function LeagueStandings({ standings, managerDetails, isLive, gameweek }:
                     <span className={styles.playerName}>{entry.player_name}</span>
                   </div>
                 </td>
-                <td className={`${styles.cell} ${styles.center}`}>
+                <td className={`${styles.cell} ${styles.center} ${styles.colGw}`}>
                   <span className={styles.gwPoints}>{entry.event_total}</span>
                 </td>
-                <td className={`${styles.cell} ${styles.center}`}>
+                <td className={`${styles.cell} ${styles.center} ${styles.colTotal}`}>
                   <span className={styles.totalPoints}>{entry.total}</span>
                 </td>
-                <td className={`${styles.cell} ${styles.center}`}>
+                <td className={`${styles.cell} ${styles.center} ${styles.colCaptain}`}>
                   {details?.captain ? (
                     <span className={styles.captain}>{details.captain.web_name}</span>
                   ) : (
                     <span className={styles.muted}>—</span>
                   )}
                 </td>
-                <td className={`${styles.cell} ${styles.center}`}>
+                <td className={`${styles.cell} ${styles.center} ${styles.colChip}`}>
                   {details?.activeChip ? (
                     <span className={styles.chip}>{formatChip(details.activeChip)}</span>
                   ) : (
