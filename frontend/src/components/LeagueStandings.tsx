@@ -38,7 +38,8 @@ export function LeagueStandings({
   )
 
   // Check if any games are actually in progress
-  const hasGamesInProgress = fixtures.some((f) => f.started && !f.finished)
+  // Use finished_provisional as it updates immediately; finished waits for bonus confirmation
+  const hasGamesInProgress = fixtures.some((f) => f.started && !f.finished_provisional)
 
   // Calculate live points and totals for each manager, then sort by live total
   const sortedResults = useMemo(() => {

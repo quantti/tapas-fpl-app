@@ -34,7 +34,8 @@ export function Dashboard() {
 
 
   // Check if any games are actually in progress (not just deadline passed)
-  const hasGamesInProgress = fixtures.some((f) => f.started && !f.finished)
+  // Use finished_provisional as it updates immediately; finished waits for bonus confirmation
+  const hasGamesInProgress = fixtures.some((f) => f.started && !f.finished_provisional)
 
   // Modal state from URL for shareability
   const selectedManagerId = searchParams.get('manager')
