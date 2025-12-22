@@ -110,8 +110,8 @@ export function ManagerLineup() {
   // Check if a team's fixture has started
   const hasFixtureStarted = (teamId: number): boolean => {
     const fixture = teamFixtureMap.get(teamId)
-    if (!fixture?.kickoff_time) return false
-    return new Date(fixture.kickoff_time) <= new Date()
+    if (!fixture) return false
+    return fixture.started || fixture.finished
   }
 
   // Split into starting XI (positions 1-11) and bench (12-15)
