@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, CircleChevronUp, CircleChevronDown } from 'lucide-react'
 import type { LeagueStandings as LeagueStandingsType, LiveGameweek, Fixture } from '../types/fpl'
 import type { ManagerGameweekData } from '../hooks/useFplData'
 import { calculateLiveManagerPoints } from '../utils/liveScoring'
@@ -83,7 +83,12 @@ export function LeagueStandings({
                     <span className={styles.rankNumber}>{entry.rank}</span>
                     {rankChange.direction !== 'same' && (
                       <span className={`${styles.rankChange} ${styles[rankChange.direction]}`}>
-                        {rankChange.direction === 'up' ? '▲' : '▼'}{rankChange.diff}
+                        {rankChange.direction === 'up' ? (
+                          <CircleChevronUp size={14} />
+                        ) : (
+                          <CircleChevronDown size={14} />
+                        )}
+                        {rankChange.diff}
                       </span>
                     )}
                   </div>

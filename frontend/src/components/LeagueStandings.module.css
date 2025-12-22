@@ -160,6 +160,9 @@
   }
 
   .rankChange {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
     font-size: var(--font-size-xs);
     font-weight: 500;
 

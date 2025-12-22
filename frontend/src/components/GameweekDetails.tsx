@@ -1,3 +1,4 @@
+import { Zap, TrendingDown, ArrowRight, ArrowLeft, Copyright } from 'lucide-react'
 import type { Gameweek } from '../types/fpl'
 import type { ManagerGameweekData } from '../hooks/useFplData'
 import { formatDate } from '../config/locale'
@@ -27,7 +28,7 @@ export function GameweekDetails({ gameweek, managerDetails }: Props) {
       {/* Top row: Chips and Hits side by side */}
       <div className={styles.topRow}>
         <div className={styles.miniSection}>
-          <h3 className={styles.miniTitle}>🎯 Chips</h3>
+          <h3 className={styles.miniTitle}><Zap size={16} color="#FFE033" fill="#FFE033" /> Chips</h3>
           {managerDetails.filter((m) => m.activeChip).length === 0 ? (
             <span className={styles.emptyMessage}>None</span>
           ) : (
@@ -45,7 +46,7 @@ export function GameweekDetails({ gameweek, managerDetails }: Props) {
         </div>
 
         <div className={styles.miniSection}>
-          <h3 className={styles.miniTitle}>💸 Hits</h3>
+          <h3 className={styles.miniTitle}><TrendingDown size={16} color="var(--color-error)" /> Hits</h3>
           {managerDetails.filter((m) => m.transfersCost > 0).length === 0 ? (
             <span className={styles.emptyMessage}>None</span>
           ) : (
@@ -67,7 +68,7 @@ export function GameweekDetails({ gameweek, managerDetails }: Props) {
       {/* Main row: Transfers and Captains side by side */}
       <div className={styles.mainRow}>
         <div className={styles.transfersPanel}>
-          <h3 className={styles.panelTitle}>🔄 Transfers</h3>
+          <h3 className={styles.panelTitle}><span className={styles.transferIcon}><ArrowRight size={12} color="var(--color-success)" /><ArrowLeft size={12} color="var(--color-error)" /></span> Transfers</h3>
           {managerDetails.filter((m) => m.transfersIn.length > 0).length === 0 ? (
             <p className={styles.emptyMessage}>No transfers this GW</p>
           ) : (
@@ -95,7 +96,7 @@ export function GameweekDetails({ gameweek, managerDetails }: Props) {
         </div>
 
         <div className={styles.captainsPanel}>
-          <h3 className={styles.panelTitle}>©️ Captains</h3>
+          <h3 className={styles.panelTitle}><Copyright size={16} /> Captains</h3>
           <div className={styles.captainsList}>
             {sortedManagers.map((m) => (
               <div key={m.managerId} className={styles.captainRow}>

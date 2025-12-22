@@ -142,6 +142,57 @@ npm run css:types:watch  # Watch mode for development
 Global CSS variables are defined in `src/styles/variables.css` and imported in `index.css`.
 Use variables for colors, spacing, typography, and other design tokens.
 
+## Icons
+
+We use [Lucide React](https://lucide.dev/) for SVG icons. This ensures dark theme compatibility (no emojis).
+
+### Icon Library
+```tsx
+import { IconName } from 'lucide-react'
+
+// Basic usage
+<IconName size={16} />
+
+// With color
+<IconName size={16} color="#FFE033" />
+
+// Filled icon
+<IconName size={16} color="#FFE033" fill="#FFE033" />
+```
+
+### Icon Assignments
+
+| Section | Icon | Color | Notes |
+|---------|------|-------|-------|
+| Chips | `Zap` | `#FFE033` (electric yellow) | Filled |
+| Hits (GW) | `TrendingDown` | `var(--color-error)` | Red for negative |
+| Transfers | `ArrowRight` + `ArrowLeft` | green + red | Stacked vertically, stretched 1.3x |
+| Captains | `Copyright` | default | C symbol |
+| Team Values | `Coins` | `#FFD700` (gold) | |
+| Total Hits | `TrendingDown` | `var(--color-error)` | Red for negative |
+| Live indicator | `Circle` | `currentColor` | Filled, pulses |
+| Rank up | `CircleChevronUp` | `var(--color-success)` | |
+| Rank down | `CircleChevronDown` | `var(--color-error)` | |
+| Team link | `ChevronRight` | default | In standings table |
+
+### Custom Icon Compositions
+
+**Transfers Icon (stacked arrows):**
+```tsx
+<span className={styles.transferIcon}>
+  <ArrowRight size={12} color="var(--color-success)" />
+  <ArrowLeft size={12} color="var(--color-error)" />
+</span>
+```
+```css
+.transferIcon {
+  display: flex;
+  flex-direction: column;
+  line-height: 0;
+  transform: scaleX(1.3);
+}
+```
+
 ## Project Structure
 
 ```
@@ -190,11 +241,31 @@ npm run deploy       # Deploy to Cloudflare
 - Design for extensibility — database can be added later
 - Mobile-friendly — friends will likely view on phones
 
+## Deployment
+
+### Vercel (Frontend)
+- **Account**: quantti
+- **Project**: quanttis-projects/frontend
+- **Production URL**: https://frontend-ifl3if94u-quanttis-projects.vercel.app
+- **Custom domain**: https://tapas-and-tackles.live ✓
+
+### Cloudflare Workers (API Proxy)
+- **URL**: https://tapas-fpl-proxy.vankari.workers.dev
+
+### Deploy Commands
+```bash
+# Frontend (from /frontend)
+vercel --prod
+
+# Worker (from /worker)
+npx wrangler deploy
+```
+
 ## Environment Variables
 
 ### Frontend (.env)
 ```
-VITE_API_URL=https://your-worker.workers.dev
+VITE_API_URL=https://tapas-fpl-proxy.vankari.workers.dev
 ```
 
 ### Worker (wrangler.toml / secrets)

@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { Circle } from 'lucide-react'
 import { useFplData } from '../hooks/useFplData'
 import { useLiveScoring } from '../hooks/useLiveScoring'
 import { LeagueStandings } from './LeagueStandings'
@@ -76,7 +77,11 @@ export function Dashboard() {
       <div className={styles.statusBar}>
         <div className={styles.statusInfo}>
           <span className={styles.gameweekLabel}>GW{currentGameweek.id}</span>
-          {hasGamesInProgress && <span className={styles.liveIndicator}>● Live</span>}
+          {hasGamesInProgress && (
+            <span className={styles.liveIndicator}>
+              <Circle size={8} fill="currentColor" /> Live
+            </span>
+          )}
           {lastUpdated && (
             <span className={styles.lastUpdated}>Updated {formatTimeAgo(lastUpdated)}</span>
           )}
