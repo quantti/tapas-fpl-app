@@ -107,6 +107,16 @@ export function ManagerLineup() {
     teamFixtureMap.set(fixture.team_a, fixture)
   }
 
+  // Debug: log fixture data
+  console.log('Fixtures:', fixtures.map(f => ({
+    id: f.id,
+    team_h: f.team_h,
+    team_a: f.team_a,
+    started: f.started,
+    finished: f.finished,
+    kickoff: f.kickoff_time
+  })))
+
   // Check if a team's fixture has started
   const hasFixtureStarted = (teamId: number): boolean => {
     const fixture = teamFixtureMap.get(teamId)
