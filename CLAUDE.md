@@ -4,10 +4,13 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 
 ## Tech Stack
 
-- **Frontend**: Vite + React + TypeScript
+- **Frontend**: Vite + React 18 + TypeScript
+- **State Management**: TanStack Query (React Query) for server state
+- **Charts**: Recharts for data visualization
+- **Icons**: Lucide React
 - **Backend/Proxy**: Cloudflare Workers (with Hono framework)
-- **Hosting**: Vercel or Netlify (frontend), Cloudflare (workers)
-- **Database**: None initially (designed for future addition)
+- **Hosting**: Vercel (frontend), Cloudflare (workers)
+- **Testing**: Vitest + React Testing Library
 
 ## Architecture
 
@@ -28,15 +31,18 @@ A Fantasy Premier League companion app for tracking league standings, player sta
                         └─────────────────┘
 ```
 
-## Features (MVP)
+## Features
 
-- [x] Live standings during gameweeks
-- [x] Mini-league standings and comparisons
-- [x] Player ownership statistics
-- [x] Basic player/team stats
+- [x] Live standings with real-time score updates and re-sorting
+- [x] Mini-league standings with manager details modal
+- [x] Player ownership percentages across league
 - [x] Dark mode with system preference detection
-- [x] Bench points tracking (cumulative from previous GWs)
-- [x] Captain differential tracker (differential captain picks)
+- [x] Bench points tracking (cumulative wasted points)
+- [x] Captain differential tracker
+- [x] League position history chart (bump chart)
+- [x] Chips remaining tracker
+- [x] Transfers display (in/out per manager)
+- [x] Team value and hit stats
 
 ## Future Features (requires database)
 
@@ -67,6 +73,22 @@ Base URL: `https://fantasy.premierleague.com/api/`
 - No CORS headers — requires backend proxy
 - Rate limiting exists but is undocumented — implement caching
 - Data updates a few times per day during active gameweeks
+
+### API Gotchas
+
+**Fixtures endpoint filtering:**
+```typescript
+// WRONG: 0 is falsy, fetches ALL 380 season fixtures
+getFixtures: (gw?: number) => gw ? `/fixtures?event=${gw}` : '/fixtures'
+
+// RIGHT: explicit check
+getFixtures: (gw?: number) => gw !== undefined ? `/fixtures?event=${gw}` : '/fixtures'
+```
+
+**Fixture finished states:**
+- `finished_provisional` - true immediately when match ends
+- `finished` - true only after bonus points confirmed (~1 hour later)
+- Use `finished_provisional` for "is game still in progress" checks
 
 ### Data Display Requirements
 
@@ -204,6 +226,53 @@ Clicking a manager row opens a modal showing:
 - Only shows managers who made at least one differential pick
 - Sorted by highest differential gain (best differential pickers first)
 
+### League Position Chart
+A "bump chart" showing how each manager's league position changed across gameweeks.
+
+**Key files:**
+- `src/hooks/useLeaguePositionHistory.ts` - Fetches entry history and calculates positions
+- `src/components/LeaguePositionChart.tsx` - Recharts LineChart with inverted Y-axis
+
+**Implementation notes:**
+- FPL API only provides overall rank, not league position
+- League position is calculated by sorting managers by `total_points` at each gameweek
+- Uses `useQueries` to fetch all manager histories in parallel
+- Chart has horizontal scroll for later gameweeks (min 25px per GW)
+- Y-axis is reversed (position 1 at top)
+
+### Live Scoring
+Real-time updates during active gameweeks.
+
+**Key files:**
+- `src/hooks/useLiveScoring.ts` - Polls live data and fixtures
+- `src/hooks/useFplData.ts` - Main data hook with TanStack Query
+- `src/utils/liveScoring.ts` - Points calculation utilities
+
+**Implementation notes:**
+- `isLive` = deadline passed AND `currentGameweek.finished === false`
+- `hasGamesInProgress` uses `finished_provisional` (updates immediately when match ends)
+- `finished` only becomes true after bonus points confirmed (~1 hour delay)
+- Live total = previous total + live GW points
+- Table re-sorts by live total during active games
+
+## Testing
+
+```bash
+npm test             # Watch mode
+npm test -- --run    # Single run
+```
+
+**Test files:**
+- `src/hooks/useLiveScoring.test.ts` - Live scoring hook tests
+- `src/hooks/useTheme.test.ts` - Theme hook tests
+- `src/utils/liveScoring.test.ts` - Points calculation tests
+- `src/components/PlayerOwnership.test.tsx` - Component tests
+
+**Testing patterns:**
+- Mock `@tanstack/react-query` for hook tests
+- Use `vi.mock()` for API mocking
+- `renderHook()` from `@testing-library/react` for hooks
+
 ## Icons
 
 We use [Lucide React](https://lucide.dev/) for SVG icons. This ensures dark theme compatibility (no emojis).
@@ -240,6 +309,7 @@ import { IconName } from 'lucide-react'
 | Bench Points | `Armchair` | `#6B8CAE` (steel blue) | |
 | Differential Captains | `Crown` | `#FFD700` (gold) | |
 | Player Ownership | `Users` | `#14B8A6` (teal) | |
+| League Position Chart | `TrendingUp` | `#6366f1` (indigo) | |
 | Theme toggle | `Sun` / `Moon` | default | Light/dark mode |
 
 ### Custom Icon Compositions
@@ -267,16 +337,32 @@ tapas-fpl-app/
 ├── frontend/                 # Vite + React app
 │   ├── src/
 │   │   ├── components/      # React components with co-located .module.css
+│   │   │   ├── Dashboard.tsx           # Main layout
+│   │   │   ├── LeagueStandings.tsx     # Live standings table
+│   │   │   ├── LeaguePositionChart.tsx # Bump chart
+│   │   │   ├── ManagerModal.tsx        # Manager detail modal
+│   │   │   ├── GameweekDetails.tsx     # GW info sidebar
+│   │   │   ├── PlayerOwnership.tsx     # Ownership stats
+│   │   │   ├── BenchPoints.tsx         # Wasted bench points
+│   │   │   ├── CaptainSuccess.tsx      # Differential captains
+│   │   │   ├── ChipsRemaining.tsx      # Chip tracker
+│   │   │   └── StatsCards.tsx          # Team value, hits
 │   │   ├── hooks/
-│   │   ├── services/        # API client
-│   │   ├── styles/          # Global styles and CSS variables
-│   │   ├── types/           # TypeScript types for FPL data
-│   │   └── utils/
+│   │   │   ├── useFplData.ts           # Main data hook (TanStack Query)
+│   │   │   ├── useLiveScoring.ts       # Live polling
+│   │   │   ├── useLeaguePositionHistory.ts
+│   │   │   ├── useBenchPoints.ts
+│   │   │   ├── useCaptainSuccess.ts
+│   │   │   └── useTheme.ts
+│   │   ├── services/api.ts   # FPL API client
+│   │   ├── styles/           # Global CSS variables
+│   │   ├── types/fpl.ts      # TypeScript types
+│   │   └── utils/            # Utility functions
+│   ├── tests/                # Playwright e2e tests
 │   ├── package.json
 │   └── vite.config.ts
-├── worker/                   # Cloudflare Worker
-│   ├── src/
-│   │   └── index.ts         # Hono app with FPL proxy routes
+├── worker/                   # Cloudflare Worker (API proxy)
+│   ├── src/index.ts          # Hono app with caching
 │   ├── package.json
 │   └── wrangler.toml
 └── CLAUDE.md
@@ -291,6 +377,10 @@ npm install
 npm run dev          # Start dev server
 npm run build        # Production build
 npm run preview      # Preview production build
+npm run lint         # Run ESLint
+npm run css:types    # Generate CSS module type definitions
+npm test             # Run tests in watch mode
+npm test -- --run    # Run tests once
 ```
 
 ### Worker
@@ -312,8 +402,8 @@ npm run deploy       # Deploy to Cloudflare
 
 ### Vercel (Frontend)
 - **Account**: quantti
-- **Project**: quanttis-projects/frontend
-- **Production URL**: https://frontend-ifl3if94u-quanttis-projects.vercel.app
+- **Project**: quanttis-projects/tapas-and-tackles
+- **Production URL**: tapas-and-tackles-huwwyw17c-quanttis-projects.vercel.app
 - **Custom domain**: https://tapas-and-tackles.live ✓
 
 ### Cloudflare Workers (API Proxy)
