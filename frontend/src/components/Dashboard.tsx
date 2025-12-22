@@ -75,7 +75,7 @@ export function Dashboard() {
         </div>
         <div className={styles.sideColumn}>
           <GameweekDetails gameweek={currentGameweek} managerDetails={managerDetails} />
-          <ChipsRemaining managerDetails={managerDetails} />
+          <ChipsRemaining managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
         </div>
       </div>
     </div>

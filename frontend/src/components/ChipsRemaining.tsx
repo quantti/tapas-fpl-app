@@ -3,10 +3,12 @@ import * as styles from './ChipsRemaining.module.css'
 
 interface Props {
   managerDetails: ManagerGameweekData[]
+  currentGameweek: number
 }
 
-// All available chips in FPL (wildcard can be used twice per season)
-const ALL_CHIPS = ['bboost', '3xc', 'freehit', 'wildcard', 'wildcard']
+// Chips available in each half of the season
+const FIRST_HALF_CHIPS = ['bboost', '3xc', 'freehit', 'wildcard']
+const SECOND_HALF_CHIPS = ['bboost', '3xc', 'freehit', 'wildcard']
 
 const CHIP_LABELS: Record<string, string> = {
   bboost: 'BB',
@@ -15,11 +17,17 @@ const CHIP_LABELS: Record<string, string> = {
   wildcard: 'WC',
 }
 
-function getRemainingChips(chipsUsed: string[]): string[] {
-  const remaining = [...ALL_CHIPS]
+function getRemainingChips(chipsUsed: string[], currentGameweek: number): string[] {
+  // Before GW20, only first half chips are available
+  // From GW20 onwards, both sets are available
+  const availableChips =
+    currentGameweek >= 20
+      ? [...FIRST_HALF_CHIPS, ...SECOND_HALF_CHIPS]
+      : [...FIRST_HALF_CHIPS]
+
+  const remaining = [...availableChips]
 
   for (const used of chipsUsed) {
-    // Normalize chip name to lowercase for comparison
     const normalizedUsed = used.toLowerCase()
     const index = remaining.indexOf(normalizedUsed)
     if (index !== -1) {
@@ -30,18 +38,13 @@ function getRemainingChips(chipsUsed: string[]): string[] {
   return remaining
 }
 
-export function ChipsRemaining({ managerDetails }: Props) {
-  // Debug: log chips data
-  console.log(
-    'Chips data:',
-    managerDetails.map((m) => ({ team: m.teamName, chipsUsed: m.chipsUsed }))
-  )
+export function ChipsRemaining({ managerDetails, currentGameweek }: Props) {
 
   // Calculate remaining chips for each manager
   const managersWithChips = managerDetails
     .map((manager) => ({
       ...manager,
-      remainingChips: getRemainingChips(manager.chipsUsed),
+      remainingChips: getRemainingChips(manager.chipsUsed, currentGameweek),
     }))
     .filter((manager) => manager.remainingChips.length > 0)
     .sort((a, b) => a.rank - b.rank)
