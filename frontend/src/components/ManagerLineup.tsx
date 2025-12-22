@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fplApi } from '../services/api'
-import type { Player, BootstrapStatic } from '../types/fpl'
+import type { Player, BootstrapStatic, LiveGameweek, Fixture } from '../types/fpl'
 import * as styles from './ManagerLineup.module.css'
 
 interface Pick {
@@ -37,6 +37,8 @@ export function ManagerLineup() {
   const [picks, setPicks] = useState<PicksResponse | null>(null)
   const [bootstrap, setBootstrap] = useState<BootstrapStatic | null>(null)
   const [managerInfo, setManagerInfo] = useState<ManagerInfo | null>(null)
+  const [liveData, setLiveData] = useState<LiveGameweek | null>(null)
+  const [fixtures, setFixtures] = useState<Fixture[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -48,15 +50,19 @@ export function ManagerLineup() {
         setLoading(true)
         setError(null)
 
-        const [bootstrapData, picksData, managerData] = await Promise.all([
+        const [bootstrapData, picksData, managerData, liveGameweek, fixturesData] = await Promise.all([
           fplApi.getBootstrapStatic(),
           fplApi.getEntryPicks(Number(managerId), Number(gameweek)),
           fplApi.getEntry(Number(managerId)),
+          fplApi.getLiveGameweek(Number(gameweek)),
+          fplApi.getFixtures(Number(gameweek)),
         ])
 
         setBootstrap(bootstrapData)
         setPicks(picksData)
         setManagerInfo(managerData)
+        setLiveData(liveGameweek)
+        setFixtures(fixturesData)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load lineup')
       } finally {
@@ -86,12 +92,27 @@ export function ManagerLineup() {
     )
   }
 
-  if (!picks || !bootstrap || !managerInfo) {
+  if (!picks || !bootstrap || !managerInfo || !liveData) {
     return null
   }
 
   const playersMap = new Map(bootstrap.elements.map((p) => [p.id, p]))
   const teamsMap = new Map(bootstrap.teams.map((t) => [t.id, t]))
+  const liveMap = new Map(liveData.elements.map((e) => [e.id, e]))
+
+  // Create a map of team -> fixture(s) for this gameweek
+  const teamFixtureMap = new Map<number, Fixture>()
+  for (const fixture of fixtures) {
+    teamFixtureMap.set(fixture.team_h, fixture)
+    teamFixtureMap.set(fixture.team_a, fixture)
+  }
+
+  // Check if a team's fixture has started
+  const hasFixtureStarted = (teamId: number): boolean => {
+    const fixture = teamFixtureMap.get(teamId)
+    if (!fixture?.kickoff_time) return false
+    return new Date(fixture.kickoff_time) <= new Date()
+  }
 
   // Split into starting XI (positions 1-11) and bench (12-15)
   const startingPicks = picks.picks.filter((p) => p.position <= 11)
@@ -128,7 +149,11 @@ export function ManagerLineup() {
     showPoints = true
   ) => {
     const team = teamsMap.get(player.team)
-    const points = player.event_points * pick.multiplier
+    const live = liveMap.get(player.id)
+    const fixtureStarted = hasFixtureStarted(player.team)
+    const basePoints = live?.stats.total_points ?? 0
+    // For starting XI, multiply by captain multiplier; for bench (multiplier=0), show raw points
+    const points = pick.multiplier > 0 ? basePoints * pick.multiplier : basePoints
 
     return (
       <div key={pick.element} className={styles.player}>
@@ -138,7 +163,11 @@ export function ManagerLineup() {
         </div>
         <div className={styles.playerName}>{player.web_name}</div>
         <div className={styles.playerTeam}>{team?.short_name}</div>
-        {showPoints && <div className={styles.playerPoints}>{points}</div>}
+        {showPoints && (
+          <div className={styles.playerPoints}>
+            {fixtureStarted ? points : '–'}
+          </div>
+        )}
       </div>
     )
   }
