@@ -10,6 +10,7 @@ import { StatsCards } from './StatsCards'
 import { PlayerOwnership } from './PlayerOwnership'
 import { BenchPoints } from './BenchPoints'
 import { CaptainSuccess } from './CaptainSuccess'
+import { LeaguePositionChart } from './LeaguePositionChart'
 import { ManagerModal } from './ManagerModal'
 import { ThemeToggle } from './ThemeToggle'
 import * as styles from './Dashboard.module.css'
@@ -163,6 +164,10 @@ export function Dashboard() {
           playersMap={playersMap}
         />
         <ChipsRemaining managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
+        <LeaguePositionChart
+          managerDetails={managerDetails}
+          currentGameweek={currentGameweek.id}
+        />
         <PlayerOwnership
           managerDetails={managerDetails}
           playersMap={playersMap}
