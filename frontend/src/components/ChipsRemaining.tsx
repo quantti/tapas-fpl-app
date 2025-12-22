@@ -19,7 +19,9 @@ function getRemainingChips(chipsUsed: string[]): string[] {
   const remaining = [...ALL_CHIPS]
 
   for (const used of chipsUsed) {
-    const index = remaining.indexOf(used)
+    // Normalize chip name to lowercase for comparison
+    const normalizedUsed = used.toLowerCase()
+    const index = remaining.indexOf(normalizedUsed)
     if (index !== -1) {
       remaining.splice(index, 1)
     }
