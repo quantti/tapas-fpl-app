@@ -15,7 +15,8 @@ export function GameweekDetails({ gameweek, managerDetails }: Props) {
       <div className={styles.header}>
         <h2 className={styles.title}>Gameweek {gameweek.id}</h2>
         <span className={styles.deadline}>
-          {new Date(gameweek.deadline_time).toLocaleDateString('en-GB', {
+          {new Date(gameweek.deadline_time).toLocaleDateString('es-ES', {
+            timeZone: 'Europe/Madrid',
             weekday: 'short',
             day: 'numeric',
             month: 'short',

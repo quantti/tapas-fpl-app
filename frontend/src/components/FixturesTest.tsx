@@ -74,7 +74,13 @@ export function FixturesTest() {
             const homeTeam = teams.get(fixture.team_h)
             const awayTeam = teams.get(fixture.team_a)
             const kickoff = fixture.kickoff_time
-              ? new Date(fixture.kickoff_time).toLocaleString()
+              ? new Date(fixture.kickoff_time).toLocaleString('es-ES', {
+                  timeZone: 'Europe/Madrid',
+                  day: 'numeric',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
               : 'TBD'
             const isLive = fixture.started && !fixture.finished
 
