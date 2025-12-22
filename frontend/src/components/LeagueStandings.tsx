@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { ChevronRight, CircleChevronUp, CircleChevronDown } from 'lucide-react'
 import type { LeagueStandings as LeagueStandingsType, LiveGameweek, Fixture } from '../types/fpl'
 import type { ManagerGameweekData } from '../hooks/useFplData'
@@ -31,27 +32,59 @@ export function LeagueStandings({
   fixtures = [],
   onManagerClick,
 }: Props) {
-  const detailsMap = new Map(managerDetails.map((m) => [m.managerId, m]))
+  const detailsMap = useMemo(
+    () => new Map(managerDetails.map((m) => [m.managerId, m])),
+    [managerDetails]
+  )
 
   // Check if any games are actually in progress
   const hasGamesInProgress = fixtures.some((f) => f.started && !f.finished)
 
-  // Calculate live points for each manager when live
-  const livePointsMap = new Map<number, { points: number; bonus: number }>()
-  if (isLive && liveData) {
-    for (const manager of managerDetails) {
-      const livePoints = calculateLiveManagerPoints(
-        manager.picks,
-        liveData,
-        fixtures,
-        manager.transfersCost
-      )
-      livePointsMap.set(manager.managerId, {
-        points: livePoints.netPoints,
-        bonus: livePoints.provisionalBonus,
-      })
+  // Calculate live points and totals for each manager, then sort by live total
+  const sortedResults = useMemo(() => {
+    const results = standings.standings.results.map((entry) => {
+      const details = detailsMap.get(entry.entry)
+
+      // If live and we have manager picks, calculate live points
+      if (isLive && liveData && details) {
+        const livePoints = calculateLiveManagerPoints(
+          details.picks,
+          liveData,
+          fixtures,
+          details.transfersCost
+        )
+
+        // Live total = previous total (before this GW) + live GW points
+        // entry.total already includes entry.event_total, so subtract it first
+        const previousTotal = entry.total - entry.event_total
+        const liveTotal = previousTotal + livePoints.netPoints
+
+        return {
+          ...entry,
+          liveGwPoints: livePoints.netPoints,
+          provisionalBonus: livePoints.provisionalBonus,
+          liveTotal,
+          isLive: true,
+        }
+      }
+
+      // Not live or no details - use static values
+      return {
+        ...entry,
+        liveGwPoints: entry.event_total,
+        provisionalBonus: 0,
+        liveTotal: entry.total,
+        isLive: false,
+      }
+    })
+
+    // Sort by live total descending when live
+    if (isLive && liveData) {
+      results.sort((a, b) => b.liveTotal - a.liveTotal)
     }
-  }
+
+    return results
+  }, [standings.standings.results, detailsMap, isLive, liveData, fixtures])
 
   return (
     <div className={styles.container}>
@@ -72,15 +105,18 @@ export function LeagueStandings({
           </tr>
         </thead>
         <tbody className={styles.tableBody}>
-          {standings.standings.results.map((entry) => {
+          {sortedResults.map((entry, index) => {
             const details = detailsMap.get(entry.entry)
-            const rankChange = getRankChange(entry.rank, entry.last_rank)
+            // When live, rank is the current position in sorted array (1-indexed)
+            // When not live, use the API rank
+            const displayRank = isLive && liveData ? index + 1 : entry.rank
+            const rankChange = getRankChange(displayRank, entry.last_rank)
 
             return (
               <tr key={entry.entry} className={styles.row}>
                 <td className={`${styles.cell} ${styles.colRank}`}>
                   <div className={styles.rank}>
-                    <span className={styles.rankNumber}>{entry.rank}</span>
+                    <span className={styles.rankNumber}>{displayRank}</span>
                     {rankChange.direction !== 'same' && (
                       <span className={`${styles.rankChange} ${styles[rankChange.direction]}`}>
                         {rankChange.direction === 'up' ? (
@@ -107,21 +143,17 @@ export function LeagueStandings({
                   </div>
                 </td>
                 <td className={`${styles.cell} ${styles.center} ${styles.colGw}`}>
-                  {isLive && livePointsMap.has(entry.entry) ? (
-                    <span className={styles.gwPoints}>
-                      {livePointsMap.get(entry.entry)!.points}
-                      {livePointsMap.get(entry.entry)!.bonus > 0 && (
-                        <span className={styles.provisionalBonus}>
-                          +{livePointsMap.get(entry.entry)!.bonus}
-                        </span>
-                      )}
-                    </span>
-                  ) : (
-                    <span className={styles.gwPoints}>{entry.event_total}</span>
-                  )}
+                  <span className={styles.gwPoints}>
+                    {entry.liveGwPoints}
+                    {entry.provisionalBonus > 0 && (
+                      <span className={styles.provisionalBonus}>
+                        +{entry.provisionalBonus}
+                      </span>
+                    )}
+                  </span>
                 </td>
                 <td className={`${styles.cell} ${styles.center} ${styles.colTotal}`}>
-                  <span className={styles.totalPoints}>{entry.total}</span>
+                  <span className={styles.totalPoints}>{entry.liveTotal}</span>
                 </td>
                 <td className={`${styles.cell} ${styles.center} ${styles.colCaptain}`}>
                   {details?.captain ? (
