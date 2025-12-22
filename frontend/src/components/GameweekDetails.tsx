@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Zap, TrendingDown, ArrowRight, ArrowLeft, Copyright } from 'lucide-react'
+import { Zap, TrendingDown, Copyright } from 'lucide-react'
 import type { Gameweek, Fixture } from '../types/fpl'
 import type { ManagerGameweekData } from '../hooks/useFplData'
 import { formatDate } from '../config/locale'
@@ -85,34 +85,21 @@ export function GameweekDetails({ gameweek, managerDetails, fixtures }: Props) {
         </div>
       </div>
 
-      {/* Main row: Transfers and Captains side by side */}
+      {/* Main row: Team Value and Captains side by side */}
       <div className={styles.mainRow}>
-        <div className={styles.transfersPanel}>
-          <h3 className={styles.panelTitle}><span className={styles.transferIcon}><ArrowRight size={12} color="var(--color-success)" /><ArrowLeft size={12} color="var(--color-error)" /></span> Transfers</h3>
-          {managerDetails.filter((m) => m.transfersIn.length > 0).length === 0 ? (
-            <p className={styles.emptyMessage}>No transfers this GW</p>
-          ) : (
-            <div className={styles.transfersList}>
-              {managerDetails
-                .filter((m) => m.transfersIn.length > 0)
-                .map((m) => (
-                  <div key={m.managerId} className={styles.transferItem}>
-                    <span className={styles.transferTeam}>{m.teamName}</span>
-                    <div className={styles.transferMoves}>
-                      {m.transfersIn.map((playerIn, idx) => (
-                        <span key={playerIn.id} className={styles.transferMove}>
-                          <span className={styles.playerOut}>
-                            {m.transfersOut[idx]?.web_name || '?'}
-                          </span>
-                          <span className={styles.arrow}>→</span>
-                          <span className={styles.playerIn}>{playerIn.web_name}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
+        <div className={styles.valuesPanel}>
+          <h3 className={styles.panelTitle}>💰 Team Value</h3>
+          <div className={styles.valuesList}>
+            {[...managerDetails]
+              .sort((a, b) => b.teamValue - a.teamValue)
+              .map((m, idx) => (
+                <div key={m.managerId} className={styles.valueRow}>
+                  <span className={styles.valueRank}>{idx + 1}</span>
+                  <span className={styles.valueName}>{m.teamName}</span>
+                  <span className={styles.valueAmount}>£{m.teamValue.toFixed(1)}m</span>
+                </div>
+              ))}
+          </div>
         </div>
 
         <div className={styles.captainsPanel}>
@@ -127,6 +114,7 @@ export function GameweekDetails({ gameweek, managerDetails, fixtures }: Props) {
           </div>
         </div>
       </div>
+
 
     </div>
   )

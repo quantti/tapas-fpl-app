@@ -210,15 +210,21 @@ describe('useLiveScoring - polling', () => {
     renderHook(() => useLiveScoring(17, true, 30000)) // 30 second interval
 
     // Initial fetch
-    await vi.advanceTimersByTimeAsync(0)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
     expect(fplApi.getLiveGameweek).toHaveBeenCalledTimes(1)
 
     // Advance time by 30 seconds - should trigger another fetch
-    await vi.advanceTimersByTimeAsync(30000)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30000)
+    })
     expect(fplApi.getLiveGameweek).toHaveBeenCalledTimes(2)
 
     // Advance another 30 seconds
-    await vi.advanceTimersByTimeAsync(30000)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30000)
+    })
     expect(fplApi.getLiveGameweek).toHaveBeenCalledTimes(3)
   })
 
@@ -228,14 +234,20 @@ describe('useLiveScoring - polling', () => {
     })
 
     // Initial fetch
-    await vi.advanceTimersByTimeAsync(0)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
     expect(fplApi.getLiveGameweek).toHaveBeenCalledTimes(1)
 
     // Change isLive to false
-    rerender({ isLive: false })
+    await act(async () => {
+      rerender({ isLive: false })
+    })
 
     // Advance time - should not make another call
-    await vi.advanceTimersByTimeAsync(60000)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60000)
+    })
     expect(fplApi.getLiveGameweek).toHaveBeenCalledTimes(1)
   })
 })

@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Circle } from 'lucide-react'
+import { Circle, ArrowRight, ArrowLeft } from 'lucide-react'
 import { useFplData } from '../hooks/useFplData'
 import { useLiveScoring } from '../hooks/useLiveScoring'
 import { LeagueStandings } from './LeagueStandings'
@@ -30,6 +30,7 @@ export function Dashboard() {
 
   // Fetch live scoring data when games are in progress
   const { liveData, fixtures } = useLiveScoring(currentGameweek?.id ?? 0, isLive)
+
 
   // Check if any games are actually in progress (not just deadline passed)
   const hasGamesInProgress = fixtures.some((f) => f.started && !f.finished)
@@ -114,6 +115,39 @@ export function Dashboard() {
           <GameweekDetails gameweek={currentGameweek} managerDetails={managerDetails} fixtures={fixtures} />
         </div>
       </div>
+
+      {/* Transfers - Full width grid */}
+      {managerDetails.filter((m) => m.transfersIn.length > 0).length > 0 && (
+        <div className={styles.transfersCard}>
+          <h3 className={styles.transfersTitle}>
+            <span className={styles.transferIcon}>
+              <ArrowRight size={12} color="var(--color-success)" />
+              <ArrowLeft size={12} color="var(--color-error)" />
+            </span>
+            Transfers
+          </h3>
+          <div className={styles.transfersFlow}>
+            {managerDetails
+              .filter((m) => m.transfersIn.length > 0)
+              .map((m) => (
+                <div key={m.managerId} className={styles.transferItem}>
+                  <span className={styles.transferTeam}>{m.teamName}</span>
+                  <div className={styles.transferMoves}>
+                    {m.transfersIn.map((playerIn, idx) => (
+                      <span key={playerIn.id} className={styles.transferMove}>
+                        <span className={styles.playerOut}>
+                          {m.transfersOut[idx]?.web_name || '?'}
+                        </span>
+                        <span className={styles.arrow}>→</span>
+                        <span className={styles.playerIn}>{playerIn.web_name}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Bottom Stats */}
       <div className={styles.bottomSection}>

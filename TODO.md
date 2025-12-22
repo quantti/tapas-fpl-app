@@ -28,6 +28,14 @@
 - [ ] Historical data tracking (requires database)
 - [ ] Season-over-season comparisons
 
+## Scaling & Performance
+
+- [x] TanStack Query setup (request deduplication, caching)
+- [x] Shared historical data hook (~294 duplicate requests eliminated)
+- [x] Tiered cache TTLs in Cloudflare Worker
+- [ ] Refactor useFplData to React Query
+- [ ] Multi-league support (routing, league selection)
+
 ## Completed
 
 - [x] Live standings during gameweeks
@@ -44,3 +52,7 @@
 - [x] Bench points tracking (cumulative from previous GWs)
 - [x] Captain differential tracker
   - [x] Captain differential detail modal (per-GW breakdown)
+- [x] Layout improvements
+  - [x] GameweekDetails: Team Value + Captains side-by-side
+  - [x] Transfers moved to full-width responsive grid below main content
+  - [x] Wider side column (480px) for better readability
