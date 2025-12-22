@@ -31,6 +31,12 @@ function getRemainingChips(chipsUsed: string[]): string[] {
 }
 
 export function ChipsRemaining({ managerDetails }: Props) {
+  // Debug: log chips data
+  console.log(
+    'Chips data:',
+    managerDetails.map((m) => ({ team: m.teamName, chipsUsed: m.chipsUsed }))
+  )
+
   // Calculate remaining chips for each manager
   const managersWithChips = managerDetails
     .map((manager) => ({
