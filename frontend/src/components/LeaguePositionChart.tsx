@@ -1,12 +1,5 @@
 import { useMemo } from 'react'
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp } from 'lucide-react'
 import { useLeaguePositionHistory } from '../hooks/useLeaguePositionHistory'
 import type { ManagerGameweekData } from '../hooks/useFplData'
@@ -39,83 +32,77 @@ export function LeaguePositionChart({ managerDetails, currentGameweek }: Props) 
   return (
     <div className={styles.card}>
       <h3 className={styles.title}>
-        <TrendingUp size={16} /> League Position History
+        <TrendingUp size={16} color="#6366f1" /> League Position History
       </h3>
       {loading && <p className={styles.loading}>Loading history...</p>}
       {!loading && error && <p className={styles.error}>{error}</p>}
       {!loading && !error && data && (
         <div className={styles.chartContainer}>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart
-              data={data.positions}
-              margin={{ top: 20, right: 100, left: 100, bottom: 20 }}
-            >
-              <XAxis
-                dataKey="gameweek"
-                tickFormatter={(gw) => `GW${gw}`}
-                {...AXIS_STYLE}
-              />
-              <YAxis
-                reversed
-                domain={[1, managerCount]}
-                ticks={Array.from({ length: managerCount }, (_, i) => i + 1)}
-                width={30}
-                {...AXIS_STYLE}
-              />
-              <Tooltip
-                content={({ active, payload, label }) => {
-                  if (!active || !payload?.length) return null
-                  return (
-                    <div className={styles.tooltip}>
-                      <div className={styles.tooltipTitle}>Gameweek {label}</div>
-                      {payload
-                        .sort((a, b) => (a.value as number) - (b.value as number))
-                        .map((entry) => {
-                          const manager = data.managers.find(
-                            (m) => `m${m.id}` === entry.dataKey
-                          )
-                          return (
-                            <div
-                              key={entry.dataKey}
-                              className={styles.tooltipRow}
-                              style={{ color: entry.color }}
-                            >
-                              <span className={styles.tooltipPosition}>
-                                {entry.value}.
-                              </span>
-                              <span>{manager?.teamName}</span>
-                            </div>
-                          )
-                        })}
-                    </div>
-                  )
-                }}
-              />
+          <div
+            className={styles.chartInner}
+            style={{ minWidth: Math.max(600, data.positions.length * 25) }}
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart
+                data={data.positions}
+                margin={{ top: 20, right: 30, left: 30, bottom: 20 }}
+              >
+                <XAxis dataKey="gameweek" tickFormatter={(gw) => `GW${gw}`} {...AXIS_STYLE} />
+                <YAxis
+                  reversed
+                  domain={[1, managerCount]}
+                  ticks={Array.from({ length: managerCount }, (_, i) => i + 1)}
+                  width={30}
+                  {...AXIS_STYLE}
+                />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null
+                    return (
+                      <div className={styles.tooltip}>
+                        <div className={styles.tooltipTitle}>Gameweek {label}</div>
+                        {payload
+                          .sort((a, b) => (a.value as number) - (b.value as number))
+                          .map((entry) => {
+                            const manager = data.managers.find((m) => `m${m.id}` === entry.dataKey)
+                            return (
+                              <div
+                                key={entry.dataKey}
+                                className={styles.tooltipRow}
+                                style={{ color: entry.color }}
+                              >
+                                <span className={styles.tooltipPosition}>{entry.value}.</span>
+                                <span>{manager?.teamName}</span>
+                              </div>
+                            )
+                          })}
+                      </div>
+                    )
+                  }}
+                />
+                {data.managers.map((manager) => (
+                  <Line
+                    key={manager.id}
+                    type="monotone"
+                    dataKey={`m${manager.id}`}
+                    stroke={manager.color}
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: manager.color }}
+                    activeDot={{ r: 5 }}
+                    name={manager.teamName}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+            {/* Legend below chart */}
+            <div className={styles.legend}>
               {data.managers.map((manager) => (
-                <Line
-                  key={manager.id}
-                  type="monotone"
-                  dataKey={`m${manager.id}`}
-                  stroke={manager.color}
-                  strokeWidth={2}
-                  dot={{ r: 3, fill: manager.color }}
-                  activeDot={{ r: 5 }}
-                  name={manager.teamName}
-                />
+                <div key={manager.id} className={styles.legendItem}>
+                  <span className={styles.legendColor} style={{ backgroundColor: manager.color }} />
+                  <span className={styles.legendName}>{manager.teamName}</span>
+                </div>
               ))}
-            </LineChart>
-          </ResponsiveContainer>
-          {/* Legend below chart */}
-          <div className={styles.legend}>
-            {data.managers.map((manager) => (
-              <div key={manager.id} className={styles.legendItem}>
-                <span
-                  className={styles.legendColor}
-                  style={{ backgroundColor: manager.color }}
-                />
-                <span className={styles.legendName}>{manager.teamName}</span>
-              </div>
-            ))}
+            </div>
           </div>
         </div>
       )}

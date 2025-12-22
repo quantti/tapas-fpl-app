@@ -24,6 +24,11 @@
 
 .chartContainer {
   width: 100%;
+  overflow-x: auto;
+}
+
+.chartInner {
+  min-width: 600px;
 }
 
 .loading,
