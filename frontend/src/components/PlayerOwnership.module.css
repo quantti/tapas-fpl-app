@@ -23,6 +23,8 @@
   gap: var(--space-4);
   max-height: 400px;
   overflow-y: auto;
+  margin-right: calc(-1 * var(--space-16));
+  padding-right: var(--space-16);
 }
 
 .row {
@@ -71,7 +73,7 @@
 
 .percentage {
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   min-width: 36px;
   text-align: right;
 }

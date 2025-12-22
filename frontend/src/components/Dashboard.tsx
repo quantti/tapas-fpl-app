@@ -9,6 +9,7 @@ import { ChipsRemaining } from './ChipsRemaining'
 import { StatsCards } from './StatsCards'
 import { PlayerOwnership } from './PlayerOwnership'
 import { ManagerModal } from './ManagerModal'
+import { ThemeToggle } from './ThemeToggle'
 import * as styles from './Dashboard.module.css'
 
 export function Dashboard() {
@@ -20,7 +21,6 @@ export function Dashboard() {
     isLive,
     loading,
     error,
-    lastUpdated,
     bootstrap,
     playersMap,
     teamsMap,
@@ -87,16 +87,13 @@ export function Dashboard() {
       {/* Status Bar */}
       <div className={styles.statusBar}>
         <div className={styles.statusInfo}>
-          <span className={styles.gameweekLabel}>GW{currentGameweek.id}</span>
           {hasGamesInProgress && (
             <span className={styles.liveIndicator}>
               <Circle size={8} fill="currentColor" /> Live
             </span>
           )}
-          {lastUpdated && (
-            <span className={styles.lastUpdated}>Updated {formatTimeAgo(lastUpdated)}</span>
-          )}
         </div>
+        <ThemeToggle />
       </div>
 
       {/* Main Content */}
@@ -112,7 +109,7 @@ export function Dashboard() {
           />
         </div>
         <div className={styles.sideColumn}>
-          <GameweekDetails gameweek={currentGameweek} managerDetails={managerDetails} />
+          <GameweekDetails gameweek={currentGameweek} managerDetails={managerDetails} fixtures={fixtures} />
         </div>
       </div>
 
@@ -138,13 +135,4 @@ export function Dashboard() {
       />
     </div>
   )
-}
-
-function formatTimeAgo(date: Date): string {
-  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000)
-
-  if (seconds < 60) return 'just now'
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
-  return date.toLocaleDateString()
 }

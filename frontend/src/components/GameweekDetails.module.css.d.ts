@@ -30,6 +30,7 @@ export const tagName: string;
 export const teamName: string;
 export const title: string;
 export const topRow: string;
+export const transferIcon: string;
 export const transferItem: string;
 export const transferMove: string;
 export const transferMoves: string;

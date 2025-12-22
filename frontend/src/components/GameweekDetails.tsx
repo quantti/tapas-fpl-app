@@ -1,5 +1,6 @@
+import { useMemo } from 'react'
 import { Zap, TrendingDown, ArrowRight, ArrowLeft, Copyright } from 'lucide-react'
-import type { Gameweek } from '../types/fpl'
+import type { Gameweek, Fixture } from '../types/fpl'
 import type { ManagerGameweekData } from '../hooks/useFplData'
 import { formatDate } from '../config/locale'
 import * as styles from './GameweekDetails.module.css'
@@ -7,22 +8,41 @@ import * as styles from './GameweekDetails.module.css'
 interface Props {
   gameweek: Gameweek
   managerDetails: ManagerGameweekData[]
+  fixtures: Fixture[]
 }
 
-export function GameweekDetails({ gameweek, managerDetails }: Props) {
+export function GameweekDetails({ gameweek, managerDetails, fixtures }: Props) {
   const sortedManagers = [...managerDetails].sort((a, b) => b.gameweekPoints - a.gameweekPoints)
+
+  const dateRange = useMemo(() => {
+    const gwFixtures = fixtures.filter((f) => f.event === gameweek.id && f.kickoff_time)
+    if (gwFixtures.length === 0) return null
+
+    const kickoffs = gwFixtures.map((f) => new Date(f.kickoff_time!).getTime())
+    const firstDate = new Date(Math.min(...kickoffs))
+    const lastDate = new Date(Math.max(...kickoffs))
+
+    const formatOpts = { day: 'numeric', month: 'short' } as const
+
+    // Same day
+    if (firstDate.toDateString() === lastDate.toDateString()) {
+      return formatDate(firstDate.toISOString(), formatOpts)
+    }
+
+    // Same month
+    if (firstDate.getMonth() === lastDate.getMonth()) {
+      return `${firstDate.getDate()}-${formatDate(lastDate.toISOString(), formatOpts)}`
+    }
+
+    // Different months
+    return `${formatDate(firstDate.toISOString(), formatOpts)} - ${formatDate(lastDate.toISOString(), formatOpts)}`
+  }, [fixtures, gameweek.id])
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h2 className={styles.title}>Gameweek {gameweek.id}</h2>
-        <span className={styles.deadline}>
-          {formatDate(gameweek.deadline_time, {
-            weekday: 'short',
-            day: 'numeric',
-            month: 'short',
-          })}
-        </span>
+        {dateRange && <span className={styles.deadline}>{dateRange}</span>}
       </div>
 
       {/* Top row: Chips and Hits side by side */}

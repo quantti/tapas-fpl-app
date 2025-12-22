@@ -7,18 +7,20 @@
 
 ## UI Polish
 
-- [ ] Dark mode theme
-  - [ ] Create dark color palette in variables.css
-  - [ ] Add theme toggle component
-  - [ ] Persist theme preference (localStorage)
+- [x] Dark mode theme
+  - [x] Create dark color palette in variables.css
+  - [x] Add theme toggle component
+  - [x] Persist theme preference (localStorage)
+  - [x] System preference detection (prefers-color-scheme)
+  - [x] Flash prevention script
 - [ ] General polish and refinements
 - [ ] Mobile responsiveness improvements
 
 ## Features
 
+- [x] Player ownership across league
 - [ ] More statistics and views
   - [ ] Head-to-head comparison between managers
-  - [ ] Player ownership across league
   - [ ] Points breakdown by position
   - [ ] Bench points tracking
   - [ ] Captain pick success rates
@@ -35,3 +37,7 @@
 - [x] Replace emojis with Lucide SVG icons
 - [x] Icon coloring (gold coins, electric zap, colored arrows)
 - [x] Custom domain setup (tapas-and-tackles.live)
+- [x] Player ownership feature
+- [x] Dark mode with system preference detection
+- [x] Theme toggle (Sun/Moon icons)
+- [x] Gameweek date range display

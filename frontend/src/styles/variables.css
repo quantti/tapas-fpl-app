@@ -25,6 +25,9 @@
   --color-text-muted: var(--gray-500);
   --color-background: #ffffff;
   --color-background-alt: var(--gray-50);
+  --color-surface: var(--gray-50);
+  --color-surface-hover: var(--gray-25);
+  --color-primary-text: var(--color-primary);
 
   /* Status colors */
   --color-success: #22c55e;
@@ -65,4 +68,24 @@
   /* Mobile: < 640px */
   /* Tablet: 640px - 1024px */
   /* Desktop: > 1024px */
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+  --color-border-light: var(--gray-700);
+  --color-border: var(--gray-600);
+  --color-text: var(--gray-100);
+  --color-text-muted: var(--gray-400);
+  --color-background: var(--gray-900);
+  --color-background-alt: var(--gray-800);
+  --color-surface: var(--gray-800);
+  --color-surface-hover: var(--gray-700);
+
+  /* Brighter primary for dark mode readability */
+  --color-primary-text: #a855f7;
+
+  /* Adjust shadows for dark mode */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
 }
