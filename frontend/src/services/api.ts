@@ -26,7 +26,7 @@ export const fplApi = {
    * Optionally filter by gameweek
    */
   getFixtures: (gameweek?: number) => {
-    const endpoint = gameweek ? `/fixtures?event=${gameweek}` : '/fixtures'
+    const endpoint = gameweek !== undefined ? `/fixtures?event=${gameweek}` : '/fixtures'
     return fetchApi<Fixture[]>(endpoint)
   },
 
