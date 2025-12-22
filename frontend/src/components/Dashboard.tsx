@@ -7,13 +7,24 @@ import { LeagueStandings } from './LeagueStandings'
 import { GameweekDetails } from './GameweekDetails'
 import { ChipsRemaining } from './ChipsRemaining'
 import { StatsCards } from './StatsCards'
+import { PlayerOwnership } from './PlayerOwnership'
 import { ManagerModal } from './ManagerModal'
 import * as styles from './Dashboard.module.css'
 
 export function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { standings, managerDetails, currentGameweek, isLive, loading, error, lastUpdated, bootstrap } =
-    useFplData()
+  const {
+    standings,
+    managerDetails,
+    currentGameweek,
+    isLive,
+    loading,
+    error,
+    lastUpdated,
+    bootstrap,
+    playersMap,
+    teamsMap,
+  } = useFplData()
 
   // Fetch live scoring data when games are in progress
   const { liveData, fixtures } = useLiveScoring(currentGameweek?.id ?? 0, isLive)
@@ -109,6 +120,11 @@ export function Dashboard() {
       <div className={styles.bottomSection}>
         <StatsCards managerDetails={managerDetails} />
         <ChipsRemaining managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
+        <PlayerOwnership
+          managerDetails={managerDetails}
+          playersMap={playersMap}
+          teamsMap={teamsMap}
+        />
       </div>
 
       {/* Manager Modal */}
