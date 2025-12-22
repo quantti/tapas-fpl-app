@@ -125,7 +125,9 @@ describe('useTheme', () => {
 
     // Simulate system preference change
     act(() => {
-      listeners.forEach((l) => l({ matches: true } as MediaQueryListEvent))
+      for (const l of listeners) {
+        l({ matches: true } as MediaQueryListEvent)
+      }
     })
 
     expect(result.current.theme).toBe('dark')
@@ -148,7 +150,9 @@ describe('useTheme', () => {
 
     // Simulate system preference change
     act(() => {
-      listeners.forEach((l) => l({ matches: true } as MediaQueryListEvent))
+      for (const l of listeners) {
+        l({ matches: true } as MediaQueryListEvent)
+      }
     })
 
     // Should remain light because user has explicit preference

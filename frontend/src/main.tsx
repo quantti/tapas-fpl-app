@@ -27,7 +27,7 @@ if ('scrollRestoration' in history) {
   history.scrollRestoration = 'manual'
 }
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.querySelector('#root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <App />

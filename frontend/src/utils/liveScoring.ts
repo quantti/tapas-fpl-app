@@ -15,21 +15,9 @@ export interface LiveManagerPoints {
 }
 
 /**
- * Calculate provisional bonus points from BPS scores.
- * Top 3 BPS scores get 3/2/1 bonus points respectively.
- * Ties result in equal bonus (both players in tie get same points).
+ * Group sorted BPS scores by BPS value to handle ties.
  */
-export function calculateProvisionalBonus(bpsScores: BpsScore[]): Map<number, number> {
-  const result = new Map<number, number>()
-
-  if (bpsScores.length === 0) {
-    return result
-  }
-
-  // Sort by BPS descending
-  const sorted = [...bpsScores].sort((a, b) => b.bps - a.bps)
-
-  // Group by BPS score to handle ties
+function groupByBps(sorted: BpsScore[]): BpsScore[][] {
   const groups: BpsScore[][] = []
   let currentGroup: BpsScore[] = []
   let currentBps = -1
@@ -48,6 +36,25 @@ export function calculateProvisionalBonus(bpsScores: BpsScore[]): Map<number, nu
   if (currentGroup.length > 0) {
     groups.push(currentGroup)
   }
+
+  return groups
+}
+
+/**
+ * Calculate provisional bonus points from BPS scores.
+ * Top 3 BPS scores get 3/2/1 bonus points respectively.
+ * Ties result in equal bonus (both players in tie get same points).
+ */
+export function calculateProvisionalBonus(bpsScores: BpsScore[]): Map<number, number> {
+  const result = new Map<number, number>()
+
+  if (bpsScores.length === 0) {
+    return result
+  }
+
+  // Sort by BPS descending and group by score
+  const sorted = [...bpsScores].sort((a, b) => b.bps - a.bps)
+  const groups = groupByBps(sorted)
 
   // Award bonus points: 3 for 1st, 2 for 2nd, 1 for 3rd
   const bonusPoints = [3, 2, 1]

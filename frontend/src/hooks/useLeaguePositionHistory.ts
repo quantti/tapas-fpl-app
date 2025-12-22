@@ -118,9 +118,14 @@ export function useLeaguePositionHistory(
     return { positions, managers: managersWithColors }
   }, [managers, historyQueries, loading])
 
+  let errorMessage: string | null = null
+  if (error) {
+    errorMessage = error instanceof Error ? error.message : String(error)
+  }
+
   return {
     data,
     loading,
-    error: error ? (error instanceof Error ? error.message : String(error)) : null,
+    error: errorMessage,
   }
 }

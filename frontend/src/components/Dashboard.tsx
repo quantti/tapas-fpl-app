@@ -119,7 +119,7 @@ export function Dashboard() {
       </div>
 
       {/* Transfers - Full width grid */}
-      {managerDetails.filter((m) => m.transfersIn.length > 0).length > 0 && (
+      {managerDetails.some((m) => m.transfersIn.length > 0) && (
         <div className={styles.transfersCard}>
           <h3 className={styles.transfersTitle}>
             <span className={styles.transferIcon}>
