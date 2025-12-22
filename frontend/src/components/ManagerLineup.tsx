@@ -100,22 +100,13 @@ export function ManagerLineup() {
   const teamsMap = new Map(bootstrap.teams.map((t) => [t.id, t]))
   const liveMap = new Map(liveData.elements.map((e) => [e.id, e]))
 
-  // Create a map of team -> fixture(s) for this gameweek
+  // Filter fixtures to only current gameweek and create team -> fixture map
+  const gwFixtures = fixtures.filter((f) => f.event === Number(gameweek))
   const teamFixtureMap = new Map<number, Fixture>()
-  for (const fixture of fixtures) {
+  for (const fixture of gwFixtures) {
     teamFixtureMap.set(fixture.team_h, fixture)
     teamFixtureMap.set(fixture.team_a, fixture)
   }
-
-  // Debug: log fixture data
-  console.log('Fixtures:', fixtures.map(f => ({
-    id: f.id,
-    team_h: f.team_h,
-    team_a: f.team_a,
-    started: f.started,
-    finished: f.finished,
-    kickoff: f.kickoff_time
-  })))
 
   // Check if a team's fixture has started
   const hasFixtureStarted = (teamId: number): boolean => {
