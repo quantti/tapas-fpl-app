@@ -24,10 +24,10 @@ Implementation checklist for optimizing the app for public release.
 - [ ] Verify both components still work correctly
 
 ### 1.4 Refactor Core Data Hook
-- [ ] Refactor `useFplData.ts` to use React Query
-- [ ] Separate queries: bootstrap, standings, manager details
-- [ ] Configure appropriate staleTime for each query type
-- [ ] Keep auto-refresh behavior for live games
+- [x] Refactor `useFplData.ts` to use React Query
+- [x] Separate queries: bootstrap, standings, manager details
+- [x] Configure appropriate staleTime for each query type
+- [x] Keep auto-refresh behavior for live games
 
 ## Phase 2: Worker Cache Optimization
 
@@ -90,7 +90,7 @@ Implementation checklist for optimizing the app for public release.
 | 1.1 TanStack Query | ✅ Complete | - |
 | 1.2 Shared Hook | ✅ Complete | ~294 |
 | 1.3 Refactor Hooks | ✅ Complete | - |
-| 1.4 Core Refactor | Not Started | dedup |
+| 1.4 Core Refactor | ✅ Complete | dedup |
 | 2.1 Tiered Cache | ✅ Complete | repeat visits |
 | 3.1 Lazy Loading | ⏸️ Reverted | caused skeleton stuck issue |
 
@@ -117,6 +117,12 @@ Implementation checklist for optimizing the app for public release.
 - Live scores: 2 minutes
 - Historical picks: 1 hour
 - Standings: 5 minutes
+
+**Core Data Refactor (useFplData.ts)**
+- Replaced manual setTimeout polling with React Query refetchInterval
+- Separate queries: bootstrap (5min stale), standings (live-aware), manager details
+- Enabled cascading: standings waits for bootstrap, details wait for both
+- Automatic request deduplication via shared query keys
 
 **Lazy Loading (Dashboard.tsx)** - REVERTED
 - Attempted React.lazy() with IntersectionObserver
