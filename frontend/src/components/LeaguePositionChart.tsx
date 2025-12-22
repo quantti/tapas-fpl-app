@@ -56,14 +56,16 @@ export function LeaguePositionChart({ managerDetails, currentGameweek }: Props) 
                   {...AXIS_STYLE}
                 />
                 <Tooltip
-                  content={({ active, payload, label }) => {
+                  content={(props) => {
+                    const { active, payload, label } = props
                     if (!active || !payload?.length) return null
+                    const sorted = [...payload].sort(
+                      (a, b) => Number(a.value) - Number(b.value)
+                    )
                     return (
                       <div className={styles.tooltip}>
                         <div className={styles.tooltipTitle}>Gameweek {label}</div>
-                        {payload
-                          .sort((a, b) => (a.value as number) - (b.value as number))
-                          .map((entry) => {
+                        {sorted.map((entry) => {
                             const manager = data.managers.find((m) => `m${m.id}` === entry.dataKey)
                             return (
                               <div
