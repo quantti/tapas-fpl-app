@@ -70,7 +70,7 @@ export function Dashboard() {
       {/* Main Content */}
       <div className={styles.grid}>
         <div className={styles.mainColumn}>
-          <LeagueStandings standings={standings} managerDetails={managerDetails} isLive={isLive} />
+          <LeagueStandings standings={standings} managerDetails={managerDetails} isLive={isLive} gameweek={currentGameweek.id} />
         </div>
         <div className={styles.sideColumn}>
           <GameweekDetails gameweek={currentGameweek} managerDetails={managerDetails} />

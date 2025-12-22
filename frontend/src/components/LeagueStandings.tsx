@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import type { LeagueStandings as LeagueStandingsType } from '../types/fpl'
 import type { ManagerGameweekData } from '../hooks/useFplData'
 import * as styles from './LeagueStandings.module.css'
@@ -6,6 +7,7 @@ interface Props {
   standings: LeagueStandingsType
   managerDetails: ManagerGameweekData[]
   isLive: boolean
+  gameweek: number
 }
 
 function getRankChange(
@@ -18,7 +20,7 @@ function getRankChange(
     : { direction: 'down', diff: current - last }
 }
 
-export function LeagueStandings({ standings, managerDetails, isLive }: Props) {
+export function LeagueStandings({ standings, managerDetails, isLive, gameweek }: Props) {
   const detailsMap = new Map(managerDetails.map((m) => [m.managerId, m]))
 
   return (
@@ -58,7 +60,9 @@ export function LeagueStandings({ standings, managerDetails, isLive }: Props) {
                 </td>
                 <td className={styles.cell}>
                   <div className={styles.manager}>
-                    <span className={styles.teamName}>{entry.entry_name}</span>
+                    <Link to={`/manager/${entry.entry}/${gameweek}`} className={styles.teamName}>
+                      {entry.entry_name}
+                    </Link>
                     <span className={styles.playerName}>{entry.player_name}</span>
                   </div>
                 </td>

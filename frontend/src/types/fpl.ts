@@ -26,6 +26,7 @@ export interface Player {
   now_cost: number // price * 10
   selected_by_percent: string
   total_points: number
+  event_points: number // points for current gameweek
   points_per_game: string
   form: string
   status: string // 'a' = available, 'i' = injured, etc.

@@ -134,7 +134,14 @@
 
   .teamName {
     font-weight: 500;
-    color: var(--color-text);
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: var(--color-primary-dark);
+      text-decoration: underline;
+    }
   }
 
   .playerName {
