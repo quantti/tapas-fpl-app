@@ -130,11 +130,11 @@
 
   .grid {
     display: grid;
-    grid-template-columns: 1fr 480px;
+    grid-template-columns: 1fr 520px;
     gap: var(--space-20);
 
     @media (max-width: 1200px) {
-      grid-template-columns: 1fr 420px;
+      grid-template-columns: 1fr 460px;
     }
 
     @media (max-width: 1024px) {
