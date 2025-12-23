@@ -110,14 +110,16 @@ describe('useLiveScoring - basic functionality', () => {
     expect(fplApi.getLiveGameweek).toHaveBeenCalledWith(17)
   })
 
-  it('should not fetch live data when isLive is false', async () => {
+  it('should fetch once even when isLive is false (for countdown)', async () => {
     const { result } = renderHook(() => useLiveScoring(17, false))
 
-    // Give it time to potentially make a call
-    await new Promise((r) => setTimeout(r, 100))
+    // Should still fetch once to get fixture status for countdown
+    await waitFor(() => {
+      expect(result.current.fixtures.length).toBeGreaterThan(0)
+    })
 
-    expect(fplApi.getLiveGameweek).not.toHaveBeenCalled()
-    expect(result.current.loading).toBe(false)
+    expect(fplApi.getLiveGameweek).toHaveBeenCalledTimes(1)
+    expect(fplApi.getFixtures).toHaveBeenCalledTimes(1)
   })
 
   it('should provide player live points map', async () => {
@@ -239,16 +241,17 @@ describe('useLiveScoring - polling', () => {
     })
     expect(fplApi.getLiveGameweek).toHaveBeenCalledTimes(1)
 
-    // Change isLive to false
+    // Change isLive to false - will trigger one more fetch but no polling
     await act(async () => {
       rerender({ isLive: false })
     })
+    expect(fplApi.getLiveGameweek).toHaveBeenCalledTimes(2) // One more fetch when isLive changes
 
-    // Advance time - should not make another call
+    // Advance time - should not make any more calls (no polling when not live)
     await act(async () => {
       await vi.advanceTimersByTimeAsync(60000)
     })
-    expect(fplApi.getLiveGameweek).toHaveBeenCalledTimes(1)
+    expect(fplApi.getLiveGameweek).toHaveBeenCalledTimes(2) // No additional calls
   })
 })
 

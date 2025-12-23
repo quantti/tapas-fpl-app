@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { Clock } from 'lucide-react'
 import * as styles from './GameweekCountdown.module.css'
 
 interface Props {
@@ -26,23 +25,8 @@ function calculateTimeRemaining(deadline: string): TimeRemaining | null {
   }
 }
 
-function formatTimeRemaining(time: TimeRemaining): string {
-  const parts: string[] = []
-
-  if (time.days > 0) {
-    parts.push(`${time.days}d`)
-  }
-  if (time.hours > 0 || time.days > 0) {
-    parts.push(`${time.hours}h`)
-  }
-  parts.push(`${time.minutes}m`)
-
-  // Only show seconds if less than 1 hour
-  if (time.days === 0 && time.hours === 0) {
-    parts.push(`${time.seconds}s`)
-  }
-
-  return parts.join(' ')
+function pad(num: number): string {
+  return num.toString().padStart(2, '0')
 }
 
 export function GameweekCountdown({ deadline, gameweekId }: Props) {
@@ -62,9 +46,31 @@ export function GameweekCountdown({ deadline, gameweekId }: Props) {
 
   return (
     <div className={styles.container}>
-      <Clock size={14} />
-      <span className={styles.label}>GW{gameweekId} deadline:</span>
-      <span className={styles.time}>{formatTimeRemaining(timeRemaining)}</span>
+      <div className={styles.header}>
+        <span className={styles.title}>Next Deadline</span>
+        <span className={styles.gameweek}>Gameweek {gameweekId}</span>
+      </div>
+      <div className={styles.countdown}>
+        <div className={styles.unit}>
+          <span className={styles.value}>{pad(timeRemaining.days)}</span>
+          <span className={styles.label}>Days</span>
+        </div>
+        <span className={styles.separator}>:</span>
+        <div className={styles.unit}>
+          <span className={styles.value}>{pad(timeRemaining.hours)}</span>
+          <span className={styles.label}>Hours</span>
+        </div>
+        <span className={styles.separator}>:</span>
+        <div className={styles.unit}>
+          <span className={styles.value}>{pad(timeRemaining.minutes)}</span>
+          <span className={styles.label}>Minutes</span>
+        </div>
+        <span className={styles.separator}>:</span>
+        <div className={styles.unit}>
+          <span className={styles.value}>{pad(timeRemaining.seconds)}</span>
+          <span className={styles.label}>Seconds</span>
+        </div>
+      </div>
     </div>
   )
 }

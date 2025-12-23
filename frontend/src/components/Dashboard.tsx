@@ -5,15 +5,9 @@ import { useFplData } from '../hooks/useFplData'
 import { useLiveScoring } from '../hooks/useLiveScoring'
 import { LeagueStandings } from './LeagueStandings'
 import { GameweekDetails } from './GameweekDetails'
-import { ChipsRemaining } from './ChipsRemaining'
-import { StatsCards } from './StatsCards'
-import { PlayerOwnership } from './PlayerOwnership'
-import { BenchPoints } from './BenchPoints'
-import { CaptainSuccess } from './CaptainSuccess'
-import { LeaguePositionChart } from './LeaguePositionChart'
 import { ManagerModal } from './ManagerModal'
-import { ThemeToggle } from './ThemeToggle'
 import { GameweekCountdown } from './GameweekCountdown'
+import { Header } from './Header'
 import * as styles from './Dashboard.module.css'
 
 export function Dashboard() {
@@ -26,8 +20,6 @@ export function Dashboard() {
     loading,
     error,
     bootstrap,
-    playersMap,
-    teamsMap,
   } = useFplData()
 
   // Fetch live scoring data when games are in progress
@@ -105,23 +97,24 @@ export function Dashboard() {
 
   return (
     <div className={styles.container}>
-      {/* Status Bar */}
-      <div className={styles.statusBar}>
-        <div className={styles.statusInfo}>
-          {hasGamesInProgress && (
-            <span className={styles.liveIndicator}>
-              <Circle size={8} fill="currentColor" /> Live
-            </span>
-          )}
-          {nextGameweek && (
-            <GameweekCountdown
-              deadline={nextGameweek.deadline_time}
-              gameweekId={nextGameweek.id}
-            />
-          )}
+      <Header />
+
+      {/* Status Bar - only shown when live */}
+      {hasGamesInProgress && (
+        <div className={styles.statusBar}>
+          <span className={styles.liveIndicator}>
+            <Circle size={8} fill="currentColor" /> Live
+          </span>
         </div>
-        <ThemeToggle />
-      </div>
+      )}
+
+      {/* Countdown Banner - full width above main grid */}
+      {nextGameweek && (
+        <GameweekCountdown
+          deadline={nextGameweek.deadline_time}
+          gameweekId={nextGameweek.id}
+        />
+      )}
 
       {/* Main Content */}
       <div className={styles.grid}>
@@ -133,6 +126,7 @@ export function Dashboard() {
             liveData={liveData}
             fixtures={fixtures}
             onManagerClick={handleManagerClick}
+            gameweekFinished={currentGameweek.finished}
           />
         </div>
         <div className={styles.sideColumn}>
@@ -176,25 +170,6 @@ export function Dashboard() {
           </div>
         </div>
       )}
-
-      {/* Bottom Stats */}
-      <div className={styles.bottomSection}>
-        <StatsCards managerDetails={managerDetails} />
-        <BenchPoints managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
-        <CaptainSuccess
-          managerDetails={managerDetails}
-          currentGameweek={currentGameweek.id}
-          gameweeks={bootstrap?.events ?? []}
-          playersMap={playersMap}
-        />
-        <ChipsRemaining managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
-        <LeaguePositionChart managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
-        <PlayerOwnership
-          managerDetails={managerDetails}
-          playersMap={playersMap}
-          teamsMap={teamsMap}
-        />
-      </div>
 
       {/* Manager Modal */}
       <ManagerModal

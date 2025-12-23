@@ -112,7 +112,8 @@ app.get('/', (c) => {
 // Proxy all /api/* requests to FPL API
 app.get('/api/*', async (c) => {
   const path = c.req.path.replace('/api', '');
-  const fplUrl = `${c.env.FPL_API_BASE}${path}/`;
+  const queryString = c.req.url.includes('?') ? c.req.url.split('?')[1] : '';
+  const fplUrl = `${c.env.FPL_API_BASE}${path}/${queryString ? `?${queryString}` : ''}`;
 
   try {
     const response = await fetch(fplUrl, {

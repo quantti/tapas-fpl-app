@@ -20,6 +20,9 @@ export interface ManagerGameweekData {
   lastRank: number
   gameweekPoints: number
   totalPoints: number
+  // Overall FPL rank (not league rank)
+  overallRank: number
+  lastOverallRank: number // Previous gameweek's overall rank (for arrows)
   // Picks data - full squad for live scoring
   picks: ManagerPick[]
   captain: Player | null
@@ -126,8 +129,9 @@ export function useFplData() {
             isViceCaptain: p.is_vice_captain,
           }))
 
-          // Get current week's transfers from history
+          // Get current and previous week's history for overall rank comparison
           const currentHistory = history.current.find((h) => h.event === currentGameweek.id)
+          const previousHistory = history.current.find((h) => h.event === currentGameweek.id - 1)
 
           // Filter transfers to current gameweek
           const gwTransfers = transfers.filter((t) => t.event === currentGameweek.id)
@@ -156,6 +160,8 @@ export function useFplData() {
             lastRank: manager.last_rank,
             gameweekPoints: manager.event_total,
             totalPoints: manager.total,
+            overallRank: currentHistory?.overall_rank ?? 0,
+            lastOverallRank: previousHistory?.overall_rank ?? 0,
             picks: managerPicks,
             captain: captainPick ? playersMap.get(captainPick.element) || null : null,
             viceCaptain: viceCaptainPick ? playersMap.get(viceCaptainPick.element) || null : null,

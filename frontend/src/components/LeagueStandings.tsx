@@ -12,6 +12,7 @@ interface Props {
   liveData?: LiveGameweek | null
   fixtures?: Fixture[]
   onManagerClick?: (managerId: number) => void
+  gameweekFinished?: boolean // Official FPL update complete (not just finished_provisional)
 }
 
 function getRankChange(
@@ -31,6 +32,7 @@ export function LeagueStandings({
   liveData,
   fixtures = [],
   onManagerClick,
+  gameweekFinished = false,
 }: Props) {
   const detailsMap = useMemo(
     () => new Map(managerDetails.map((m) => [m.managerId, m])),
@@ -101,6 +103,7 @@ export function LeagueStandings({
             <th className={`${styles.headerCell} ${styles.colManager}`}>Team & Manager</th>
             <th className={`${styles.headerCell} ${styles.center} ${styles.colGw}`}>GW</th>
             <th className={`${styles.headerCell} ${styles.center} ${styles.colTotal}`}>Total</th>
+            <th className={`${styles.headerCell} ${styles.center} ${styles.colOverallRank}`}>OR</th>
             <th className={`${styles.headerCell} ${styles.center} ${styles.colCaptain}`}>C</th>
             <th className={`${styles.headerCell} ${styles.center} ${styles.colChip}`}></th>
           </tr>
@@ -153,6 +156,30 @@ export function LeagueStandings({
                 </td>
                 <td className={`${styles.cell} ${styles.center} ${styles.colTotal}`}>
                   <span className={styles.totalPoints}>{entry.liveTotal}</span>
+                </td>
+                <td className={`${styles.cell} ${styles.center} ${styles.colOverallRank}`}>
+                  {details?.overallRank ? (
+                    <div className={styles.overallRank}>
+                      <span className={styles.overallRankNumber}>
+                        {details.overallRank.toLocaleString()}
+                      </span>
+                      {gameweekFinished && details.lastOverallRank > 0 && (() => {
+                        const orChange = getRankChange(details.overallRank, details.lastOverallRank)
+                        if (orChange.direction === 'same') return null
+                        return (
+                          <span className={`${styles.rankChange} ${styles[orChange.direction]}`}>
+                            {orChange.direction === 'up' ? (
+                              <CircleChevronUp size={12} />
+                            ) : (
+                              <CircleChevronDown size={12} />
+                            )}
+                          </span>
+                        )
+                      })()}
+                    </div>
+                  ) : (
+                    <span className={styles.muted}>—</span>
+                  )}
                 </td>
                 <td className={`${styles.cell} ${styles.center} ${styles.colCaptain}`}>
                   {details?.captain ? (

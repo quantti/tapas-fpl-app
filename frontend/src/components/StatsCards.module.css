@@ -1,14 +1,17 @@
 .container {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
   gap: var(--space-16);
+  grid-column: span 2;
 
   @media (max-width: 640px) {
-    grid-template-columns: 1fr;
+    grid-column: span 1;
+    flex-direction: column;
   }
 }
 
 .card {
+  flex: 1;
+  min-width: 0;
   background: var(--color-background);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
@@ -59,6 +62,7 @@
 .value {
   font-weight: 600;
   color: var(--color-success);
+  flex-shrink: 0;
 }
 
 .negative {

@@ -49,6 +49,9 @@ export function useLiveScoring(
 
   // Fetch on mount and set up polling when live
   useEffect(() => {
+    // Don't fetch if gameweek is 0 (invalid/not loaded yet)
+    if (gameweek === 0) return
+
     // Always fetch once to get fixture status (needed for countdown)
     fetchData()
 
@@ -64,7 +67,7 @@ export function useLiveScoring(
         intervalRef.current = null
       }
     }
-  }, [isLive, fetchData, pollInterval])
+  }, [gameweek, isLive, fetchData, pollInterval])
 
   const getPlayerLivePoints = useCallback(
     (playerId: number): number => {

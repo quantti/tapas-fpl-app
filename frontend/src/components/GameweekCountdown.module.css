@@ -1,21 +1,87 @@
 .container {
+  background: var(--color-primary);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 2rem;
+  margin-bottom: 1.5rem;
+  color: white;
+  text-align: center;
+}
+
+.header {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.gameweek {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-secondary);
+}
+
+.countdown {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
   gap: 0.5rem;
-  padding: 0.25rem 0.75rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
+}
+
+.unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 4rem;
+}
+
+.value {
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: white;
 }
 
 .label {
-  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 0.5rem;
+  text-transform: capitalize;
 }
 
-.time {
-  font-weight: 600;
-  color: var(--color-text);
-  font-variant-numeric: tabular-nums;
+.separator {
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .container {
+    padding: 1rem 1.5rem;
+  }
+
+  .value {
+    font-size: 2rem;
+  }
+
+  .separator {
+    font-size: 2rem;
+  }
+
+  .unit {
+    min-width: 3rem;
+  }
+
+  .label {
+    font-size: 0.625rem;
+  }
 }

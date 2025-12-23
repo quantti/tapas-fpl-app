@@ -57,6 +57,7 @@
 .value {
   font-weight: 600;
   color: var(--color-warning);
+  flex-shrink: 0;
 }
 
 .loading,

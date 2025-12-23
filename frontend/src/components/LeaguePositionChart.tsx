@@ -1,9 +1,24 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp } from 'lucide-react'
 import { useLeaguePositionHistory } from '../hooks/useLeaguePositionHistory'
 import type { ManagerGameweekData } from '../hooks/useFplData'
 import * as styles from './LeaguePositionChart.module.css'
+
+const MOBILE_BREAKPOINT = 768
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  return isMobile
+}
 
 interface Props {
   managerDetails: ManagerGameweekData[]
@@ -17,6 +32,8 @@ const AXIS_STYLE = {
 }
 
 export function LeaguePositionChart({ managerDetails, currentGameweek }: Props) {
+  const isMobile = useIsMobile()
+
   // Extract manager IDs and names for the hook
   const managers = useMemo(
     () => managerDetails.map((m) => ({ id: m.managerId, teamName: m.teamName })),
@@ -55,33 +72,36 @@ export function LeaguePositionChart({ managerDetails, currentGameweek }: Props) 
                   width={30}
                   {...AXIS_STYLE}
                 />
-                <Tooltip
-                  content={(props) => {
-                    const { active, payload, label } = props
-                    if (!active || !payload?.length) return null
-                    const sorted = [...payload].sort(
-                      (a, b) => Number(a.value) - Number(b.value)
-                    )
-                    return (
-                      <div className={styles.tooltip}>
-                        <div className={styles.tooltipTitle}>Gameweek {label}</div>
-                        {sorted.map((entry) => {
-                            const manager = data.managers.find((m) => `m${m.id}` === entry.dataKey)
-                            return (
-                              <div
-                                key={entry.dataKey}
-                                className={styles.tooltipRow}
-                                style={{ color: entry.color }}
-                              >
-                                <span className={styles.tooltipPosition}>{entry.value}.</span>
-                                <span>{manager?.teamName}</span>
-                              </div>
-                            )
-                          })}
-                      </div>
-                    )
-                  }}
-                />
+                {/* Hide tooltip on mobile - too large, use legend instead */}
+                {!isMobile && (
+                  <Tooltip
+                    content={(props) => {
+                      const { active, payload, label } = props
+                      if (!active || !payload?.length) return null
+                      const sorted = [...payload].sort(
+                        (a, b) => Number(a.value) - Number(b.value)
+                      )
+                      return (
+                        <div className={styles.tooltip}>
+                          <div className={styles.tooltipTitle}>Gameweek {label}</div>
+                          {sorted.map((entry) => {
+                              const manager = data.managers.find((m) => `m${m.id}` === entry.dataKey)
+                              return (
+                                <div
+                                  key={entry.dataKey}
+                                  className={styles.tooltipRow}
+                                  style={{ color: entry.color }}
+                                >
+                                  <span className={styles.tooltipPosition}>{entry.value}.</span>
+                                  <span>{manager?.teamName}</span>
+                                </div>
+                              )
+                            })}
+                        </div>
+                      )
+                    }}
+                  />
+                )}
                 {data.managers.map((manager) => (
                   <Line
                     key={manager.id}

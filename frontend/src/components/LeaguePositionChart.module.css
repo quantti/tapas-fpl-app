@@ -5,8 +5,9 @@
   padding: var(--space-16);
   grid-column: span 2;
 
-  @media (max-width: 768px) {
+  @media (max-width: 640px) {
     grid-column: span 1;
+    padding: var(--space-12);
   }
 }
 

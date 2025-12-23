@@ -1,0 +1,74 @@
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 1.5rem;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-32);
+  color: var(--color-text-muted);
+
+  p {
+    margin: 0;
+  }
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--gray-200);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--space-16);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error {
+  padding: var(--space-32);
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: var(--radius-lg);
+  text-align: center;
+
+  h3 {
+    color: var(--color-error);
+    margin: 0 0 var(--space-8) 0;
+  }
+
+  p {
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-20);
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+
+  /* Ensure grid children don't overflow their cells */
+  & > * {
+    min-width: 0;
+  }
+}

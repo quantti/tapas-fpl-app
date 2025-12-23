@@ -37,11 +37,16 @@
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chips {
   display: flex;
   gap: var(--space-4);
+  flex-shrink: 0;
 }
 
 .chip {

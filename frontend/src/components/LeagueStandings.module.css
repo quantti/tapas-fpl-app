@@ -67,6 +67,10 @@
     @media (max-width: 640px) {
       width: 70px;
     }
+
+    @media (max-width: 400px) {
+      display: none;
+    }
   }
 
   .colChip {
@@ -90,6 +94,14 @@
 
     @media (max-width: 640px) {
       width: 58px;
+    }
+  }
+
+  .colOverallRank {
+    width: 95px;
+
+    @media (max-width: 640px) {
+      display: none;
     }
   }
 }
@@ -165,14 +177,17 @@
     gap: 2px;
     font-size: var(--font-size-xs);
     font-weight: 500;
+  }
+}
 
-    &.up {
-      color: var(--color-success);
-    }
+/* Shared rank change arrow colors (used by both league rank and overall rank) */
+.rankChange {
+  &.up {
+    color: var(--color-success);
+  }
 
-    &.down {
-      color: var(--color-error);
-    }
+  &.down {
+    color: var(--color-error);
   }
 }
 
@@ -246,6 +261,18 @@
 
 .totalPoints {
   font-weight: 500;
+}
+
+.overallRank {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  white-space: nowrap;
+}
+
+.overallRankNumber {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 .captain {
