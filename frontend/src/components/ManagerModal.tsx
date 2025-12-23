@@ -258,7 +258,7 @@ export function ManagerModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={getModalTitle()}>
-      {renderContent()}
+      <div className={styles.ManagerModal}>{renderContent()}</div>
     </Modal>
   )
 }
