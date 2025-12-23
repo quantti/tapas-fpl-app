@@ -41,6 +41,7 @@
     gap: var(--space-8);
     padding: var(--space-4) 0;
     font-size: var(--font-size-sm);
+    height: 28px;
   }
 
   .rank {
