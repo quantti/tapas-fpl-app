@@ -463,16 +463,16 @@ npm run deploy       # Deploy to Cloudflare
 ### Vercel (Frontend)
 - **Account**: quantti
 - **Project**: quanttis-projects/tapas-and-tackles
-- **Production URL**: tapas-and-tackles-huwwyw17c-quanttis-projects.vercel.app
 - **Custom domain**: https://tapas-and-tackles.live ✓
+- **Auto-deploy**: Push to `main` → Vercel builds and deploys automatically
 
 ### Cloudflare Workers (API Proxy)
 - **URL**: https://tapas-fpl-proxy.vankari.workers.dev
 
 ### Deploy Commands
 ```bash
-# Frontend (from /frontend)
-vercel --prod
+# Frontend: just push to git, Vercel auto-deploys
+git push
 
 # Worker (from /worker)
 npx wrangler deploy
