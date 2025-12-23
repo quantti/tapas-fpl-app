@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Circle, ArrowRight, ArrowLeft } from 'lucide-react'
 import { useFplData } from '../hooks/useFplData'
@@ -13,6 +13,7 @@ import { CaptainSuccess } from './CaptainSuccess'
 import { LeaguePositionChart } from './LeaguePositionChart'
 import { ManagerModal } from './ManagerModal'
 import { ThemeToggle } from './ThemeToggle'
+import { GameweekCountdown } from './GameweekCountdown'
 import * as styles from './Dashboard.module.css'
 
 export function Dashboard() {
@@ -35,6 +36,24 @@ export function Dashboard() {
   // Check if any games are actually in progress (not just deadline passed)
   // Use finished_provisional as it updates immediately; finished waits for bonus confirmation
   const hasGamesInProgress = fixtures.some((f) => f.started && !f.finished_provisional)
+
+  // Get next gameweek for countdown (after all current GW games finished)
+  const nextGameweek = useMemo(() => {
+    const events = bootstrap?.events
+    if (!events || !currentGameweek) return null
+
+    // Don't show countdown during GW38 (season end)
+    if (currentGameweek.id === 38) return null
+
+    // Check if all fixtures for current GW are finished
+    const allGamesFinished =
+      fixtures.length > 0 && fixtures.every((f) => f.finished_provisional)
+
+    if (!allGamesFinished) return null
+
+    // Find the next gameweek
+    return events.find((e) => e.is_next) ?? null
+  }, [bootstrap, currentGameweek, fixtures])
 
   // Modal state from URL for shareability
   const selectedManagerId = searchParams.get('manager') ? Number(searchParams.get('manager')) : null
@@ -93,6 +112,12 @@ export function Dashboard() {
             <span className={styles.liveIndicator}>
               <Circle size={8} fill="currentColor" /> Live
             </span>
+          )}
+          {nextGameweek && (
+            <GameweekCountdown
+              deadline={nextGameweek.deadline_time}
+              gameweekId={nextGameweek.id}
+            />
           )}
         </div>
         <ThemeToggle />
