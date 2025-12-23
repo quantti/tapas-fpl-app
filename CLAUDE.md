@@ -314,20 +314,37 @@ Real-time updates during active gameweeks.
 ## Testing
 
 ```bash
-npm test             # Watch mode
+npm test             # Watch mode (unit tests)
 npm test -- --run    # Single run
+npm run test:e2e     # E2E tests (Playwright)
+npm run test:e2e:ui  # E2E with UI
 ```
 
-**Test files:**
+**Unit test files:**
 - `src/hooks/useLiveScoring.test.ts` - Live scoring hook tests
 - `src/hooks/useTheme.test.ts` - Theme hook tests
 - `src/utils/liveScoring.test.ts` - Points calculation tests
 - `src/components/PlayerOwnership.test.tsx` - Component tests
 
+**E2E test files:**
+- `tests/responsive.spec.ts` - Layout, navigation, responsive design
+- `tests/countdown.spec.ts` - Gameweek countdown display
+- `tests/manager-modal.spec.ts` - Team lineup modal (pitch layout, players, bench)
+
 **Testing patterns:**
 - Mock `@tanstack/react-query` for hook tests
 - Use `vi.mock()` for API mocking
 - `renderHook()` from `@testing-library/react` for hooks
+
+## CI/CD
+
+**GitHub Actions** (`.github/workflows/ci.yml`):
+- Runs on push/PR to `main`
+- Type checking (`tsc`)
+- Linting (`eslint`)
+- Unit tests (`vitest`)
+- E2E tests (`playwright`)
+- Uploads Playwright report on failure
 
 ## Icons
 
