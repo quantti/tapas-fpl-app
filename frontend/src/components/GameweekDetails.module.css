@@ -219,6 +219,7 @@
       }
 
       .captainName {
+        flex-shrink: 0;
         color: var(--color-text-muted);
       }
     }
