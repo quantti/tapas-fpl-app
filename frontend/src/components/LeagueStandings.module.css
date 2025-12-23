@@ -1,35 +1,290 @@
-.container {
+.LeagueStandings {
   background: var(--color-background);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   overflow: hidden;
-}
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-16) var(--space-20);
-  border-bottom: 1px solid var(--color-border-light);
-  background: var(--color-surface);
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-16) var(--space-20);
+    border-bottom: 1px solid var(--color-border-light);
+    background: var(--color-surface);
 
-  .title {
-    font-size: var(--font-size-lg);
-    font-weight: 600;
-    color: var(--color-text);
-    margin: 0;
+    .title {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0;
+    }
+
+    .liveBadge {
+      display: inline-flex;
+      align-items: center;
+      padding: var(--space-4) var(--space-8);
+      background: var(--color-success);
+      color: white;
+      font-size: var(--font-size-xs);
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+      animation: pulse 2s infinite;
+    }
   }
 
-  .liveBadge {
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+
+    /* Column widths */
+    .colRank {
+      width: 70px;
+
+      @media (max-width: 640px) {
+        width: 56px;
+      }
+    }
+
+    .colManager {
+      /* Takes remaining space */
+    }
+
+    .colCaptain {
+      width: 90px;
+
+      @media (max-width: 640px) {
+        width: 70px;
+      }
+
+      @media (max-width: 400px) {
+        display: none;
+      }
+    }
+
+    .colChip {
+      width: 60px;
+
+      @media (max-width: 640px) {
+        width: 54px;
+      }
+    }
+
+    .colGw {
+      width: 55px;
+
+      @media (max-width: 640px) {
+        width: 48px;
+      }
+    }
+
+    .colTotal {
+      width: 70px;
+
+      @media (max-width: 640px) {
+        width: 58px;
+      }
+    }
+
+    .colOverallRank {
+      width: 95px;
+
+      @media (max-width: 640px) {
+        display: none;
+      }
+    }
+  }
+
+  .tableHead {
+    background: var(--color-surface-hover);
+    border-bottom: 2px solid var(--color-border-light);
+
+    .headerCell {
+      padding: var(--space-12) var(--space-16);
+      text-align: left;
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+
+      @media (max-width: 640px) {
+        padding: var(--space-8) var(--space-8);
+      }
+
+      &.center {
+        text-align: center;
+      }
+    }
+  }
+
+  .tableBody {
+    .row {
+      border-bottom: 1px solid var(--color-border-light);
+      transition: background-color 0.15s ease;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:hover {
+        background: var(--color-surface-hover);
+      }
+    }
+
+    .cell {
+      padding: var(--space-12) var(--space-16);
+      font-size: var(--font-size-sm);
+      color: var(--color-text);
+      vertical-align: middle;
+
+      @media (max-width: 640px) {
+        padding: var(--space-8) var(--space-8);
+        font-size: var(--font-size-xs);
+      }
+
+      &.center {
+        text-align: center;
+      }
+    }
+  }
+
+  .rank {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    white-space: nowrap;
+
+    .rankNumber {
+      font-weight: 600;
+      min-width: 18px;
+    }
+
+    .rankChange {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-size: var(--font-size-xs);
+      font-weight: 500;
+    }
+  }
+
+  /* Shared rank change arrow colors (used by both league rank and overall rank) */
+  .rankChange {
+    &.up {
+      color: var(--color-success);
+    }
+
+    &.down {
+      color: var(--color-error);
+    }
+  }
+
+  .manager {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+
+    .teamName {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-weight: 500;
+      color: var(--color-primary-text);
+      text-decoration: none;
+      transition: color 0.15s ease;
+      cursor: pointer;
+      /* Reset button styles */
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: inherit;
+      text-align: left;
+
+      &:hover {
+        color: var(--color-primary);
+        text-decoration: underline;
+
+        .teamNameIcon {
+          transform: translateX(2px);
+        }
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+        border-radius: var(--radius-sm);
+      }
+    }
+
+    .teamNameIcon {
+      flex-shrink: 0;
+      opacity: 0.6;
+      transition:
+        transform 0.15s ease,
+        opacity 0.15s ease;
+
+      .teamName:hover & {
+        opacity: 1;
+      }
+    }
+
+    .playerName {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+    }
+  }
+
+  .gwPoints {
+    font-weight: 600;
+    color: var(--color-primary-text);
+  }
+
+  .provisionalBonus {
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    color: var(--color-success);
+    margin-left: var(--space-2);
+    opacity: 0.85;
+  }
+
+  .totalPoints {
+    font-weight: 500;
+  }
+
+  .overallRank {
     display: inline-flex;
     align-items: center;
-    padding: var(--space-4) var(--space-8);
-    background: var(--color-success);
-    color: white;
+    gap: var(--space-4);
+    white-space: nowrap;
+  }
+
+  .overallRankNumber {
     font-size: var(--font-size-xs);
-    font-weight: 700;
+    color: var(--color-text-muted);
+  }
+
+  .captain {
+    display: inline-block;
+    padding: var(--space-2) var(--space-8);
+    background: var(--color-surface);
     border-radius: var(--radius-sm);
-    animation: pulse 2s infinite;
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+  }
+
+  .chip {
+    display: inline-block;
+    padding: var(--space-2) var(--space-8);
+    background: var(--color-primary);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+  }
+
+  .muted {
+    color: var(--color-text-muted);
   }
 }
 
@@ -41,259 +296,4 @@
   50% {
     opacity: 0.7;
   }
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-
-  /* Column widths */
-  .colRank {
-    width: 70px;
-
-    @media (max-width: 640px) {
-      width: 56px;
-    }
-  }
-
-  .colManager {
-    /* Takes remaining space */
-  }
-
-  .colCaptain {
-    width: 90px;
-
-    @media (max-width: 640px) {
-      width: 70px;
-    }
-
-    @media (max-width: 400px) {
-      display: none;
-    }
-  }
-
-  .colChip {
-    width: 60px;
-
-    @media (max-width: 640px) {
-      width: 54px;
-    }
-  }
-
-  .colGw {
-    width: 55px;
-
-    @media (max-width: 640px) {
-      width: 48px;
-    }
-  }
-
-  .colTotal {
-    width: 70px;
-
-    @media (max-width: 640px) {
-      width: 58px;
-    }
-  }
-
-  .colOverallRank {
-    width: 95px;
-
-    @media (max-width: 640px) {
-      display: none;
-    }
-  }
-}
-
-.tableHead {
-  background: var(--color-surface-hover);
-  border-bottom: 2px solid var(--color-border-light);
-
-  .headerCell {
-    padding: var(--space-12) var(--space-16);
-    text-align: left;
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-    color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-
-    @media (max-width: 640px) {
-      padding: var(--space-8) var(--space-8);
-    }
-
-    &.center {
-      text-align: center;
-    }
-  }
-}
-
-.tableBody {
-  .row {
-    border-bottom: 1px solid var(--color-border-light);
-    transition: background-color 0.15s ease;
-
-    &:last-child {
-      border-bottom: none;
-    }
-
-    &:hover {
-      background: var(--color-surface-hover);
-    }
-  }
-
-  .cell {
-    padding: var(--space-12) var(--space-16);
-    font-size: var(--font-size-sm);
-    color: var(--color-text);
-    vertical-align: middle;
-
-    @media (max-width: 640px) {
-      padding: var(--space-8) var(--space-8);
-      font-size: var(--font-size-xs);
-    }
-
-    &.center {
-      text-align: center;
-    }
-  }
-}
-
-.rank {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  white-space: nowrap;
-
-  .rankNumber {
-    font-weight: 600;
-    min-width: 18px;
-  }
-
-  .rankChange {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    font-size: var(--font-size-xs);
-    font-weight: 500;
-  }
-}
-
-/* Shared rank change arrow colors (used by both league rank and overall rank) */
-.rankChange {
-  &.up {
-    color: var(--color-success);
-  }
-
-  &.down {
-    color: var(--color-error);
-  }
-}
-
-.manager {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-
-  .teamName {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-weight: 500;
-    color: var(--color-primary-text);
-    text-decoration: none;
-    transition: color 0.15s ease;
-    cursor: pointer;
-    /* Reset button styles */
-    background: none;
-    border: none;
-    padding: 0;
-    font-size: inherit;
-    text-align: left;
-
-    &:hover {
-      color: var(--color-primary);
-      text-decoration: underline;
-
-      .teamNameIcon {
-        transform: translateX(2px);
-      }
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--color-primary);
-      outline-offset: 2px;
-      border-radius: var(--radius-sm);
-    }
-  }
-
-  .teamNameIcon {
-    flex-shrink: 0;
-    opacity: 0.6;
-    transition:
-      transform 0.15s ease,
-      opacity 0.15s ease;
-
-    .teamName:hover & {
-      opacity: 1;
-    }
-  }
-
-  .playerName {
-    font-size: var(--font-size-xs);
-    color: var(--color-text-muted);
-  }
-}
-
-.gwPoints {
-  font-weight: 600;
-  color: var(--color-primary-text);
-}
-
-.provisionalBonus {
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  color: var(--color-success);
-  margin-left: var(--space-2);
-  opacity: 0.85;
-}
-
-.totalPoints {
-  font-weight: 500;
-}
-
-.overallRank {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-4);
-  white-space: nowrap;
-}
-
-.overallRankNumber {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-.captain {
-  display: inline-block;
-  padding: var(--space-2) var(--space-8);
-  background: var(--color-surface);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-}
-
-.chip {
-  display: inline-block;
-  padding: var(--space-2) var(--space-8);
-  background: var(--color-primary);
-  color: white;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-}
-
-.muted {
-  color: var(--color-text-muted);
 }

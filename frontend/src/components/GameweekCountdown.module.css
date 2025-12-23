@@ -1,87 +1,84 @@
-.container {
+.GameweekCountdown {
   background: var(--color-primary);
   border-radius: var(--radius-lg);
   padding: 1.5rem 2rem;
   margin-bottom: 1.5rem;
   color: white;
   text-align: center;
-}
 
-.header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: 1rem;
-}
-
-.title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.gameweek {
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--color-secondary);
-}
-
-.countdown {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.unit {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 4rem;
-}
-
-.value {
-  font-size: 3rem;
-  font-weight: 700;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  color: white;
-}
-
-.label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
-  margin-top: 0.5rem;
-  text-transform: capitalize;
-}
-
-.separator {
-  font-size: 3rem;
-  font-weight: 700;
-  line-height: 1;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .container {
+  @media (max-width: 640px) {
     padding: 1rem 1.5rem;
   }
 
-  .value {
-    font-size: 2rem;
+  .header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
   }
 
-  .separator {
-    font-size: 2rem;
+  .title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .gameweek {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--color-secondary);
+  }
+
+  .countdown {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
 
   .unit {
-    min-width: 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 4rem;
+
+    @media (max-width: 640px) {
+      min-width: 3rem;
+    }
+  }
+
+  .value {
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: white;
+
+    @media (max-width: 640px) {
+      font-size: 2rem;
+    }
   }
 
   .label {
-    font-size: 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 0.5rem;
+    text-transform: capitalize;
+
+    @media (max-width: 640px) {
+      font-size: 0.625rem;
+    }
+  }
+
+  .separator {
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.6);
+
+    @media (max-width: 640px) {
+      font-size: 2rem;
+    }
   }
 }

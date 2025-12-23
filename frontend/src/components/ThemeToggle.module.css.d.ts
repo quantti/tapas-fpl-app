@@ -1,3 +1,2 @@
-export const __esModule: true;
-export const button: string;
-
+export const __esModule: true
+export const ThemeToggle: string

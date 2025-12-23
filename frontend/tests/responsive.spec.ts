@@ -2,10 +2,9 @@ import { test, expect } from '@playwright/test'
 
 // Helper to wait for page to be ready
 async function waitForPageReady(page: import('@playwright/test').Page) {
-  await page.waitForSelector(
-    '[class*="header"], [class*="loading"], [class*="error"]',
-    { timeout: 30000 }
-  )
+  await page.waitForSelector('[class*="header"], [class*="loading"], [class*="error"]', {
+    timeout: 30000,
+  })
 }
 
 // =============================================================================
@@ -101,7 +100,10 @@ test.describe('Dashboard - Mobile (375px)', () => {
     await page.waitForTimeout(2000)
     const table = page.locator('table')
     const hasTable = await table.isVisible().catch(() => false)
-    const hasError = await page.locator('[class*="error"]').isVisible().catch(() => false)
+    const hasError = await page
+      .locator('[class*="error"]')
+      .isVisible()
+      .catch(() => false)
 
     // Either table should be visible or error state
     expect(hasTable || hasError).toBe(true)
@@ -428,14 +430,22 @@ test.describe('PlayerOwnership Modal - Mobile (375px)', () => {
     const hasSection = await ownershipSection.isVisible().catch(() => false)
 
     // Either section is visible or we're in loading/error state
-    expect(hasSection || (await page.locator('[class*="loading"]').isVisible().catch(() => false))).toBe(true)
+    expect(
+      hasSection ||
+        (await page
+          .locator('[class*="loading"]')
+          .isVisible()
+          .catch(() => false))
+    ).toBe(true)
   })
 
   test('clickable player rows have chevron icon', async ({ page }) => {
     await page.waitForTimeout(2000)
 
     // Find clickable rows (buttons) in player ownership
-    const clickableRows = page.locator('[class*="playerOwnership"] button, [class*="PlayerOwnership"] button')
+    const clickableRows = page.locator(
+      '[class*="playerOwnership"] button, [class*="PlayerOwnership"] button'
+    )
     const rowCount = await clickableRows.count()
 
     if (rowCount > 0) {
@@ -450,7 +460,9 @@ test.describe('PlayerOwnership Modal - Mobile (375px)', () => {
     await page.waitForTimeout(2000)
 
     // Find a clickable player row
-    const clickableRows = page.locator('[class*="playerOwnership"] button, [class*="PlayerOwnership"] button')
+    const clickableRows = page.locator(
+      '[class*="playerOwnership"] button, [class*="PlayerOwnership"] button'
+    )
     const rowCount = await clickableRows.count()
 
     if (rowCount > 0) {
@@ -466,7 +478,9 @@ test.describe('PlayerOwnership Modal - Mobile (375px)', () => {
   test('modal shows team list', async ({ page }) => {
     await page.waitForTimeout(2000)
 
-    const clickableRows = page.locator('[class*="playerOwnership"] button, [class*="PlayerOwnership"] button')
+    const clickableRows = page.locator(
+      '[class*="playerOwnership"] button, [class*="PlayerOwnership"] button'
+    )
     const rowCount = await clickableRows.count()
 
     if (rowCount > 0) {
@@ -481,7 +495,9 @@ test.describe('PlayerOwnership Modal - Mobile (375px)', () => {
   test('modal can be closed with close button', async ({ page }) => {
     await page.waitForTimeout(2000)
 
-    const clickableRows = page.locator('[class*="playerOwnership"] button, [class*="PlayerOwnership"] button')
+    const clickableRows = page.locator(
+      '[class*="playerOwnership"] button, [class*="PlayerOwnership"] button'
+    )
     const rowCount = await clickableRows.count()
 
     if (rowCount > 0) {
@@ -530,7 +546,9 @@ test.describe('PlayerOwnership Modal - Desktop (1280px)', () => {
   test('modal displays correctly on desktop', async ({ page }) => {
     await page.waitForTimeout(2000)
 
-    const clickableRows = page.locator('[class*="playerOwnership"] button, [class*="PlayerOwnership"] button')
+    const clickableRows = page.locator(
+      '[class*="playerOwnership"] button, [class*="PlayerOwnership"] button'
+    )
     const rowCount = await clickableRows.count()
 
     if (rowCount > 0) {

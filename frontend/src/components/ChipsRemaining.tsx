@@ -52,7 +52,7 @@ export function ChipsRemaining({ managerDetails, currentGameweek }: Props) {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={styles.ChipsRemaining}>
       <h3 className={styles.title}>
         <Zap size={16} color="#FFE033" fill="#FFE033" /> Chips Remaining
       </h3>

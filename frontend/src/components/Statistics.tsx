@@ -9,19 +9,12 @@ import { PlayerOwnership } from './PlayerOwnership'
 import * as styles from './Statistics.module.css'
 
 export function Statistics() {
-  const {
-    managerDetails,
-    currentGameweek,
-    loading,
-    error,
-    bootstrap,
-    playersMap,
-    teamsMap,
-  } = useFplData()
+  const { managerDetails, currentGameweek, loading, error, bootstrap, playersMap, teamsMap } =
+    useFplData()
 
   if (loading) {
     return (
-      <div className={styles.container}>
+      <div className={styles.Statistics}>
         <Header />
         <div className={styles.loading}>
           <div className={styles.spinner} />
@@ -33,7 +26,7 @@ export function Statistics() {
 
   if (error) {
     return (
-      <div className={styles.container}>
+      <div className={styles.Statistics}>
         <Header />
         <div className={styles.error}>
           <h3>Error loading data</h3>
@@ -45,7 +38,7 @@ export function Statistics() {
 
   if (!currentGameweek) {
     return (
-      <div className={styles.container}>
+      <div className={styles.Statistics}>
         <Header />
         <div className={styles.error}>
           <h3>No data available</h3>
@@ -56,7 +49,7 @@ export function Statistics() {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={styles.Statistics}>
       <Header />
       <h1 className={styles.title}>Statistics</h1>
       <div className={styles.statsGrid}>

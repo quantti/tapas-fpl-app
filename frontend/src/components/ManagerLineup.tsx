@@ -76,7 +76,7 @@ export function ManagerLineup() {
 
   if (loading) {
     return (
-      <div className={styles.container}>
+      <div className={styles.ManagerLineup}>
         <div className={styles.loading}>Loading lineup...</div>
       </div>
     )
@@ -84,7 +84,7 @@ export function ManagerLineup() {
 
   if (error) {
     return (
-      <div className={styles.container}>
+      <div className={styles.ManagerLineup}>
         <div className={styles.error}>{error}</div>
         <Link to="/" className={styles.backLink}>
           ← Back to standings
@@ -167,7 +167,7 @@ export function ManagerLineup() {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={styles.ManagerLineup}>
       <Link to="/" className={styles.backLink}>
         ← Back to standings
       </Link>

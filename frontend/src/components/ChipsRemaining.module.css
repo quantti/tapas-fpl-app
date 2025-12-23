@@ -1,60 +1,60 @@
-.container {
+.ChipsRemaining {
   background: var(--color-background);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   padding: var(--space-16);
-}
 
-.title {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text-muted);
-  margin: 0 0 var(--space-12) 0;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-}
-
-.row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-8) 0;
-  border-bottom: 1px solid var(--color-border-light);
-
-  &:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
+  .title {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-12) 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
-}
 
-.teamName {
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--color-text);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+  }
 
-.chips {
-  display: flex;
-  gap: var(--space-4);
-  flex-shrink: 0;
-}
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-8) 0;
+    border-bottom: 1px solid var(--color-border-light);
 
-.chip {
-  display: inline-block;
-  padding: var(--space-2) var(--space-8);
-  background: var(--color-primary);
-  color: white;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
+    &:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+  }
+
+  .teamName {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .chips {
+    display: flex;
+    gap: var(--space-4);
+    flex-shrink: 0;
+  }
+
+  .chip {
+    display: inline-block;
+    padding: var(--space-2) var(--space-8);
+    background: var(--color-primary);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+  }
 }

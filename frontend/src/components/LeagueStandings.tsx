@@ -90,7 +90,7 @@ export function LeagueStandings({
   }, [standings.standings.results, detailsMap, isLive, liveData, fixtures])
 
   return (
-    <div className={styles.container}>
+    <div className={styles.LeagueStandings}>
       <div className={styles.header}>
         <h2 className={styles.title}>{standings.league.name}</h2>
         {hasGamesInProgress && <span className={styles.liveBadge}>LIVE</span>}
@@ -163,19 +163,24 @@ export function LeagueStandings({
                       <span className={styles.overallRankNumber}>
                         {details.overallRank.toLocaleString()}
                       </span>
-                      {gameweekFinished && details.lastOverallRank > 0 && (() => {
-                        const orChange = getRankChange(details.overallRank, details.lastOverallRank)
-                        if (orChange.direction === 'same') return null
-                        return (
-                          <span className={`${styles.rankChange} ${styles[orChange.direction]}`}>
-                            {orChange.direction === 'up' ? (
-                              <CircleChevronUp size={12} />
-                            ) : (
-                              <CircleChevronDown size={12} />
-                            )}
-                          </span>
-                        )
-                      })()}
+                      {gameweekFinished &&
+                        details.lastOverallRank > 0 &&
+                        (() => {
+                          const orChange = getRankChange(
+                            details.overallRank,
+                            details.lastOverallRank
+                          )
+                          if (orChange.direction === 'same') return null
+                          return (
+                            <span className={`${styles.rankChange} ${styles[orChange.direction]}`}>
+                              {orChange.direction === 'up' ? (
+                                <CircleChevronUp size={12} />
+                              ) : (
+                                <CircleChevronDown size={12} />
+                              )}
+                            </span>
+                          )
+                        })()}
                     </div>
                   ) : (
                     <span className={styles.muted}>—</span>

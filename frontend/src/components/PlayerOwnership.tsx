@@ -85,7 +85,7 @@ export function PlayerOwnership({ managerDetails, playersMap, teamsMap }: Props)
   }
 
   return (
-    <div className={styles.container}>
+    <div className={styles.PlayerOwnership}>
       <h3 className={styles.title}>
         <Users size={16} color="#14B8A6" aria-hidden="true" /> Player Ownership
       </h3>

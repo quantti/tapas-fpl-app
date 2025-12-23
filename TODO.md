@@ -56,3 +56,7 @@
   - [x] GameweekDetails: Team Value + Captains side-by-side
   - [x] Transfers moved to full-width responsive grid below main content
   - [x] Wider side column (480px) for better readability
+- [x] CSS modules refactoring
+  - [x] Nested CSS structure (all styles inside root class)
+  - [x] PascalCase root class matching filename
+  - [x] fix-css-types.cjs script to preserve PascalCase in type exports

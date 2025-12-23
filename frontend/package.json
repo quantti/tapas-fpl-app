@@ -10,7 +10,7 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "preview": "vite preview",
-    "css:types": "tcm src --namedExports",
+    "css:types": "tcm src --namedExports && node scripts/fix-css-types.cjs src && biome format --write src",
     "css:types:watch": "tcm src --namedExports --watch",
     "test": "vitest",
     "test:run": "vitest run",

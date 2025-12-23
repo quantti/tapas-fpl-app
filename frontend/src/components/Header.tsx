@@ -30,7 +30,7 @@ export function Header() {
   }, [menuOpen])
 
   return (
-    <header className={styles.header}>
+    <header className={styles.Header}>
       <div className={styles.logo}>Tapas & Tackles</div>
       <button
         ref={buttonRef}

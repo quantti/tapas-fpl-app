@@ -53,7 +53,7 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
   const totalDifferentialPicks = sortedData.reduce((sum, d) => sum + d.differentialPicks, 0)
 
   return (
-    <div className={styles.card}>
+    <div className={styles.CaptainSuccess}>
       <h3 className={styles.title}>
         <Crown size={16} color="#FFD700" /> Differential Captains
       </h3>

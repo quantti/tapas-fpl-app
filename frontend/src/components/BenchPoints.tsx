@@ -29,7 +29,7 @@ export function BenchPoints({ managerDetails, currentGameweek }: Props) {
   const totalBenchPoints = sortedData.reduce((sum, d) => sum + d.totalBenchPoints, 0)
 
   return (
-    <div className={styles.card}>
+    <div className={styles.BenchPoints}>
       <h3 className={styles.title}>
         <Armchair size={16} color="#6B8CAE" /> Bench Points
         {!loading && <span className={styles.total}>{totalBenchPoints} pts</span>}

@@ -13,7 +13,7 @@ export function StatsCards({ managerDetails }: Props) {
   const sortedByHits = [...managerDetails].sort((a, b) => b.totalHitsCost - a.totalHitsCost)
 
   return (
-    <div className={styles.container}>
+    <div className={styles.StatsCards}>
       <div className={styles.card}>
         <h3 className={styles.title}>
           <Coins size={16} color="#FFD700" /> Team Values

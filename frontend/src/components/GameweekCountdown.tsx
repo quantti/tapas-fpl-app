@@ -45,7 +45,7 @@ export function GameweekCountdown({ deadline, gameweekId }: Props) {
   if (!timeRemaining) return null
 
   return (
-    <div className={styles.container}>
+    <div className={styles.GameweekCountdown}>
       <div className={styles.header}>
         <span className={styles.title}>Next Deadline</span>
         <span className={styles.gameweek}>Gameweek {gameweekId}</span>

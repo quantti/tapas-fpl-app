@@ -39,7 +39,7 @@ export function GameweekDetails({ gameweek, managerDetails, fixtures }: Props) {
   }, [fixtures, gameweek.id])
 
   return (
-    <div className={styles.container}>
+    <div className={styles.GameweekDetails}>
       <div className={styles.header}>
         <h2 className={styles.title}>Gameweek {gameweek.id}</h2>
         {dateRange && <span className={styles.deadline}>{dateRange}</span>}

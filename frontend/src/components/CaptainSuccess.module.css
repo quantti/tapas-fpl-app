@@ -1,113 +1,113 @@
-.card {
+.CaptainSuccess {
   background: var(--color-background);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   padding: var(--space-16);
-}
 
-.title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0 0 var(--space-12) 0;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  padding: var(--space-4) var(--space-8);
-  margin: 0 calc(-1 * var(--space-8));
-  font-size: var(--font-size-sm);
-  width: calc(100% + var(--space-16));
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  text-align: left;
-  transition: background-color 0.15s ease;
-
-  &:hover {
-    background: var(--color-surface-hover);
+  .title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--space-12) 0;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
 
-  &:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
   }
-}
 
-.rank {
-  width: 20px;
-  color: var(--color-text-muted);
-  font-weight: 500;
-}
+  .row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    padding: var(--space-4) var(--space-8);
+    margin: 0 calc(-1 * var(--space-8));
+    font-size: var(--font-size-sm);
+    width: calc(100% + var(--space-16));
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.15s ease;
 
-.name {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--color-text);
-}
+    &:hover {
+      background: var(--color-surface-hover);
+    }
 
-.stats {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  font-weight: 500;
-  flex-shrink: 0;
-}
+    &:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
 
-.picks {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-}
+    &:hover .chevron {
+      transform: translateX(2px);
+      color: var(--color-text);
+    }
+  }
 
-.gain {
-  min-width: 40px;
-  text-align: right;
-  font-weight: 600;
-}
+  .rank {
+    width: 20px;
+    color: var(--color-text-muted);
+    font-weight: 500;
+  }
 
-.positive {
-  color: var(--color-success);
-}
+  .name {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text);
+  }
 
-.negative {
-  color: var(--color-error);
-}
+  .stats {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    font-weight: 500;
+    flex-shrink: 0;
+  }
 
-.chevron {
-  flex-shrink: 0;
-  color: var(--color-text-muted);
-  transition: transform 0.15s ease;
-}
+  .picks {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+  }
 
-.row:hover .chevron {
-  transform: translateX(2px);
-  color: var(--color-text);
-}
+  .gain {
+    min-width: 40px;
+    text-align: right;
+    font-weight: 600;
+  }
 
-.loading,
-.error,
-.empty {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  margin: 0;
+  .positive {
+    color: var(--color-success);
+  }
+
+  .negative {
+    color: var(--color-error);
+  }
+
+  .chevron {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    transition: transform 0.15s ease;
+  }
+
+  .loading,
+  .error,
+  .empty {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin: 0;
+  }
 }

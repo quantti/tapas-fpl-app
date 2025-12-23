@@ -47,7 +47,7 @@ export function LeaguePositionChart({ managerDetails, currentGameweek }: Props) 
   const managerCount = managerDetails.length
 
   return (
-    <div className={styles.card}>
+    <div className={styles.LeaguePositionChart}>
       <h3 className={styles.title}>
         <TrendingUp size={16} color="#6366f1" /> League Position History
       </h3>
@@ -78,25 +78,23 @@ export function LeaguePositionChart({ managerDetails, currentGameweek }: Props) 
                     content={(props) => {
                       const { active, payload, label } = props
                       if (!active || !payload?.length) return null
-                      const sorted = [...payload].sort(
-                        (a, b) => Number(a.value) - Number(b.value)
-                      )
+                      const sorted = [...payload].sort((a, b) => Number(a.value) - Number(b.value))
                       return (
                         <div className={styles.tooltip}>
                           <div className={styles.tooltipTitle}>Gameweek {label}</div>
                           {sorted.map((entry) => {
-                              const manager = data.managers.find((m) => `m${m.id}` === entry.dataKey)
-                              return (
-                                <div
-                                  key={entry.dataKey}
-                                  className={styles.tooltipRow}
-                                  style={{ color: entry.color }}
-                                >
-                                  <span className={styles.tooltipPosition}>{entry.value}.</span>
-                                  <span>{manager?.teamName}</span>
-                                </div>
-                              )
-                            })}
+                            const manager = data.managers.find((m) => `m${m.id}` === entry.dataKey)
+                            return (
+                              <div
+                                key={entry.dataKey}
+                                className={styles.tooltipRow}
+                                style={{ color: entry.color }}
+                              >
+                                <span className={styles.tooltipPosition}>{entry.value}.</span>
+                                <span>{manager?.teamName}</span>
+                              </div>
+                            )
+                          })}
                         </div>
                       )
                     }}

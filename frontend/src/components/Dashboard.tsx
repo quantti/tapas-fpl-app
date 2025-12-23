@@ -12,15 +12,8 @@ import * as styles from './Dashboard.module.css'
 
 export function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const {
-    standings,
-    managerDetails,
-    currentGameweek,
-    isLive,
-    loading,
-    error,
-    bootstrap,
-  } = useFplData()
+  const { standings, managerDetails, currentGameweek, isLive, loading, error, bootstrap } =
+    useFplData()
 
   // Fetch live scoring data when games are in progress
   const { liveData, fixtures } = useLiveScoring(currentGameweek?.id ?? 0, isLive)
@@ -38,8 +31,7 @@ export function Dashboard() {
     if (currentGameweek.id === 38) return null
 
     // Check if all fixtures for current GW are finished
-    const allGamesFinished =
-      fixtures.length > 0 && fixtures.every((f) => f.finished_provisional)
+    const allGamesFinished = fixtures.length > 0 && fixtures.every((f) => f.finished_provisional)
 
     if (!allGamesFinished) return null
 
@@ -63,7 +55,7 @@ export function Dashboard() {
 
   if (loading) {
     return (
-      <div className={styles.container}>
+      <div className={styles.Dashboard}>
         <div className={styles.loading}>
           <div className={styles.spinner} />
           <p>Loading league data...</p>
@@ -74,7 +66,7 @@ export function Dashboard() {
 
   if (error) {
     return (
-      <div className={styles.container}>
+      <div className={styles.Dashboard}>
         <div className={styles.error}>
           <h3>Error loading data</h3>
           <p>{error}</p>
@@ -86,7 +78,7 @@ export function Dashboard() {
 
   if (!standings || !currentGameweek) {
     return (
-      <div className={styles.container}>
+      <div className={styles.Dashboard}>
         <div className={styles.error}>
           <h3>No data available</h3>
           <p>Could not load league standings.</p>
@@ -96,7 +88,7 @@ export function Dashboard() {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={styles.Dashboard}>
       <Header />
 
       {/* Status Bar - only shown when live */}
@@ -110,10 +102,7 @@ export function Dashboard() {
 
       {/* Countdown Banner - full width above main grid */}
       {nextGameweek && (
-        <GameweekCountdown
-          deadline={nextGameweek.deadline_time}
-          gameweekId={nextGameweek.id}
-        />
+        <GameweekCountdown deadline={nextGameweek.deadline_time} gameweekId={nextGameweek.id} />
       )}
 
       {/* Main Content */}

@@ -5,6 +5,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 ## Tech Stack
 
 - **Frontend**: Vite + React 18 + TypeScript
+- **Routing**: React Router v6
 - **State Management**: TanStack Query (React Query) for server state
 - **Charts**: Recharts for data visualization
 - **Icons**: Lucide React
@@ -31,6 +32,19 @@ A Fantasy Premier League companion app for tracking league standings, player sta
                         └─────────────────┘
 ```
 
+## Pages & Routing
+
+| Route | Component | Description |
+|-------|-----------|-------------|
+| `/` | `Dashboard` | Main view: league standings, transfers, countdown |
+| `/statistics` | `Statistics` | Stats cards, bench points, captain success, charts |
+| `/manager/:managerId/:gameweek` | `ManagerLineup` | Manager's team lineup |
+
+**Header Navigation:**
+- Hamburger menu with links to Dashboard and Statistics
+- Dark mode toggle (iOS-style switch)
+- Active page highlighting
+
 ## Features
 
 - [x] Live standings with real-time score updates and re-sorting
@@ -43,6 +57,8 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - [x] Chips remaining tracker
 - [x] Transfers display (in/out per manager)
 - [x] Team value and hit stats
+- [x] Gameweek countdown banner (shows after all fixtures finish)
+- [x] Header navigation with hamburger menu
 
 ## Future Features (requires database)
 
@@ -85,6 +101,29 @@ getFixtures: (gw?: number) => gw ? `/fixtures?event=${gw}` : '/fixtures'
 getFixtures: (gw?: number) => gw !== undefined ? `/fixtures?event=${gw}` : '/fixtures'
 ```
 
+### Worker/Hono Gotchas
+
+**Hono `c.req.path` strips query parameters:**
+```typescript
+// WRONG: c.req.path only has pathname, query params are lost
+const path = c.req.path.replace('/api', '');
+const fplUrl = `${BASE}${path}/`;  // /fixtures/?event=17 becomes /fixtures/
+
+// RIGHT: extract query string from c.req.url
+const path = c.req.path.replace('/api', '');
+const queryString = c.req.url.includes('?') ? c.req.url.split('?')[1] : '';
+const fplUrl = `${BASE}${path}/${queryString ? `?${queryString}` : ''}`;
+```
+
+**Hono cache middleware only caches 200s:**
+- Default `cacheableStatusCodes: [200]` — errors are NOT cached
+- A 404 from Hono usually means route not matching, not cached error
+
+**Wrangler dev server caching:**
+- Sometimes doesn't reload code changes properly
+- If routes stop matching after code changes, do a full restart (Ctrl+C, then `npx wrangler dev`)
+- Check console logs to verify new code is running
+
 **Fixture finished states:**
 - `finished_provisional` - true immediately when match ends
 - `finished` - true only after bonus points confirmed (~1 hour later)
@@ -121,12 +160,15 @@ We use CSS Modules with native CSS nesting for component styling.
 - Types (auto-generated): `ComponentName.module.css.d.ts`
 
 ### CSS Structure Pattern
+**IMPORTANT**: Each CSS module must have a single root class matching the filename (PascalCase), with all other styles nested inside.
+
 ```css
-.Container {
+/* ComponentName.module.css */
+.ComponentName {
   /* Root container styles */
 
   .childElement {
-    /* Nested child styles */
+    /* Nested child styles - scoped to root */
   }
 
   .element {
@@ -141,7 +183,21 @@ We use CSS Modules with native CSS nesting for component styling.
     }
   }
 }
+
+/* @keyframes must be at top level (outside root class) */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 ```
+
+### Type Generation
+The `css:types` script generates TypeScript definitions for CSS modules:
+1. `tcm` (typed-css-modules) generates `.d.ts` files
+2. `fix-css-types.cjs` post-processes to preserve PascalCase class names (tcm lowercases them)
+3. Biome formats the generated files
+
+**Note**: The fix script is needed because `tcm --namedExports` converts `ComponentName` to `componentName` in exports.
 
 ### Usage in Components
 ```tsx
@@ -173,7 +229,7 @@ Dark theme is implemented using CSS custom properties with a `[data-theme="dark"
 **Key files:**
 - `src/styles/variables.css` - Dark theme color overrides
 - `src/hooks/useTheme.ts` - Theme state management with system preference detection
-- `src/components/ThemeToggle.tsx` - Sun/Moon toggle button
+- `src/components/Header.tsx` - iOS-style toggle switch in hamburger menu
 - `index.html` - Flash prevention script in `<head>`
 
 **Theme variables:**
@@ -336,12 +392,16 @@ import { IconName } from 'lucide-react'
 tapas-fpl-app/
 ├── frontend/                 # Vite + React app
 │   ├── src/
+│   │   ├── App.tsx          # Router setup (react-router-dom)
 │   │   ├── components/      # React components with co-located .module.css
-│   │   │   ├── Dashboard.tsx           # Main layout
+│   │   │   ├── Header.tsx              # Navigation header + hamburger menu
+│   │   │   ├── Dashboard.tsx           # Main page: standings, transfers
+│   │   │   ├── Statistics.tsx          # Stats page: all stat cards
 │   │   │   ├── LeagueStandings.tsx     # Live standings table
 │   │   │   ├── LeaguePositionChart.tsx # Bump chart
 │   │   │   ├── ManagerModal.tsx        # Manager detail modal
 │   │   │   ├── GameweekDetails.tsx     # GW info sidebar
+│   │   │   ├── GameweekCountdown.tsx   # Countdown to next deadline
 │   │   │   ├── PlayerOwnership.tsx     # Ownership stats
 │   │   │   ├── BenchPoints.tsx         # Wasted bench points
 │   │   │   ├── CaptainSuccess.tsx      # Differential captains

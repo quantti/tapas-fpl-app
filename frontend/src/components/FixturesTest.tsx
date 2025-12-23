@@ -35,7 +35,7 @@ export function FixturesTest() {
 
   if (loading) {
     return (
-      <div className={styles.container}>
+      <div className={styles.FixturesTest}>
         <div className={styles.loading}>Loading fixtures...</div>
       </div>
     )
@@ -43,7 +43,7 @@ export function FixturesTest() {
 
   if (error) {
     return (
-      <div className={styles.container}>
+      <div className={styles.FixturesTest}>
         <div className={styles.error}>
           <div className={styles.errorTitle}>Error loading data</div>
           <p>{error}</p>
@@ -56,7 +56,7 @@ export function FixturesTest() {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={styles.FixturesTest}>
       <div className={styles.header}>
         <h2 className={styles.title}>Upcoming Fixtures</h2>
       </div>

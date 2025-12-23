@@ -66,7 +66,7 @@ export function Modal({ isOpen, onClose, title, children }: Props) {
   }, [])
 
   return (
-    <dialog ref={dialogRef} className={styles.dialog}>
+    <dialog ref={dialogRef} className={styles.Modal}>
       <div className={styles.content} onClick={handleContentClick}>
         <div className={styles.header}>
           {title && <h2 className={styles.title}>{title}</h2>}

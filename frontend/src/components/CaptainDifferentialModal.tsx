@@ -13,7 +13,7 @@ interface Props {
 export function CaptainDifferentialModal({ isOpen, onClose, teamName, details, totalGain }: Props) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`${teamName} - Differential Captains`}>
-      <div className={styles.container}>
+      <div className={styles.CaptainDifferentialModal}>
         <table className={styles.table}>
           <thead>
             <tr>

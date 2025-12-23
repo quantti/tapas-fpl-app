@@ -306,7 +306,9 @@ describe('PlayerOwnership', () => {
     expect(screen.getByText(/Owned by 1 team/)).toBeInTheDocument()
 
     // Click close button (the X button in the modal header)
-    const closeButton = screen.getAllByRole('button').find((btn) => btn.getAttribute('aria-label')?.includes('Close'))
+    const closeButton = screen
+      .getAllByRole('button')
+      .find((btn) => btn.getAttribute('aria-label')?.includes('Close'))
     if (closeButton) {
       await user.click(closeButton)
     }
