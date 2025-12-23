@@ -37,7 +37,6 @@ export function useLiveScoring(
         fplApi.getLiveGameweek(gameweek),
         fplApi.getFixtures(gameweek),
       ])
-      console.log('[useLiveScoring] fetched', fixtureData.length, 'fixtures')
       setLiveData(live)
       setFixtures(fixtureData)
       setLastUpdated(new Date())
@@ -51,12 +50,8 @@ export function useLiveScoring(
   // Fetch on mount and set up polling when live
   useEffect(() => {
     // Don't fetch if gameweek is 0 (invalid/not loaded yet)
-    if (gameweek === 0) {
-      console.log('[useLiveScoring] gameweek is 0, skipping fetch')
-      return
-    }
+    if (gameweek === 0) return
 
-    console.log('[useLiveScoring] fetching for gameweek', gameweek)
     // Always fetch once to get fixture status (needed for countdown)
     fetchData()
 

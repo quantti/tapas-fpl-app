@@ -25,24 +25,17 @@ export function Dashboard() {
   // Get next gameweek for countdown (after all current GW games finished)
   const nextGameweek = useMemo(() => {
     const events = bootstrap?.events
-    if (!events || !currentGameweek) {
-      console.log('[Dashboard] nextGW: no events or currentGW')
-      return null
-    }
+    if (!events || !currentGameweek) return null
 
     // Don't show countdown during GW38 (season end)
     if (currentGameweek.id === 38) return null
 
     // Check if all fixtures for current GW are finished
     const allGamesFinished = fixtures.length > 0 && fixtures.every((f) => f.finished_provisional)
-    console.log('[Dashboard] nextGW: fixtures=', fixtures.length, 'allFinished=', allGamesFinished)
-
     if (!allGamesFinished) return null
 
     // Find the next gameweek
-    const next = events.find((e) => e.is_next) ?? null
-    console.log('[Dashboard] nextGW:', next?.id)
-    return next
+    return events.find((e) => e.is_next) ?? null
   }, [bootstrap, currentGameweek, fixtures])
 
   // Modal state from URL for shareability

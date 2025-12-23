@@ -467,7 +467,7 @@ npm run deploy       # Deploy to Cloudflare
 - **Auto-deploy**: Push to `main` → Vercel builds and deploys automatically
 
 ### Cloudflare Workers (API Proxy)
-- **URL**: https://tapas-fpl-proxy.vankari.workers.dev
+- **URL**: https://tapas-fpl-api.quantti.workers.dev
 
 ### Deploy Commands
 ```bash
@@ -482,7 +482,7 @@ npx wrangler deploy
 
 ### Frontend (.env)
 ```
-VITE_API_URL=https://tapas-fpl-proxy.vankari.workers.dev
+VITE_API_URL=https://tapas-fpl-api.quantti.workers.dev
 ```
 
 ### Worker (wrangler.toml / secrets)
