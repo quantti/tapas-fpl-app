@@ -1,3 +1,41 @@
+/* Header content - outside ManagerModal because title is rendered in Modal component */
+.headerContent {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  flex: 1;
+  min-width: 0;
+}
+
+.teamName {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headerPoints {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  padding-left: var(--space-12);
+  border-left: 1px solid var(--color-border);
+}
+
+.chip {
+  display: inline-block;
+  padding: var(--space-2) var(--space-8);
+  background: var(--color-primary);
+  color: white;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+}
+
 .ManagerModal {
   .loading,
   .error {
@@ -8,42 +46,6 @@
 
   .error {
     color: var(--color-error);
-  }
-
-  /* Header content for compact modal title */
-  .headerContent {
-    display: flex;
-    align-items: center;
-    gap: var(--space-12);
-    flex: 1;
-    min-width: 0;
-  }
-
-  .teamName {
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .headerPoints {
-    display: flex;
-    align-items: center;
-    gap: var(--space-8);
-    font-size: var(--font-size-sm);
-    color: var(--color-text-muted);
-    white-space: nowrap;
-  }
-
-  .chip {
-    display: inline-block;
-    padding: var(--space-2) var(--space-8);
-    background: var(--color-primary);
-    color: white;
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-    border-radius: var(--radius-sm);
-    text-transform: uppercase;
   }
 
   .pitch {
