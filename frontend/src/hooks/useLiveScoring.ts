@@ -47,22 +47,15 @@ export function useLiveScoring(
     }
   }, [gameweek])
 
-  // Fetch on mount and set up polling
+  // Fetch on mount and set up polling when live
   useEffect(() => {
-    if (!isLive) {
-      // Clear any existing interval when isLive becomes false
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-      return
-    }
-
-    // Initial fetch
+    // Always fetch once to get fixture status (needed for countdown)
     fetchData()
 
-    // Set up polling
-    intervalRef.current = setInterval(fetchData, pollInterval)
+    // Only set up polling when live
+    if (isLive) {
+      intervalRef.current = setInterval(fetchData, pollInterval)
+    }
 
     // Cleanup on unmount or when dependencies change
     return () => {
