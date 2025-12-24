@@ -8,7 +8,7 @@ const PUNTS_INFO =
   "Low ownership differential picks (<40% in your league) with strong underlying stats and good upcoming fixtures. These players could give you an edge over your rivals. Then again, they might be low ownership because they're rubbish."
 
 const DEFENSIVE_INFO =
-  "Popular players (>50% ownership) in good form with favourable fixtures. Consider owning these to protect your rank. Remember: popularity doesn't equal quality - billions of flies love shit."
+  "Popular players (>40% ownership) in good form with favourable fixtures. Consider owning these to protect your rank. Remember: popularity doesn't equal quality - billions of flies love shit."
 
 const DISCLAIMER = 'For entertainment only. Not financial advice. Always do your own research.'
 
@@ -43,8 +43,8 @@ function PositionDot({ elementType }: { elementType: number }) {
   return <span className={styles.positionDot} style={{ backgroundColor: color }} />
 }
 
-function FixtureStars({ score }: { score: number }) {
-  // Convert 0-1 score to 1-5 stars (higher score = easier = more stars)
+function ScoreStars({ score }: { score: number }) {
+  // Convert 0-1 score to 1-5 stars (higher score = better recommendation)
   const stars = Math.round(score * 4) + 1
 
   return (
@@ -103,12 +103,12 @@ export function RecommendedPlayers({ players, managerDetails, teamsMap, currentG
           <p className={styles.empty}>No punt recommendations</p>
         ) : (
           <div className={styles.list}>
-            {punts.map(({ player, team, fixtureScore }) => (
+            {punts.map(({ player, team, score }) => (
               <div key={player.id} className={styles.row}>
                 <PositionDot elementType={player.element_type} />
                 <span className={styles.playerName}>{player.web_name}</span>
                 <span className={styles.teamName}>{team.short_name}</span>
-                <FixtureStars score={fixtureScore} />
+                <ScoreStars score={score} />
               </div>
             ))}
           </div>
@@ -127,12 +127,12 @@ export function RecommendedPlayers({ players, managerDetails, teamsMap, currentG
           <p className={styles.empty}>No defensive recommendations</p>
         ) : (
           <div className={styles.list}>
-            {defensive.map(({ player, team, fixtureScore }) => (
+            {defensive.map(({ player, team, score }) => (
               <div key={player.id} className={styles.row}>
                 <PositionDot elementType={player.element_type} />
                 <span className={styles.playerName}>{player.web_name}</span>
                 <span className={styles.teamName}>{team.short_name}</span>
-                <FixtureStars score={fixtureScore} />
+                <ScoreStars score={score} />
               </div>
             ))}
           </div>

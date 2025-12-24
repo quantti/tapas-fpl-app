@@ -168,7 +168,7 @@ Statistics page - new card spanning 2 columns (like StatsCards)
 ```
 
 ### Design Decisions
-- **5 players per category**
+- **10 players per category**
 - **Clean UI** - no stats, just essentials
 - **Shirt/jersey icon** with team colors
 - **Position colors**: DEF = red, MID = blue, FWD = green
@@ -218,17 +218,26 @@ managerDetails ───────┘
 
 ## Future Enhancements
 
-### Phase 2
+### Phase 2 - Per-Fixture Analysis (requires element-summary API)
+- **Recency-weighted xGI**: Weight recent gameweeks higher (GW25 matters more than GW5)
+- **xGI vs fixture difficulty**: Find players who maintain output against tough opponents
+  - Fetch element-summary for top candidates (~10-15 API calls)
+  - Compare per-fixture xG+xA against opponent difficulty rating
+  - Bonus for players with high xGI in tough games
+  - Example: 0.8 xGI vs difficulty 4-5 = more valuable than 0.8 xGI vs difficulty 1-2
+- Player detail modal with recent fixture breakdown
+
+### Phase 3
 - Position filtering (GK/DEF/MID/FWD tabs)
 - Price bracket filtering (budget/mid/premium)
 - "Why recommended" expandable explanation
 
-### Phase 3
+### Phase 4
 - Player comparison tool
 - Watchlist functionality
 - Transfer suggestions based on current team
 
-### Phase 4 (requires backend)
+### Phase 5 (requires backend)
 - Understat integration for npxG, xGChain
 - Historical performance tracking
 - Price change predictions

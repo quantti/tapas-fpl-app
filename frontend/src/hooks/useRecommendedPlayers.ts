@@ -19,11 +19,23 @@ interface UseRecommendedPlayersReturn {
   error: string | null
 }
 
-// Position modifiers for punts (mids most valuable)
-const PUNT_POSITION_MODIFIER: Record<number, number> = {
-  2: 0.8, // DEF
-  3: 1.3, // MID
-  4: 1.0, // FWD
+// Position-specific scoring weights for punts
+// DEF: clean sheets & low xGC matter most
+// MID: balanced xG + xA
+// FWD: xG matters more than xA
+type PositionWeights = { xG: number; xA: number; xGC: number; cs: number; form: number; fix: number }
+
+const PUNT_WEIGHTS: Record<number, PositionWeights> = {
+  2: { xG: 0.1, xA: 0.1, xGC: 0.2, cs: 0.15, form: 0.25, fix: 0.2 }, // DEF
+  3: { xG: 0.2, xA: 0.2, xGC: 0, cs: 0, form: 0.25, fix: 0.15 }, // MID
+  4: { xG: 0.35, xA: 0.1, xGC: 0, cs: 0, form: 0.3, fix: 0.15 }, // FWD
+}
+
+// Defensive options: template players - more form-focused
+const DEFENSIVE_WEIGHTS: Record<number, PositionWeights> = {
+  2: { xG: 0.05, xA: 0.05, xGC: 0.15, cs: 0.15, form: 0.35, fix: 0.25 }, // DEF
+  3: { xG: 0.1, xA: 0.1, xGC: 0, cs: 0, form: 0.45, fix: 0.25 }, // MID
+  4: { xG: 0.2, xA: 0.05, xGC: 0, cs: 0, form: 0.5, fix: 0.25 }, // FWD
 }
 
 // Fixture weights: nearer gameweeks matter more
@@ -114,10 +126,12 @@ export function useRecommendedPlayers(
     const outfieldPlayers = players.filter(
       (p) => p.element_type !== 1 && p.minutes >= 450 && p.status === 'a'
     )
+    const defenders = outfieldPlayers.filter((p) => p.element_type === 2)
 
-    const minutes90Values = outfieldPlayers.map((p) => p.minutes / 90)
     const xG90: number[] = []
     const xA90: number[] = []
+    const xGC90: number[] = [] // For defenders
+    const cs90: number[] = [] // Clean sheets per 90 for defenders
     const form: number[] = []
 
     for (const player of outfieldPlayers) {
@@ -129,7 +143,16 @@ export function useRecommendedPlayers(
       form.push(Number.parseFloat(player.form) || 0)
     }
 
-    return { xG90, xA90, form, minutes90Values }
+    // Defender-specific stats
+    for (const player of defenders) {
+      const minutes90 = player.minutes / 90
+      if (minutes90 > 0) {
+        xGC90.push((Number.parseFloat(player.expected_goals_conceded) || 0) / minutes90)
+        cs90.push(player.clean_sheets / minutes90)
+      }
+    }
+
+    return { xG90, xA90, xGC90, cs90, form }
   }, [players])
 
   // Calculate PUNTS
@@ -160,19 +183,27 @@ export function useRecommendedPlayers(
       // Calculate per-90 stats (guard against NaN from invalid strings)
       const xG90 = minutes90 > 0 ? (Number.parseFloat(player.expected_goals) || 0) / minutes90 : 0
       const xA90 = minutes90 > 0 ? (Number.parseFloat(player.expected_assists) || 0) / minutes90 : 0
+      const xGC90 = minutes90 > 0 ? (Number.parseFloat(player.expected_goals_conceded) || 0) / minutes90 : 0
+      const cs90 = minutes90 > 0 ? player.clean_sheets / minutes90 : 0
       const formValue = Number.parseFloat(player.form) || 0
 
-      // Calculate base score
-      const xG90Percentile = getPercentile(xG90, percentiles.xG90)
-      const xA90Percentile = getPercentile(xA90, percentiles.xA90)
-      const formPercentile = getPercentile(formValue, percentiles.form)
+      // Calculate percentiles
+      const xG90Pct = getPercentile(xG90, percentiles.xG90)
+      const xA90Pct = getPercentile(xA90, percentiles.xA90)
+      const formPct = getPercentile(formValue, percentiles.form)
+      // For xGC, lower is better - so invert the percentile
+      const xGC90Pct = 1 - getPercentile(xGC90, percentiles.xGC90)
+      const cs90Pct = getPercentile(cs90, percentiles.cs90)
 
-      const baseScore =
-        xG90Percentile * 0.35 + xA90Percentile * 0.25 + fixtureScore * 0.25 + formPercentile * 0.15
-
-      // Apply position modifier
-      const positionModifier = PUNT_POSITION_MODIFIER[player.element_type] ?? 1
-      const score = baseScore * positionModifier
+      // Get position-specific weights
+      const w = PUNT_WEIGHTS[player.element_type] ?? PUNT_WEIGHTS[3]
+      const score =
+        xG90Pct * w.xG +
+        xA90Pct * w.xA +
+        xGC90Pct * w.xGC +
+        cs90Pct * w.cs +
+        formPct * w.form +
+        fixtureScore * w.fix
 
       candidates.push({
         player,
@@ -183,7 +214,7 @@ export function useRecommendedPlayers(
       })
     }
 
-    return candidates.sort((a, b) => b.score - a.score).slice(0, 5)
+    return candidates.sort((a, b) => b.score - a.score).slice(0, 10)
   }, [players, leagueOwnership, teamsMap, teamFixtureScores, percentiles])
 
   // Calculate DEFENSIVE OPTIONS
@@ -202,18 +233,38 @@ export function useRecommendedPlayers(
 
       const ownership = leagueOwnership.get(player.id) ?? 0
 
-      // Filter: ownership > 50% and < 100%
-      if (ownership <= 0.5 || ownership >= 1) continue
+      // Filter: ownership > 40% and < 100%
+      if (ownership <= 0.4 || ownership >= 1) continue
 
       const team = teamsMap.get(player.team)
       if (!team) continue
 
       const fixtureScore = teamFixtureScores.get(player.team) ?? 0.5
-      const formValue = Number.parseFloat(player.form) || 0
-      const formPercentile = getPercentile(formValue, percentiles.form)
+      const minutes90 = player.minutes / 90
 
-      // Score: form (50%) + fixtures (50%)
-      const score = formPercentile * 0.5 + fixtureScore * 0.5
+      // Calculate per-90 stats
+      const xG90 = minutes90 > 0 ? (Number.parseFloat(player.expected_goals) || 0) / minutes90 : 0
+      const xA90 = minutes90 > 0 ? (Number.parseFloat(player.expected_assists) || 0) / minutes90 : 0
+      const xGC90 = minutes90 > 0 ? (Number.parseFloat(player.expected_goals_conceded) || 0) / minutes90 : 0
+      const cs90 = minutes90 > 0 ? player.clean_sheets / minutes90 : 0
+      const formValue = Number.parseFloat(player.form) || 0
+
+      // Calculate percentiles
+      const xG90Pct = getPercentile(xG90, percentiles.xG90)
+      const xA90Pct = getPercentile(xA90, percentiles.xA90)
+      const formPct = getPercentile(formValue, percentiles.form)
+      const xGC90Pct = 1 - getPercentile(xGC90, percentiles.xGC90)
+      const cs90Pct = getPercentile(cs90, percentiles.cs90)
+
+      // Get position-specific weights
+      const w = DEFENSIVE_WEIGHTS[player.element_type] ?? DEFENSIVE_WEIGHTS[3]
+      const score =
+        xG90Pct * w.xG +
+        xA90Pct * w.xA +
+        xGC90Pct * w.xGC +
+        cs90Pct * w.cs +
+        formPct * w.form +
+        fixtureScore * w.fix
 
       candidates.push({
         player,
@@ -224,7 +275,7 @@ export function useRecommendedPlayers(
       })
     }
 
-    return candidates.sort((a, b) => b.score - a.score).slice(0, 5)
+    return candidates.sort((a, b) => b.score - a.score).slice(0, 10)
   }, [players, leagueOwnership, teamsMap, teamFixtureScores, percentiles])
 
   return {
