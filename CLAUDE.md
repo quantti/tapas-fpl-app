@@ -9,19 +9,19 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - **State Management**: TanStack Query (React Query) for server state
 - **Charts**: Recharts for data visualization
 - **Icons**: Lucide React
-- **Backend/Proxy**: Cloudflare Workers (with Hono framework)
-- **Hosting**: Vercel (frontend), Cloudflare (workers)
+- **Backend/Proxy**: Python FastAPI (async caching proxy)
+- **Hosting**: Vercel (frontend), Fly.io (backend)
 - **Testing**: Vitest + React Testing Library
 
 ## Architecture
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   Vite + React  │────▶│  Cloudflare      │────▶│    FPL API      │
-│   TypeScript    │     │  Workers + Hono  │     │                 │
-│                 │     │  (CORS proxy +   │     │                 │
-│   Vercel/       │     │   caching)       │     │                 │
-│   Netlify       │     │                  │     │                 │
+│   Vite + React  │────▶│  Python FastAPI  │────▶│    FPL API      │
+│   TypeScript    │     │  (Fly.io)        │     │                 │
+│                 │     │  CORS proxy +    │     │                 │
+│   Vercel        │     │  in-memory cache │     │                 │
+│                 │     │                  │     │                 │
 └─────────────────┘     └────────┬─────────┘     └─────────────────┘
                                  │
                                  ▼ (future)
@@ -65,7 +65,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - [ ] Historical data tracking across gameweeks
 - [ ] Ownership trends over time
 - [ ] Season-over-season comparisons
-- [ ] Scheduled data snapshots via Cloudflare Workers cron
+- [ ] Scheduled data snapshots via background jobs
 
 ## FPL API Reference
 
@@ -100,29 +100,6 @@ getFixtures: (gw?: number) => gw ? `/fixtures?event=${gw}` : '/fixtures'
 // RIGHT: explicit check
 getFixtures: (gw?: number) => gw !== undefined ? `/fixtures?event=${gw}` : '/fixtures'
 ```
-
-### Worker/Hono Gotchas
-
-**Hono `c.req.path` strips query parameters:**
-```typescript
-// WRONG: c.req.path only has pathname, query params are lost
-const path = c.req.path.replace('/api', '');
-const fplUrl = `${BASE}${path}/`;  // /fixtures/?event=17 becomes /fixtures/
-
-// RIGHT: extract query string from c.req.url
-const path = c.req.path.replace('/api', '');
-const queryString = c.req.url.includes('?') ? c.req.url.split('?')[1] : '';
-const fplUrl = `${BASE}${path}/${queryString ? `?${queryString}` : ''}`;
-```
-
-**Hono cache middleware only caches 200s:**
-- Default `cacheableStatusCodes: [200]` — errors are NOT cached
-- A 404 from Hono usually means route not matching, not cached error
-
-**Wrangler dev server caching:**
-- Sometimes doesn't reload code changes properly
-- If routes stop matching after code changes, do a full restart (Ctrl+C, then `npx wrangler dev`)
-- Check console logs to verify new code is running
 
 **Fixture finished states:**
 - `finished_provisional` - true immediately when match ends
@@ -438,10 +415,20 @@ tapas-fpl-app/
 │   ├── tests/                # Playwright e2e tests
 │   ├── package.json
 │   └── vite.config.ts
-├── worker/                   # Cloudflare Worker (API proxy)
-│   ├── src/index.ts          # Hono app with caching
-│   ├── package.json
-│   └── wrangler.toml
+├── backend/                  # Python FastAPI (API proxy)
+│   ├── app/
+│   │   ├── main.py           # FastAPI app entry point
+│   │   ├── config.py         # Settings and cache TTLs
+│   │   ├── api/routes.py     # API endpoints
+│   │   └── services/fpl_proxy.py  # FPL proxy with caching
+│   ├── tests/                # pytest tests
+│   │   ├── conftest.py       # Test fixtures
+│   │   ├── test_config.py    # Config tests
+│   │   ├── test_fpl_proxy.py # Unit tests
+│   │   └── test_api.py       # Integration tests
+│   ├── fly.toml              # Fly.io deployment config
+│   ├── requirements.txt
+│   └── README.md
 └── CLAUDE.md
 ```
 
@@ -460,12 +447,14 @@ npm test             # Run tests in watch mode
 npm test -- --run    # Run tests once
 ```
 
-### Worker
+### Backend
 ```bash
-cd worker
-npm install
-npm run dev          # Start local worker
-npm run deploy       # Deploy to Cloudflare
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload  # Start dev server (port 8000)
+python -m pytest               # Run tests
 ```
 
 ## Design Principles
@@ -483,27 +472,29 @@ npm run deploy       # Deploy to Cloudflare
 - **Custom domain**: https://tapas-and-tackles.live ✓
 - **Auto-deploy**: Push to `main` → Vercel builds and deploys automatically
 
-### Cloudflare Workers (API Proxy)
-- **URL**: https://tapas-fpl-api.quantti.workers.dev
+### Fly.io (Backend)
+- **App name**: tapas-fpl-backend
+- **URL**: https://tapas-fpl-backend.fly.dev
+- **Deploy**: `fly deploy` from /backend
 
 ### Deploy Commands
 ```bash
-# Frontend: just push to git, Vercel auto-deploys
+# Frontend: just push to git, GitHub Actions runs CI, Vercel auto-deploys
 git push
 
-# Worker (from /worker)
-npx wrangler deploy
+# Backend (from /backend)
+fly deploy
 ```
 
 ## Environment Variables
 
 ### Frontend (.env)
 ```
-VITE_API_URL=https://tapas-fpl-api.quantti.workers.dev
+VITE_API_URL=https://tapas-fpl-backend.fly.dev
 ```
 
-### Worker (wrangler.toml / secrets)
-```
-# Future: database connection string
-# DATABASE_URL=...
+### Backend (Fly.io secrets)
+```bash
+# Set secrets via fly CLI
+fly secrets set DATABASE_URL=...  # Future: database connection string
 ```
