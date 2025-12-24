@@ -214,7 +214,7 @@ export function useRecommendedPlayers(
       })
     }
 
-    return candidates.sort((a, b) => b.score - a.score).slice(0, 10)
+    return candidates.sort((a, b) => b.score - a.score).slice(0, 20)
   }, [players, leagueOwnership, teamsMap, teamFixtureScores, percentiles])
 
   // Calculate DEFENSIVE OPTIONS
