@@ -16,7 +16,7 @@
   - Last 5 gameweek results
   - xGI stats
   - Current price and recent price changes
-- [ ] Better position indicators - replace colored dots with text labels (DEF, MID, FWD) in circles
+- [x] Better position indicators - replace colored dots with text labels (DEF, MID, FWD) in badges
 - [ ] H2H manager comparison view
 - [ ] Points breakdown by position
 - [ ] Transfer history timeline
