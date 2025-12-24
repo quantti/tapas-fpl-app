@@ -56,11 +56,15 @@
     height: 28px;
   }
 
-  .positionDot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+  .positionBadge {
+    font-size: 9px;
+    font-weight: 600;
+    color: white;
+    padding: 2px 4px;
+    border-radius: 3px;
     flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 
   .playerName {

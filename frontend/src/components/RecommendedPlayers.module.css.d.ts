@@ -8,7 +8,7 @@ export const infoWrapper: string
 export const list: string
 export const loading: string
 export const playerName: string
-export const positionDot: string
+export const positionBadge: string
 export const RecommendedPlayers: string
 export const rightColumn: string
 export const row: string

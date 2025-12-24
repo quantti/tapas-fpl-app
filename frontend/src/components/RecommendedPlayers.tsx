@@ -34,16 +34,20 @@ interface Props {
   currentGameweek: number
 }
 
-// Position colors: DEF = red, MID = blue, FWD = green
-const POSITION_COLORS: Record<number, string> = {
-  2: '#ef4444', // DEF - red
-  3: '#3b82f6', // MID - blue
-  4: '#22c55e', // FWD - green
+// Position labels and colors
+const POSITION_CONFIG: Record<number, { label: string; color: string }> = {
+  2: { label: 'DEF', color: '#ef4444' }, // red
+  3: { label: 'MID', color: '#3b82f6' }, // blue
+  4: { label: 'FWD', color: '#22c55e' }, // green
 }
 
-function PositionDot({ elementType }: { elementType: number }) {
-  const color = POSITION_COLORS[elementType] ?? '#6b7280'
-  return <span className={styles.positionDot} style={{ backgroundColor: color }} />
+function PositionBadge({ elementType }: { elementType: number }) {
+  const config = POSITION_CONFIG[elementType] ?? { label: '?', color: '#6b7280' }
+  return (
+    <span className={styles.positionBadge} style={{ backgroundColor: config.color }}>
+      {config.label}
+    </span>
+  )
 }
 
 function ScoreStars({ score }: { score: number }) {
@@ -108,7 +112,7 @@ export function RecommendedPlayers({ players, managerDetails, teamsMap, currentG
           <div className={styles.list}>
             {punts.map(({ player, team, score }) => (
               <div key={player.id} className={styles.row}>
-                <PositionDot elementType={player.element_type} />
+                <PositionBadge elementType={player.element_type} />
                 <span className={styles.playerName}>{player.web_name}</span>
                 <span className={styles.teamName}>{team.short_name}</span>
                 <ScoreStars score={score} />
@@ -133,7 +137,7 @@ export function RecommendedPlayers({ players, managerDetails, teamsMap, currentG
             <div className={styles.list}>
               {defensive.map(({ player, team, score }) => (
                 <div key={player.id} className={styles.row}>
-                  <PositionDot elementType={player.element_type} />
+                  <PositionBadge elementType={player.element_type} />
                   <span className={styles.playerName}>{player.web_name}</span>
                   <span className={styles.teamName}>{team.short_name}</span>
                   <ScoreStars score={score} />
@@ -156,7 +160,7 @@ export function RecommendedPlayers({ players, managerDetails, teamsMap, currentG
             <div className={styles.list}>
               {toSell.map(({ player, team, score }) => (
                 <div key={player.id} className={styles.row}>
-                  <PositionDot elementType={player.element_type} />
+                  <PositionBadge elementType={player.element_type} />
                   <span className={styles.playerName}>{player.web_name}</span>
                   <span className={styles.teamName}>{team.short_name}</span>
                   <ScoreStars score={score} />
