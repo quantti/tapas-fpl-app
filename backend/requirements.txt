@@ -1,0 +1,18 @@
+# Core web framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+
+# HTTP client for FPL API
+httpx>=0.28.0
+
+# Settings management
+pydantic-settings>=2.6.0
+
+# MILP optimization (for Phase 3)
+# highspy>=1.7.0
+
+# ML (for Phase 4) - uncomment when needed
+# xgboost>=2.1.0
+# scikit-learn>=1.5.0
+# pandas>=2.2.0
+# numpy>=2.0.0

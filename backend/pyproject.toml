@@ -1,0 +1,62 @@
+[project]
+name = "tapas-fpl-backend"
+version = "0.1.0"
+description = "Backend API for Tapas FPL App - Expected points, optimization, and FPL proxy"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "httpx>=0.28.0",
+    "pydantic-settings>=2.6.0",
+]
+
+[project.optional-dependencies]
+optimization = [
+    "highspy>=1.7.0",
+]
+ml = [
+    "xgboost>=2.1.0",
+    "scikit-learn>=1.5.0",
+    "pandas>=2.2.0",
+    "numpy>=2.0.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "respx>=0.22.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

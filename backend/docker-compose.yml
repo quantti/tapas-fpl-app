@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - FPL_API_BASE_URL=https://fantasy.premierleague.com/api
+      - CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+      - LOG_LEVEL=INFO
+    volumes:
+      # Mount app code for hot reload during development
+      - ./app:/app/app:ro
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Future: Add database if needed
+#   db:
+#     image: postgres:16-alpine
+#     environment:
+#       POSTGRES_USER: fpl
+#       POSTGRES_PASSWORD: ${DB_PASSWORD}
+#       POSTGRES_DB: fpl_app
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     ports:
+#       - "5432:5432"
+
+# volumes:
+#   postgres_data:
