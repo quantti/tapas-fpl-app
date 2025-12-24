@@ -1,4 +1,4 @@
-import { Dices, Shield, Info } from 'lucide-react'
+import { Dices, Shield, Info, TrendingDown } from 'lucide-react'
 import type { Player, Team } from '../types/fpl'
 import type { ManagerGameweekData } from '../hooks/useFplData'
 import { useRecommendedPlayers } from '../hooks/useRecommendedPlayers'
@@ -9,6 +9,9 @@ const PUNTS_INFO =
 
 const DEFENSIVE_INFO =
   "Popular players (>40% ownership) in good form with favourable fixtures. Consider owning these to protect your rank. Remember: popularity doesn't equal quality - billions of flies love shit."
+
+const SELL_INFO =
+  "Players with poor recent form and tough upcoming fixtures. If you own them, might be time to move on. Of course, they could also be about to haul - that's FPL for you."
 
 const DISCLAIMER = 'For entertainment only. Not financial advice. Always do your own research.'
 
@@ -59,7 +62,7 @@ function ScoreStars({ score }: { score: number }) {
 }
 
 export function RecommendedPlayers({ players, managerDetails, teamsMap, currentGameweek }: Props) {
-  const { punts, defensive, loading, error } = useRecommendedPlayers(
+  const { punts, defensive, toSell, loading, error } = useRecommendedPlayers(
     players,
     managerDetails,
     teamsMap,
@@ -115,28 +118,53 @@ export function RecommendedPlayers({ players, managerDetails, teamsMap, currentG
         )}
       </div>
 
-      {/* Defensive Options Column */}
-      <div className={styles.card}>
-        <h3 className={styles.title}>
-          <Shield size={16} color="#14B8A6" aria-hidden="true" />
-          Defensive Options
-          <InfoTooltip text={DEFENSIVE_INFO} disclaimer={DISCLAIMER} />
-        </h3>
+      {/* Right Column: Defensive Options + To Sell */}
+      <div className={styles.rightColumn}>
+        <div className={styles.card}>
+          <h3 className={styles.title}>
+            <Shield size={16} color="#14B8A6" aria-hidden="true" />
+            Defensive Options
+            <InfoTooltip text={DEFENSIVE_INFO} disclaimer={DISCLAIMER} />
+          </h3>
 
-        {defensive.length === 0 ? (
-          <p className={styles.empty}>No defensive recommendations</p>
-        ) : (
-          <div className={styles.list}>
-            {defensive.map(({ player, team, score }) => (
-              <div key={player.id} className={styles.row}>
-                <PositionDot elementType={player.element_type} />
-                <span className={styles.playerName}>{player.web_name}</span>
-                <span className={styles.teamName}>{team.short_name}</span>
-                <ScoreStars score={score} />
-              </div>
-            ))}
-          </div>
-        )}
+          {defensive.length === 0 ? (
+            <p className={styles.empty}>No defensive recommendations</p>
+          ) : (
+            <div className={styles.list}>
+              {defensive.map(({ player, team, score }) => (
+                <div key={player.id} className={styles.row}>
+                  <PositionDot elementType={player.element_type} />
+                  <span className={styles.playerName}>{player.web_name}</span>
+                  <span className={styles.teamName}>{team.short_name}</span>
+                  <ScoreStars score={score} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className={styles.card}>
+          <h3 className={styles.title}>
+            <TrendingDown size={16} color="#EF4444" aria-hidden="true" />
+            Time to Sell
+            <InfoTooltip text={SELL_INFO} disclaimer={DISCLAIMER} />
+          </h3>
+
+          {toSell.length === 0 ? (
+            <p className={styles.empty}>No sell recommendations</p>
+          ) : (
+            <div className={styles.list}>
+              {toSell.map(({ player, team, score }) => (
+                <div key={player.id} className={styles.row}>
+                  <PositionDot elementType={player.element_type} />
+                  <span className={styles.playerName}>{player.web_name}</span>
+                  <span className={styles.teamName}>{team.short_name}</span>
+                  <ScoreStars score={score} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

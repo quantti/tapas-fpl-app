@@ -10,6 +10,7 @@ export const loading: string
 export const playerName: string
 export const positionDot: string
 export const RecommendedPlayers: string
+export const rightColumn: string
 export const row: string
 export const starEmpty: string
 export const starFilled: string

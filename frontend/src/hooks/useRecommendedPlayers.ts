@@ -15,6 +15,7 @@ export interface RecommendedPlayer {
 interface UseRecommendedPlayersReturn {
   punts: RecommendedPlayer[]
   defensive: RecommendedPlayer[]
+  toSell: RecommendedPlayer[]
   loading: boolean
   error: string | null
 }
@@ -23,7 +24,14 @@ interface UseRecommendedPlayersReturn {
 // DEF: clean sheets & low xGC matter most
 // MID: balanced xG + xA
 // FWD: xG matters more than xA
-type PositionWeights = { xG: number; xA: number; xGC: number; cs: number; form: number; fix: number }
+type PositionWeights = {
+  xG: number
+  xA: number
+  xGC: number
+  cs: number
+  form: number
+  fix: number
+}
 
 const PUNT_WEIGHTS: Record<number, PositionWeights> = {
   2: { xG: 0.1, xA: 0.1, xGC: 0.2, cs: 0.15, form: 0.25, fix: 0.2 }, // DEF
@@ -36,6 +44,15 @@ const DEFENSIVE_WEIGHTS: Record<number, PositionWeights> = {
   2: { xG: 0.05, xA: 0.05, xGC: 0.15, cs: 0.15, form: 0.35, fix: 0.25 }, // DEF
   3: { xG: 0.1, xA: 0.1, xGC: 0, cs: 0, form: 0.45, fix: 0.25 }, // MID
   4: { xG: 0.2, xA: 0.05, xGC: 0, cs: 0, form: 0.5, fix: 0.25 }, // FWD
+}
+
+// To sell: players to get rid of - primarily POOR FORM
+// Form is the dominant factor - we want players who've been bad recently
+// Fixtures are minor - good form players with tough fixtures shouldn't be sold
+const SELL_WEIGHTS: Record<number, PositionWeights> = {
+  2: { xG: 0.05, xA: 0.05, xGC: 0.15, cs: 0.15, form: 0.55, fix: 0.05 }, // DEF
+  3: { xG: 0.15, xA: 0.15, xGC: 0, cs: 0, form: 0.65, fix: 0.05 }, // MID
+  4: { xG: 0.2, xA: 0.1, xGC: 0, cs: 0, form: 0.65, fix: 0.05 }, // FWD
 }
 
 // Fixture weights: nearer gameweeks matter more
@@ -183,7 +200,8 @@ export function useRecommendedPlayers(
       // Calculate per-90 stats (guard against NaN from invalid strings)
       const xG90 = minutes90 > 0 ? (Number.parseFloat(player.expected_goals) || 0) / minutes90 : 0
       const xA90 = minutes90 > 0 ? (Number.parseFloat(player.expected_assists) || 0) / minutes90 : 0
-      const xGC90 = minutes90 > 0 ? (Number.parseFloat(player.expected_goals_conceded) || 0) / minutes90 : 0
+      const xGC90 =
+        minutes90 > 0 ? (Number.parseFloat(player.expected_goals_conceded) || 0) / minutes90 : 0
       const cs90 = minutes90 > 0 ? player.clean_sheets / minutes90 : 0
       const formValue = Number.parseFloat(player.form) || 0
 
@@ -245,7 +263,8 @@ export function useRecommendedPlayers(
       // Calculate per-90 stats
       const xG90 = minutes90 > 0 ? (Number.parseFloat(player.expected_goals) || 0) / minutes90 : 0
       const xA90 = minutes90 > 0 ? (Number.parseFloat(player.expected_assists) || 0) / minutes90 : 0
-      const xGC90 = minutes90 > 0 ? (Number.parseFloat(player.expected_goals_conceded) || 0) / minutes90 : 0
+      const xGC90 =
+        minutes90 > 0 ? (Number.parseFloat(player.expected_goals_conceded) || 0) / minutes90 : 0
       const cs90 = minutes90 > 0 ? player.clean_sheets / minutes90 : 0
       const formValue = Number.parseFloat(player.form) || 0
 
@@ -278,9 +297,78 @@ export function useRecommendedPlayers(
     return candidates.sort((a, b) => b.score - a.score).slice(0, 10)
   }, [players, leagueOwnership, teamsMap, teamFixtureScores, percentiles])
 
+  // Calculate TO SELL - players to get rid of (poor form, tough fixtures)
+  const toSell = useMemo(() => {
+    const candidates: RecommendedPlayer[] = []
+
+    for (const player of players) {
+      // Filter: exclude GKs
+      if (player.element_type === 1) continue
+
+      // Filter: must be available (no point flagging injured)
+      if (player.status !== 'a') continue
+
+      // Filter: minimum minutes
+      if (player.minutes < 450) continue
+
+      const ownership = leagueOwnership.get(player.id) ?? 0
+
+      // Filter: at least one manager in league owns this player
+      if (ownership === 0) continue
+
+      const team = teamsMap.get(player.team)
+      if (!team) continue
+
+      const fixtureScore = teamFixtureScores.get(player.team) ?? 0.5
+      const minutes90 = player.minutes / 90
+
+      // Calculate per-90 stats
+      const xG90 = minutes90 > 0 ? (Number.parseFloat(player.expected_goals) || 0) / minutes90 : 0
+      const xA90 = minutes90 > 0 ? (Number.parseFloat(player.expected_assists) || 0) / minutes90 : 0
+      const xGC90 =
+        minutes90 > 0 ? (Number.parseFloat(player.expected_goals_conceded) || 0) / minutes90 : 0
+      const cs90 = minutes90 > 0 ? player.clean_sheets / minutes90 : 0
+      const formValue = Number.parseFloat(player.form) || 0
+
+      // Calculate percentiles (NOT inverted - we want LOW percentiles)
+      const xG90Pct = getPercentile(xG90, percentiles.xG90)
+      const xA90Pct = getPercentile(xA90, percentiles.xA90)
+      const formPct = getPercentile(formValue, percentiles.form)
+      // For xGC, high is bad for defenders - don't invert here
+      const xGC90Pct = getPercentile(xGC90, percentiles.xGC90)
+      // Low clean sheets is bad
+      const cs90Pct = getPercentile(cs90, percentiles.cs90)
+
+      // Get position-specific weights and calculate "badness" score
+      // Lower percentiles = worse player = higher sell score
+      const w = SELL_WEIGHTS[player.element_type] ?? SELL_WEIGHTS[3]
+      const score =
+        (1 - xG90Pct) * w.xG +
+        (1 - xA90Pct) * w.xA +
+        xGC90Pct * w.xGC + // High xGC is bad
+        (1 - cs90Pct) * w.cs +
+        (1 - formPct) * w.form +
+        (1 - fixtureScore) * w.fix // Tough fixtures
+
+      // Only include if genuinely bad (score > 0.5 = worse than average)
+      if (score <= 0.5) continue
+
+      candidates.push({
+        player,
+        team,
+        score,
+        fixtureScore,
+        leagueOwnership: ownership,
+      })
+    }
+
+    return candidates.sort((a, b) => b.score - a.score).slice(0, 10)
+  }, [players, leagueOwnership, teamsMap, teamFixtureScores, percentiles])
+
   return {
     punts,
     defensive,
+    toSell,
     loading: fixturesQuery.isLoading,
     error: fixturesQuery.error?.message ?? null,
   }
