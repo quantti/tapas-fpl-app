@@ -67,14 +67,23 @@ uvicorn app.main:app --reload
 ```bash
 # First time
 fly launch --no-deploy
-fly secrets set CORS_ORIGINS="https://tapas-fpl-app.vercel.app"
+
+# Set CORS origins (include BOTH www and non-www if using redirects!)
+fly secrets set CORS_ORIGINS="https://tapas-and-tackles.live,https://www.tapas-and-tackles.live,http://localhost:5173"
 
 # Deploy
 fly deploy
 
 # Logs
 fly logs
+
+# Check current secrets
+fly secrets list
 ```
+
+### CORS Configuration
+
+**Important:** If your domain redirects (e.g., `example.com` → `www.example.com`), you must include **both** origins in `CORS_ORIGINS`. Browsers send the `Origin` header based on the final URL after redirects, so missing the www variant will cause API requests to fail silently.
 
 ## Testing
 

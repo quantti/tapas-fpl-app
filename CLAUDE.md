@@ -496,5 +496,9 @@ VITE_API_URL=https://tapas-fpl-backend.fly.dev
 ### Backend (Fly.io secrets)
 ```bash
 # Set secrets via fly CLI
-fly secrets set DATABASE_URL=...  # Future: database connection string
+fly secrets list                   # View current secrets
+fly secrets set CORS_ORIGINS="https://tapas-and-tackles.live,https://www.tapas-and-tackles.live,http://localhost:5173"
+fly secrets set DATABASE_URL=...   # Future: database connection string
 ```
+
+**CORS Note:** Include both `www` and non-www origins if your domain uses redirects.
