@@ -1,6 +1,6 @@
 import { useFplData } from '../hooks/useFplData'
-import { Header } from './Header'
-import { RecommendedPlayers } from './RecommendedPlayers'
+import { Header } from '../components/Header'
+import { RecommendedPlayers } from '../components/RecommendedPlayers'
 import * as styles from './Analytics.module.css'
 
 export function Analytics() {

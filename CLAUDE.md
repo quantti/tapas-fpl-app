@@ -38,7 +38,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 |-------|-----------|-------------|
 | `/` | `Dashboard` | Main view: league standings, transfers, countdown |
 | `/statistics` | `Statistics` | Stats cards, bench points, captain success, charts |
-| `/manager/:managerId/:gameweek` | `ManagerLineup` | Manager's team lineup |
+| `/analytics` | `Analytics` | Player recommendations |
 
 **Header Navigation:**
 - Hamburger menu with links to Dashboard and Statistics
@@ -59,6 +59,16 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - [x] Team value and hit stats
 - [x] Gameweek countdown banner (shows after all fixtures finish)
 - [x] Header navigation with hamburger menu
+
+## Future Features (UI enhancements)
+
+- [ ] Free transfers card - show how many free transfers each manager has
+- [ ] Player recommendation modal - clicking a player opens modal with:
+  - Next 5 fixtures
+  - Last 5 gameweek results
+  - xGI stats
+  - Current price and recent price changes
+- [ ] Better position indicators - replace colored dots with text labels (DEF, MID, FWD) in circles or similar
 
 ## Future Features (requires database)
 
@@ -387,10 +397,12 @@ tapas-fpl-app/
 ├── frontend/                 # Vite + React app
 │   ├── src/
 │   │   ├── App.tsx          # Router setup (react-router-dom)
-│   │   ├── components/      # React components with co-located .module.css
-│   │   │   ├── Header.tsx              # Navigation header + hamburger menu
+│   │   ├── views/           # Page-level route components
 │   │   │   ├── Dashboard.tsx           # Main page: standings, transfers
 │   │   │   ├── Statistics.tsx          # Stats page: all stat cards
+│   │   │   └── Analytics.tsx           # Analytics page: recommendations
+│   │   ├── components/      # Reusable UI components with co-located .module.css
+│   │   │   ├── Header.tsx              # Navigation header + hamburger menu
 │   │   │   ├── LeagueStandings.tsx     # Live standings table
 │   │   │   ├── LeaguePositionChart.tsx # Bump chart
 │   │   │   ├── ManagerModal.tsx        # Manager detail modal
@@ -400,6 +412,7 @@ tapas-fpl-app/
 │   │   │   ├── BenchPoints.tsx         # Wasted bench points
 │   │   │   ├── CaptainSuccess.tsx      # Differential captains
 │   │   │   ├── ChipsRemaining.tsx      # Chip tracker
+│   │   │   ├── RecommendedPlayers.tsx  # Player recommendations
 │   │   │   └── StatsCards.tsx          # Team value, hits
 │   │   ├── hooks/
 │   │   │   ├── useFplData.ts           # Main data hook (TanStack Query)

@@ -1,11 +1,11 @@
 import { useFplData } from '../hooks/useFplData'
-import { Header } from './Header'
-import { StatsCards } from './StatsCards'
-import { BenchPoints } from './BenchPoints'
-import { CaptainSuccess } from './CaptainSuccess'
-import { ChipsRemaining } from './ChipsRemaining'
-import { LeaguePositionChart } from './LeaguePositionChart'
-import { PlayerOwnership } from './PlayerOwnership'
+import { Header } from '../components/Header'
+import { StatsCards } from '../components/StatsCards'
+import { BenchPoints } from '../components/BenchPoints'
+import { CaptainSuccess } from '../components/CaptainSuccess'
+import { ChipsRemaining } from '../components/ChipsRemaining'
+import { LeaguePositionChart } from '../components/LeaguePositionChart'
+import { PlayerOwnership } from '../components/PlayerOwnership'
 import * as styles from './Statistics.module.css'
 
 export function Statistics() {
