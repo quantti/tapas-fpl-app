@@ -50,21 +50,121 @@ Database design for Tapas FPL App - supporting multiple users tracking multiple 
    - We create snapshots at each gameweek to build history
    - This enables trend analysis, ML training, etc.
 
-### Database Choice: PostgreSQL
+### Database Choice: Supabase (PostgreSQL)
 
 **Why PostgreSQL:**
 - JSONB for flexible FPL API data storage
 - Array types for efficient list storage
 - Excellent time-series query support
-- Free tier on Supabase/Neon
 - Production-ready from day one
 
-**Recommended providers:**
-| Provider | Free Tier | Paid | Notes |
-|----------|-----------|------|-------|
-| Supabase | 500MB, 2 projects | $25/mo | Auth included, nice dashboard |
-| Neon | 512MB, unlimited projects | $19/mo | Serverless, auto-scaling |
-| Railway | $5 credit | Usage-based | Simple, good DX |
+**Why Supabase over alternatives:**
+| Consideration | Supabase | Neon | Decision |
+|---------------|----------|------|----------|
+| Cold starts | Always-on | 500ms-2s on wake | Supabase wins for UX |
+| Free storage | 500MB | 512MB | Similar |
+| Auth | Built-in | None | Supabase wins |
+| Traffic pattern | Good for bursts | Best for low/sporadic | FPL has match-day bursts |
+| Dashboard | Excellent UI | Basic | Supabase wins |
+
+**Chosen: Supabase** — Always-on database avoids cold start latency during match days.
+
+**Free tier limits:**
+- 500MB database storage
+- 2 projects
+- 50,000 monthly active users
+- 500MB file storage
+- 2GB bandwidth
+
+---
+
+## Supabase Setup Plan
+
+### Phase 1: Project Setup
+1. Create Supabase account at [supabase.com](https://supabase.com)
+2. Create new project: `tapas-fpl`
+3. Select region closest to users (EU for Premier League audience)
+4. Save connection strings securely
+
+### Phase 2: Schema Migration
+1. Run Phase 1 migration (core tables) via Supabase SQL Editor
+2. Verify tables created with correct constraints
+3. Run Phase 2 migration (historical tracking)
+4. Run Phase 3 migration (analytics tables) — can defer until needed
+
+### Phase 3: Backend Integration
+1. Install `supabase-py` in FastAPI backend
+2. Add database connection to `config.py`
+3. Create database service module
+4. Implement sync jobs for FPL data
+5. Add API endpoints to serve cached data
+
+### Phase 4: Environment Configuration
+```bash
+# Fly.io secrets to add
+fly secrets set SUPABASE_URL="https://xxx.supabase.co"
+fly secrets set SUPABASE_ANON_KEY="eyJ..."
+fly secrets set SUPABASE_SERVICE_KEY="eyJ..."  # For backend operations
+fly secrets set DATABASE_URL="postgresql://..."  # Direct connection
+```
+
+---
+
+## Backend Changes Required
+
+### New Dependencies
+```txt
+# requirements.txt additions
+supabase>=2.0.0
+asyncpg>=0.29.0        # Async PostgreSQL driver
+sqlalchemy>=2.0.0      # ORM (optional, for complex queries)
+alembic>=1.13.0        # Migrations
+```
+
+### New Files Structure
+```
+backend/
+├── app/
+│   ├── db/
+│   │   ├── __init__.py
+│   │   ├── connection.py      # Supabase client setup
+│   │   ├── models.py          # Pydantic models for DB entities
+│   │   └── sync.py            # FPL API → Database sync logic
+│   ├── api/
+│   │   ├── routes.py          # Existing proxy routes
+│   │   └── db_routes.py       # New DB-backed endpoints
+│   └── services/
+│       ├── fpl_proxy.py       # Existing
+│       └── fpl_sync.py        # New: sync FPL data to DB
+├── migrations/
+│   ├── 001_core_tables.sql
+│   ├── 002_historical.sql
+│   └── 003_analytics.sql
+└── scripts/
+    └── sync_fpl_data.py       # Manual sync script
+```
+
+### Config Changes (`config.py`)
+```python
+# New settings
+SUPABASE_URL: str = ""
+SUPABASE_ANON_KEY: str = ""
+SUPABASE_SERVICE_KEY: str = ""
+DATABASE_URL: str = ""  # Direct PostgreSQL connection
+
+# Sync settings
+SYNC_ENABLED: bool = True
+SYNC_INTERVAL_MINUTES: int = 5  # During active GWs
+```
+
+### New Endpoints (Phase 1)
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /db/health` | Database connectivity check |
+| `GET /db/seasons` | List available seasons |
+| `GET /db/leagues/{id}` | League data from DB |
+| `POST /db/sync/bootstrap` | Trigger bootstrap data sync |
+| `POST /db/sync/gameweek/{gw}` | Sync specific gameweek |
 
 ---
 
