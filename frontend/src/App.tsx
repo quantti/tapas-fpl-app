@@ -3,6 +3,7 @@ import './App.css'
 import { Dashboard } from './components/Dashboard'
 import { ManagerLineup } from './components/ManagerLineup'
 import { Statistics } from './components/Statistics'
+import { Analytics } from './components/Analytics'
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/statistics" element={<Statistics />} />
+            <Route path="/analytics" element={<Analytics />} />
             <Route path="/manager/:managerId/:gameweek" element={<ManagerLineup />} />
           </Routes>
         </main>

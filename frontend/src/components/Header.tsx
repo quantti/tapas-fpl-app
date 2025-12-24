@@ -58,6 +58,13 @@ export function Header() {
           >
             Statistics
           </Link>
+          <Link
+            to="/analytics"
+            className={`${styles.navLink} ${location.pathname === '/analytics' ? styles.active : ''}`}
+            onClick={() => setMenuOpen(false)}
+          >
+            Analytics
+          </Link>
           <div className={styles.themeRow}>
             <span className={styles.themeLabel}>
               {theme === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
