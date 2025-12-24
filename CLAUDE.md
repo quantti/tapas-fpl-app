@@ -59,6 +59,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - [x] Team value and hit stats
 - [x] Gameweek countdown banner (shows after all fixtures finish)
 - [x] Header navigation with hamburger menu
+- [x] Player recommendations (Punts, Defensive, Time to Sell) with position badges
 
 ## FPL API Reference
 
@@ -354,6 +355,12 @@ import { IconName } from 'lucide-react'
 | Player Ownership | `Users` | `#14B8A6` (teal) | |
 | League Position Chart | `TrendingUp` | `#6366f1` (indigo) | |
 | Theme toggle | `Sun` / `Moon` | default | Light/dark mode |
+| Punts | `Dices` | `#F59E0B` (amber) | |
+| Defensive Options | `Shield` | `#14B8A6` (teal) | |
+| Time to Sell | `TrendingDown` | `#EF4444` (red) | |
+| Position DEF | Text badge | `#ef4444` (red) | White text on colored bg |
+| Position MID | Text badge | `#3b82f6` (blue) | White text on colored bg |
+| Position FWD | Text badge | `#22c55e` (green) | White text on colored bg |
 
 ### Custom Icon Compositions
 
