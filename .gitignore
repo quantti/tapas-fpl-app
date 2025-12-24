@@ -25,7 +25,6 @@ Thumbs.db
 
 # Logs
 *.log
-firebase-debug.log
 
 # Local Claude files
 .claude/

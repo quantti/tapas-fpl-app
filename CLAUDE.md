@@ -60,23 +60,6 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - [x] Gameweek countdown banner (shows after all fixtures finish)
 - [x] Header navigation with hamburger menu
 
-## Future Features (UI enhancements)
-
-- [ ] Free transfers card - show how many free transfers each manager has
-- [ ] Player recommendation modal - clicking a player opens modal with:
-  - Next 5 fixtures
-  - Last 5 gameweek results
-  - xGI stats
-  - Current price and recent price changes
-- [ ] Better position indicators - replace colored dots with text labels (DEF, MID, FWD) in circles or similar
-
-## Future Features (requires database)
-
-- [ ] Historical data tracking across gameweeks
-- [ ] Ownership trends over time
-- [ ] Season-over-season comparisons
-- [ ] Scheduled data snapshots via background jobs
-
 ## FPL API Reference
 
 Base URL: `https://fantasy.premierleague.com/api/`

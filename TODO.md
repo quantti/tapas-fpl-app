@@ -1,62 +1,68 @@
 # TODO
 
+## Frontend
+
+### Multi-League Support (Required for Public Release)
+- [ ] Landing page with league ID input
+- [ ] `/league/:id` routes for URL sharing/bookmarking
+- [ ] Remove hardcoded `LEAGUE_ID` from config
+- [ ] Recent leagues history (localStorage)
+- [ ] League validation and error messages
+
+### UI Enhancements
+- [ ] Free transfers card - show how many free transfers each manager has
+- [ ] Player recommendation modal - clicking a player opens modal with:
+  - Next 5 fixtures
+  - Last 5 gameweek results
+  - xGI stats
+  - Current price and recent price changes
+- [ ] Better position indicators - replace colored dots with text labels (DEF, MID, FWD) in circles
+- [ ] H2H manager comparison view
+- [ ] Points breakdown by position
+- [ ] Transfer history timeline
+
+### Polish
+- [ ] Error boundaries for graceful failure handling
+- [ ] Mobile responsiveness audit (touch targets, responsive tables)
+- [ ] Loading skeleton improvements
+
+## Backend
+
+### Phase 2: Expected Points Engine
+- [ ] xP calculation with all components
+- [ ] Expected minutes prediction
+- [ ] BPS projection
+- [ ] Stub endpoint exists at `/api/analytics/expected-points/{player_id}`
+
+### Phase 3: Transfer Optimizer
+- [ ] MILP-based transfer optimization (HiGHS solver)
+- [ ] Squad constraints
+- [ ] Multi-week horizon
+- [ ] Hit calculation
+- [ ] Stub endpoint exists at `/api/analytics/optimize-transfers`
+
 ## Infrastructure
 
-- [x] Add custom domain to Vercel
-- [x] Configure DNS settings
-
-## UI Polish
-
-- [x] Dark mode theme
-  - [x] Create dark color palette in variables.css
-  - [x] Add theme toggle component
-  - [x] Persist theme preference (localStorage)
-  - [x] System preference detection (prefers-color-scheme)
-  - [x] Flash prevention script
-- [ ] General polish and refinements
-- [ ] Mobile responsiveness improvements
-
-## Features
-
-- [x] Player ownership across league
-- [ ] More statistics and views
-  - [ ] Head-to-head comparison between managers
-  - [ ] Points breakdown by position
-  - [x] Bench points tracking
-  - [x] Captain pick success rates
-  - [ ] Transfer history timeline
-- [ ] Historical data tracking (requires database)
+### Database (Required for Some Features)
+- [ ] Set up Supabase/Neon for persistent storage
+- [ ] Historical data tracking across gameweeks
+- [ ] Ownership trends over time
 - [ ] Season-over-season comparisons
+- [ ] Scheduled data snapshots via background jobs
 
-## Scaling & Performance
+### Nice to Have
+- [ ] PWA support (offline access, install prompt)
+- [ ] Push notifications ("Match starting soon", "Your captain scored")
 
-- [x] TanStack Query setup (request deduplication, caching)
-- [x] Shared historical data hook (~294 duplicate requests eliminated)
-- [x] Tiered cache TTLs in Cloudflare Worker
-- [ ] Refactor useFplData to React Query
-- [ ] Multi-league support (routing, league selection)
+---
 
 ## Completed
 
-- [x] Live standings during gameweeks
-- [x] Manager lineup modal with team shirts
-- [x] Gameweek details (chips, hits, transfers, captains)
-- [x] Stats cards (team values, total hits)
-- [x] Replace emojis with Lucide SVG icons
-- [x] Icon coloring (gold coins, electric zap, colored arrows, teal users, steel blue armchair)
-- [x] Custom domain setup (tapas-and-tackles.live)
-- [x] Player ownership feature
-- [x] Dark mode with system preference detection
-- [x] Theme toggle (Sun/Moon icons)
-- [x] Gameweek date range display
-- [x] Bench points tracking (cumulative from previous GWs)
-- [x] Captain differential tracker
-  - [x] Captain differential detail modal (per-GW breakdown)
-- [x] Layout improvements
-  - [x] GameweekDetails: Team Value + Captains side-by-side
-  - [x] Transfers moved to full-width responsive grid below main content
-  - [x] Wider side column (480px) for better readability
-- [x] CSS modules refactoring
-  - [x] Nested CSS structure (all styles inside root class)
-  - [x] PascalCase root class matching filename
-  - [x] fix-css-types.cjs script to preserve PascalCase in type exports
+See CLAUDE.md "Features" section for completed work.
+
+Key completed optimizations:
+- React Query / TanStack Query setup
+- Shared historical data hook (useHistoricalData)
+- Tiered backend cache TTLs
+- React Router for internal navigation
+- Dark mode with system preference detection
