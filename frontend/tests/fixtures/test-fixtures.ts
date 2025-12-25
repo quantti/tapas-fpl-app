@@ -42,7 +42,7 @@ export async function setupApiMocking(page: Page) {
     // Filter fixtures by event if specified
     let fixtures = mockFixturesResponse
     if (event) {
-      fixtures = mockFixturesResponse.filter((f) => f.event === parseInt(event))
+      fixtures = mockFixturesResponse.filter((f) => f.event === Number.parseInt(event))
     }
 
     await route.fulfill({
@@ -67,7 +67,7 @@ export async function setupApiMocking(page: Page) {
     const url = route.request().url()
     // Extract entry ID from URL, handling various patterns
     const match = url.match(/\/api\/entry\/(\d+)(?:\/|$|\?)/)
-    const entryId = match ? parseInt(match[1]) : MOCK_MANAGER_IDS.manager1
+    const entryId = match ? Number.parseInt(match[1]) : MOCK_MANAGER_IDS.manager1
 
     // Check if this is a sub-route (history, picks, transfers)
     if (url.includes('/history')) {
@@ -78,7 +78,7 @@ export async function setupApiMocking(page: Page) {
       })
     } else if (url.includes('/event/') && url.includes('/picks')) {
       const gwMatch = url.match(/\/event\/(\d+)\/picks/)
-      const gw = gwMatch ? parseInt(gwMatch[1]) : 18
+      const gw = gwMatch ? Number.parseInt(gwMatch[1]) : 18
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -111,7 +111,7 @@ export async function setupApiMocking(page: Page) {
   // Mock element summary (player details)
   await page.route('**/api/element-summary/*', async (route) => {
     const match = route.request().url().match(/\/element-summary\/(\d+)/)
-    const playerId = match ? parseInt(match[1]) : 1
+    const playerId = match ? Number.parseInt(match[1]) : 1
     await route.fulfill({
       status: 200,
       contentType: 'application/json',

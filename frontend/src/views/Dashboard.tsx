@@ -105,7 +105,7 @@ export function Dashboard() {
       )}
 
       {/* Main Content */}
-      <div className={styles.grid}>
+      <div className={styles.grid} data-testid="dashboard-grid">
         <div className={styles.mainColumn}>
           <LeagueStandings
             standings={standings}
@@ -128,7 +128,7 @@ export function Dashboard() {
 
       {/* Transfers - Full width grid */}
       {managerDetails.some((m) => m.transfersIn.length > 0) && (
-        <div className={styles.transfersCard}>
+        <div className={styles.transfersCard} data-testid="transfers-card">
           <h3 className={styles.transfersTitle}>
             <span className={styles.transferIcon}>
               <ArrowRight size={12} color="var(--color-success)" />

@@ -15,6 +15,29 @@ export const MOCK_MANAGER_IDS = {
   manager4: 22222,
 }
 
+// Player IDs for readable mock data (matches bootstrap elements array)
+export const PLAYER_IDS = {
+  // Midfielders (element_type: 3)
+  SALAH: 1,
+  PALMER: 3,
+  SAKA: 4,
+  GORDON: 12,
+  // Forwards (element_type: 4)
+  HAALAND: 2,
+  ISAK: 13,
+  WATKINS: 14,
+  // Defenders (element_type: 2)
+  VAN_DIJK: 5,
+  ALEXANDER_ARNOLD: 10,
+  GABRIEL: 11,
+  GVARDIOL: 16,
+  SALIBA: 17,
+  // Goalkeepers (element_type: 1)
+  MARTINEZ: 6,
+  ALISSON: 15,
+  RAYA: 18,
+} as const
+
 /**
  * Bootstrap static response - contains all players, teams, gameweeks
  */
@@ -221,67 +244,70 @@ export function mockEntryResponse(entryId: number) {
  * Different managers have slightly different picks to create varied ownership percentages
  */
 export function mockPicksResponse(entryId: number, gw: number) {
+  const P = PLAYER_IDS // Shorthand for readability
+
   // Base picks that all managers share (template players)
   const basePicks = [
-    { element: 6, position: 1, multiplier: 1, is_captain: false, is_vice_captain: false },   // GK: Martinez - all managers
-    { element: 5, position: 2, multiplier: 1, is_captain: false, is_vice_captain: false },   // DEF: Van Dijk - all managers
-    { element: 1, position: 5, multiplier: 2, is_captain: true, is_vice_captain: false },    // MID: Salah (C) - all managers
-    { element: 2, position: 9, multiplier: 1, is_captain: false, is_vice_captain: false },   // FWD: Haaland - all managers
+    { element: P.MARTINEZ, position: 1, multiplier: 1, is_captain: false, is_vice_captain: false },
+    { element: P.VAN_DIJK, position: 2, multiplier: 1, is_captain: false, is_vice_captain: false },
+    { element: P.SALAH, position: 5, multiplier: 2, is_captain: true, is_vice_captain: false },
+    { element: P.HAALAND, position: 9, multiplier: 1, is_captain: false, is_vice_captain: false },
   ]
 
   // Varied picks based on manager
-  const managerVariants: Record<number, Array<{ element: number; position: number; multiplier: number; is_captain: boolean; is_vice_captain: boolean }>> = {
+  type Pick = { element: number; position: number; multiplier: number; is_captain: boolean; is_vice_captain: boolean }
+  const managerVariants: Record<number, Pick[]> = {
     [MOCK_MANAGER_IDS.manager1]: [
-      { element: 10, position: 3, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: TAA
-      { element: 11, position: 4, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: Gabriel
-      { element: 3, position: 6, multiplier: 1, is_captain: false, is_vice_captain: false },   // MID: Palmer
-      { element: 4, position: 7, multiplier: 1, is_captain: false, is_vice_captain: true },    // MID: Saka (VC)
-      { element: 12, position: 8, multiplier: 1, is_captain: false, is_vice_captain: false },  // MID: Gordon
-      { element: 13, position: 10, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Isak
-      { element: 14, position: 11, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Watkins
-      { element: 15, position: 12, multiplier: 0, is_captain: false, is_vice_captain: false }, // Bench GK
-      { element: 16, position: 13, multiplier: 0, is_captain: false, is_vice_captain: false }, // Bench DEF
-      { element: 17, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false }, // Bench DEF
-      { element: 18, position: 15, multiplier: 0, is_captain: false, is_vice_captain: false }, // Bench GK (slot)
+      { element: P.ALEXANDER_ARNOLD, position: 3, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.GABRIEL, position: 4, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.PALMER, position: 6, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.SAKA, position: 7, multiplier: 1, is_captain: false, is_vice_captain: true },
+      { element: P.GORDON, position: 8, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.ISAK, position: 10, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.WATKINS, position: 11, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.ALISSON, position: 12, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.GVARDIOL, position: 13, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.SALIBA, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.RAYA, position: 15, multiplier: 0, is_captain: false, is_vice_captain: false },
     ],
     [MOCK_MANAGER_IDS.manager2]: [
-      { element: 10, position: 3, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: TAA - shared
-      { element: 16, position: 4, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: Gvardiol (diff)
-      { element: 3, position: 6, multiplier: 1, is_captain: false, is_vice_captain: false },   // MID: Palmer - shared
-      { element: 4, position: 7, multiplier: 1, is_captain: false, is_vice_captain: true },    // MID: Saka - shared
-      { element: 12, position: 8, multiplier: 1, is_captain: false, is_vice_captain: false },  // MID: Gordon - shared
-      { element: 13, position: 10, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Isak - shared
-      { element: 14, position: 11, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Watkins - shared
-      { element: 15, position: 12, multiplier: 0, is_captain: false, is_vice_captain: false },
-      { element: 11, position: 13, multiplier: 0, is_captain: false, is_vice_captain: false },
-      { element: 17, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false },
-      { element: 18, position: 15, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.ALEXANDER_ARNOLD, position: 3, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.GVARDIOL, position: 4, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.PALMER, position: 6, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.SAKA, position: 7, multiplier: 1, is_captain: false, is_vice_captain: true },
+      { element: P.GORDON, position: 8, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.ISAK, position: 10, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.WATKINS, position: 11, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.ALISSON, position: 12, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.GABRIEL, position: 13, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.SALIBA, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.RAYA, position: 15, multiplier: 0, is_captain: false, is_vice_captain: false },
     ],
     [MOCK_MANAGER_IDS.manager3]: [
-      { element: 10, position: 3, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: TAA - shared
-      { element: 11, position: 4, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: Gabriel - shared
-      { element: 3, position: 6, multiplier: 1, is_captain: false, is_vice_captain: false },   // MID: Palmer - shared
-      { element: 12, position: 7, multiplier: 1, is_captain: false, is_vice_captain: true },   // MID: Gordon (VC diff)
-      { element: 4, position: 8, multiplier: 1, is_captain: false, is_vice_captain: false },   // MID: Saka - shared
-      { element: 14, position: 10, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Watkins - shared
-      { element: 13, position: 11, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Isak - shared
-      { element: 15, position: 12, multiplier: 0, is_captain: false, is_vice_captain: false },
-      { element: 16, position: 13, multiplier: 0, is_captain: false, is_vice_captain: false },
-      { element: 17, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false },
-      { element: 18, position: 15, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.ALEXANDER_ARNOLD, position: 3, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.GABRIEL, position: 4, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.PALMER, position: 6, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.GORDON, position: 7, multiplier: 1, is_captain: false, is_vice_captain: true },
+      { element: P.SAKA, position: 8, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.WATKINS, position: 10, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.ISAK, position: 11, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.ALISSON, position: 12, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.GVARDIOL, position: 13, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.SALIBA, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.RAYA, position: 15, multiplier: 0, is_captain: false, is_vice_captain: false },
     ],
     [MOCK_MANAGER_IDS.manager4]: [
-      { element: 17, position: 3, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: Saliba (diff)
-      { element: 11, position: 4, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: Gabriel - shared
-      { element: 3, position: 6, multiplier: 1, is_captain: false, is_vice_captain: false },   // MID: Palmer - shared
-      { element: 4, position: 7, multiplier: 1, is_captain: false, is_vice_captain: true },    // MID: Saka - shared
-      { element: 12, position: 8, multiplier: 1, is_captain: false, is_vice_captain: false },  // MID: Gordon - shared
-      { element: 14, position: 10, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Watkins - shared
-      { element: 13, position: 11, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Isak - shared
-      { element: 15, position: 12, multiplier: 0, is_captain: false, is_vice_captain: false },
-      { element: 10, position: 13, multiplier: 0, is_captain: false, is_vice_captain: false }, // Bench: TAA (diff)
-      { element: 16, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false },
-      { element: 18, position: 15, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.SALIBA, position: 3, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.GABRIEL, position: 4, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.PALMER, position: 6, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.SAKA, position: 7, multiplier: 1, is_captain: false, is_vice_captain: true },
+      { element: P.GORDON, position: 8, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.WATKINS, position: 10, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.ISAK, position: 11, multiplier: 1, is_captain: false, is_vice_captain: false },
+      { element: P.ALISSON, position: 12, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.ALEXANDER_ARNOLD, position: 13, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.GVARDIOL, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.RAYA, position: 15, multiplier: 0, is_captain: false, is_vice_captain: false },
     ],
   }
 

@@ -111,7 +111,7 @@ export function ManagerModal({
       return 'Loading...'
     }
     return (
-      <span className={styles.headerContent}>
+      <span className={styles.headerContent} data-testid="modal-header">
         <span className={styles.teamName}>{managerInfo.name}</span>
         <span className={styles.headerPoints}>
           <strong>{picks.entry_history.points}</strong> pts
@@ -211,19 +211,22 @@ export function ManagerModal({
       }
 
       return (
-        <div key={pick.element} className={styles.player}>
+        <div key={pick.element} className={styles.player} data-testid="player">
           <div className={styles.playerShirt}>
             {team && (
               <img
                 src={getShirtUrl(team.code)}
                 alt={team.short_name}
                 className={styles.shirtImage}
+                data-testid="shirt-image"
               />
             )}
             {pick.is_captain && <span className={styles.badge}>C</span>}
             {pick.is_vice_captain && <span className={styles.badge}>V</span>}
           </div>
-          <div className={styles.playerName}>{player.web_name}</div>
+          <div className={styles.playerName} data-testid="player-name">
+            {player.web_name}
+          </div>
           <div className={styles.playerPoints}>{getPointsDisplay()}</div>
         </div>
       )
@@ -231,24 +234,26 @@ export function ManagerModal({
 
     return (
       <>
-        <div className={styles.pitch}>
-          <div className={styles.row}>
+        <div className={styles.pitch} data-testid="pitch">
+          <div className={styles.row} data-testid="pitch-row-forwards">
             {forwards.map(({ pick, player }) => renderPlayer(pick, player!))}
           </div>
-          <div className={styles.row}>
+          <div className={styles.row} data-testid="pitch-row-midfielders">
             {midfielders.map(({ pick, player }) => renderPlayer(pick, player!))}
           </div>
-          <div className={styles.row}>
+          <div className={styles.row} data-testid="pitch-row-defenders">
             {defenders.map(({ pick, player }) => renderPlayer(pick, player!))}
           </div>
-          <div className={styles.row}>
+          <div className={styles.row} data-testid="pitch-row-goalkeepers">
             {goalkeepers.map(({ pick, player }) => renderPlayer(pick, player!))}
           </div>
         </div>
 
-        <div className={styles.bench}>
-          <h4 className={styles.benchTitle}>Bench</h4>
-          <div className={styles.benchPlayers}>
+        <div className={styles.bench} data-testid="bench">
+          <h4 className={styles.benchTitle} data-testid="bench-title">
+            Bench
+          </h4>
+          <div className={styles.benchPlayers} data-testid="bench-players">
             {benchPlayers.map(({ pick, player }) => renderPlayer(pick, player!))}
           </div>
         </div>

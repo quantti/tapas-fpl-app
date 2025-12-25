@@ -52,7 +52,7 @@ export function Statistics() {
     <div className={styles.Statistics}>
       <Header />
       <h1 className={styles.title}>Statistics</h1>
-      <div className={styles.statsGrid}>
+      <div className={styles.statsGrid} data-testid="stats-grid">
         <StatsCards managerDetails={managerDetails} />
         <BenchPoints managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
         <CaptainSuccess

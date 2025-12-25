@@ -37,30 +37,14 @@ jobs:
         working-directory: frontend
         run: npm run test:e2e:docker:update
 
-      - name: Upload updated snapshots
-        uses: actions/upload-artifact@v4
-        with:
-          name: updated-snapshots
-          path: |
-            frontend/tests/**/*.png
-            frontend/tests/**/*-snapshots/
-          retention-days: 30
-
-      - name: Check for changes
-        id: git-check
-        working-directory: frontend
+      - name: Commit and push snapshots
         run: |
-          git add -A
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add frontend/tests/**/*.png frontend/tests/**/*-snapshots/ || true
           if git diff --staged --quiet; then
-            echo "changes=false" >> $GITHUB_OUTPUT
+            echo "No snapshot changes to commit"
           else
-            echo "changes=true" >> $GITHUB_OUTPUT
+            git commit -m "chore: update Playwright snapshots"
+            git push
           fi
-
-      - name: Commit and push
-        if: steps.git-check.outputs.changes == 'true'
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git commit -m "chore: update Playwright snapshots from CI"
-          git push

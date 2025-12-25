@@ -5,10 +5,11 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 import unicorn from 'eslint-plugin-unicorn'
 import sonarjs from 'eslint-plugin-sonarjs'
+import vitest from '@vitest/eslint-plugin'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'tests']),
+  globalIgnores(['dist']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -51,6 +52,21 @@ export default defineConfig([
       'sonarjs/no-small-switch': 'warn',
       'sonarjs/prefer-single-boolean-return': 'warn',
       'sonarjs/no-nested-conditional': 'warn',
+    },
+  },
+  // Test files - vitest rules
+  {
+    files: ['**/*.test.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
+    plugins: {
+      vitest,
+    },
+    rules: {
+      ...vitest.configs.recommended.rules,
+    },
+    languageOptions: {
+      globals: {
+        ...vitest.environments.env.globals,
+      },
     },
   },
 ])

@@ -85,11 +85,11 @@ export function PlayerOwnership({ managerDetails, playersMap, teamsMap }: Props)
   }
 
   return (
-    <div className={styles.PlayerOwnership}>
+    <div className={styles.PlayerOwnership} data-testid="player-ownership">
       <h3 className={styles.title}>
         <Users size={16} color="#14B8A6" aria-hidden="true" /> Player Ownership
       </h3>
-      <div className={styles.list}>
+      <div className={styles.list} data-testid="player-ownership-list">
         {ownership.map(({ player, team, count, percentage, ownerTeamNames }) => {
           const isClickable = percentage < 100
 

@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/test-fixtures'
-import { mockBootstrapResponse, mockFixturesResponse, mockLiveResponse } from './fixtures/mock-data'
+import { mockBootstrapResponse, mockLiveResponse } from './fixtures/mock-data'
 
 /**
  * Helper to set up countdown-specific mocks that override the default mocks.

@@ -38,12 +38,13 @@ export function Header() {
         onClick={() => setMenuOpen(!menuOpen)}
         aria-label={menuOpen ? 'Close menu' : 'Open menu'}
         aria-expanded={menuOpen}
+        data-testid="menu-button"
       >
         {menuOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
       {menuOpen && (
-        <nav ref={menuRef} className={styles.nav}>
+        <nav ref={menuRef} className={styles.nav} data-testid="nav-menu">
           <Link
             to="/"
             className={`${styles.navLink} ${location.pathname === '/' ? styles.active : ''}`}
@@ -75,6 +76,7 @@ export function Header() {
               onClick={toggleTheme}
               role="switch"
               aria-checked={theme === 'dark'}
+              data-testid="theme-toggle"
             >
               <span className={styles.toggleKnob} />
             </button>

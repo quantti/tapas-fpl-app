@@ -320,19 +320,27 @@ npm run test:update-snapshots   # Regenerates all visual snapshots locally
 - `src/components/PlayerOwnership.test.tsx` - Component tests
 
 **E2E tests:**
-- `tests/responsive.spec.ts` - Layout, navigation, responsive design, visual snapshots
-- `tests/countdown.spec.ts` - Gameweek countdown display
+- `tests/dashboard.spec.ts` - Dashboard layout, standings table, responsive design
+- `tests/statistics.spec.ts` - Statistics page, stats grid, visual snapshots
+- `tests/navigation.spec.ts` - Cross-page navigation, dark mode toggle
+- `tests/player-ownership.spec.ts` - Player ownership modal, clickable rows
 - `tests/manager-modal.spec.ts` - Team lineup modal (pitch layout, players, bench)
+- `tests/countdown.spec.ts` - Gameweek countdown display
+
+**Test helpers:**
+- `tests/helpers/page-utils.ts` - Shared utilities: VIEWPORTS, SELECTORS, waitForPageReady()
 
 **Test fixtures:**
 - `tests/fixtures/test-fixtures.ts` - Playwright fixtures with API mocking
-- `tests/fixtures/mock-data.ts` - Mock FPL API responses
+- `tests/fixtures/mock-data.ts` - Mock FPL API responses with named PLAYER_IDS constants
 
 **Testing patterns:**
 - Mock `@tanstack/react-query` for hook tests
 - Use `vi.mock()` for API mocking in unit tests
 - E2E tests use `page.route()` to intercept API calls (see `test-fixtures.ts`)
 - `renderHook()` from `@testing-library/react` for hooks
+- Use `data-testid` attributes for stable E2E selectors
+- ESLint enforces vitest best practices via `@vitest/eslint-plugin`
 
 ## CI/CD
 
@@ -348,7 +356,7 @@ npm run test:update-snapshots   # Regenerates all visual snapshots locally
 **Update Snapshots Workflow** (`.github/workflows/update-snapshots.yml`):
 - Manual trigger via GitHub Actions UI
 - Regenerates visual snapshots using Docker
-- Auto-commits updated snapshots to the branch
+- Auto-commits updated snapshots directly to the branch
 
 ## Icons
 

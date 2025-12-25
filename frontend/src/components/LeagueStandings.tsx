@@ -96,7 +96,7 @@ export function LeagueStandings({
         {hasGamesInProgress && <span className={styles.liveBadge}>LIVE</span>}
       </div>
 
-      <table className={styles.table}>
+      <table className={styles.table} data-testid="standings-table">
         <thead className={styles.tableHead}>
           <tr>
             <th className={`${styles.headerCell} ${styles.colRank}`}>#</th>
@@ -138,6 +138,7 @@ export function LeagueStandings({
                     <button
                       type="button"
                       className={styles.teamName}
+                      data-testid="team-name-button"
                       onClick={() => onManagerClick?.(entry.entry)}
                     >
                       {entry.entry_name}
