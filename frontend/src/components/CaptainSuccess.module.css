@@ -25,6 +25,7 @@
   gap: var(--space-8);
   font-weight: 500;
   flex-shrink: 0;
+  order: 1; /* Move after chevron */
 }
 
 .picks {
