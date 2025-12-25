@@ -1,35 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <style>
-    .ball { fill: none; stroke-width: 3; }
-    .panel { stroke-width: 2; }
-    .hex { fill: none; stroke-width: 2; }
-    @media (prefers-color-scheme: light) {
-      .ball, .panel, .hex { stroke: #1a1a1a; }
-      .panel { fill: #1a1a1a; }
-    }
+    .icon { stroke: #1a1a1a; }
     @media (prefers-color-scheme: dark) {
-      .ball, .panel, .hex { stroke: #ffffff; }
-      .panel { fill: #ffffff; }
+      .icon { stroke: #ffffff; }
     }
   </style>
-  <!-- Ball outline -->
-  <circle class="ball" cx="50" cy="50" r="44"/>
-  <!-- Center pentagon -->
-  <polygon class="panel" points="50,28 60,38 56,50 44,50 40,38"/>
-  <!-- Top-left hexagon lines -->
-  <path class="hex" d="M40,38 L28,32 M28,32 L18,42 M18,42 L22,55"/>
-  <!-- Top-right hexagon lines -->
-  <path class="hex" d="M60,38 L72,32 M72,32 L82,42 M82,42 L78,55"/>
-  <!-- Bottom hexagon lines -->
-  <path class="hex" d="M44,50 L38,62 M56,50 L62,62 M38,62 L50,72 M62,62 L50,72"/>
-  <!-- Left pentagon partial -->
-  <polygon class="panel" points="22,55 18,42 8,50 10,65 22,68"/>
-  <!-- Right pentagon partial -->
-  <polygon class="panel" points="78,55 82,42 92,50 90,65 78,68"/>
-  <!-- Bottom-left pentagon partial -->
-  <polygon class="panel" points="38,62 22,68 20,82 32,90 50,72"/>
-  <!-- Bottom-right pentagon partial -->
-  <polygon class="panel" points="62,62 78,68 80,82 68,90 50,72"/>
-  <!-- Top arc detail -->
-  <path class="hex" d="M28,32 L36,18 M36,18 L50,12 M50,12 L64,18 M64,18 L72,32"/>
+  <circle class="icon" cx="12" cy="12" r="9"/>
+  <path class="icon" d="M12 7l4.76 3.45l-1.76 5.55h-6l-1.76 -5.55z"/>
+  <path class="icon" d="M12 7v-4m4.76 7.45l3.98 -1.45m-5.74 5.55l2.04 3.45m-8.04 -3.45l-2.04 3.45m.28 -8.54l-3.98 -1.46"/>
 </svg>
