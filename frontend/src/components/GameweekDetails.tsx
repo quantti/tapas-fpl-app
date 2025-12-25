@@ -89,35 +89,18 @@ export function GameweekDetails({ gameweek, managerDetails, fixtures }: Props) {
         </div>
       </div>
 
-      {/* Main row: Team Value and Captains side by side */}
-      <div className={styles.mainRow}>
-        <div className={styles.valuesPanel}>
-          <h3 className={styles.panelTitle}>💰 Team Value</h3>
-          <div className={styles.valuesList}>
-            {[...managerDetails]
-              .sort((a, b) => b.teamValue - a.teamValue)
-              .map((m, idx) => (
-                <div key={m.managerId} className={styles.valueRow}>
-                  <span className={styles.valueRank}>{idx + 1}</span>
-                  <span className={styles.valueName}>{m.teamName}</span>
-                  <span className={styles.valueAmount}>£{m.teamValue.toFixed(1)}m</span>
-                </div>
-              ))}
-          </div>
-        </div>
-
-        <div className={styles.captainsPanel}>
-          <h3 className={styles.panelTitle}>
-            <Copyright size={16} /> Captains
-          </h3>
-          <div className={styles.captainsList}>
-            {sortedManagers.map((m) => (
-              <div key={m.managerId} className={styles.captainRow}>
-                <span className={styles.teamName}>{m.teamName}</span>
-                <span className={styles.captainName}>{m.captain?.web_name || '—'}</span>
-              </div>
-            ))}
-          </div>
+      {/* Captains */}
+      <div className={styles.captainsPanel}>
+        <h3 className={styles.panelTitle}>
+          <Copyright size={16} /> Captains
+        </h3>
+        <div className={styles.captainsList}>
+          {sortedManagers.map((m) => (
+            <div key={m.managerId} className={styles.captainRow}>
+              <span className={styles.teamName}>{m.teamName}</span>
+              <span className={styles.captainName}>{m.captain?.web_name || '—'}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
