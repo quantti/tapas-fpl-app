@@ -1,0 +1,40 @@
+.RankedRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-4) 0;
+  font-size: var(--font-size-sm);
+
+  .rank {
+    width: 20px;
+    color: var(--color-text-muted);
+    font-weight: 500;
+  }
+
+  .name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text);
+  }
+
+  .value {
+    font-weight: 600;
+    flex-shrink: 0;
+    color: var(--color-text);
+
+    &.colorSuccess {
+      color: var(--color-success);
+    }
+
+    &.colorWarning {
+      color: var(--color-warning);
+    }
+
+    &.colorError {
+      color: var(--color-error);
+    }
+  }
+}

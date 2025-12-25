@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react'
-import { Crown, ChevronRight } from 'lucide-react'
+import { Crown } from 'lucide-react'
 import { useCaptainDifferential } from '../hooks/useCaptainSuccess'
 import type { DifferentialPick } from '../hooks/useCaptainSuccess'
 import type { ManagerGameweekData } from '../hooks/useFplData'
 import type { Gameweek, Player } from '../types/fpl'
+import { Card } from './ui/Card'
+import { CardHeader } from './ui/CardHeader'
+import { ListRowButton } from './ui/ListRowButton'
 import { CaptainDifferentialModal } from './CaptainDifferentialModal'
 import * as styles from './CaptainSuccess.module.css'
 
@@ -53,10 +56,8 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
   const totalDifferentialPicks = sortedData.reduce((sum, d) => sum + d.differentialPicks, 0)
 
   return (
-    <div className={styles.CaptainSuccess}>
-      <h3 className={styles.title}>
-        <Crown size={16} color="#FFD700" /> Differential Captains
-      </h3>
+    <Card>
+      <CardHeader icon={<Crown size={16} color="#FFD700" />}>Differential Captains</CardHeader>
       {loading && <p className={styles.loading}>Loading...</p>}
       {!loading && error && <p className={styles.error}>{error}</p>}
       {!loading && !error && totalDifferentialPicks === 0 && (
@@ -67,10 +68,8 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
           {sortedData
             .filter((d) => d.differentialPicks > 0)
             .map((data, index) => (
-              <button
+              <ListRowButton
                 key={data.managerId}
-                type="button"
-                className={styles.row}
                 onClick={() =>
                   setModal({
                     isOpen: true,
@@ -81,10 +80,7 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
                 }
               >
                 <span className={styles.rank}>{index + 1}</span>
-                <span className={styles.name}>
-                  {data.teamName}
-                  <ChevronRight size={14} className={styles.chevron} />
-                </span>
+                <span className={styles.name}>{data.teamName}</span>
                 <span className={styles.stats}>
                   <span className={styles.picks}>{data.differentialPicks}×</span>
                   <span
@@ -94,7 +90,7 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
                     {data.differentialGain}
                   </span>
                 </span>
-              </button>
+              </ListRowButton>
             ))}
         </div>
       )}
@@ -105,6 +101,6 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
         details={modal.details}
         totalGain={modal.totalGain}
       />
-    </div>
+    </Card>
   )
 }

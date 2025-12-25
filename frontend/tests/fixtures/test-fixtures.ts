@@ -110,7 +110,10 @@ export async function setupApiMocking(page: Page) {
 
   // Mock element summary (player details)
   await page.route('**/api/element-summary/*', async (route) => {
-    const match = route.request().url().match(/\/element-summary\/(\d+)/)
+    const match = route
+      .request()
+      .url()
+      .match(/\/element-summary\/(\d+)/)
     const playerId = match ? Number.parseInt(match[1]) : 1
     await route.fulfill({
       status: 200,

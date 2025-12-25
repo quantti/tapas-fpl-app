@@ -3,6 +3,8 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { TrendingUp } from 'lucide-react'
 import { useLeaguePositionHistory } from '../hooks/useLeaguePositionHistory'
 import type { ManagerGameweekData } from '../hooks/useFplData'
+import { Card } from './ui/Card'
+import { CardHeader } from './ui/CardHeader'
 import * as styles from './LeaguePositionChart.module.css'
 
 const MOBILE_BREAKPOINT = 768
@@ -47,10 +49,10 @@ export function LeaguePositionChart({ managerDetails, currentGameweek }: Props) 
   const managerCount = managerDetails.length
 
   return (
-    <div className={styles.LeaguePositionChart}>
-      <h3 className={styles.title}>
-        <TrendingUp size={16} color="#6366f1" /> League Position History
-      </h3>
+    <Card className={styles.card}>
+      <CardHeader icon={<TrendingUp size={16} color="#6366f1" />}>
+        League Position History
+      </CardHeader>
       {loading && <p className={styles.loading}>Loading history...</p>}
       {!loading && error && <p className={styles.error}>{error}</p>}
       {!loading && !error && data && (
@@ -126,6 +128,6 @@ export function LeaguePositionChart({ managerDetails, currentGameweek }: Props) 
           </div>
         </div>
       )}
-    </div>
+    </Card>
   )
 }

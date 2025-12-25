@@ -1,68 +1,18 @@
-.BenchPoints {
-  background: var(--color-background);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  padding: var(--space-16);
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
 
-  .title {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--color-text);
-    margin: 0 0 var(--space-12) 0;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
+.total {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
 
-  .total {
-    margin-left: auto;
-    font-size: var(--font-size-xs);
-    color: var(--color-text-muted);
-    font-weight: 500;
-    text-transform: none;
-  }
-
-  .list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-  }
-
-  .row {
-    display: flex;
-    align-items: center;
-    gap: var(--space-8);
-    padding: var(--space-4) 0;
-    font-size: var(--font-size-sm);
-  }
-
-  .rank {
-    width: 20px;
-    color: var(--color-text-muted);
-    font-weight: 500;
-  }
-
-  .name {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--color-text);
-  }
-
-  .value {
-    font-weight: 600;
-    color: var(--color-warning);
-    flex-shrink: 0;
-  }
-
-  .loading,
-  .error {
-    font-size: var(--font-size-sm);
-    color: var(--color-text-muted);
-    margin: 0;
-  }
+.loading,
+.error {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
 }

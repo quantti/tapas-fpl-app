@@ -12,13 +12,8 @@ beforeAll(() => {
   const originalError = console.error
   console.error = (...args: unknown[]) => {
     const message = args[0]
-    if (
-      typeof message === 'string' &&
-      message.includes('was not wrapped in act')
-    ) {
-      throw new Error(
-        `React act() warning detected - this causes test flakiness:\n${message}`
-      )
+    if (typeof message === 'string' && message.includes('was not wrapped in act')) {
+      throw new Error(`React act() warning detected - this causes test flakiness:\n${message}`)
     }
     originalError.apply(console, args)
   }
