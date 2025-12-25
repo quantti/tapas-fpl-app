@@ -290,7 +290,7 @@ Real-time updates during active gameweeks.
 npm test                    # Watch mode (unit tests)
 npm test -- --run           # Single run
 npm run test:e2e:docker     # E2E tests in Docker (recommended)
-npm run test:update-snapshots  # Update visual snapshots
+npm run test:e2e:docker:update  # Update visual snapshots (Docker)
 npm run test:e2e            # E2E with local Playwright (won't match snapshots)
 npm run test:e2e:ui         # E2E with UI (local Playwright)
 ```
@@ -306,8 +306,10 @@ E2E tests include visual regression tests using Playwright's `toHaveScreenshot()
 
 **Updating snapshots:**
 ```bash
-npm run test:update-snapshots   # Regenerates all visual snapshots locally
+npm run test:e2e:docker:update  # Regenerates all visual snapshots (Docker)
 ```
+
+**Important:** When making frontend changes that affect visual appearance, always regenerate snapshots before committing.
 
 **Note:** The version in the Docker image (`v1.57.0`) must match the `@playwright/test` version in `package.json`. Update both when upgrading Playwright.
 
@@ -502,7 +504,7 @@ npm run css:types        # Generate CSS module type definitions
 npm test                 # Run unit tests in watch mode
 npm test -- --run        # Run unit tests once
 npm run test:e2e:docker  # Run E2E tests in Docker (recommended)
-npm run test:update-snapshots  # Update visual snapshots
+npm run test:e2e:docker:update  # Update visual snapshots (Docker)
 ```
 
 ### Backend
