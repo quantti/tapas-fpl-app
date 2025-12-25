@@ -1,6 +1,4 @@
 export const __esModule: true
-export const CaptainSuccess: string
-export const chevron: string
 export const empty: string
 export const error: string
 export const gain: string
@@ -11,6 +9,4 @@ export const negative: string
 export const picks: string
 export const positive: string
 export const rank: string
-export const row: string
 export const stats: string
-export const title: string

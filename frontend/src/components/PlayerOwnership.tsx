@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Users, ChevronRight } from 'lucide-react'
+import { Users } from 'lucide-react'
 import type { ManagerGameweekData } from '../hooks/useFplData'
 import type { Player, Team } from '../types/fpl'
+import { Card } from './ui/Card'
+import { CardHeader } from './ui/CardHeader'
+import { ListRowButton } from './ui/ListRowButton'
 import { PlayerOwnershipModal } from './PlayerOwnershipModal'
 import * as styles from './PlayerOwnership.module.css'
 
@@ -85,26 +88,21 @@ export function PlayerOwnership({ managerDetails, playersMap, teamsMap }: Props)
   }
 
   return (
-    <div className={styles.PlayerOwnership} data-testid="player-ownership">
-      <h3 className={styles.title}>
-        <Users size={16} color="#14B8A6" aria-hidden="true" /> Player Ownership
-      </h3>
+    <Card data-testid="player-ownership">
+      <CardHeader icon={<Users size={16} color="#14B8A6" />}>Player Ownership</CardHeader>
       <div className={styles.list} data-testid="player-ownership-list">
         {ownership.map(({ player, team, count, percentage, ownerTeamNames }) => {
           const isClickable = percentage < 100
 
           if (isClickable) {
             return (
-              <button
+              <ListRowButton
                 key={player.id}
-                type="button"
-                className={styles.rowClickable}
                 onClick={() => handlePlayerClick(player.web_name, ownerTeamNames)}
               >
                 <span className={styles.player}>
                   {player.web_name}
                   <span className={styles.team}>({team?.short_name || '?'})</span>
-                  <ChevronRight size={14} className={styles.chevron} />
                 </span>
                 <span className={styles.ownership}>
                   <span className={styles.count}>
@@ -112,7 +110,7 @@ export function PlayerOwnership({ managerDetails, playersMap, teamsMap }: Props)
                   </span>
                   <span className={styles.percentage}>{Math.round(percentage)}%</span>
                 </span>
-              </button>
+              </ListRowButton>
             )
           }
 
@@ -138,6 +136,6 @@ export function PlayerOwnership({ managerDetails, playersMap, teamsMap }: Props)
         playerName={modal.playerName}
         teamNames={modal.teamNames}
       />
-    </div>
+    </Card>
   )
 }

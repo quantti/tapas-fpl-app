@@ -1,5 +1,8 @@
 import { Coins, TrendingDown } from 'lucide-react'
 import type { ManagerGameweekData } from '../hooks/useFplData'
+import { Card } from './ui/Card'
+import { CardHeader } from './ui/CardHeader'
+import { RankedRow } from './ui/RankedRow'
 import * as styles from './StatsCards.module.css'
 
 interface Props {
@@ -14,35 +17,37 @@ export function StatsCards({ managerDetails }: Props) {
 
   return (
     <div className={styles.StatsCards}>
-      <div className={styles.card}>
-        <h3 className={styles.title}>
-          <Coins size={16} color="#FFD700" /> Team Values
-        </h3>
+      <Card className={styles.card}>
+        <CardHeader icon={<Coins size={16} color="#FFD700" />}>Team Values</CardHeader>
         <div className={styles.list}>
           {sortedByValue.map((m, index) => (
-            <div key={m.managerId} className={styles.row}>
-              <span className={styles.rank}>{index + 1}</span>
-              <span className={styles.name}>{m.teamName}</span>
-              <span className={styles.value}>£{(m.teamValue + m.bank).toFixed(1)}m</span>
-            </div>
+            <RankedRow
+              key={m.managerId}
+              rank={index + 1}
+              name={m.teamName}
+              value={`£${(m.teamValue + m.bank).toFixed(1)}m`}
+              valueColor="success"
+            />
           ))}
         </div>
-      </div>
+      </Card>
 
-      <div className={styles.card}>
-        <h3 className={styles.title}>
-          <TrendingDown size={16} color="var(--color-error)" /> Total Hits
-        </h3>
+      <Card className={styles.card}>
+        <CardHeader icon={<TrendingDown size={16} color="var(--color-error)" />}>
+          Total Hits
+        </CardHeader>
         <div className={styles.list}>
           {sortedByHits.map((m, index) => (
-            <div key={m.managerId} className={styles.row}>
-              <span className={styles.rank}>{index + 1}</span>
-              <span className={styles.name}>{m.teamName}</span>
-              <span className={`${styles.value} ${styles.negative}`}>-{m.totalHitsCost}</span>
-            </div>
+            <RankedRow
+              key={m.managerId}
+              rank={index + 1}
+              name={m.teamName}
+              value={`-${m.totalHitsCost}`}
+              valueColor="error"
+            />
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

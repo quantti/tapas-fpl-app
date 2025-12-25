@@ -26,8 +26,8 @@ export const SELECTORS = {
   // Standings table
   TEAM_BUTTONS: 'table tbody button',
 
-  // Player ownership
-  CLICKABLE_ROWS: '[class*="rowClickable"]',
+  // Clickable list rows (ListRowButton component)
+  CLICKABLE_ROWS: '[class*="ListRowButton"]',
 
   // Statistics page
   STATS_PATH: '/statistics',
