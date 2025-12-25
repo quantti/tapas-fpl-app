@@ -334,6 +334,10 @@ npm run test:update-snapshots   # Regenerates all visual snapshots locally
 - `tests/fixtures/test-fixtures.ts` - Playwright fixtures with API mocking
 - `tests/fixtures/mock-data.ts` - Mock FPL API responses with named PLAYER_IDS constants
 
+**Mock data design:** Manager 4 has different player picks than Managers 1-3. This creates varied ownership percentages (25%, 75%, 100%) so PlayerOwnership tests can verify clickable rows (players with <100% ownership are clickable).
+
+**Visual snapshots:** Each test file stores snapshots in a directory named `{test-file}.spec.ts-snapshots/`. When splitting test files, snapshots must be copied to the new directory.
+
 **Testing patterns:**
 - Mock `@tanstack/react-query` for hook tests
 - Use `vi.mock()` for API mocking in unit tests
