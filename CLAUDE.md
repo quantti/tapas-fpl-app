@@ -349,6 +349,148 @@ npm run test:e2e:docker:update  # Regenerates all visual snapshots (Docker)
 - ESLint enforces vitest best practices via `@vitest/eslint-plugin`
 - Biome handles all formatting (code + CSS) - no stylelint
 
+### React Testing Library Best Practices
+
+**The Golden Rule**: Test behavior, not implementation details. Tests should interact with components the way users do.
+
+#### Query Priority (Most to Least Preferred)
+
+1. **`getByRole`** - Best choice; validates accessibility
+   ```tsx
+   // ✅ User-focused
+   screen.getByRole('button', { name: /submit/i })
+   screen.getByRole('textbox', { name: /username/i })
+
+   // ❌ Implementation detail
+   screen.getByTestId('submit-button')
+   container.querySelector('.btn-submit')
+   ```
+
+2. **`getByLabelText`** - For form inputs
+3. **`getByText`** - For non-interactive content
+4. **`getByTestId`** - Last resort for complex components
+
+#### Use `screen` Object
+
+```tsx
+// ❌ Outdated pattern
+const { getByRole } = render(<Component />)
+getByRole('button')
+
+// ✅ Modern pattern
+render(<Component />)
+screen.getByRole('button')
+```
+
+#### Query Variants
+
+```tsx
+// getBy* - Element must exist (throws if not found)
+expect(screen.getByRole('alert')).toBeInTheDocument()
+
+// queryBy* - ONLY for asserting non-existence
+expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+// findBy* - For async elements (returns Promise)
+const button = await screen.findByRole('button')
+```
+
+#### Use `user-event` Over `fireEvent`
+
+```tsx
+// ❌ Unrealistic - fires single event
+fireEvent.change(input, { target: { value: 'hello' } })
+
+// ✅ Realistic - simulates actual user typing
+const user = userEvent.setup()
+await user.type(input, 'hello')
+await user.click(screen.getByRole('button'))
+```
+
+#### Async Testing
+
+```tsx
+// ❌ Verbose
+const button = await waitFor(() => screen.getByRole('button'))
+
+// ✅ Simpler - findBy* handles waiting
+const button = await screen.findByRole('button')
+
+// waitFor for side effects only
+await waitFor(() => expect(mockFn).toHaveBeenCalled())
+```
+
+#### waitFor Best Practices
+
+```tsx
+// ❌ Multiple assertions - slow failure
+await waitFor(() => {
+  expect(fetch).toHaveBeenCalledWith('foo')
+  expect(fetch).toHaveBeenCalledTimes(1)
+})
+
+// ✅ Single assertion in waitFor
+await waitFor(() => expect(fetch).toHaveBeenCalledWith('foo'))
+expect(fetch).toHaveBeenCalledTimes(1)
+
+// ❌ Side effects inside waitFor (runs multiple times!)
+await waitFor(() => {
+  fireEvent.click(button)
+  expect(result).toBeInTheDocument()
+})
+
+// ✅ Side effects outside
+fireEvent.click(button)
+await waitFor(() => expect(result).toBeInTheDocument())
+```
+
+#### Use jest-dom Matchers
+
+```tsx
+// ❌ Generic assertions
+expect(button.disabled).toBe(true)
+
+// ✅ Descriptive error messages
+expect(button).toBeDisabled()
+expect(element).toBeInTheDocument()
+expect(element).toHaveTextContent(/hello/i)
+```
+
+#### Avoid act() Warnings
+
+```tsx
+// render() and fireEvent already wrap in act()
+// Only use act() for direct state updates
+
+// ❌ Redundant
+act(() => { render(<Component />) })
+
+// ✅ Correct
+render(<Component />)
+```
+
+#### Don't Test Implementation Details
+
+```tsx
+// ❌ Testing CSS class names (implementation detail)
+expect(element).toHaveClass('active')
+
+// ✅ Test visible behavior
+expect(element).toHaveStyle({ backgroundColor: 'blue' })
+// Or better: test what the user actually sees/experiences
+expect(screen.getByText('Active')).toBeInTheDocument()
+
+// ❌ Testing internal state
+expect(component.state.isLoading).toBe(true)
+
+// ✅ Test what user sees
+expect(screen.getByRole('progressbar')).toBeInTheDocument()
+```
+
+#### Resources
+- [Kent C. Dodds: Common RTL Mistakes](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library)
+- [Testing Library Docs](https://testing-library.com/docs/queries/about#priority)
+
 ## CI/CD
 
 **GitHub Actions** (`.github/workflows/ci.yml`):
