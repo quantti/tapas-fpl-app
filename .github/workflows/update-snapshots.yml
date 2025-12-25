@@ -8,6 +8,9 @@ on:
         required: false
         default: 'main'
 
+permissions:
+  contents: write
+
 jobs:
   update-snapshots:
     name: Update Snapshots
