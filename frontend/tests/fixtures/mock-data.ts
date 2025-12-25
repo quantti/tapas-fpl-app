@@ -32,6 +32,8 @@ export const PLAYER_IDS = {
   GABRIEL: 11,
   GVARDIOL: 16,
   SALIBA: 17,
+  LEWIS: 19,    // Budget defender for Manager 4 only
+  MUNOZ: 20,    // Budget defender for Manager 4 only
   // Goalkeepers (element_type: 1)
   MARTINEZ: 6,
   ALISSON: 15,
@@ -140,6 +142,9 @@ export const mockBootstrapResponse = {
     { id: 6, web_name: 'Martinez', first_name: 'Emiliano', second_name: 'Martinez', team: 2, element_type: 1, now_cost: 52, form: '4.5', total_points: 75, points_per_game: '4.2', selected_by_percent: '25.5', expected_goals: '0', expected_assists: '0', expected_goal_involvements: '0', minutes: 1620, goals_scored: 0, assists: 0, clean_sheets: 8, bonus: 5, status: 'a' },
     { id: 15, web_name: 'Alisson', first_name: 'Alisson', second_name: 'Becker', team: 11, element_type: 1, now_cost: 55, form: '4.8', total_points: 78, points_per_game: '4.3', selected_by_percent: '20.2', expected_goals: '0', expected_assists: '0', expected_goal_involvements: '0', minutes: 1500, goals_scored: 0, assists: 0, clean_sheets: 9, bonus: 6, status: 'a' },
     { id: 18, web_name: 'Raya', first_name: 'David', second_name: 'Raya', team: 1, element_type: 1, now_cost: 55, form: '4.5', total_points: 72, points_per_game: '4.0', selected_by_percent: '18.8', expected_goals: '0', expected_assists: '0', expected_goal_involvements: '0', minutes: 1530, goals_scored: 0, assists: 0, clean_sheets: 10, bonus: 4, status: 'a' },
+    // Budget defenders (for differential ownership)
+    { id: 19, web_name: 'Lewis', first_name: 'Rico', second_name: 'Lewis', team: 12, element_type: 2, now_cost: 45, form: '3.8', total_points: 55, points_per_game: '3.2', selected_by_percent: '8.5', expected_goals: '0.5', expected_assists: '1.2', expected_goal_involvements: '1.7', minutes: 1100, goals_scored: 1, assists: 1, clean_sheets: 6, bonus: 3, status: 'a' },
+    { id: 20, web_name: 'Munoz', first_name: 'Daniel', second_name: 'Munoz', team: 7, element_type: 2, now_cost: 48, form: '4.0', total_points: 58, points_per_game: '3.4', selected_by_percent: '5.2', expected_goals: '1.0', expected_assists: '2.0', expected_goal_involvements: '3.0', minutes: 1200, goals_scored: 1, assists: 2, clean_sheets: 5, bonus: 4, status: 'a' },
   ],
   element_types: [
     { id: 1, singular_name: 'Goalkeeper', singular_name_short: 'GKP', plural_name: 'Goalkeepers', plural_name_short: 'GKP' },
@@ -296,6 +301,9 @@ export function mockPicksResponse(entryId: number, gw: number) {
       { element: P.SALIBA, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false },
       { element: P.RAYA, position: 15, multiplier: 0, is_captain: false, is_vice_captain: false },
     ],
+    // Manager 4 has different picks to create varied ownership (not 100% for all players)
+    // Doesn't have: Alexander-Arnold, Gvardiol (creates 75% ownership for them)
+    // Only manager with: LEWIS, MUNOZ (creates 25% ownership for them)
     [MOCK_MANAGER_IDS.manager4]: [
       { element: P.SALIBA, position: 3, multiplier: 1, is_captain: false, is_vice_captain: false },
       { element: P.GABRIEL, position: 4, multiplier: 1, is_captain: false, is_vice_captain: false },
@@ -305,8 +313,8 @@ export function mockPicksResponse(entryId: number, gw: number) {
       { element: P.WATKINS, position: 10, multiplier: 1, is_captain: false, is_vice_captain: false },
       { element: P.ISAK, position: 11, multiplier: 1, is_captain: false, is_vice_captain: false },
       { element: P.ALISSON, position: 12, multiplier: 0, is_captain: false, is_vice_captain: false },
-      { element: P.ALEXANDER_ARNOLD, position: 13, multiplier: 0, is_captain: false, is_vice_captain: false },
-      { element: P.GVARDIOL, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.LEWIS, position: 13, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: P.MUNOZ, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false },
       { element: P.RAYA, position: 15, multiplier: 0, is_captain: false, is_vice_captain: false },
     ],
   }
@@ -425,6 +433,9 @@ export const mockLiveResponse = {
     { id: 6, stats: { minutes: 90, goals_scored: 0, assists: 0, clean_sheets: 1, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 3, bonus: 1, bps: 28, total_points: 8 }, explain: [{ fixture: 1, stats: [] }] },
     { id: 15, stats: { minutes: 90, goals_scored: 0, assists: 0, clean_sheets: 1, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 5, bonus: 2, bps: 35, total_points: 10 }, explain: [{ fixture: 2, stats: [] }] },
     { id: 18, stats: { minutes: 90, goals_scored: 0, assists: 0, clean_sheets: 1, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 4, bonus: 1, bps: 30, total_points: 9 }, explain: [{ fixture: 3, stats: [] }] },
+    // Budget defenders (differential ownership)
+    { id: 19, stats: { minutes: 75, goals_scored: 0, assists: 0, clean_sheets: 1, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 0, bonus: 0, bps: 15, total_points: 5 }, explain: [{ fixture: 2, stats: [] }] },
+    { id: 20, stats: { minutes: 90, goals_scored: 0, assists: 1, clean_sheets: 0, goals_conceded: 2, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 1, red_cards: 0, saves: 0, bonus: 0, bps: 12, total_points: 3 }, explain: [{ fixture: 1, stats: [] }] },
   ],
 }
 

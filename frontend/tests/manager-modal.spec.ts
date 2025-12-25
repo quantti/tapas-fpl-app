@@ -91,11 +91,11 @@ test.describe('Manager Modal - Team Lineup', () => {
     await expect(dialog).toBeVisible({ timeout: 5000 })
     await waitForDataLoad(page)
 
-    // Check for bench section
-    const bench = dialog.locator('[class*="bench"]')
+    // Check for bench section - use data-testid for specificity
+    const bench = dialog.locator('[data-testid="bench"]')
     await expect(bench).toBeVisible({ timeout: 5000 })
 
-    const benchTitle = bench.locator('[class*="benchTitle"], h4')
+    const benchTitle = dialog.locator('[data-testid="bench-title"]')
     await expect(benchTitle).toContainText(/bench/i)
   })
 
