@@ -203,7 +203,6 @@ describe('useLiveScoring - polling', () => {
   })
 
   afterEach(() => {
-    vi.runOnlyPendingTimers()
     vi.useRealTimers()
     vi.clearAllMocks()
   })
@@ -211,7 +210,7 @@ describe('useLiveScoring - polling', () => {
   it('should poll at specified interval when isLive is true', async () => {
     renderHook(() => useLiveScoring(17, true, 30000)) // 30 second interval
 
-    // Initial fetch
+    // Initial fetch happens immediately on mount - flush promises with advanceTimersByTimeAsync(0)
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0)
     })
@@ -235,7 +234,7 @@ describe('useLiveScoring - polling', () => {
       initialProps: { isLive: true },
     })
 
-    // Initial fetch
+    // Initial fetch happens immediately on mount
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0)
     })
@@ -244,6 +243,9 @@ describe('useLiveScoring - polling', () => {
     // Change isLive to false - will trigger one more fetch but no polling
     await act(async () => {
       rerender({ isLive: false })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
     })
     expect(fplApi.getLiveGameweek).toHaveBeenCalledTimes(2) // One more fetch when isLive changes
 
