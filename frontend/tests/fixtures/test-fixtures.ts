@@ -1,6 +1,8 @@
 /**
  * Playwright test fixtures with API mocking.
  * Extends base test to intercept API calls and return mock data.
+ * Uses wildcard patterns (**) to match any origin, ensuring mocks work
+ * regardless of how API_BASE_URL is configured.
  */
 
 import { test as base, Page } from '@playwright/test'
@@ -18,16 +20,13 @@ import {
   MOCK_MANAGER_IDS,
 } from './mock-data'
 
-// Get API URL from environment or use default
-const API_BASE_URL = process.env.VITE_API_URL || 'https://tapas-fpl-backend.fly.dev'
-
 /**
  * Setup API mocking for a page.
  * Intercepts all FPL API calls and returns mock data.
  */
 export async function setupApiMocking(page: Page) {
   // Mock bootstrap-static
-  await page.route(`${API_BASE_URL}/api/bootstrap-static`, async (route) => {
+  await page.route('**/api/bootstrap-static', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -36,7 +35,7 @@ export async function setupApiMocking(page: Page) {
   })
 
   // Mock fixtures - handle both with and without event parameter
-  await page.route(`${API_BASE_URL}/api/fixtures**`, async (route) => {
+  await page.route('**/api/fixtures**', async (route) => {
     const url = new URL(route.request().url())
     const event = url.searchParams.get('event')
 
@@ -54,7 +53,7 @@ export async function setupApiMocking(page: Page) {
   })
 
   // Mock league standings
-  await page.route(`${API_BASE_URL}/api/leagues-classic/*/standings**`, async (route) => {
+  await page.route('**/api/leagues-classic/*/standings**', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -64,7 +63,7 @@ export async function setupApiMocking(page: Page) {
 
   // Mock entry (manager) details - use ** to match multiple path segments
   // Matches /api/entry/12345, /api/entry/12345/event/18/picks, /api/entry/12345/history, etc.
-  await page.route(`${API_BASE_URL}/api/entry/**`, async (route) => {
+  await page.route('**/api/entry/**', async (route) => {
     const url = route.request().url()
     // Extract entry ID from URL, handling various patterns
     const match = url.match(/\/api\/entry\/(\d+)(?:\/|$|\?)/)
@@ -101,7 +100,7 @@ export async function setupApiMocking(page: Page) {
   })
 
   // Mock live gameweek data
-  await page.route(`${API_BASE_URL}/api/event/*/live`, async (route) => {
+  await page.route('**/api/event/*/live', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -110,7 +109,7 @@ export async function setupApiMocking(page: Page) {
   })
 
   // Mock element summary (player details)
-  await page.route(`${API_BASE_URL}/api/element-summary/*`, async (route) => {
+  await page.route('**/api/element-summary/*', async (route) => {
     const match = route.request().url().match(/\/element-summary\/(\d+)/)
     const playerId = match ? parseInt(match[1]) : 1
     await route.fulfill({
@@ -121,7 +120,7 @@ export async function setupApiMocking(page: Page) {
   })
 
   // Mock event status
-  await page.route(`${API_BASE_URL}/api/event-status`, async (route) => {
+  await page.route('**/api/event-status', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
