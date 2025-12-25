@@ -1,0 +1,518 @@
+/**
+ * Mock data fixtures for E2E tests.
+ * Based on backend/tests/conftest.py fixtures.
+ * These provide deterministic data for testing without hitting real API.
+ */
+
+// League ID used in the app (from environment or default)
+export const MOCK_LEAGUE_ID = 314
+
+// Manager IDs for the mock league
+export const MOCK_MANAGER_IDS = {
+  manager1: 12345,
+  manager2: 67890,
+  manager3: 11111,
+  manager4: 22222,
+}
+
+/**
+ * Bootstrap static response - contains all players, teams, gameweeks
+ */
+export const mockBootstrapResponse = {
+  events: [
+    {
+      id: 1,
+      name: 'Gameweek 1',
+      deadline_time: '2025-08-15T17:30:00Z',
+      finished: true,
+      is_current: false,
+      is_next: false,
+      data_checked: true,
+      deadline_time_epoch: 1723740600,
+      deadline_time_game_offset: 0,
+      highest_scoring_entry: 1000000,
+      average_entry_score: 55,
+      most_selected: 1,
+      most_transferred_in: 2,
+      top_element: 1,
+      most_captained: 1,
+      most_vice_captained: 2,
+    },
+    {
+      id: 18,
+      name: 'Gameweek 18',
+      deadline_time: '2025-12-21T11:00:00Z',
+      finished: true,
+      is_current: true,
+      is_next: false,
+      data_checked: true,
+      deadline_time_epoch: 1734778800,
+      deadline_time_game_offset: 0,
+      highest_scoring_entry: 1500000,
+      average_entry_score: 52,
+      most_selected: 1,
+      most_transferred_in: 3,
+      top_element: 2,
+      most_captained: 1,
+      most_vice_captained: 2,
+    },
+    {
+      id: 19,
+      name: 'Gameweek 19',
+      deadline_time: '2025-12-26T11:00:00Z',
+      finished: false,
+      is_current: false,
+      is_next: true,
+      data_checked: false,
+      deadline_time_epoch: 1735210800,
+      deadline_time_game_offset: 0,
+      highest_scoring_entry: null,
+      average_entry_score: null,
+      most_selected: null,
+      most_transferred_in: null,
+      top_element: null,
+      most_captained: null,
+      most_vice_captained: null,
+    },
+  ],
+  teams: [
+    { id: 1, name: 'Arsenal', short_name: 'ARS', code: 3, strength: 4 },
+    { id: 2, name: 'Aston Villa', short_name: 'AVL', code: 7, strength: 4 },
+    { id: 3, name: 'Bournemouth', short_name: 'BOU', code: 91, strength: 3 },
+    { id: 4, name: 'Brentford', short_name: 'BRE', code: 94, strength: 3 },
+    { id: 5, name: 'Brighton', short_name: 'BHA', code: 36, strength: 4 },
+    { id: 6, name: 'Chelsea', short_name: 'CHE', code: 8, strength: 4 },
+    { id: 7, name: 'Crystal Palace', short_name: 'CRY', code: 31, strength: 3 },
+    { id: 8, name: 'Everton', short_name: 'EVE', code: 11, strength: 3 },
+    { id: 9, name: 'Fulham', short_name: 'FUL', code: 54, strength: 3 },
+    { id: 10, name: 'Ipswich', short_name: 'IPS', code: 40, strength: 2 },
+    { id: 11, name: 'Liverpool', short_name: 'LIV', code: 14, strength: 5 },
+    { id: 12, name: 'Manchester City', short_name: 'MCI', code: 43, strength: 5 },
+    { id: 13, name: 'Manchester United', short_name: 'MUN', code: 1, strength: 4 },
+    { id: 14, name: 'Newcastle', short_name: 'NEW', code: 4, strength: 4 },
+    { id: 15, name: 'Nottingham Forest', short_name: 'NFO', code: 17, strength: 3 },
+    { id: 16, name: 'Southampton', short_name: 'SOU', code: 20, strength: 2 },
+    { id: 17, name: 'Tottenham', short_name: 'TOT', code: 6, strength: 4 },
+    { id: 18, name: 'West Ham', short_name: 'WHU', code: 21, strength: 3 },
+    { id: 19, name: 'Wolves', short_name: 'WOL', code: 39, strength: 3 },
+    { id: 20, name: 'Leicester', short_name: 'LEI', code: 13, strength: 3 },
+  ],
+  elements: [
+    // Midfielders (element_type: 3)
+    { id: 1, web_name: 'Salah', first_name: 'Mohamed', second_name: 'Salah', team: 11, element_type: 3, now_cost: 130, form: '8.5', total_points: 150, points_per_game: '8.3', selected_by_percent: '75.5', expected_goals: '10.5', expected_assists: '5.2', expected_goal_involvements: '15.7', minutes: 1500, goals_scored: 12, assists: 8, clean_sheets: 5, bonus: 25, status: 'a' },
+    { id: 3, web_name: 'Palmer', first_name: 'Cole', second_name: 'Palmer', team: 6, element_type: 3, now_cost: 115, form: '7.5', total_points: 130, points_per_game: '7.2', selected_by_percent: '55.3', expected_goals: '8.5', expected_assists: '6.2', expected_goal_involvements: '14.7', minutes: 1350, goals_scored: 10, assists: 7, clean_sheets: 3, bonus: 18, status: 'a' },
+    { id: 4, web_name: 'Saka', first_name: 'Bukayo', second_name: 'Saka', team: 1, element_type: 3, now_cost: 105, form: '6.8', total_points: 110, points_per_game: '6.1', selected_by_percent: '45.1', expected_goals: '5.5', expected_assists: '7.2', expected_goal_involvements: '12.7', minutes: 1400, goals_scored: 6, assists: 9, clean_sheets: 6, bonus: 15, status: 'a' },
+    { id: 12, web_name: 'Gordon', first_name: 'Anthony', second_name: 'Gordon', team: 14, element_type: 3, now_cost: 78, form: '5.5', total_points: 80, points_per_game: '4.7', selected_by_percent: '20.1', expected_goals: '4.2', expected_assists: '3.5', expected_goal_involvements: '7.7', minutes: 1300, goals_scored: 5, assists: 4, clean_sheets: 4, bonus: 10, status: 'a' },
+    // Forwards (element_type: 4)
+    { id: 2, web_name: 'Haaland', first_name: 'Erling', second_name: 'Haaland', team: 12, element_type: 4, now_cost: 150, form: '9.0', total_points: 145, points_per_game: '8.1', selected_by_percent: '85.2', expected_goals: '15.2', expected_assists: '2.1', expected_goal_involvements: '17.3', minutes: 1400, goals_scored: 16, assists: 3, clean_sheets: 0, bonus: 22, status: 'a' },
+    { id: 13, web_name: 'Isak', first_name: 'Alexander', second_name: 'Isak', team: 14, element_type: 4, now_cost: 92, form: '6.5', total_points: 95, points_per_game: '5.6', selected_by_percent: '30.5', expected_goals: '8.5', expected_assists: '2.0', expected_goal_involvements: '10.5', minutes: 1400, goals_scored: 10, assists: 2, clean_sheets: 0, bonus: 12, status: 'a' },
+    { id: 14, web_name: 'Watkins', first_name: 'Ollie', second_name: 'Watkins', team: 2, element_type: 4, now_cost: 88, form: '5.8', total_points: 85, points_per_game: '5.0', selected_by_percent: '25.2', expected_goals: '7.2', expected_assists: '3.5', expected_goal_involvements: '10.7', minutes: 1300, goals_scored: 8, assists: 4, clean_sheets: 0, bonus: 8, status: 'a' },
+    // Defenders (element_type: 2)
+    { id: 5, web_name: 'Van Dijk', first_name: 'Virgil', second_name: 'van Dijk', team: 11, element_type: 2, now_cost: 65, form: '5.5', total_points: 85, points_per_game: '4.7', selected_by_percent: '35.2', expected_goals: '2.5', expected_assists: '1.2', expected_goal_involvements: '3.7', minutes: 1500, goals_scored: 3, assists: 1, clean_sheets: 10, bonus: 8, status: 'a' },
+    { id: 10, web_name: 'Alexander-Arnold', first_name: 'Trent', second_name: 'Alexander-Arnold', team: 11, element_type: 2, now_cost: 72, form: '5.8', total_points: 90, points_per_game: '5.0', selected_by_percent: '42.5', expected_goals: '1.5', expected_assists: '4.2', expected_goal_involvements: '5.7', minutes: 1400, goals_scored: 2, assists: 5, clean_sheets: 9, bonus: 10, status: 'a' },
+    { id: 11, web_name: 'Gabriel', first_name: 'Gabriel', second_name: 'Magalhães', team: 1, element_type: 2, now_cost: 60, form: '5.2', total_points: 78, points_per_game: '4.3', selected_by_percent: '28.8', expected_goals: '2.0', expected_assists: '0.5', expected_goal_involvements: '2.5', minutes: 1500, goals_scored: 3, assists: 0, clean_sheets: 11, bonus: 7, status: 'a' },
+    { id: 16, web_name: 'Gvardiol', first_name: 'Josko', second_name: 'Gvardiol', team: 12, element_type: 2, now_cost: 58, form: '4.8', total_points: 70, points_per_game: '3.9', selected_by_percent: '18.5', expected_goals: '1.8', expected_assists: '1.2', expected_goal_involvements: '3.0', minutes: 1400, goals_scored: 2, assists: 1, clean_sheets: 8, bonus: 5, status: 'a' },
+    { id: 17, web_name: 'Saliba', first_name: 'William', second_name: 'Saliba', team: 1, element_type: 2, now_cost: 62, form: '5.0', total_points: 75, points_per_game: '4.2', selected_by_percent: '22.1', expected_goals: '1.2', expected_assists: '0.3', expected_goal_involvements: '1.5', minutes: 1450, goals_scored: 1, assists: 0, clean_sheets: 10, bonus: 6, status: 'a' },
+    // Goalkeepers (element_type: 1)
+    { id: 6, web_name: 'Martinez', first_name: 'Emiliano', second_name: 'Martinez', team: 2, element_type: 1, now_cost: 52, form: '4.5', total_points: 75, points_per_game: '4.2', selected_by_percent: '25.5', expected_goals: '0', expected_assists: '0', expected_goal_involvements: '0', minutes: 1620, goals_scored: 0, assists: 0, clean_sheets: 8, bonus: 5, status: 'a' },
+    { id: 15, web_name: 'Alisson', first_name: 'Alisson', second_name: 'Becker', team: 11, element_type: 1, now_cost: 55, form: '4.8', total_points: 78, points_per_game: '4.3', selected_by_percent: '20.2', expected_goals: '0', expected_assists: '0', expected_goal_involvements: '0', minutes: 1500, goals_scored: 0, assists: 0, clean_sheets: 9, bonus: 6, status: 'a' },
+    { id: 18, web_name: 'Raya', first_name: 'David', second_name: 'Raya', team: 1, element_type: 1, now_cost: 55, form: '4.5', total_points: 72, points_per_game: '4.0', selected_by_percent: '18.8', expected_goals: '0', expected_assists: '0', expected_goal_involvements: '0', minutes: 1530, goals_scored: 0, assists: 0, clean_sheets: 10, bonus: 4, status: 'a' },
+  ],
+  element_types: [
+    { id: 1, singular_name: 'Goalkeeper', singular_name_short: 'GKP', plural_name: 'Goalkeepers', plural_name_short: 'GKP' },
+    { id: 2, singular_name: 'Defender', singular_name_short: 'DEF', plural_name: 'Defenders', plural_name_short: 'DEF' },
+    { id: 3, singular_name: 'Midfielder', singular_name_short: 'MID', plural_name: 'Midfielders', plural_name_short: 'MID' },
+    { id: 4, singular_name: 'Forward', singular_name_short: 'FWD', plural_name: 'Forwards', plural_name_short: 'FWD' },
+  ],
+  game_settings: {
+    league_join_private_max: 25,
+    league_join_public_max: 5,
+    league_max_size_public_classic: 20,
+    league_max_size_public_h2h: 16,
+    league_max_size_private_h2h: 16,
+    squad_squadplay: 11,
+    squad_squadsize: 15,
+    squad_team_limit: 3,
+    squad_total_spend: 1000,
+    transfers_cap: 20,
+    transfers_sell_on_fee: 0.5,
+  },
+}
+
+/**
+ * Fixtures response - match schedule and results
+ */
+export const mockFixturesResponse = [
+  {
+    id: 1,
+    event: 18,
+    team_h: 11,
+    team_a: 17,
+    team_h_score: 3,
+    team_a_score: 0,
+    finished: true,
+    finished_provisional: true,
+    started: true,
+    kickoff_time: '2025-12-21T15:00:00Z',
+    team_h_difficulty: 2,
+    team_a_difficulty: 5,
+  },
+  {
+    id: 2,
+    event: 18,
+    team_h: 1,
+    team_a: 12,
+    team_h_score: 2,
+    team_a_score: 2,
+    finished: true,
+    finished_provisional: true,
+    started: true,
+    kickoff_time: '2025-12-21T17:30:00Z',
+    team_h_difficulty: 5,
+    team_a_difficulty: 4,
+  },
+  {
+    id: 3,
+    event: 19,
+    team_h: 6,
+    team_a: 9,
+    team_h_score: null,
+    team_a_score: null,
+    finished: false,
+    finished_provisional: false,
+    started: false,
+    kickoff_time: '2025-12-26T15:00:00Z',
+    team_h_difficulty: 2,
+    team_a_difficulty: 3,
+  },
+]
+
+/**
+ * Entry (manager) response
+ */
+export function mockEntryResponse(entryId: number) {
+  const managers: Record<number, { name: string; teamName: string }> = {
+    [MOCK_MANAGER_IDS.manager1]: { name: 'Alice Manager', teamName: 'Alice FC' },
+    [MOCK_MANAGER_IDS.manager2]: { name: 'Bob Manager', teamName: 'Bob United' },
+    [MOCK_MANAGER_IDS.manager3]: { name: 'Charlie Manager', teamName: 'Charlie City' },
+    [MOCK_MANAGER_IDS.manager4]: { name: 'Diana Manager', teamName: 'Diana Town' },
+  }
+
+  const manager = managers[entryId] || { name: 'Test Manager', teamName: 'Test FC' }
+  const [firstName, lastName] = manager.name.split(' ')
+
+  return {
+    id: entryId,
+    player_first_name: firstName,
+    player_last_name: lastName,
+    name: manager.teamName,
+    summary_overall_points: 1000 + (entryId % 100),
+    summary_overall_rank: 50000 + (entryId % 10000),
+    summary_event_points: 75 + (entryId % 20),
+    summary_event_rank: 100000 + (entryId % 50000),
+    started_event: 1,
+    favourite_team: 11,
+    current_event: 18,
+  }
+}
+
+/**
+ * Entry picks response - team selection for a gameweek
+ * Different managers have slightly different picks to create varied ownership percentages
+ */
+export function mockPicksResponse(entryId: number, gw: number) {
+  // Base picks that all managers share (template players)
+  const basePicks = [
+    { element: 6, position: 1, multiplier: 1, is_captain: false, is_vice_captain: false },   // GK: Martinez - all managers
+    { element: 5, position: 2, multiplier: 1, is_captain: false, is_vice_captain: false },   // DEF: Van Dijk - all managers
+    { element: 1, position: 5, multiplier: 2, is_captain: true, is_vice_captain: false },    // MID: Salah (C) - all managers
+    { element: 2, position: 9, multiplier: 1, is_captain: false, is_vice_captain: false },   // FWD: Haaland - all managers
+  ]
+
+  // Varied picks based on manager
+  const managerVariants: Record<number, Array<{ element: number; position: number; multiplier: number; is_captain: boolean; is_vice_captain: boolean }>> = {
+    [MOCK_MANAGER_IDS.manager1]: [
+      { element: 10, position: 3, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: TAA
+      { element: 11, position: 4, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: Gabriel
+      { element: 3, position: 6, multiplier: 1, is_captain: false, is_vice_captain: false },   // MID: Palmer
+      { element: 4, position: 7, multiplier: 1, is_captain: false, is_vice_captain: true },    // MID: Saka (VC)
+      { element: 12, position: 8, multiplier: 1, is_captain: false, is_vice_captain: false },  // MID: Gordon
+      { element: 13, position: 10, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Isak
+      { element: 14, position: 11, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Watkins
+      { element: 15, position: 12, multiplier: 0, is_captain: false, is_vice_captain: false }, // Bench GK
+      { element: 16, position: 13, multiplier: 0, is_captain: false, is_vice_captain: false }, // Bench DEF
+      { element: 17, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false }, // Bench DEF
+      { element: 18, position: 15, multiplier: 0, is_captain: false, is_vice_captain: false }, // Bench GK (slot)
+    ],
+    [MOCK_MANAGER_IDS.manager2]: [
+      { element: 10, position: 3, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: TAA - shared
+      { element: 16, position: 4, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: Gvardiol (diff)
+      { element: 3, position: 6, multiplier: 1, is_captain: false, is_vice_captain: false },   // MID: Palmer - shared
+      { element: 4, position: 7, multiplier: 1, is_captain: false, is_vice_captain: true },    // MID: Saka - shared
+      { element: 12, position: 8, multiplier: 1, is_captain: false, is_vice_captain: false },  // MID: Gordon - shared
+      { element: 13, position: 10, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Isak - shared
+      { element: 14, position: 11, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Watkins - shared
+      { element: 15, position: 12, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: 11, position: 13, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: 17, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: 18, position: 15, multiplier: 0, is_captain: false, is_vice_captain: false },
+    ],
+    [MOCK_MANAGER_IDS.manager3]: [
+      { element: 10, position: 3, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: TAA - shared
+      { element: 11, position: 4, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: Gabriel - shared
+      { element: 3, position: 6, multiplier: 1, is_captain: false, is_vice_captain: false },   // MID: Palmer - shared
+      { element: 12, position: 7, multiplier: 1, is_captain: false, is_vice_captain: true },   // MID: Gordon (VC diff)
+      { element: 4, position: 8, multiplier: 1, is_captain: false, is_vice_captain: false },   // MID: Saka - shared
+      { element: 14, position: 10, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Watkins - shared
+      { element: 13, position: 11, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Isak - shared
+      { element: 15, position: 12, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: 16, position: 13, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: 17, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: 18, position: 15, multiplier: 0, is_captain: false, is_vice_captain: false },
+    ],
+    [MOCK_MANAGER_IDS.manager4]: [
+      { element: 17, position: 3, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: Saliba (diff)
+      { element: 11, position: 4, multiplier: 1, is_captain: false, is_vice_captain: false },  // DEF: Gabriel - shared
+      { element: 3, position: 6, multiplier: 1, is_captain: false, is_vice_captain: false },   // MID: Palmer - shared
+      { element: 4, position: 7, multiplier: 1, is_captain: false, is_vice_captain: true },    // MID: Saka - shared
+      { element: 12, position: 8, multiplier: 1, is_captain: false, is_vice_captain: false },  // MID: Gordon - shared
+      { element: 14, position: 10, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Watkins - shared
+      { element: 13, position: 11, multiplier: 1, is_captain: false, is_vice_captain: false }, // FWD: Isak - shared
+      { element: 15, position: 12, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: 10, position: 13, multiplier: 0, is_captain: false, is_vice_captain: false }, // Bench: TAA (diff)
+      { element: 16, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false },
+      { element: 18, position: 15, multiplier: 0, is_captain: false, is_vice_captain: false },
+    ],
+  }
+
+  // Get picks for this manager, or use default (manager1's) picks
+  const variantPicks = managerVariants[entryId] || managerVariants[MOCK_MANAGER_IDS.manager1]
+  const allPicks = [...basePicks, ...variantPicks]
+
+  return {
+    active_chip: null,
+    automatic_subs: [],
+    entry_history: {
+      event: gw,
+      points: 75 + (entryId % 20),
+      total_points: 1000 + (entryId % 100) + gw * 50,
+      rank: 100000 + (entryId % 50000),
+      rank_sort: 100000 + (entryId % 50000),
+      overall_rank: 50000 + (entryId % 10000),
+      bank: 5,
+      value: 1000 + gw * 2,
+      event_transfers: gw > 1 ? 1 : 0,
+      event_transfers_cost: 0,
+      points_on_bench: 8,
+    },
+    picks: allPicks,
+  }
+}
+
+/**
+ * League standings response
+ */
+export const mockLeagueResponse = {
+  league: {
+    id: MOCK_LEAGUE_ID,
+    name: 'Tapas & Tackles',
+    created: '2025-07-01T00:00:00Z',
+    admin_entry: MOCK_MANAGER_IDS.manager1,
+    start_event: 1,
+    entry_can_leave: true,
+    entry_can_admin: false,
+    closed: false,
+  },
+  standings: {
+    has_next: false,
+    page: 1,
+    results: [
+      {
+        id: 1,
+        event_total: 82,
+        player_name: 'Alice Manager',
+        rank: 1,
+        last_rank: 2,
+        rank_sort: 1,
+        total: 1050,
+        entry: MOCK_MANAGER_IDS.manager1,
+        entry_name: 'Alice FC',
+      },
+      {
+        id: 2,
+        event_total: 78,
+        player_name: 'Bob Manager',
+        rank: 2,
+        last_rank: 1,
+        rank_sort: 2,
+        total: 1040,
+        entry: MOCK_MANAGER_IDS.manager2,
+        entry_name: 'Bob United',
+      },
+      {
+        id: 3,
+        event_total: 71,
+        player_name: 'Charlie Manager',
+        rank: 3,
+        last_rank: 3,
+        rank_sort: 3,
+        total: 985,
+        entry: MOCK_MANAGER_IDS.manager3,
+        entry_name: 'Charlie City',
+      },
+      {
+        id: 4,
+        event_total: 65,
+        player_name: 'Diana Manager',
+        rank: 4,
+        last_rank: 4,
+        rank_sort: 4,
+        total: 920,
+        entry: MOCK_MANAGER_IDS.manager4,
+        entry_name: 'Diana Town',
+      },
+    ],
+  },
+}
+
+/**
+ * Live event response - real-time player points
+ */
+export const mockLiveResponse = {
+  elements: [
+    // Midfielders - fixture 1 (team 11 vs team 17)
+    { id: 1, stats: { minutes: 90, goals_scored: 1, assists: 1, clean_sheets: 0, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 0, bonus: 3, bps: 45, total_points: 12 }, explain: [{ fixture: 1, stats: [] }] },
+    { id: 3, stats: { minutes: 90, goals_scored: 0, assists: 2, clean_sheets: 1, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 0, bonus: 1, bps: 35, total_points: 9 }, explain: [{ fixture: 1, stats: [] }] },
+    { id: 4, stats: { minutes: 85, goals_scored: 0, assists: 1, clean_sheets: 1, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 0, bonus: 0, bps: 25, total_points: 6 }, explain: [{ fixture: 1, stats: [] }] },
+    { id: 12, stats: { minutes: 90, goals_scored: 1, assists: 0, clean_sheets: 0, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 0, bonus: 0, bps: 22, total_points: 7 }, explain: [{ fixture: 2, stats: [] }] },
+    // Forwards - fixture 2 (team 1 vs team 12)
+    { id: 2, stats: { minutes: 90, goals_scored: 2, assists: 0, clean_sheets: 0, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 1, red_cards: 0, saves: 0, bonus: 3, bps: 55, total_points: 15 }, explain: [{ fixture: 2, stats: [] }] },
+    { id: 13, stats: { minutes: 90, goals_scored: 1, assists: 1, clean_sheets: 0, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 0, bonus: 2, bps: 40, total_points: 10 }, explain: [{ fixture: 2, stats: [] }] },
+    { id: 14, stats: { minutes: 78, goals_scored: 0, assists: 0, clean_sheets: 0, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 0, bonus: 0, bps: 12, total_points: 2 }, explain: [{ fixture: 3, stats: [] }] },
+    // Defenders
+    { id: 5, stats: { minutes: 90, goals_scored: 0, assists: 0, clean_sheets: 1, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 0, bonus: 2, bps: 30, total_points: 8 }, explain: [{ fixture: 1, stats: [] }] },
+    { id: 10, stats: { minutes: 90, goals_scored: 0, assists: 1, clean_sheets: 1, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 0, bonus: 1, bps: 32, total_points: 9 }, explain: [{ fixture: 1, stats: [] }] },
+    { id: 11, stats: { minutes: 90, goals_scored: 1, assists: 0, clean_sheets: 1, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 0, bonus: 2, bps: 38, total_points: 12 }, explain: [{ fixture: 2, stats: [] }] },
+    { id: 16, stats: { minutes: 90, goals_scored: 0, assists: 0, clean_sheets: 1, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 1, red_cards: 0, saves: 0, bonus: 0, bps: 18, total_points: 5 }, explain: [{ fixture: 3, stats: [] }] },
+    { id: 17, stats: { minutes: 90, goals_scored: 0, assists: 0, clean_sheets: 1, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 0, bonus: 0, bps: 20, total_points: 6 }, explain: [{ fixture: 3, stats: [] }] },
+    // Goalkeepers
+    { id: 6, stats: { minutes: 90, goals_scored: 0, assists: 0, clean_sheets: 1, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 3, bonus: 1, bps: 28, total_points: 8 }, explain: [{ fixture: 1, stats: [] }] },
+    { id: 15, stats: { minutes: 90, goals_scored: 0, assists: 0, clean_sheets: 1, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 5, bonus: 2, bps: 35, total_points: 10 }, explain: [{ fixture: 2, stats: [] }] },
+    { id: 18, stats: { minutes: 90, goals_scored: 0, assists: 0, clean_sheets: 1, goals_conceded: 0, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 4, bonus: 1, bps: 30, total_points: 9 }, explain: [{ fixture: 3, stats: [] }] },
+  ],
+}
+
+/**
+ * Entry history response - historical gameweek data
+ */
+export function mockEntryHistoryResponse(entryId: number) {
+  return {
+    current: Array.from({ length: 18 }, (_, i) => ({
+      event: i + 1,
+      points: 50 + Math.floor(Math.random() * 40) + (entryId % 10),
+      total_points: 50 * (i + 1) + (entryId % 100),
+      rank: 100000 + Math.floor(Math.random() * 50000),
+      overall_rank: 50000 + Math.floor(Math.random() * 20000),
+      event_transfers: i > 0 ? Math.floor(Math.random() * 2) : 0,
+      event_transfers_cost: 0,
+      value: 1000 + i * 2,
+      bank: 5 + Math.floor(Math.random() * 10),
+    })),
+    past: [
+      { season_name: '2023/24', total_points: 2100, rank: 150000 },
+    ],
+    chips: [
+      { name: 'bboost', time: '2025-01-15T12:00:00Z', event: 5 },
+    ],
+  }
+}
+
+/**
+ * Entry transfers response
+ */
+export function mockEntryTransfersResponse(entryId: number) {
+  return [
+    {
+      element_in: 3,
+      element_in_cost: 115,
+      element_out: 7,
+      element_out_cost: 95,
+      entry: entryId,
+      event: 17,
+      time: '2025-12-19T10:30:00Z',
+    },
+    {
+      element_in: 2,
+      element_in_cost: 150,
+      element_out: 8,
+      element_out_cost: 120,
+      entry: entryId,
+      event: 15,
+      time: '2025-12-05T14:00:00Z',
+    },
+  ]
+}
+
+/**
+ * Element summary response - individual player details
+ */
+export function mockElementSummaryResponse(playerId: number) {
+  return {
+    fixtures: [
+      {
+        id: 180,
+        event: 19,
+        difficulty: 3,
+        is_home: true,
+        team_h: 11,
+        team_a: 9,
+      },
+      {
+        id: 190,
+        event: 20,
+        difficulty: 2,
+        is_home: false,
+        team_h: 5,
+        team_a: 11,
+      },
+    ],
+    history: [
+      {
+        element: playerId,
+        fixture: 10,
+        total_points: 8,
+        round: 17,
+        minutes: 90,
+        goals_scored: 0,
+        assists: 1,
+        clean_sheets: 0,
+        bonus: 0,
+      },
+      {
+        element: playerId,
+        fixture: 20,
+        total_points: 12,
+        round: 18,
+        minutes: 90,
+        goals_scored: 1,
+        assists: 1,
+        clean_sheets: 0,
+        bonus: 3,
+      },
+    ],
+    history_past: [
+      { season_name: '2023/24', element_code: 12345, total_points: 250 },
+    ],
+  }
+}
+
+/**
+ * Event status response
+ */
+export const mockEventStatusResponse = {
+  status: [
+    { bonus_added: true, date: '2025-12-21', event: 17, points: 'r' },
+    { bonus_added: true, date: '2025-12-22', event: 18, points: 'r' },
+  ],
+  leagues: 'Updated',
+}

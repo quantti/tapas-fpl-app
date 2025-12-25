@@ -269,8 +269,10 @@ describe('useLiveScoring - provisional bonus', () => {
   it('should calculate provisional bonus from BPS when fixture >= 60 minutes', async () => {
     const { result } = renderHook(() => useLiveScoring(17, true))
 
+    // Wait for both liveData AND fixtures to be populated (they fetch in parallel)
     await waitFor(() => {
       expect(result.current.liveData).toBeDefined()
+      expect(result.current.fixtures.length).toBeGreaterThan(0)
     })
 
     // Player 1 has BPS 65, Player 2 has BPS 55

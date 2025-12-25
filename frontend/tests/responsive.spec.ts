@@ -1,10 +1,13 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures/test-fixtures'
 
-// Helper to wait for page to be ready
+// Helper to wait for page to be ready (with mocked API, this should be fast)
 async function waitForPageReady(page: import('@playwright/test').Page) {
-  await page.waitForSelector('[class*="header"], [class*="loading"], [class*="error"]', {
-    timeout: 30000,
+  // Wait for either main content or error state (error state shouldn't happen with mocking)
+  await page.waitForSelector('[class*="header"], [class*="Header"], [class*="grid"]', {
+    timeout: 15000,
   })
+  // Give React Query time to process the mocked responses
+  await page.waitForTimeout(500)
 }
 
 // =============================================================================
@@ -96,21 +99,13 @@ test.describe('Dashboard - Mobile (375px)', () => {
   })
 
   test('league standings table is visible', async ({ page }) => {
-    // Wait for data or error state
-    await page.waitForTimeout(2000)
+    // With mocked API, table should always be visible
     const table = page.locator('table')
-    const hasTable = await table.isVisible().catch(() => false)
-    const hasError = await page
-      .locator('[class*="error"]')
-      .isVisible()
-      .catch(() => false)
-
-    // Either table should be visible or error state
-    expect(hasTable || hasError).toBe(true)
+    await expect(table).toBeVisible({ timeout: 5000 })
   })
 
   test('visual snapshot - mobile dashboard', async ({ page }) => {
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(500)
     await expect(page).toHaveScreenshot('dashboard-mobile.png', {
       fullPage: true,
       maxDiffPixelRatio: 0.15,
@@ -140,7 +135,7 @@ test.describe('Dashboard - Tablet (768px)', () => {
   })
 
   test('visual snapshot - tablet dashboard', async ({ page }) => {
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(500)
     await expect(page).toHaveScreenshot('dashboard-tablet.png', {
       fullPage: true,
       maxDiffPixelRatio: 0.15,
@@ -170,7 +165,7 @@ test.describe('Dashboard - Desktop (1280px)', () => {
   })
 
   test('visual snapshot - desktop dashboard', async ({ page }) => {
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(500)
     await expect(page).toHaveScreenshot('dashboard-desktop.png', {
       fullPage: true,
       maxDiffPixelRatio: 0.15,
@@ -221,7 +216,7 @@ test.describe('Statistics - Mobile (375px)', () => {
 
   test('stats grid is single column on mobile', async ({ page }) => {
     // Wait for stats to load
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(500)
 
     const statsGrid = page.locator('[class*="statsGrid"]')
     const hasGrid = await statsGrid.isVisible().catch(() => false)
@@ -263,7 +258,7 @@ test.describe('Statistics - Mobile (375px)', () => {
 
   test('stats cards show values on mobile', async ({ page }) => {
     // Wait for stats to load
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(500)
 
     // Check Team Values card shows pound values
     const teamValuesCard = page.locator('text=Team Values').locator('..').locator('..')
@@ -280,7 +275,7 @@ test.describe('Statistics - Mobile (375px)', () => {
   })
 
   test('visual snapshot - mobile statistics', async ({ page }) => {
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(500)
     await expect(page).toHaveScreenshot('statistics-mobile.png', {
       fullPage: true,
       maxDiffPixelRatio: 0.15,
@@ -303,7 +298,7 @@ test.describe('Statistics - Tablet (768px)', () => {
   })
 
   test('stats grid is two columns on tablet', async ({ page }) => {
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(500)
 
     const statsGrid = page.locator('[class*="statsGrid"]')
     const hasGrid = await statsGrid.isVisible().catch(() => false)
@@ -319,7 +314,7 @@ test.describe('Statistics - Tablet (768px)', () => {
   })
 
   test('visual snapshot - tablet statistics', async ({ page }) => {
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(500)
     await expect(page).toHaveScreenshot('statistics-tablet.png', {
       fullPage: true,
       maxDiffPixelRatio: 0.15,
@@ -342,7 +337,7 @@ test.describe('Statistics - Desktop (1280px)', () => {
   })
 
   test('visual snapshot - desktop statistics', async ({ page }) => {
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(500)
     await expect(page).toHaveScreenshot('statistics-desktop.png', {
       fullPage: true,
       maxDiffPixelRatio: 0.15,
@@ -362,8 +357,10 @@ test.describe('Navigation - Cross-page', () => {
     await page.goto('/')
     await waitForPageReady(page)
 
-    // Navigate to Statistics
-    await page.locator('button[aria-label*="menu"]').click()
+    // Wait for menu button to be ready and navigate to Statistics
+    const menuButton = page.locator('button[aria-label*="menu"], button[aria-label*="Menu"]')
+    await expect(menuButton).toBeVisible({ timeout: 10000 })
+    await menuButton.click()
     const nav = page.locator('nav[class*="nav"]')
     await expect(nav).toBeVisible()
     await page.locator('nav a[href="/statistics"]').click()
@@ -371,7 +368,7 @@ test.describe('Navigation - Cross-page', () => {
     await waitForPageReady(page)
 
     // Navigate back to Dashboard
-    await page.locator('button[aria-label*="menu"]').click()
+    await menuButton.click()
     await expect(nav).toBeVisible()
     await page.locator('nav a[href="/"]').click()
     await expect(page).toHaveURL('/')
@@ -382,7 +379,9 @@ test.describe('Navigation - Cross-page', () => {
     await waitForPageReady(page)
 
     // Open menu
-    await page.locator('button[aria-label*="menu"]').click()
+    const menuButton = page.locator('button[aria-label*="menu"], button[aria-label*="Menu"]')
+    await expect(menuButton).toBeVisible({ timeout: 10000 })
+    await menuButton.click()
 
     // Find the toggle switch
     const toggle = page.locator('button[role="switch"]')
@@ -410,42 +409,33 @@ test.describe('Navigation - Cross-page', () => {
 })
 
 // =============================================================================
-// PlayerOwnership Modal Tests
+// PlayerOwnership Modal Tests (on Statistics page)
 // =============================================================================
 
 test.describe('PlayerOwnership Modal - Mobile (375px)', () => {
   test.use({ viewport: { width: 375, height: 667 } })
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
+    // PlayerOwnership is on the Statistics page, not Dashboard
+    await page.goto('/statistics')
     await waitForPageReady(page)
   })
 
-  test('player ownership section is visible on dashboard', async ({ page }) => {
+  test('player ownership section is visible on statistics page', async ({ page }) => {
     // Wait for data to load
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(500)
 
     // Look for the Player Ownership title
     const ownershipSection = page.locator('text=Player Ownership')
-    const hasSection = await ownershipSection.isVisible().catch(() => false)
-
-    // Either section is visible or we're in loading/error state
-    expect(
-      hasSection ||
-        (await page
-          .locator('[class*="loading"]')
-          .isVisible()
-          .catch(() => false))
-    ).toBe(true)
+    await expect(ownershipSection).toBeVisible({ timeout: 5000 })
   })
 
   test('clickable player rows have chevron icon', async ({ page }) => {
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(500)
 
-    // Find clickable rows (buttons) in player ownership
-    const clickableRows = page.locator(
-      '[class*="playerOwnership"] button, [class*="PlayerOwnership"] button'
-    )
+    // Find clickable rows (buttons with rowClickable class) in player ownership list
+    // This excludes modal buttons
+    const clickableRows = page.locator('[class*="rowClickable"]')
     const rowCount = await clickableRows.count()
 
     if (rowCount > 0) {
@@ -457,12 +447,10 @@ test.describe('PlayerOwnership Modal - Mobile (375px)', () => {
   })
 
   test('clicking player row opens modal', async ({ page }) => {
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(500)
 
-    // Find a clickable player row
-    const clickableRows = page.locator(
-      '[class*="playerOwnership"] button, [class*="PlayerOwnership"] button'
-    )
+    // Find clickable player rows (excludes modal buttons)
+    const clickableRows = page.locator('[class*="rowClickable"]')
     const rowCount = await clickableRows.count()
 
     if (rowCount > 0) {
@@ -476,11 +464,10 @@ test.describe('PlayerOwnership Modal - Mobile (375px)', () => {
   })
 
   test('modal shows team list', async ({ page }) => {
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(500)
 
-    const clickableRows = page.locator(
-      '[class*="playerOwnership"] button, [class*="PlayerOwnership"] button'
-    )
+    // Find clickable player rows (excludes modal buttons)
+    const clickableRows = page.locator('[class*="rowClickable"]')
     const rowCount = await clickableRows.count()
 
     if (rowCount > 0) {
@@ -493,11 +480,10 @@ test.describe('PlayerOwnership Modal - Mobile (375px)', () => {
   })
 
   test('modal can be closed with close button', async ({ page }) => {
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(500)
 
-    const clickableRows = page.locator(
-      '[class*="playerOwnership"] button, [class*="PlayerOwnership"] button'
-    )
+    // Find clickable player rows (excludes modal buttons)
+    const clickableRows = page.locator('[class*="rowClickable"]')
     const rowCount = await clickableRows.count()
 
     if (rowCount > 0) {
@@ -516,7 +502,7 @@ test.describe('PlayerOwnership Modal - Mobile (375px)', () => {
   })
 
   test('100% ownership rows are not clickable', async ({ page }) => {
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(500)
 
     // Check for non-clickable rows (divs, not buttons) in player ownership
     const nonClickableRows = page.locator(
@@ -539,16 +525,16 @@ test.describe('PlayerOwnership Modal - Desktop (1280px)', () => {
   test.use({ viewport: { width: 1280, height: 800 } })
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
+    // PlayerOwnership is on the Statistics page, not Dashboard
+    await page.goto('/statistics')
     await waitForPageReady(page)
   })
 
   test('modal displays correctly on desktop', async ({ page }) => {
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(500)
 
-    const clickableRows = page.locator(
-      '[class*="playerOwnership"] button, [class*="PlayerOwnership"] button'
-    )
+    // Find clickable player rows (excludes modal buttons)
+    const clickableRows = page.locator('[class*="rowClickable"]')
     const rowCount = await clickableRows.count()
 
     if (rowCount > 0) {
