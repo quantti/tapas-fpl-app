@@ -39,4 +39,14 @@ describe('Card', () => {
     const card = screen.getByText('Content').closest('div')
     expect(card).toHaveStyle({ maxHeight: '400px' })
   })
+
+  it('sets role="region" when aria-label is provided', () => {
+    render(<Card aria-label="Stats section">Content</Card>)
+    expect(screen.getByRole('region', { name: 'Stats section' })).toBeInTheDocument()
+  })
+
+  it('does not set role when aria-label is not provided', () => {
+    render(<Card>Content</Card>)
+    expect(screen.queryByRole('region')).not.toBeInTheDocument()
+  })
 })
