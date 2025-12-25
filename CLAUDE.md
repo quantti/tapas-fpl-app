@@ -10,6 +10,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - **Charts**: Recharts for data visualization
 - **Icons**: Lucide React
 - **Backend/Proxy**: Python FastAPI (async caching proxy)
+- **Database**: Supabase (PostgreSQL 17)
 - **Hosting**: Vercel (frontend), Fly.io (backend)
 - **Testing**: Vitest + React Testing Library
 
@@ -20,15 +21,15 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 │   Vite + React  │────▶│  Python FastAPI  │────▶│    FPL API      │
 │   TypeScript    │     │  (Fly.io)        │     │                 │
 │                 │     │  CORS proxy +    │     │                 │
-│   Vercel        │     │  in-memory cache │     │                 │
+│   Vercel        │     │  caching         │     │                 │
 │                 │     │                  │     │                 │
 └─────────────────┘     └────────┬─────────┘     └─────────────────┘
                                  │
-                                 ▼ (future)
+                                 ▼
                         ┌─────────────────┐
-                        │   Database      │
-                        │   (Supabase/    │
-                        │    Neon)        │
+                        │   Supabase      │
+                        │   PostgreSQL 17 │
+                        │   (EU West)     │
                         └─────────────────┘
 ```
 
@@ -424,12 +425,17 @@ tapas-fpl-app/
 │   │   ├── config.py         # Settings and cache TTLs
 │   │   ├── api/routes.py     # API endpoints
 │   │   └── services/fpl_proxy.py  # FPL proxy with caching
+│   ├── migrations/           # SQL migrations for Supabase
+│   │   ├── 001_core_tables.sql    # Core FPL entities
+│   │   ├── 002_historical.sql     # Historical tracking
+│   │   └── 003_analytics.sql      # Analytics tables
 │   ├── tests/                # pytest tests
 │   │   ├── conftest.py       # Test fixtures
 │   │   ├── test_config.py    # Config tests
 │   │   ├── test_fpl_proxy.py # Unit tests
 │   │   └── test_api.py       # Integration tests
 │   ├── fly.toml              # Fly.io deployment config
+│   ├── DB.md                 # Database schema documentation
 │   ├── requirements.txt
 │   └── README.md
 └── CLAUDE.md
@@ -464,8 +470,89 @@ python -m pytest               # Run tests
 
 - Keep it simple — avoid over-engineering
 - Cache aggressively — FPL data doesn't change frequently
-- Design for extensibility — database can be added later
+- Multi-season support — composite keys `(id, season_id)` for FPL entities
 - Mobile-friendly — friends will likely view on phones
+
+## Database (Supabase)
+
+### Connection Details
+- **Project**: tapas-and-tackles
+- **Region**: EU West 1 (Ireland)
+- **PostgreSQL**: 17.6.1
+- **URL**: `https://itmykooxrbrdbgqwsesb.supabase.co`
+
+### Schema Design
+
+The database uses **composite primary keys** `(id, season_id)` for FPL entities (team, player, league, manager) to support multi-season data while keeping familiar FPL IDs.
+
+**Migration files** in `backend/migrations/`:
+| File | Description |
+|------|-------------|
+| `001_core_tables.sql` | Season, app_user, team, player, gameweek, fixture, league, manager |
+| `002_historical.sql` | manager_gw_snapshot, manager_pick, transfer, chip_usage, player_gw_stats, price_change |
+| `003_analytics.sql` | expected_points_cache, performance_delta, player_form, recommendation_score, league_ownership |
+
+### Table Overview (22 tables)
+
+**Core FPL Entities:**
+- `season` - FPL seasons (2024-25, etc.)
+- `team` - Premier League teams (composite PK: id, season_id)
+- `player` - FPL players with stats, prices, ICT index
+- `gameweek` - GW metadata, deadlines, most captained
+- `fixture` - Match data with scores and stats (JSONB)
+- `league` - Mini-leagues
+- `manager` - FPL entries/teams
+- `league_manager` - Many-to-many league membership
+
+**App User Management:**
+- `app_user` - Our app's users (UUID PK, GDPR soft-delete)
+- `tracked_league` - Leagues a user wants to track
+- `tracked_manager` - Individual managers to follow
+
+**Historical Tracking:**
+- `manager_gw_snapshot` - Manager state per gameweek
+- `manager_pick` - Squad picks per GW (positions 1-15)
+- `transfer` - Transfer history with prices
+- `chip_usage` - Wildcard, bench boost, etc.
+- `player_gw_stats` - Per-player per-GW performance
+- `price_change` - Player price change history
+
+**Analytics (future):**
+- `expected_points_cache` - xP predictions
+- `performance_delta` - Over/under performance tracking
+- `player_form` - Multi-horizon form calculations
+- `recommendation_score` - Punt/defensive/sell scores
+- `league_ownership` - League-specific ownership stats
+
+### Key Design Patterns
+
+**Composite Foreign Keys:**
+```sql
+-- Player references team within same season
+FOREIGN KEY (team_id, season_id) REFERENCES team(id, season_id)
+```
+
+**Partial Indexes:**
+```sql
+-- Only index current season's current gameweek
+CREATE INDEX idx_gameweek_current ON gameweek(season_id, is_current)
+WHERE is_current = true;
+```
+
+**GDPR Soft Delete:**
+```sql
+-- app_user has deleted_at for soft delete
+CREATE INDEX idx_app_user_active ON app_user(email)
+WHERE deleted_at IS NULL;
+```
+
+### Detailed Schema Reference
+
+See `backend/DB.md` for complete schema documentation including:
+- All column definitions and types
+- Foreign key relationships
+- Index strategies
+- Design decisions and rationale
 
 ## Deployment
 
@@ -501,7 +588,13 @@ VITE_API_URL=https://tapas-fpl-backend.fly.dev
 # Set secrets via fly CLI
 fly secrets list                   # View current secrets
 fly secrets set CORS_ORIGINS="https://tapas-and-tackles.live,https://www.tapas-and-tackles.live,http://localhost:5173"
-fly secrets set DATABASE_URL=...   # Future: database connection string
+fly secrets set SUPABASE_URL="https://itmykooxrbrdbgqwsesb.supabase.co"
+fly secrets set SUPABASE_KEY="<publishable-key>"  # Use publishable key for server-side
 ```
 
 **CORS Note:** Include both `www` and non-www origins if your domain uses redirects.
+
+### Supabase Keys
+- **Publishable key** (`sb_publishable_...`): Safe for server-side use, respects RLS
+- **Secret key**: Admin access, bypasses RLS — use only for migrations/admin tasks
+- Keys available in Supabase Dashboard → Project Settings → API
