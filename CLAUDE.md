@@ -345,13 +345,14 @@ npm run test:update-snapshots   # Regenerates all visual snapshots locally
 - `renderHook()` from `@testing-library/react` for hooks
 - Use `data-testid` attributes for stable E2E selectors
 - ESLint enforces vitest best practices via `@vitest/eslint-plugin`
+- Biome handles all formatting (code + CSS) - no stylelint
 
 ## CI/CD
 
 **GitHub Actions** (`.github/workflows/ci.yml`):
 - Runs on push/PR to `main`
 - Type checking (`tsc`)
-- Linting (`eslint`)
+- Linting (`eslint`) + Format check (`biome`)
 - Unit tests (`vitest`)
 - E2E tests (Playwright in Docker - same image as local)
 - Uploads Playwright report on failure
@@ -494,7 +495,9 @@ npm install
 npm run dev              # Start dev server
 npm run build            # Production build
 npm run preview          # Preview production build
-npm run lint             # Run ESLint
+npm run lint             # Run ESLint (JS/TS linting)
+npm run format           # Run Biome formatter (code + CSS)
+npm run format:check     # Check formatting without fixing
 npm run css:types        # Generate CSS module type definitions
 npm test                 # Run unit tests in watch mode
 npm test -- --run        # Run unit tests once
