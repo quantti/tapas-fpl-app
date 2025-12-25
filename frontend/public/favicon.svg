@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <style>
+    .icon { stroke: #1a1a1a; }
+    @media (prefers-color-scheme: dark) {
+      .icon { stroke: #ffffff; }
+    }
+  </style>
+  <circle class="icon" cx="12" cy="12" r="9"/>
+  <path class="icon" d="M12 7l4.76 3.45l-1.76 5.55h-6l-1.76 -5.55z"/>
+  <path class="icon" d="M12 7v-4m4.76 7.45l3.98 -1.45m-5.74 5.55l2.04 3.45m-8.04 -3.45l-2.04 3.45m.28 -8.54l-3.98 -1.46"/>
+</svg>
