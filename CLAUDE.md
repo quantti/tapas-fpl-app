@@ -12,7 +12,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - **Backend/Proxy**: Python FastAPI (async caching proxy)
 - **Database**: Supabase (PostgreSQL 17)
 - **Hosting**: Vercel (frontend), Fly.io (backend)
-- **Testing**: Vitest + React Testing Library
+- **Testing**: Vitest + React Testing Library + Playwright (E2E)
 
 ## Architecture
 
@@ -285,27 +285,53 @@ Real-time updates during active gameweeks.
 
 ## Testing
 
+### Commands
 ```bash
-npm test             # Watch mode (unit tests)
-npm test -- --run    # Single run
-npm run test:e2e     # E2E tests (Playwright)
-npm run test:e2e:ui  # E2E with UI
+npm test                    # Watch mode (unit tests)
+npm test -- --run           # Single run
+npm run test:e2e:docker     # E2E tests in Docker (recommended)
+npm run test:update-snapshots  # Update visual snapshots
+npm run test:e2e            # E2E with local Playwright (won't match snapshots)
+npm run test:e2e:ui         # E2E with UI (local Playwright)
 ```
 
-**Unit test files:**
+### Visual Snapshot Testing
+
+E2E tests include visual regression tests using Playwright's `toHaveScreenshot()`. To ensure consistent rendering across environments, **all E2E tests run in Docker** using the official Playwright image.
+
+**Why Docker?** Font rendering differs between operating systems and even Ubuntu versions. The Docker approach ensures:
+- Local snapshots match CI exactly
+- No 1-2px height differences from font rendering
+- Same environment everywhere: `mcr.microsoft.com/playwright:v1.57.0-jammy`
+
+**Updating snapshots:**
+```bash
+npm run test:update-snapshots   # Regenerates all visual snapshots locally
+```
+
+**Note:** The version in the Docker image (`v1.57.0`) must match the `@playwright/test` version in `package.json`. Update both when upgrading Playwright.
+
+### Test Files
+
+**Unit tests:**
 - `src/hooks/useLiveScoring.test.ts` - Live scoring hook tests
 - `src/hooks/useTheme.test.ts` - Theme hook tests
 - `src/utils/liveScoring.test.ts` - Points calculation tests
 - `src/components/PlayerOwnership.test.tsx` - Component tests
 
-**E2E test files:**
-- `tests/responsive.spec.ts` - Layout, navigation, responsive design
+**E2E tests:**
+- `tests/responsive.spec.ts` - Layout, navigation, responsive design, visual snapshots
 - `tests/countdown.spec.ts` - Gameweek countdown display
 - `tests/manager-modal.spec.ts` - Team lineup modal (pitch layout, players, bench)
 
+**Test fixtures:**
+- `tests/fixtures/test-fixtures.ts` - Playwright fixtures with API mocking
+- `tests/fixtures/mock-data.ts` - Mock FPL API responses
+
 **Testing patterns:**
 - Mock `@tanstack/react-query` for hook tests
-- Use `vi.mock()` for API mocking
+- Use `vi.mock()` for API mocking in unit tests
+- E2E tests use `page.route()` to intercept API calls (see `test-fixtures.ts`)
 - `renderHook()` from `@testing-library/react` for hooks
 
 ## CI/CD
@@ -315,8 +341,14 @@ npm run test:e2e:ui  # E2E with UI
 - Type checking (`tsc`)
 - Linting (`eslint`)
 - Unit tests (`vitest`)
-- E2E tests (`playwright`)
+- E2E tests (Playwright in Docker - same image as local)
 - Uploads Playwright report on failure
+- Auto-deploys backend to Fly.io on `main` push
+
+**Update Snapshots Workflow** (`.github/workflows/update-snapshots.yml`):
+- Manual trigger via GitHub Actions UI
+- Regenerates visual snapshots using Docker
+- Auto-commits updated snapshots to the branch
 
 ## Icons
 
@@ -447,13 +479,15 @@ tapas-fpl-app/
 ```bash
 cd frontend
 npm install
-npm run dev          # Start dev server
-npm run build        # Production build
-npm run preview      # Preview production build
-npm run lint         # Run ESLint
-npm run css:types    # Generate CSS module type definitions
-npm test             # Run tests in watch mode
-npm test -- --run    # Run tests once
+npm run dev              # Start dev server
+npm run build            # Production build
+npm run preview          # Preview production build
+npm run lint             # Run ESLint
+npm run css:types        # Generate CSS module type definitions
+npm test                 # Run unit tests in watch mode
+npm test -- --run        # Run unit tests once
+npm run test:e2e:docker  # Run E2E tests in Docker (recommended)
+npm run test:update-snapshots  # Update visual snapshots
 ```
 
 ### Backend
