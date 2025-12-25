@@ -2,6 +2,9 @@ import { useMemo } from 'react'
 import { Armchair } from 'lucide-react'
 import { useBenchPoints } from '../hooks/useBenchPoints'
 import type { ManagerGameweekData } from '../hooks/useFplData'
+import { Card } from './ui/Card'
+import { CardHeader } from './ui/CardHeader'
+import { RankedRow } from './ui/RankedRow'
 import * as styles from './BenchPoints.module.css'
 
 interface Props {
@@ -29,24 +32,28 @@ export function BenchPoints({ managerDetails, currentGameweek }: Props) {
   const totalBenchPoints = sortedData.reduce((sum, d) => sum + d.totalBenchPoints, 0)
 
   return (
-    <div className={styles.BenchPoints}>
-      <h3 className={styles.title}>
-        <Armchair size={16} color="#6B8CAE" /> Bench Points
-        {!loading && <span className={styles.total}>{totalBenchPoints} pts</span>}
-      </h3>
+    <Card>
+      <CardHeader
+        icon={<Armchair size={16} color="#6B8CAE" />}
+        action={!loading && <span className={styles.total}>{totalBenchPoints} pts</span>}
+      >
+        Bench Points
+      </CardHeader>
       {loading && <p className={styles.loading}>Loading...</p>}
       {!loading && error && <p className={styles.error}>{error}</p>}
       {!loading && !error && (
         <div className={styles.list}>
           {sortedData.map((data, index) => (
-            <div key={data.managerId} className={styles.row}>
-              <span className={styles.rank}>{index + 1}</span>
-              <span className={styles.name}>{data.teamName}</span>
-              <span className={styles.value}>{data.totalBenchPoints}</span>
-            </div>
+            <RankedRow
+              key={data.managerId}
+              rank={index + 1}
+              name={data.teamName}
+              value={data.totalBenchPoints}
+              valueColor="warning"
+            />
           ))}
         </div>
       )}
-    </div>
+    </Card>
   )
 }
