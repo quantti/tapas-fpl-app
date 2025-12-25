@@ -37,13 +37,9 @@ jobs:
         working-directory: frontend
         run: npm run test:run
 
-      - name: Install Playwright browsers
+      - name: E2E tests (Docker)
         working-directory: frontend
-        run: npx playwright install --with-deps chromium
-
-      - name: E2E tests
-        working-directory: frontend
-        run: npm run test:e2e
+        run: npm run test:e2e:docker
 
       - name: Upload test artifacts
         uses: actions/upload-artifact@v4

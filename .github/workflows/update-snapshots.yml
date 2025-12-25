@@ -33,13 +33,9 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Install Playwright browsers
+      - name: Update snapshots (Docker)
         working-directory: frontend
-        run: npx playwright install --with-deps chromium
-
-      - name: Update snapshots
-        working-directory: frontend
-        run: npx playwright test --update-snapshots
+        run: npm run test:e2e:docker:update
 
       - name: Upload updated snapshots
         uses: actions/upload-artifact@v4
