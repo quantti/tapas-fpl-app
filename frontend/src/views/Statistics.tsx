@@ -64,7 +64,11 @@ export function Statistics() {
           playersMap={playersMap}
         />
         <ChipsRemaining managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
-        <FreeTransfers managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
+        <FreeTransfers
+          managerDetails={managerDetails}
+          currentGameweek={currentGameweek.id}
+          deadlineTime={currentGameweek.deadline_time}
+        />
         <LeaguePositionChart managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
         <PlayerOwnership
           managerDetails={managerDetails}

@@ -9,16 +9,23 @@ import * as styles from './FreeTransfers.module.css'
 interface Props {
   managerDetails: ManagerGameweekData[]
   currentGameweek: number
+  deadlineTime?: string // ISO datetime string
 }
 
-export function FreeTransfers({ managerDetails, currentGameweek }: Props) {
+export function FreeTransfers({ managerDetails, currentGameweek, deadlineTime }: Props) {
+  // Check if deadline has passed (transfers now apply to next GW)
+  const deadlinePassed = useMemo(() => {
+    if (!deadlineTime) return false
+    return new Date() > new Date(deadlineTime)
+  }, [deadlineTime])
+
   // Extract manager IDs and names for the hook (memoized to prevent re-renders)
   const managerIds = useMemo(
     () => managerDetails.map((m) => ({ id: m.managerId, teamName: m.teamName })),
     [managerDetails]
   )
 
-  const { freeTransfers, loading, error } = useFreeTransfers(managerIds, currentGameweek)
+  const { freeTransfers, loading, error } = useFreeTransfers(managerIds, currentGameweek, deadlinePassed)
 
   if (loading) {
     return (

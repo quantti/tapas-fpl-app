@@ -30,7 +30,8 @@ interface UseFreeTransfersReturn {
  */
 export function useFreeTransfers(
   managerIds: { id: number; teamName: string }[],
-  currentGameweek: number
+  currentGameweek: number,
+  deadlinePassed = false
 ): UseFreeTransfersReturn {
   // Fetch history for all managers in parallel
   // Uses same query key pattern as useFplData, so TanStack Query will cache/dedupe
@@ -60,7 +61,8 @@ export function useFreeTransfers(
       const ft = calculateFreeTransfers(
         historyQuery.data.current,
         historyQuery.data.chips,
-        currentGameweek
+        currentGameweek,
+        deadlinePassed
       )
 
       return {
@@ -69,7 +71,7 @@ export function useFreeTransfers(
         freeTransfers: ft,
       }
     })
-  }, [managerIds, currentGameweek, historyQueries])
+  }, [managerIds, currentGameweek, deadlinePassed, historyQueries])
 
   const loading = historyQueries.some((q) => q.isLoading)
   const error = historyQueries.find((q) => q.error)?.error?.message ?? null
@@ -78,18 +80,23 @@ export function useFreeTransfers(
 }
 
 /**
- * Calculates remaining free transfers for the current gameweek.
+ * Calculates available free transfers.
  *
  * Iterates through gameweek history to track FT accumulation:
- * - After each completed GW: FT = min(2, previous_FT - transfers_made + 1)
- * - Current GW: FT = previous_FT - transfers_made (no +1 until GW ends)
+ * - After each completed GW: FT = min(5, previous_FT - transfers_made + 1)
+ * - Current GW before deadline: FT = previous_FT - transfers_made
+ * - Current GW after deadline: FT = min(5, previous_FT - transfers_made + 1)
+ *   (because transfers now apply to next GW, and +1 FT is granted)
  * - Wildcard resets FT to 1
  * - Free Hit skips the GW (FT carries over unchanged)
+ *
+ * Note: 2024/25 season allows banking up to 5 FT (increased from 2)
  */
 export function calculateFreeTransfers(
   history: { event: number; event_transfers: number }[],
   chips: { name: string; event: number }[],
-  currentGameweek: number
+  currentGameweek: number,
+  deadlinePassed = false
 ): number {
   // Build chip usage maps for O(1) lookup
   const wildcardGws = new Set(chips.filter((c) => c.name === 'wildcard').map((c) => c.event))
@@ -101,27 +108,32 @@ export function calculateFreeTransfers(
   // Sort history by gameweek (ascending)
   const sortedHistory = [...history].sort((a, b) => a.event - b.event)
 
+  // Max FT that can be banked (5 in 2024/25 season)
+  const maxFt = 5
+
   for (const gw of sortedHistory) {
     // Stop after current GW - we want remaining FT NOW
     if (gw.event > currentGameweek) break
 
     const isCurrentGw = gw.event === currentGameweek
+    // Treat current GW as "completed" if deadline has passed (transfers apply to next GW)
+    const gwComplete = !isCurrentGw || deadlinePassed
 
     // Wildcard resets to 1 FT (transfers don't consume FT)
     if (wildcardGws.has(gw.event)) {
       ft = 1
-      // Gain +1 FT after completed wildcard GW (not current)
-      if (!isCurrentGw) {
-        ft = Math.min(2, ft + 1)
+      // Gain +1 FT after GW completes
+      if (gwComplete) {
+        ft = Math.min(maxFt, ft + 1)
       }
       continue
     }
 
     // Free Hit - transfers don't consume FT
     if (freeHitGws.has(gw.event)) {
-      // Gain +1 FT after completed free hit GW (not current)
-      if (!isCurrentGw) {
-        ft = Math.min(2, ft + 1)
+      // Gain +1 FT after GW completes
+      if (gwComplete) {
+        ft = Math.min(maxFt, ft + 1)
       }
       continue
     }
@@ -130,9 +142,9 @@ export function calculateFreeTransfers(
     const transfersMade = gw.event_transfers
     ft = Math.max(0, ft - transfersMade)
 
-    // Only gain +1 FT for completed GWs (not current)
-    if (!isCurrentGw) {
-      ft = Math.min(2, ft + 1)
+    // Gain +1 FT after GW completes
+    if (gwComplete) {
+      ft = Math.min(maxFt, ft + 1)
     }
   }
 
