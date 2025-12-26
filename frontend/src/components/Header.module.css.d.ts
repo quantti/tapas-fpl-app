@@ -10,3 +10,4 @@ export const themeRow: string
 export const toggle: string
 export const toggleKnob: string
 export const toggleOn: string
+export const version: string

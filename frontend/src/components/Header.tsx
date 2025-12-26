@@ -81,6 +81,7 @@ export function Header() {
               <span className={styles.toggleKnob} />
             </button>
           </div>
+          <div className={styles.version}>v{__APP_VERSION__}</div>
         </nav>
       )}
     </header>
