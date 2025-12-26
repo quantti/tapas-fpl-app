@@ -4,6 +4,7 @@ import { StatsCards } from '../components/StatsCards'
 import { BenchPoints } from '../components/BenchPoints'
 import { CaptainSuccess } from '../components/CaptainSuccess'
 import { ChipsRemaining } from '../components/ChipsRemaining'
+import { FreeTransfers } from '../components/FreeTransfers'
 import { LeaguePositionChart } from '../components/LeaguePositionChart'
 import { PlayerOwnership } from '../components/PlayerOwnership'
 import { LeagueTemplateTeam } from '../components/LeagueTemplateTeam'
@@ -63,6 +64,7 @@ export function Statistics() {
           playersMap={playersMap}
         />
         <ChipsRemaining managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
+        <FreeTransfers managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
         <LeaguePositionChart managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
         <PlayerOwnership
           managerDetails={managerDetails}
