@@ -32,17 +32,13 @@
     margin: 0;
   }
 
-  /* Top row: Chips and Hits */
+  /* Top row: Chips and Hits side by side */
   .topRow {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: var(--space-12);
     padding: var(--space-12) var(--space-16);
     border-bottom: 1px solid var(--color-border-light);
-
-    @media (min-width: 640px) {
-      grid-template-columns: 1fr 1fr;
-    }
 
     .miniSection {
       .miniTitle {
