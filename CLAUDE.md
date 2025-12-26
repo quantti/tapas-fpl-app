@@ -61,6 +61,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - [x] Gameweek countdown banner (shows after all fixtures finish)
 - [x] Header navigation with hamburger menu
 - [x] Player recommendations (Punts, Defensive, Time to Sell) with position badges
+- [x] League Template Team (most owned starting XI in pitch formation)
 
 ## FPL API Reference
 
@@ -268,8 +269,30 @@ A "bump chart" showing how each manager's league position changed across gamewee
 - Chart has horizontal scroll for later gameweeks (min 25px per GW)
 - Y-axis is reversed (position 1 at top)
 
+### League Template Team
+Shows the most owned starting XI across all managers in the league, displayed in a pitch formation view.
+
+**Key files:**
+- `src/components/LeagueTemplateTeam.tsx` - Main component rendering the template team
+- `src/components/PitchLayout.tsx` - Reusable pitch layout with SVG background
+- `src/utils/templateTeam.ts` - Ownership calculation and team building logic
+- `public/pitch.svg` - Football pitch SVG background
+
+**Implementation notes:**
+- Calculates ownership percentage for each player across all managers
+- Builds optimal 11-player team using greedy position-filling algorithm
+- Supports formations: picks best available players per position (GK, DEF, MID, FWD)
+- Uses FPL shirt images from official CDN
+- Responsive breakpoints: tablet (≤900px) and mobile (≤480px) with smaller player cards
+- PitchLayout component is reused by ManagerModal for team lineup display
+
+**Algorithm:**
+1. Calculate ownership % for each player (count / total managers × 100)
+2. Sort players by ownership within each position
+3. Fill positions: 1 GK, then greedily fill DEF/MID/FWD to reach 11 players
+4. Determine formation string (e.g., "3-5-2") from selected players
+
 ### Live Scoring
-Real-time updates during active gameweeks.
 
 **Key files:**
 - `src/hooks/useLiveScoring.ts` - Polls live data and fixtures
@@ -544,6 +567,7 @@ import { IconName } from 'lucide-react'
 | Differential Captains | `Crown` | `#FFD700` (gold) | |
 | Player Ownership | `Users` | `#14B8A6` (teal) | |
 | League Position Chart | `TrendingUp` | `#6366f1` (indigo) | |
+| Template Team | `Users` | `#14B8A6` (teal) | Same as Player Ownership |
 | Theme toggle | `Sun` / `Moon` | default | Light/dark mode |
 | Punts | `Dices` | `#F59E0B` (amber) | |
 | Defensive Options | `Shield` | `#14B8A6` (teal) | |
@@ -593,7 +617,9 @@ tapas-fpl-app/
 │   │   │   ├── CaptainSuccess.tsx      # Differential captains
 │   │   │   ├── ChipsRemaining.tsx      # Chip tracker
 │   │   │   ├── RecommendedPlayers.tsx  # Player recommendations
-│   │   │   └── StatsCards.tsx          # Team value, hits
+│   │   │   ├── StatsCards.tsx          # Team value, hits
+│   │   │   ├── LeagueTemplateTeam.tsx  # Most owned starting XI
+│   │   │   └── PitchLayout.tsx         # Reusable pitch formation layout
 │   │   ├── hooks/
 │   │   │   ├── useFplData.ts           # Main data hook (TanStack Query)
 │   │   │   ├── useLiveScoring.ts       # Live polling
@@ -605,6 +631,7 @@ tapas-fpl-app/
 │   │   ├── styles/           # Global CSS variables
 │   │   ├── types/fpl.ts      # TypeScript types
 │   │   └── utils/            # Utility functions
+│   │       └── templateTeam.ts   # Template team calculation
 │   ├── tests/                # Playwright e2e tests
 │   ├── package.json
 │   └── vite.config.ts
@@ -639,6 +666,7 @@ npm install
 npm run dev              # Start dev server
 npm run build            # Production build
 npm run preview          # Preview production build
+npm run ts               # TypeScript type checking (no emit)
 npm run lint             # Run ESLint (JS/TS linting)
 npm run format           # Run Biome formatter (code + CSS)
 npm run format:check     # Check formatting without fixing
