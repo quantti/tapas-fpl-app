@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 452 684" preserveAspectRatio="xMidYMid slice">
+  <!-- Soccer field background -->
+  <rect fill="#0eba00" width="456" height="694" x="-1.3" y="0"/>
+
+  <!-- Outer boundary -->
+  <path fill="none" stroke="#fff" stroke-width="3" d="M12.2 24.3v638.7h429.5V24.2H12.2z"/>
+
+  <!-- Top penalty area -->
+  <path fill="none" stroke="#fff" stroke-width="3" d="M105.9 24.7v98.7h242.2V24.2"/>
+
+  <!-- Top goal area -->
+  <path fill="none" stroke="#fff" stroke-width="3" d="M172.3 24.2v33h109.3v-33"/>
+
+  <!-- Bottom penalty area -->
+  <path fill="none" stroke="#fff" stroke-width="3" d="M105.9 662.3v-98.7h242.2v99.2"/>
+
+  <!-- Bottom goal area -->
+  <path fill="none" stroke="#fff" stroke-width="3" d="M172.3 662.7v-33h109.3v33"/>
+
+  <!-- Halfway line -->
+  <path fill="none" stroke="#fff" stroke-width="3" d="M12.1 343.6h429.5"/>
+
+  <!-- Center circle -->
+  <circle fill="none" stroke="#fff" stroke-width="3" cx="227" cy="340.5" r="54.8"/>
+
+  <!-- Center spot -->
+  <circle fill="#000" stroke="#fff" stroke-width="2" cx="227" cy="343.6" r="3"/>
+
+  <!-- Top penalty spot -->
+  <circle fill="#000" stroke="#fff" stroke-width="2" cx="227" cy="91.4" r="3"/>
+
+  <!-- Bottom penalty spot -->
+  <circle fill="#000" stroke="#fff" stroke-width="2" cx="227" cy="595.6" r="3"/>
+
+  <!-- Top penalty arc -->
+  <path fill="none" stroke="#fff" stroke-width="3" d="M182.4 123.4a54.8 54.8 0 0 0 89.1.1"/>
+
+  <!-- Bottom penalty arc -->
+  <path fill="none" stroke="#fff" stroke-width="3" d="M182.4 563.6a54.8 54.8 0 0 1 89.1-.1"/>
+
+  <!-- Top goal -->
+  <path fill="none" stroke="#fff" stroke-width="3" d="M205.1 23.2V8.6h43.8v14.9"/>
+
+  <!-- Bottom goal -->
+  <path fill="none" stroke="#fff" stroke-width="3" d="M205.1 663.9v14.7h43.8v-15"/>
+
+  <!-- Corner arcs -->
+  <path fill="none" stroke="#fff" stroke-width="3" d="M12.3 30a5.4 5.4 0 0 0 5.4 5.2"/>
+  <path fill="none" stroke="#fff" stroke-width="3" d="M12.3 657a5.4 5.4 0 0 1 5.4-5.2"/>
+  <path fill="none" stroke="#fff" stroke-width="3" d="M441.6 30a5.4 5.4 0 0 1-5.4 5.2"/>
+  <path fill="none" stroke="#fff" stroke-width="3" d="M441.6 657a5.4 5.4 0 0 0-5.4-5.2"/>
+</svg>

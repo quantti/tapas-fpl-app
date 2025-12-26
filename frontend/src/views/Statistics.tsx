@@ -6,6 +6,7 @@ import { CaptainSuccess } from '../components/CaptainSuccess'
 import { ChipsRemaining } from '../components/ChipsRemaining'
 import { LeaguePositionChart } from '../components/LeaguePositionChart'
 import { PlayerOwnership } from '../components/PlayerOwnership'
+import { LeagueTemplateTeam } from '../components/LeagueTemplateTeam'
 import * as styles from './Statistics.module.css'
 
 export function Statistics() {
@@ -64,6 +65,11 @@ export function Statistics() {
         <ChipsRemaining managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
         <LeaguePositionChart managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
         <PlayerOwnership
+          managerDetails={managerDetails}
+          playersMap={playersMap}
+          teamsMap={teamsMap}
+        />
+        <LeagueTemplateTeam
           managerDetails={managerDetails}
           playersMap={playersMap}
           teamsMap={teamsMap}

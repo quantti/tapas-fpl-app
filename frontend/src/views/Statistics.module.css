@@ -2,7 +2,11 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 1rem 50px;
+
+  @media (max-width: 640px) {
+    padding-bottom: 32px;
+  }
 
   .title {
     font-size: 1.5rem;
@@ -56,8 +60,22 @@
     grid-template-columns: 1fr 1fr;
     gap: var(--space-20);
 
+    @media (max-width: 900px) and (min-width: 641px) {
+      /* Give Template Team (right column) extra space saved from PlayerOwnership */
+      grid-template-columns: 1fr calc(1fr + 15px);
+    }
+
     @media (max-width: 640px) {
       grid-template-columns: 1fr;
+
+      /* Swap PlayerOwnership (6th) and LeagueTemplateTeam (7th) on mobile */
+      & > *:nth-child(6) {
+        order: 7;
+      }
+
+      & > *:nth-child(7) {
+        order: 6;
+      }
     }
 
     /* Ensure grid children don't overflow their cells */

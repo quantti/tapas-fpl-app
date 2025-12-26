@@ -6,6 +6,10 @@
   overflow-y: auto;
   margin-right: calc(-1 * var(--space-16));
   padding-right: var(--space-16);
+
+  @media (max-width: 900px) and (min-width: 641px) {
+    max-width: calc(100% - 45px);
+  }
 }
 
 .row {
@@ -46,6 +50,7 @@
   gap: var(--space-8);
   flex-shrink: 0;
   order: 1; /* Move after chevron (keeps chevron between player name and stats) */
+  margin-left: auto; /* Push to right edge */
 }
 
 .count {
