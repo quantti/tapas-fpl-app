@@ -103,10 +103,7 @@ describe('calculateFixtureScore', () => {
   })
 
   it('returns 0.5 when all fixtures are in past', () => {
-    const fixtures = [
-      makeFixture(15, 1, 2, 3, 3),
-      makeFixture(16, 3, 1, 3, 3),
-    ]
+    const fixtures = [makeFixture(15, 1, 2, 3, 3), makeFixture(16, 3, 1, 3, 3)]
     expect(calculateFixtureScore(1, fixtures, 17)).toBe(0.5)
   })
 
@@ -197,7 +194,13 @@ describe('calculateLeagueOwnership', () => {
   const makeManager = (id: number, playerIds: number[]): ManagerGameweekData =>
     ({
       entry: id,
-      picks: playerIds.map((pid) => ({ playerId: pid, position: 1, multiplier: 1, is_captain: false, is_vice_captain: false })),
+      picks: playerIds.map((pid) => ({
+        playerId: pid,
+        position: 1,
+        multiplier: 1,
+        is_captain: false,
+        is_vice_captain: false,
+      })),
     }) as ManagerGameweekData
 
   it('returns empty map for empty managers', () => {
@@ -242,10 +245,7 @@ describe('calculateLeagueOwnership', () => {
 
   it('handles multiple players per manager', () => {
     const players = [makePlayer(1), makePlayer(2), makePlayer(3)]
-    const managers = [
-      makeManager(1, [1, 2, 3]),
-      makeManager(2, [1, 2]),
-    ]
+    const managers = [makeManager(1, [1, 2, 3]), makeManager(2, [1, 2])]
     const result = calculateLeagueOwnership(players, managers)
     expect(result.get(1)).toBe(1) // 2/2
     expect(result.get(2)).toBe(1) // 2/2
@@ -265,11 +265,7 @@ describe('useRecommendedPlayers', () => {
     }
   }
 
-  const makePlayer = (
-    id: number,
-    elementType: number,
-    overrides: Partial<Player> = {}
-  ): Player =>
+  const makePlayer = (id: number, elementType: number, overrides: Partial<Player> = {}): Player =>
     ({
       id,
       web_name: `Player${id}`,
@@ -336,10 +332,9 @@ describe('useRecommendedPlayers', () => {
 
   it('returns empty arrays when players is empty', async () => {
     const teamsMap = new Map([[1, makeTeam(1)]])
-    const { result } = renderHook(
-      () => useRecommendedPlayers([], [], teamsMap, 17),
-      { wrapper: createWrapper() }
-    )
+    const { result } = renderHook(() => useRecommendedPlayers([], [], teamsMap, 17), {
+      wrapper: createWrapper(),
+    })
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -356,10 +351,9 @@ describe('useRecommendedPlayers', () => {
     const teamsMap = new Map([[1, makeTeam(1)]])
     const managers = [makeManager(1, [1, 2])]
 
-    const { result } = renderHook(
-      () => useRecommendedPlayers(players, managers, teamsMap, 17),
-      { wrapper: createWrapper() }
-    )
+    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
+      wrapper: createWrapper(),
+    })
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -380,10 +374,9 @@ describe('useRecommendedPlayers', () => {
     const teamsMap = new Map([[1, makeTeam(1)]])
     const managers = [makeManager(1, [1, 2])]
 
-    const { result } = renderHook(
-      () => useRecommendedPlayers(players, managers, teamsMap, 17),
-      { wrapper: createWrapper() }
-    )
+    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
+      wrapper: createWrapper(),
+    })
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -404,10 +397,9 @@ describe('useRecommendedPlayers', () => {
     const teamsMap = new Map([[1, makeTeam(1)]])
     const managers: ManagerGameweekData[] = []
 
-    const { result } = renderHook(
-      () => useRecommendedPlayers(players, managers, teamsMap, 17),
-      { wrapper: createWrapper() }
-    )
+    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
+      wrapper: createWrapper(),
+    })
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -423,15 +415,11 @@ describe('useRecommendedPlayers', () => {
       makePlayer(3, 3), // will have 0% ownership
     ]
     const teamsMap = new Map([[1, makeTeam(1)]])
-    const managers = [
-      makeManager(1, [1, 2]),
-      makeManager(2, [1]),
-    ]
+    const managers = [makeManager(1, [1, 2]), makeManager(2, [1])]
 
-    const { result } = renderHook(
-      () => useRecommendedPlayers(players, managers, teamsMap, 17),
-      { wrapper: createWrapper() }
-    )
+    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
+      wrapper: createWrapper(),
+    })
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -456,10 +444,9 @@ describe('useRecommendedPlayers', () => {
       makeManager(4, [1]),
     ]
 
-    const { result } = renderHook(
-      () => useRecommendedPlayers(players, managers, teamsMap, 17),
-      { wrapper: createWrapper() }
-    )
+    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
+      wrapper: createWrapper(),
+    })
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -477,10 +464,9 @@ describe('useRecommendedPlayers', () => {
     const teamsMap = new Map([[1, makeTeam(1)]])
     const managers = [makeManager(1, [1])]
 
-    const { result } = renderHook(
-      () => useRecommendedPlayers(players, managers, teamsMap, 17),
-      { wrapper: createWrapper() }
-    )
+    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
+      wrapper: createWrapper(),
+    })
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -496,10 +482,9 @@ describe('useRecommendedPlayers', () => {
     const players = [makePlayer(1, 3)]
     const teamsMap = new Map([[1, makeTeam(1)]])
 
-    const { result } = renderHook(
-      () => useRecommendedPlayers(players, [], teamsMap, 17),
-      { wrapper: createWrapper() }
-    )
+    const { result } = renderHook(() => useRecommendedPlayers(players, [], teamsMap, 17), {
+      wrapper: createWrapper(),
+    })
 
     expect(result.current.loading).toBe(true)
   })
@@ -511,10 +496,9 @@ describe('useRecommendedPlayers', () => {
     )
     const teamsMap = new Map([[1, makeTeam(1)]])
 
-    const { result } = renderHook(
-      () => useRecommendedPlayers(players, [], teamsMap, 17),
-      { wrapper: createWrapper() }
-    )
+    const { result } = renderHook(() => useRecommendedPlayers(players, [], teamsMap, 17), {
+      wrapper: createWrapper(),
+    })
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -523,19 +507,22 @@ describe('useRecommendedPlayers', () => {
 
   it('limits defensive to top 10', async () => {
     // Create 15 eligible players with 50% ownership
-    const players = Array.from({ length: 15 }, (_, i) =>
-      makePlayer(i + 1, 3)
-    )
+    const players = Array.from({ length: 15 }, (_, i) => makePlayer(i + 1, 3))
     const teamsMap = new Map([[1, makeTeam(1)]])
     const managers = [
-      makeManager(1, players.slice(0, 8).map((p) => p.id)),
-      makeManager(2, players.slice(7, 15).map((p) => p.id)),
+      makeManager(
+        1,
+        players.slice(0, 8).map((p) => p.id)
+      ),
+      makeManager(
+        2,
+        players.slice(7, 15).map((p) => p.id)
+      ),
     ]
 
-    const { result } = renderHook(
-      () => useRecommendedPlayers(players, managers, teamsMap, 17),
-      { wrapper: createWrapper() }
-    )
+    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
+      wrapper: createWrapper(),
+    })
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -544,16 +531,21 @@ describe('useRecommendedPlayers', () => {
 
   it('limits toSell to top 10', async () => {
     // Create 15 bad players owned by managers
-    const players = Array.from({ length: 15 }, (_, i) =>
-      makePlayer(i + 1, 3, { form: '0.1' }) // very bad form
+    const players = Array.from(
+      { length: 15 },
+      (_, i) => makePlayer(i + 1, 3, { form: '0.1' }) // very bad form
     )
     const teamsMap = new Map([[1, makeTeam(1)]])
-    const managers = [makeManager(1, players.map((p) => p.id))]
+    const managers = [
+      makeManager(
+        1,
+        players.map((p) => p.id)
+      ),
+    ]
 
-    const { result } = renderHook(
-      () => useRecommendedPlayers(players, managers, teamsMap, 17),
-      { wrapper: createWrapper() }
-    )
+    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
+      wrapper: createWrapper(),
+    })
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -568,10 +560,9 @@ describe('useRecommendedPlayers', () => {
     ]
     const teamsMap = new Map([[1, makeTeam(1)]])
 
-    const { result } = renderHook(
-      () => useRecommendedPlayers(players, [], teamsMap, 17),
-      { wrapper: createWrapper() }
-    )
+    const { result } = renderHook(() => useRecommendedPlayers(players, [], teamsMap, 17), {
+      wrapper: createWrapper(),
+    })
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -587,10 +578,9 @@ describe('useRecommendedPlayers', () => {
     const players = [makePlayer(1, 3)]
     const teamsMap = new Map([[1, makeTeam(1)]])
 
-    const { result } = renderHook(
-      () => useRecommendedPlayers(players, [], teamsMap, 17),
-      { wrapper: createWrapper() }
-    )
+    const { result } = renderHook(() => useRecommendedPlayers(players, [], teamsMap, 17), {
+      wrapper: createWrapper(),
+    })
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -615,10 +605,9 @@ describe('useRecommendedPlayers', () => {
     // All managers own player 1 (great player) - should NOT be in toSell
     const managers = [makeManager(1, [1]), makeManager(2, [1])]
 
-    const { result } = renderHook(
-      () => useRecommendedPlayers(players, managers, teamsMap, 17),
-      { wrapper: createWrapper() }
-    )
+    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
+      wrapper: createWrapper(),
+    })
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 

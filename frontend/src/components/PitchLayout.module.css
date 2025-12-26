@@ -21,16 +21,38 @@
     padding: var(--space-8) var(--space-4);
     gap: var(--space-4);
   }
+}
 
-  .row {
-    display: flex;
-    justify-content: center;
-    gap: var(--space-4);
-    flex: 1;
-    align-items: center;
+.row {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+  flex: 1;
+  align-items: center;
 
-    @media (max-width: 480px) {
-      gap: var(--space-2);
-    }
+  @media (max-width: 480px) {
+    gap: var(--space-2);
   }
+}
+
+.bench {
+  margin-top: var(--space-12);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-12);
+}
+
+.benchTitle {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-8) 0;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.benchPlayers {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
 }

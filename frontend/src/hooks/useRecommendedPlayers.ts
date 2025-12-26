@@ -86,7 +86,11 @@ export function calculateLeagueOwnership(
 }
 
 // Exported for testing
-export function calculateFixtureScore(teamId: number, fixtures: Fixture[], currentGW: number): number {
+export function calculateFixtureScore(
+  teamId: number,
+  fixtures: Fixture[],
+  currentGW: number
+): number {
   const upcoming = fixtures
     .filter((f) => f.event !== null && f.event > currentGW && f.event <= currentGW + 5)
     .sort((a, b) => (a.event ?? 0) - (b.event ?? 0))
@@ -169,7 +173,11 @@ function calculatePlayerPercentiles(
 }
 
 // Helper: Calculate "buy" score (for punts and defensive)
-function calculateBuyScore(pct: PlayerPercentiles, weights: PositionWeights, fixtureScore: number): number {
+function calculateBuyScore(
+  pct: PlayerPercentiles,
+  weights: PositionWeights,
+  fixtureScore: number
+): number {
   return (
     pct.xG90Pct * weights.xG +
     pct.xA90Pct * weights.xA +
@@ -181,7 +189,11 @@ function calculateBuyScore(pct: PlayerPercentiles, weights: PositionWeights, fix
 }
 
 // Helper: Calculate "sell" score (inverted - higher = worse player)
-function calculateSellScore(pct: PlayerPercentiles, weights: PositionWeights, fixtureScore: number): number {
+function calculateSellScore(
+  pct: PlayerPercentiles,
+  weights: PositionWeights,
+  fixtureScore: number
+): number {
   return (
     (1 - pct.xG90Pct) * weights.xG +
     (1 - pct.xA90Pct) * weights.xA +

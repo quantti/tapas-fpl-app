@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Modal } from './Modal'
+import { PitchLayout, type PitchPlayer as BasePitchPlayer } from './PitchLayout'
+import { PitchPlayer } from './PitchPlayer'
 import { fplApi } from '../services/api'
 import type { Player, BootstrapStatic, LiveGameweek, Fixture } from '../types/fpl'
 import * as styles from './ManagerModal.module.css'
@@ -168,96 +170,83 @@ export function ManagerModal({
       return opponent ? { shortName: opponent.short_name, isHome } : null
     }
 
-    // Group players by position
+    // Build player data for PitchLayout
+    interface ManagerPitchPlayer extends BasePitchPlayer {
+      pick: Pick
+      player: Player
+    }
+
     const startingPicks = picks.picks.filter((p) => p.position <= 11)
     const benchPicks = picks.picks.filter((p) => p.position > 11)
 
-    const getPlayerPosition = (player: Player) => player.element_type
+    const startingPlayers: ManagerPitchPlayer[] = startingPicks
+      .map((pick) => {
+        const player = playersMap.get(pick.element)
+        if (!player) return null
+        return {
+          id: player.id,
+          elementType: player.element_type,
+          pick,
+          player,
+        }
+      })
+      .filter((p): p is ManagerPitchPlayer => p !== null)
 
-    const startingPlayers = startingPicks
-      .map((pick) => ({ pick, player: playersMap.get(pick.element) }))
-      .filter((p) => p.player)
+    const benchPlayers: ManagerPitchPlayer[] = benchPicks
+      .map((pick) => {
+        const player = playersMap.get(pick.element)
+        if (!player) return null
+        return {
+          id: player.id,
+          elementType: player.element_type,
+          pick,
+          player,
+        }
+      })
+      .filter((p): p is ManagerPitchPlayer => p !== null)
 
-    const goalkeepers = startingPlayers.filter((p) => getPlayerPosition(p.player!) === 1)
-    const defenders = startingPlayers.filter((p) => getPlayerPosition(p.player!) === 2)
-    const midfielders = startingPlayers.filter((p) => getPlayerPosition(p.player!) === 3)
-    const forwards = startingPlayers.filter((p) => getPlayerPosition(p.player!) === 4)
-
-    const benchPlayers = benchPicks
-      .map((pick) => ({ pick, player: playersMap.get(pick.element) }))
-      .filter((p) => p.player)
-
-    const renderPlayer = (pick: Pick, player: Player) => {
-      const team = teamsMap.get(player.team)
+    // Get points display string for a player
+    const getPointsDisplay = (pick: Pick, player: Player): string => {
       const live = liveMap.get(player.id)
       const fixtureStarted = hasFixtureStarted(player.team)
       const basePoints = live?.stats.total_points ?? 0
       const points = pick.multiplier > 0 ? basePoints * pick.multiplier : basePoints
 
-      // Only show points once fixture has started/finished
-      // Before fixture starts, show "–" regardless of live data (API returns 0 for unplayed)
-      const showPoints = fixtureStarted
+      if (fixtureStarted) return String(points)
 
-      // Get opponent info for display when fixture hasn't started
       const opponentInfo = getOpponentInfo(player.team)
-
-      // Show points when fixture started, opponent when it hasn't
-      const getPointsDisplay = (): string => {
-        if (showPoints) return String(points)
-        if (opponentInfo) {
-          return `${opponentInfo.shortName} (${opponentInfo.isHome ? 'H' : 'A'})`
-        }
-        return '–'
+      if (opponentInfo) {
+        return `${opponentInfo.shortName} (${opponentInfo.isHome ? 'H' : 'A'})`
       }
+      return '–'
+    }
+
+    const renderPitchPlayer = (data: ManagerPitchPlayer, isBench = false) => {
+      const team = teamsMap.get(data.player.team)
+      const badge = data.pick.is_captain ? 'C' : data.pick.is_vice_captain ? 'V' : undefined
 
       return (
-        <div key={pick.element} className={styles.player} data-testid="player">
-          <div className={styles.playerShirt}>
-            {team && (
-              <img
-                src={getShirtUrl(team.code)}
-                alt={team.short_name}
-                className={styles.shirtImage}
-                data-testid="shirt-image"
-              />
-            )}
-            {pick.is_captain && <span className={styles.badge}>C</span>}
-            {pick.is_vice_captain && <span className={styles.badge}>V</span>}
-          </div>
-          <div className={styles.playerName} data-testid="player-name">
-            {player.web_name}
-          </div>
-          <div className={styles.playerPoints}>{getPointsDisplay()}</div>
-        </div>
+        <PitchPlayer
+          key={data.id}
+          name={data.player.web_name}
+          shirtUrl={team ? getShirtUrl(team.code) : ''}
+          teamShortName={team?.short_name ?? ''}
+          stat={getPointsDisplay(data.pick, data.player)}
+          badge={badge}
+          isBench={isBench}
+        />
       )
     }
 
     return (
-      <>
-        <div className={styles.pitch} data-testid="pitch">
-          <div className={styles.row} data-testid="pitch-row-forwards">
-            {forwards.map(({ pick, player }) => renderPlayer(pick, player!))}
-          </div>
-          <div className={styles.row} data-testid="pitch-row-midfielders">
-            {midfielders.map(({ pick, player }) => renderPlayer(pick, player!))}
-          </div>
-          <div className={styles.row} data-testid="pitch-row-defenders">
-            {defenders.map(({ pick, player }) => renderPlayer(pick, player!))}
-          </div>
-          <div className={styles.row} data-testid="pitch-row-goalkeepers">
-            {goalkeepers.map(({ pick, player }) => renderPlayer(pick, player!))}
-          </div>
-        </div>
-
-        <div className={styles.bench} data-testid="bench">
-          <h4 className={styles.benchTitle} data-testid="bench-title">
-            Bench
-          </h4>
-          <div className={styles.benchPlayers} data-testid="bench-players">
-            {benchPlayers.map(({ pick, player }) => renderPlayer(pick, player!))}
-          </div>
-        </div>
-      </>
+      <PitchLayout
+        players={startingPlayers}
+        renderPlayer={(p) => renderPitchPlayer(p)}
+        bench={{
+          players: benchPlayers,
+          renderPlayer: (p) => renderPitchPlayer(p, true),
+        }}
+      />
     )
   }
 

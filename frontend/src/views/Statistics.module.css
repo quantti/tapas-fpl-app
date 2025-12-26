@@ -68,13 +68,17 @@
     @media (max-width: 640px) {
       grid-template-columns: 1fr;
 
-      /* Swap PlayerOwnership (6th) and LeagueTemplateTeam (7th) on mobile */
+      /* Reorder on mobile: TemplateTeam before PositionChart, PlayerOwnership last */
+      & > *:nth-child(5) {
+        order: 6; /* LeaguePositionChart: 5th → 6th */
+      }
+
       & > *:nth-child(6) {
-        order: 7;
+        order: 7; /* PlayerOwnership: 6th → 7th */
       }
 
       & > *:nth-child(7) {
-        order: 6;
+        order: 5; /* LeagueTemplateTeam: 7th → 5th */
       }
     }
 

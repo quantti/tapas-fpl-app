@@ -39,17 +39,17 @@ test.describe('Manager Modal - Team Lineup', () => {
     await waitForDataLoad(page)
 
     // Check for pitch element
-    const pitch = dialog.locator('[class*="pitch"]')
+    const pitch = dialog.locator('[data-testid="pitch-layout"]')
     await expect(pitch).toBeVisible({ timeout: 5000 })
 
     // Pitch should have multiple rows (formation lines)
-    const rows = pitch.locator('[class*="row"]')
+    const rows = pitch.locator('[data-testid^="pitch-row-"]')
     const rowCount = await rows.count()
     expect(rowCount).toBeGreaterThanOrEqual(3) // At least GK, DEF, MID, FWD
 
     // Each row should have players displayed horizontally
     const firstRow = rows.first()
-    const players = firstRow.locator('[class*="player"]')
+    const players = firstRow.locator('[data-testid="player"]')
     const playerCount = await players.count()
     expect(playerCount).toBeGreaterThan(0)
   })
@@ -68,12 +68,12 @@ test.describe('Manager Modal - Team Lineup', () => {
     await waitForDataLoad(page)
 
     // Check for shirt images - should have at least 11 for starting lineup
-    const shirts = dialog.locator('[class*="shirtImage"], img[src*="shirt"]')
+    const shirts = dialog.locator('[data-testid="shirt-image"]')
     const shirtCount = await shirts.count()
     expect(shirtCount).toBeGreaterThanOrEqual(11)
 
     // Check for player names
-    const playerNames = dialog.locator('[class*="playerName"]')
+    const playerNames = dialog.locator('[data-testid="player-name"]')
     const nameCount = await playerNames.count()
     expect(nameCount).toBeGreaterThanOrEqual(11)
   })
@@ -189,7 +189,7 @@ test.describe('Manager Modal - Mobile', () => {
     expect(dialogBox!.width).toBeLessThanOrEqual(VIEWPORTS.MOBILE.width)
 
     // Pitch rows should display players in flex layout
-    const pitch = dialog.locator('[class*="pitch"]')
+    const pitch = dialog.locator('[data-testid="pitch-layout"]')
     await expect(pitch).toBeVisible({ timeout: 5000 })
     const pitchBox = await pitch.boundingBox()
     expect(pitchBox).toBeTruthy()

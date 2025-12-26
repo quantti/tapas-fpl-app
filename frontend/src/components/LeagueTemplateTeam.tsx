@@ -4,14 +4,13 @@ import type { ManagerGameweekData } from '../hooks/useFplData'
 import type { Player, Team } from '../types/fpl'
 import { Card } from './ui/Card'
 import { CardHeader } from './ui/CardHeader'
-import { PitchLayout, type PitchPlayer } from './PitchLayout'
+import { PitchLayout, type PitchPlayer as BasePitchPlayer } from './PitchLayout'
+import { PitchPlayer } from './PitchPlayer'
 import {
   calculateOwnership,
   buildTemplateTeam,
-  getFormationString,
   type PlayerWithOwnership,
 } from '../utils/templateTeam'
-import * as styles from './LeagueTemplateTeam.module.css'
 
 interface Props {
   managerDetails: ManagerGameweekData[]
@@ -19,14 +18,10 @@ interface Props {
   teamsMap: Map<number, Team>
 }
 
-interface TemplatePlayer extends PitchPlayer {
+interface TemplatePlayer extends BasePitchPlayer {
   player: Player
   team: Team | undefined
   ownershipPercentage: number
-}
-
-const getShirtUrl = (teamCode: number): string => {
-  return `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}-110.webp`
 }
 
 export function LeagueTemplateTeam({ managerDetails, playersMap, teamsMap }: Props) {
@@ -45,8 +40,6 @@ export function LeagueTemplateTeam({ managerDetails, playersMap, teamsMap }: Pro
     return null
   }
 
-  const formation = getFormationString(templateTeam)
-
   const pitchPlayers: TemplatePlayer[] = templateTeam.map((data: PlayerWithOwnership) => ({
     id: data.player.id,
     elementType: data.player.element_type,
@@ -56,29 +49,18 @@ export function LeagueTemplateTeam({ managerDetails, playersMap, teamsMap }: Pro
   }))
 
   const renderPlayer = (data: TemplatePlayer) => (
-    <div className={styles.player}>
-      <div className={styles.playerShirt}>
-        {data.team && (
-          <img
-            src={getShirtUrl(data.team.code)}
-            alt={data.team.short_name}
-            className={styles.shirtImage}
-          />
-        )}
-      </div>
-      <div className={styles.playerName}>{data.player.web_name}</div>
-      <div className={styles.ownership}>{Math.round(data.ownershipPercentage)}%</div>
-    </div>
+    <PitchPlayer
+      key={data.id}
+      name={data.player.web_name}
+      shirtUrl={data.team ? PitchPlayer.getShirtUrl(data.team.code) : ''}
+      teamShortName={data.team?.short_name ?? ''}
+      stat={`${Math.round(data.ownershipPercentage)}%`}
+    />
   )
 
   return (
     <Card data-testid="league-template-team">
-      <CardHeader
-        icon={<Users size={16} color="#14B8A6" />}
-        action={<span className={styles.formation}>{formation}</span>}
-      >
-        Template Team
-      </CardHeader>
+      <CardHeader icon={<Users size={16} color="#14B8A6" />}>Tapas and Tackles Template</CardHeader>
       <PitchLayout players={pitchPlayers} renderPlayer={renderPlayer} />
     </Card>
   )
