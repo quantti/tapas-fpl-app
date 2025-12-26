@@ -3,13 +3,13 @@
 **Project:** Tapas FPL App
 **Date:** 2025-12-25
 **Status:** Ready for Implementation
-**Last Updated:** 2025-12-25 (Expert review completed)
+**Last Updated:** 2025-12-26 (Added new components: PitchLayout, LeagueTemplateTeam)
 
 ---
 
 ## Executive Summary
 
-The current frontend has **18 components** with code duplication. Following the [Functional vs Feature Components](https://dev.to/luke/functional-components-vs-feature-components-1cjd) pattern, we should separate:
+The current frontend has **21 components** with code duplication. Following the [Functional vs Feature Components](https://dev.to/luke/functional-components-vs-feature-components-1cjd) pattern, we should separate:
 
 - **UI Components** (reusable, function-specific) - Serve predictable, repeatable needs
 - **Feature Components** (domain-specific) - Tied to FPL business logic
@@ -34,18 +34,21 @@ The current frontend has **18 components** with code duplication. Following the 
 
 ```
 src/
-├── components/           # 18 files, mixed concerns
+├── components/           # 21 files, mixed concerns
 │   ├── BenchPoints.tsx
 │   ├── CaptainSuccess.tsx
 │   ├── CaptainDifferentialModal.tsx
 │   ├── ChipsRemaining.tsx
+│   ├── FixturesTest.tsx          # Debug/test component
 │   ├── GameweekCountdown.tsx
 │   ├── GameweekDetails.tsx
 │   ├── Header.tsx
 │   ├── LeaguePositionChart.tsx
 │   ├── LeagueStandings.tsx
+│   ├── LeagueTemplateTeam.tsx    # NEW: Most owned starting XI
 │   ├── ManagerModal.tsx
 │   ├── Modal.tsx
+│   ├── PitchLayout.tsx           # NEW: Extracted from ManagerModal
 │   ├── PlayerOwnership.tsx
 │   ├── PlayerOwnershipModal.tsx
 │   ├── RecommendedPlayers.tsx
@@ -69,6 +72,8 @@ src/
 | ChipsRemaining | ❌ | - |
 | StatsCards | ❌ | - |
 | RecommendedPlayers | ❌ | - |
+| LeagueTemplateTeam | ❌ | - |
+| PitchLayout | ❌ | - |
 
 **Hooks/Utils tested:** useTheme (8), useLiveScoring (12), liveScoring utils (19)
 **Total:** 57 tests passing
@@ -262,7 +267,9 @@ src/
 │   │   ├── Modal.tsx            # (moved from root)
 │   │   ├── Modal.module.css
 │   │   ├── ThemeToggle.tsx      # (moved from root)
-│   │   └── ThemeToggle.module.css
+│   │   ├── ThemeToggle.module.css
+│   │   ├── PitchLayout.tsx      # NEW: Reusable pitch visualization
+│   │   └── PitchLayout.module.css
 │   │
 │   ├── BenchPoints.tsx          # Feature components stay flat
 │   ├── CaptainSuccess.tsx
@@ -480,7 +487,7 @@ describe('RankedRow', () => {
 | CSS duplication | ~310 lines | ~60 lines | ~250 lines saved |
 | TSX duplication | ~85 lines | ~85 lines | Defer AsyncDataView |
 | UI component tests | 0 | 12+ | New tests for primitives |
-| UI components | 2 (Modal, ThemeToggle) | 6 | +Card, CardHeader, RankedRow, ListRowButton |
+| UI components | 3 (Modal, ThemeToggle, PitchLayout) | 7 | +Card, CardHeader, RankedRow, ListRowButton |
 
 ---
 
@@ -540,7 +547,10 @@ export { RankedRow } from './RankedRow'
 
 ### 5. Additional UI Components
 
-Extract when second use case emerges:
+**Already extracted:**
+- `<PitchLayout>` - Reusable pitch visualization (used by LeagueTemplateTeam; ManagerModal still uses inline pitch)
+
+**Extract when second use case emerges:**
 - `<PositionBadge>` - Currently only in RecommendedPlayers
 - `<InfoTooltip>` - Currently only in RecommendedPlayers
 - `<Badge>` - Chip badges, hit badges (GameweekDetails, ChipsRemaining)
@@ -576,7 +586,9 @@ When upgrading to React 19, consider:
 ## Next Steps
 
 1. ✅ **Expert review completed** - Estimates verified, plan revised
-2. **Create branch** - `refactor/ui-components`
-3. **Phase 1** - Create Card, CardHeader, RankedRow, ListRowButton with tests
-4. **Phase 2** - Migrate BenchPoints first (simplest use case)
-5. **Iterate** - One component at a time, verify with E2E snapshots
+2. ✅ **PitchLayout extracted** - Reusable pitch component created for LeagueTemplateTeam
+3. **Refactor ManagerModal** - Migrate to use shared PitchLayout component
+4. **Create branch** - `refactor/ui-components`
+5. **Phase 1** - Create Card, CardHeader, RankedRow, ListRowButton with tests
+6. **Phase 2** - Migrate BenchPoints first (simplest use case)
+7. **Iterate** - One component at a time, verify with E2E snapshots

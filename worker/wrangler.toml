@@ -1,0 +1,11 @@
+name = "tapas-fpl-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[vars]
+FPL_API_BASE = "https://fantasy.premierleague.com/api"
+
+# Uncomment to enable caching with KV (optional, for future use)
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "your-kv-namespace-id"
