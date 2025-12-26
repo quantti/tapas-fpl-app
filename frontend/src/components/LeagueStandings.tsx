@@ -151,7 +151,7 @@ export function LeagueStandings({
                   <span className={styles.gwPoints}>
                     {entry.liveGwPoints}
                     {entry.provisionalBonus > 0 && (
-                      <span className={styles.provisionalBonus}>+{entry.provisionalBonus}</span>
+                      <span className={styles.provisionalBonus}>(+{entry.provisionalBonus})</span>
                     )}
                   </span>
                 </td>
