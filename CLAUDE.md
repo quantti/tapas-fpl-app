@@ -85,6 +85,7 @@ The Worker proxy (`worker/src/index.ts`) uses tiered cache TTLs to balance fresh
 - [x] Header navigation with hamburger menu
 - [x] Player recommendations (Punts, Defensive, Time to Sell) with position badges
 - [x] League Template Team (most owned starting XI in pitch formation)
+- [x] Graceful 503 error handling ("FPL is updating" message during gameweek transitions)
 
 ## FPL API Reference
 
@@ -145,6 +146,47 @@ const hasFixtureStarted = (teamId: number): boolean => {
 // Only show points once fixture has started
 const showPoints = fixtureStarted
 ```
+
+## Error Handling
+
+### FPL API 503 Responses
+The FPL API returns HTTP 503 during gameweek transitions (30-60 minutes after the last match while data is processed). The app handles this gracefully with a friendly message instead of a generic error.
+
+**Key files:**
+- `src/services/api.ts` - `FplApiError` class preserves HTTP status codes
+- `src/components/FplUpdating.tsx` - Friendly "FPL is updating" message component
+- `src/hooks/useFplData.ts` - Exposes `isApiUnavailable` boolean
+
+**FplApiError class:**
+```typescript
+export class FplApiError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly statusText: string
+  ) {
+    super(`API error: ${status} ${statusText}`)
+    this.name = 'FplApiError'
+  }
+
+  get isServiceUnavailable(): boolean {
+    return this.status === 503
+  }
+}
+```
+
+**Usage in views:**
+```typescript
+const { error, isApiUnavailable } = useFplData()
+
+if (error) {
+  return isApiUnavailable ? <FplUpdating /> : <GenericError message={error} />
+}
+```
+
+**Implementation notes:**
+- All views (Dashboard, Statistics, Analytics) check `isApiUnavailable`
+- FplUpdating shows spinning refresh icon with explanation text
+- E2E tests in `tests/error-states.spec.ts` verify 503 handling
 
 ## Styling - CSS Modules
 
@@ -494,6 +536,8 @@ npm run test:e2e:docker:update  # Regenerates all visual snapshots (Docker)
 
 **Note:** The version in the Docker image (`v1.57.0`) must match the `@playwright/test` version in `package.json`. Update both when upgrading Playwright.
 
+**Docker file ownership:** The Docker commands use `-e DOCKER_USER="$(id -u):$(id -g)"` to ensure snapshot files are created with correct ownership (not root). This is the officially recommended approach by Playwright.
+
 ### Test Files
 
 **Unit tests:**
@@ -509,6 +553,7 @@ npm run test:e2e:docker:update  # Regenerates all visual snapshots (Docker)
 - `tests/player-ownership.spec.ts` - Player ownership modal, clickable rows
 - `tests/manager-modal.spec.ts` - Team lineup modal (pitch layout, players, bench)
 - `tests/countdown.spec.ts` - Gameweek countdown display
+- `tests/error-states.spec.ts` - FPL 503 error handling, visual snapshots
 
 **Test helpers:**
 - `tests/helpers/page-utils.ts` - Shared utilities: VIEWPORTS, SELECTORS, waitForPageReady()
@@ -730,6 +775,7 @@ import { IconName } from 'lucide-react'
 | Punts | `Dices` | `#F59E0B` (amber) | |
 | Defensive Options | `Shield` | `#14B8A6` (teal) | |
 | Time to Sell | `TrendingDown` | `#EF4444` (red) | |
+| FPL Updating | `RefreshCw` | `var(--color-primary)` | Spinning animation |
 | Position DEF | Text badge | `#ef4444` (red) | White text on colored bg |
 | Position MID | Text badge | `#3b82f6` (blue) | White text on colored bg |
 | Position FWD | Text badge | `#22c55e` (green) | White text on colored bg |
@@ -777,7 +823,8 @@ tapas-fpl-app/
 │   │   │   ├── RecommendedPlayers.tsx  # Player recommendations
 │   │   │   ├── StatsCards.tsx          # Team value, hits
 │   │   │   ├── LeagueTemplateTeam.tsx  # Most owned starting XI
-│   │   │   └── PitchLayout.tsx         # Reusable pitch formation layout
+│   │   │   ├── PitchLayout.tsx         # Reusable pitch formation layout
+│   │   │   └── FplUpdating.tsx         # 503 error message component
 │   │   ├── hooks/
 │   │   │   ├── useFplData.ts           # Main data hook (TanStack Query)
 │   │   │   ├── useLiveScoring.ts       # Live polling

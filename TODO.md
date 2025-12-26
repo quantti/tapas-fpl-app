@@ -28,7 +28,7 @@
   - [x] FreeTransfers.module.css
 
 ### Polish
-- [ ] Error boundaries for graceful failure handling
+- [x] Error boundaries for graceful failure handling (503 "FPL is updating" message)
 - [ ] Mobile responsiveness audit (touch targets, responsive tables)
 - [ ] Loading skeleton improvements
 
