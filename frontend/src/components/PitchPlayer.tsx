@@ -26,7 +26,7 @@ export function PitchPlayer({
 }: Props) {
   return (
     <div
-      className={`${styles.PitchPlayer}${isBench ? ` ${styles['-bench']}` : ''}`}
+      className={`${styles.PitchPlayer}${isBench ? ` ${styles.bench}` : ''}`}
       data-testid={testId}
     >
       <div className={styles.shirt}>
