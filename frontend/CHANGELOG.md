@@ -1,3 +1,10 @@
+## [0.6.2](https://github.com/quantti/tapas-fpl-app/compare/v0.6.1...v0.6.2) (2025-12-26)
+
+
+### Bug Fixes
+
+* **ci:** add format:check script for CI pipeline ([66e9a6c](https://github.com/quantti/tapas-fpl-app/commit/66e9a6c0e1f61119675c4a2d2247880d7be8ee94))
+
 ## [0.6.1](https://github.com/quantti/tapas-fpl-app/compare/v0.6.0...v0.6.1) (2025-12-26)
 
 
