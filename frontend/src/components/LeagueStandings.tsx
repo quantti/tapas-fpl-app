@@ -43,6 +43,9 @@ export function LeagueStandings({
   // Use finished_provisional as it updates immediately; finished waits for bonus confirmation
   const hasGamesInProgress = fixtures.some((f) => f.started && !f.finished_provisional)
 
+  // Check if any fixtures have started this gameweek (for showing rank changes)
+  const hasGamesStarted = fixtures.some((f) => f.started)
+
   // Calculate live points and totals for each manager, then sort by live total
   const sortedResults = useMemo(() => {
     const results = standings.standings.results.map((entry) => {
@@ -121,7 +124,7 @@ export function LeagueStandings({
                 <td className={`${styles.cell} ${styles.colRank}`}>
                   <div className={styles.rank}>
                     <span className={styles.rankNumber}>{displayRank}</span>
-                    {rankChange.direction !== 'same' && (
+                    {hasGamesStarted && rankChange.direction !== 'same' && (
                       <span className={`${styles.rankChange} ${styles[rankChange.direction]}`}>
                         {rankChange.direction === 'up' ? (
                           <CircleChevronUp size={14} />

@@ -78,11 +78,12 @@ export function useFreeTransfers(
 }
 
 /**
- * Calculates free transfers based on gameweek history and chip usage.
+ * Calculates remaining free transfers for the current gameweek.
  *
- * Iterates through all completed gameweeks to track FT accumulation:
- * - After each GW: FT = min(2, previous_FT - transfers_made + 1)
- * - Wildcard resets to 1 FT
+ * Iterates through gameweek history to track FT accumulation:
+ * - After each completed GW: FT = min(2, previous_FT - transfers_made + 1)
+ * - Current GW: FT = previous_FT - transfers_made (no +1 until GW ends)
+ * - Wildcard resets FT to 1
  * - Free Hit skips the GW (FT carries over unchanged)
  */
 export function calculateFreeTransfers(
@@ -101,26 +102,38 @@ export function calculateFreeTransfers(
   const sortedHistory = [...history].sort((a, b) => a.event - b.event)
 
   for (const gw of sortedHistory) {
-    // Stop before current GW - we want FT available NOW
-    if (gw.event >= currentGameweek) break
+    // Stop after current GW - we want remaining FT NOW
+    if (gw.event > currentGameweek) break
 
-    // Wildcard resets to 1 FT
+    const isCurrentGw = gw.event === currentGameweek
+
+    // Wildcard resets to 1 FT (transfers don't consume FT)
     if (wildcardGws.has(gw.event)) {
       ft = 1
+      // Gain +1 FT after completed wildcard GW (not current)
+      if (!isCurrentGw) {
+        ft = Math.min(2, ft + 1)
+      }
       continue
     }
 
-    // Free Hit - transfers don't consume FT, skip this GW
+    // Free Hit - transfers don't consume FT
     if (freeHitGws.has(gw.event)) {
+      // Gain +1 FT after completed free hit GW (not current)
+      if (!isCurrentGw) {
+        ft = Math.min(2, ft + 1)
+      }
       continue
     }
 
-    // Normal gameweek:
-    // 1. Consume FT for transfers made
-    // 2. Gain +1 FT for next week (capped at 2)
+    // Normal gameweek: consume FT for transfers made
     const transfersMade = gw.event_transfers
     ft = Math.max(0, ft - transfersMade)
-    ft = Math.min(2, ft + 1)
+
+    // Only gain +1 FT for completed GWs (not current)
+    if (!isCurrentGw) {
+      ft = Math.min(2, ft + 1)
+    }
   }
 
   return ft

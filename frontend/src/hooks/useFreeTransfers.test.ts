@@ -91,18 +91,30 @@ describe('calculateFreeTransfers', () => {
   })
 
   describe('wildcard chip', () => {
-    it('resets FT to 1 after wildcard', () => {
+    it('resets FT to 1 during wildcard GW', () => {
       const history = [
         { event: 1, event_transfers: 0 }, // 1 -> 2 FT (banked)
         { event: 2, event_transfers: 0 }, // Still 2 FT
-        { event: 3, event_transfers: 5 }, // Wildcard week
+        { event: 3, event_transfers: 5 }, // Wildcard week (current)
       ]
       const chips = [{ name: 'wildcard', event: 3 }]
 
-      const result = calculateFreeTransfers(history, chips, 4)
-
-      // GW3 wildcard: resets to 1 FT
+      // Current GW is wildcard GW - shows 1 FT remaining (reset, no +1 yet)
+      const result = calculateFreeTransfers(history, chips, 3)
       expect(result).toBe(1)
+    })
+
+    it('FT is 2 after wildcard GW ends', () => {
+      const history = [
+        { event: 1, event_transfers: 0 }, // 1 -> 2 FT (banked)
+        { event: 2, event_transfers: 0 }, // Still 2 FT
+        { event: 3, event_transfers: 5 }, // Wildcard week (completed)
+      ]
+      const chips = [{ name: 'wildcard', event: 3 }]
+
+      // GW3 wildcard (completed) -> 1 FT + 1 = 2 FT for GW4
+      const result = calculateFreeTransfers(history, chips, 4)
+      expect(result).toBe(2)
     })
 
     it('FT accumulates after wildcard', () => {
