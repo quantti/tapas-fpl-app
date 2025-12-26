@@ -1,3 +1,11 @@
+# [0.6.0](https://github.com/quantti/tapas-fpl-app/compare/v0.5.0...v0.6.0) (2025-12-26)
+
+
+### Features
+
+* add footer with copyright ([8743698](https://github.com/quantti/tapas-fpl-app/commit/8743698209c67e1371e2f5050354ad6b05dbe5d7))
+* **statistics:** add Free Transfers Tracker card ([e530396](https://github.com/quantti/tapas-fpl-app/commit/e5303960e22d898ac7659331fdfb81411d889129))
+
 # 0.5.0 (2025-12-26)
 
 
