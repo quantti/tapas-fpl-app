@@ -1,3 +1,10 @@
+## [0.6.3](https://github.com/quantti/tapas-fpl-app/compare/v0.6.2...v0.6.3) (2025-12-26)
+
+
+### Bug Fixes
+
+* show remaining FT and hide arrows when GW hasn't started ([d9d9219](https://github.com/quantti/tapas-fpl-app/commit/d9d9219d5b786b6d7cf9b5dea2b094d553a55caa))
+
 ## [0.6.2](https://github.com/quantti/tapas-fpl-app/compare/v0.6.1...v0.6.2) (2025-12-26)
 
 
