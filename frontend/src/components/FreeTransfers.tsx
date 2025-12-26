@@ -23,8 +23,12 @@ export function FreeTransfers({ managerDetails, currentGameweek }: Props) {
   if (loading) {
     return (
       <Card>
-        <CardHeader icon={<ArrowLeftRight size={16} color="#8B5CF6" />}>Free Transfers</CardHeader>
-        <div className={styles.loading}>Loading...</div>
+        <div className={styles.FreeTransfers}>
+          <CardHeader icon={<ArrowLeftRight size={16} color="#8B5CF6" />}>
+            Free Transfers
+          </CardHeader>
+          <div className={styles.loading}>Loading...</div>
+        </div>
       </Card>
     )
   }
@@ -47,18 +51,20 @@ export function FreeTransfers({ managerDetails, currentGameweek }: Props) {
 
   return (
     <Card data-testid="free-transfers">
-      <CardHeader icon={<ArrowLeftRight size={16} color="#8B5CF6" />}>Free Transfers</CardHeader>
-      <div className={styles.list}>
-        {managersWithFT.map((manager) => (
-          <div key={manager.managerId} className={styles.row}>
-            <span className={styles.teamName}>{manager.teamName}</span>
-            <span
-              className={`${styles.ftCount} ${manager.freeTransfers === 2 ? styles.maxFt : ''}`}
-            >
-              {manager.freeTransfers} FT
-            </span>
-          </div>
-        ))}
+      <div className={styles.FreeTransfers}>
+        <CardHeader icon={<ArrowLeftRight size={16} color="#8B5CF6" />}>Free Transfers</CardHeader>
+        <div className={styles.list}>
+          {managersWithFT.map((manager) => (
+            <div key={manager.managerId} className={styles.row}>
+              <span className={styles.teamName}>{manager.teamName}</span>
+              <span
+                className={`${styles.ftCount} ${manager.freeTransfers === 2 ? styles.maxFt : ''}`}
+              >
+                {manager.freeTransfers} FT
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </Card>
   )

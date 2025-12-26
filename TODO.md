@@ -10,7 +10,7 @@
 - [ ] League validation and error messages
 
 ### UI Enhancements
-- [ ] Free transfers card - show how many free transfers each manager has
+- [x] Free transfers card - show how many free transfers each manager has
 - [ ] Player recommendation modal - clicking a player opens modal with:
   - Next 5 fixtures
   - Last 5 gameweek results
@@ -20,6 +20,12 @@
 - [ ] H2H manager comparison view
 - [ ] Points breakdown by position
 - [ ] Transfer history timeline
+
+### Code Quality
+- [ ] Refactor CSS modules to follow nested pattern (root class matching filename):
+  - [ ] ChipsRemaining.module.css
+  - [ ] BenchPoints.module.css
+  - [x] FreeTransfers.module.css
 
 ### Polish
 - [ ] Error boundaries for graceful failure handling

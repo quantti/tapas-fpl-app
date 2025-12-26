@@ -138,7 +138,7 @@ We use CSS Modules with native CSS nesting for component styling.
 - Types (auto-generated): `ComponentName.module.css.d.ts`
 
 ### CSS Structure Pattern
-**IMPORTANT**: Each CSS module must have a single root class matching the filename (PascalCase), with all other styles nested inside.
+**IMPORTANT**: Each CSS module must have a single root class matching the filename (PascalCase), with all other styles nested inside. See `FixturesTest.module.css` for a canonical example.
 
 ```css
 /* ComponentName.module.css */
