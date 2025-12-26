@@ -1,3 +1,10 @@
+## [0.6.1](https://github.com/quantti/tapas-fpl-app/compare/v0.6.0...v0.6.1) (2025-12-26)
+
+
+### Bug Fixes
+
+* **PitchPlayer:** rename -bench modifier to bench for CSS types compatibility ([2460587](https://github.com/quantti/tapas-fpl-app/commit/2460587576ffd1c92a11ecea5f224f97e312354d))
+
 # [0.6.0](https://github.com/quantti/tapas-fpl-app/compare/v0.5.0...v0.6.0) (2025-12-26)
 
 
