@@ -38,6 +38,24 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - Cloudflare Workers: <50ms cold starts (V8 isolates), perfect for API proxy
 - Fly.io: Full Python environment for future ML/analytics (has 2-3s cold starts)
 
+## Cloudflare Worker Cache TTLs
+
+The Worker proxy (`worker/src/index.ts`) uses tiered cache TTLs to balance freshness with performance:
+
+| Endpoint | TTL | Rationale |
+|----------|-----|-----------|
+| `/bootstrap-static` | 5 min | Contains `is_current` gameweek flag - must stay fresh! |
+| `/fixtures` | 15 min | Changes when matches start/end |
+| `/event/{gw}/live` | 2 min | Live scores during matches |
+| `/entry/{id}/event/{gw}/picks` | 1 hour | Historical picks are immutable |
+| `/leagues-classic/{id}/standings` | 5 min | Updates during active gameweeks |
+| `/entry/{id}/history` | 5 min | Changes after transfers |
+| `/element-summary/{id}` | 30 min | Player stats, moderate freshness |
+| `/event-status` | 1 min | Processing state indicator |
+| Default | 5 min | Fallback for unmatched endpoints |
+
+**Important:** Bootstrap-static was previously cached for 6 hours, which caused stale gameweek data during GW transitions. Keep this at 5 minutes or less.
+
 ## Pages & Routing
 
 | Route | Component | Description |
@@ -367,6 +385,40 @@ const liveTotal = previousTotal + livePoints.netPoints
 
 **Table Re-sorting:**
 When `isLive && liveData`, standings sort by `liveTotal` descending. Display rank = position in sorted array (1-indexed).
+
+### Free Transfers Tracker
+Shows remaining free transfers for each manager in the league.
+
+**Key files:**
+- `src/hooks/useFreeTransfers.ts` - Core calculation logic with `calculateFreeTransfers` function
+- `src/hooks/useFreeTransfers.test.ts` - Comprehensive test suite (26 tests)
+- `src/components/FreeTransfers.tsx` - Display component with deadline awareness
+
+**FPL Free Transfer Rules (2024/25 season):**
+- Start with 1 FT at beginning of season
+- Gain +1 FT per gameweek (max **5** can be banked - increased from 2 in 2024/25)
+- Wildcard resets FT to 1 (transfers don't consume FT that week)
+- Free Hit doesn't consume FT (transfers don't count that GW)
+- Transfers beyond available FT cost -4 points each
+
+**Deadline Timing Logic:**
+The component accounts for whether the deadline has passed:
+- **Before deadline:** Shows remaining FT for current GW transfers
+- **After deadline:** Shows FT available for next GW (includes the +1 FT grant)
+
+```typescript
+// After deadline passes, treat current GW as "completed"
+const gwComplete = !isCurrentGw || deadlinePassed
+if (gwComplete) {
+  ft = Math.min(5, ft + 1) // Grant +1 FT
+}
+```
+
+**Implementation notes:**
+- FPL API doesn't directly expose remaining FT - must be calculated from history
+- Fetches `/entry/{id}/history/` to get `event_transfers` per gameweek
+- Uses chip history to detect wildcards and free hits
+- `deadlineTime` from bootstrap determines if deadline passed
 
 ### Player Recommendations
 Three recommendation lists for transfer planning: Punts (differential picks), Defensive (template picks), and Time to Sell (underperforming owned players).
