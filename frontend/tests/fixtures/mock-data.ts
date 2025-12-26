@@ -603,7 +603,7 @@ export const mockFixturesResponse = [
  */
 export function mockEntryResponse(entryId: number) {
   const managers: Record<number, { name: string; teamName: string }> = {
-    [MOCK_MANAGER_IDS.manager1]: { name: 'Alice Manager', teamName: 'Alice FC' },
+    [MOCK_MANAGER_IDS.manager1]: { name: 'Alice Manager', teamName: 'Soccerballers United' }, // 20 chars max
     [MOCK_MANAGER_IDS.manager2]: { name: 'Bob Manager', teamName: 'Bob United' },
     [MOCK_MANAGER_IDS.manager3]: { name: 'Charlie Manager', teamName: 'Charlie City' },
     [MOCK_MANAGER_IDS.manager4]: { name: 'Diana Manager', teamName: 'Diana Town' },
@@ -802,8 +802,23 @@ export function mockPicksResponse(entryId: number, gw: number) {
   const variantPicks = managerVariants[entryId] || managerVariants[MOCK_MANAGER_IDS.manager1]
   const allPicks = [...basePicks, ...variantPicks]
 
+  // Chips and hits vary by manager for testing UI
+  const chipsByManager: Record<number, string | null> = {
+    [MOCK_MANAGER_IDS.manager1]: '3xc', // Triple Captain
+    [MOCK_MANAGER_IDS.manager2]: 'freehit', // Free Hit
+    [MOCK_MANAGER_IDS.manager3]: null,
+    [MOCK_MANAGER_IDS.manager4]: null,
+  }
+
+  const hitsByManager: Record<number, number> = {
+    [MOCK_MANAGER_IDS.manager1]: 0,
+    [MOCK_MANAGER_IDS.manager2]: 0,
+    [MOCK_MANAGER_IDS.manager3]: 4, // -4 hit
+    [MOCK_MANAGER_IDS.manager4]: 8, // -8 hit
+  }
+
   return {
-    active_chip: null,
+    active_chip: chipsByManager[entryId] ?? null,
     automatic_subs: [],
     entry_history: {
       event: gw,
@@ -815,7 +830,7 @@ export function mockPicksResponse(entryId: number, gw: number) {
       bank: 5,
       value: 1000 + gw * 2,
       event_transfers: gw > 1 ? 1 : 0,
-      event_transfers_cost: 0,
+      event_transfers_cost: hitsByManager[entryId] ?? 0,
       points_on_bench: 8,
     },
     picks: allPicks,
@@ -849,7 +864,7 @@ export const mockLeagueResponse = {
         rank_sort: 1,
         total: 1050,
         entry: MOCK_MANAGER_IDS.manager1,
-        entry_name: 'Alice FC',
+        entry_name: 'Soccerballers United', // 20 chars max
       },
       {
         id: 2,
