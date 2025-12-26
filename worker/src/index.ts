@@ -17,8 +17,8 @@ app.use('*', cors({
 
 /**
  * Tiered Cache TTLs based on endpoint type:
- * - bootstrap-static: 6 hours (rarely changes)
- * - fixtures: 1 hour (changes when matches start/end)
+ * - bootstrap-static: 5 minutes (contains current gameweek - must stay fresh!)
+ * - fixtures: 15 minutes (changes when matches start/end)
  * - standings: 5 minutes (updates during gameweeks)
  * - live gameweek: 2 minutes (live scores)
  * - historical picks: 1 hour (past data, rarely accessed repeatedly)
@@ -26,14 +26,15 @@ app.use('*', cors({
  * - default: 5 minutes
  */
 function getCacheTTL(path: string): number {
-  // Bootstrap static - players, teams, gameweeks (rarely changes)
+  // Bootstrap static - players, teams, gameweeks
+  // IMPORTANT: Contains is_current flag for gameweek detection, must be fresh
   if (path.includes('/bootstrap-static')) {
-    return 6 * 60 * 60; // 6 hours
+    return 5 * 60; // 5 minutes (was 6 hours - caused stale GW data!)
   }
 
-  // Fixtures - match schedule
+  // Fixtures - match schedule (changes when matches start/end)
   if (path.includes('/fixtures')) {
-    return 60 * 60; // 1 hour
+    return 15 * 60; // 15 minutes
   }
 
   // Live gameweek data - scores during matches
