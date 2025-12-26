@@ -15,11 +15,8 @@ class TestSettings:
         """Settings should have sensible defaults."""
         settings = Settings()
 
-        assert settings.fpl_api_base_url == "https://fantasy.premierleague.com/api"
         assert settings.log_level == "INFO"
-        assert settings.cache_ttl_bootstrap == 300
-        assert settings.cache_ttl_fixtures == 600
-        assert settings.cache_ttl_live == 60
+        assert "localhost" in settings.cors_origins
 
     def test_cors_origins_list_single(self):
         """CORS origins should be parsed from comma-separated string."""
@@ -39,29 +36,12 @@ class TestSettings:
 
         assert settings.cors_origins_list == ["http://a.com", "http://b.com"]
 
-    @patch.dict(os.environ, {"FPL_API_BASE_URL": "https://custom.api.com"})
-    def test_environment_override(self):
-        """Settings should be overridable via environment variables."""
-        # Clear the cache to pick up new env vars
-        get_settings.cache_clear()
-
-        settings = Settings()
-
-        assert settings.fpl_api_base_url == "https://custom.api.com"
-
     @patch.dict(os.environ, {"LOG_LEVEL": "DEBUG"})
     def test_log_level_override(self):
         """Log level should be configurable via environment."""
         settings = Settings()
 
         assert settings.log_level == "DEBUG"
-
-    @patch.dict(os.environ, {"CACHE_TTL_BOOTSTRAP": "600"})
-    def test_cache_ttl_override(self):
-        """Cache TTL should be configurable via environment."""
-        settings = Settings()
-
-        assert settings.cache_ttl_bootstrap == 600
 
 
 class TestGetSettings:

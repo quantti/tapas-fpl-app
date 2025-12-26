@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # Create FastAPI app
 app = FastAPI(
     title="Tapas FPL Backend",
-    description="Backend API for FPL data proxy, expected points, and transfer optimization",
+    description="Backend API for FPL analytics (expected points, transfer optimization)",
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -50,7 +50,6 @@ async def startup_event() -> None:
     """Log startup information."""
     logger.info("Starting Tapas FPL Backend")
     logger.info(f"CORS origins: {settings.cors_origins_list}")
-    logger.info(f"FPL API base: {settings.fpl_api_base_url}")
 
 
 @app.on_event("shutdown")

@@ -10,7 +10,6 @@ primary_region = 'ams'
   dockerfile = 'Dockerfile'
 
 [env]
-  FPL_API_BASE_URL = 'https://fantasy.premierleague.com/api'
   LOG_LEVEL = 'INFO'
 
 [http_service]

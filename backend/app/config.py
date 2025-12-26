@@ -14,19 +14,11 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    # FPL API
-    fpl_api_base_url: str = "https://fantasy.premierleague.com/api"
-
     # CORS - comma-separated list of allowed origins
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
 
     # Logging
     log_level: str = "INFO"
-
-    # Cache TTL in seconds
-    cache_ttl_bootstrap: int = 300  # 5 minutes for bootstrap-static
-    cache_ttl_fixtures: int = 600  # 10 minutes for fixtures
-    cache_ttl_live: int = 60  # 1 minute for live data
 
     @property
     def cors_origins_list(self) -> list[str]:
