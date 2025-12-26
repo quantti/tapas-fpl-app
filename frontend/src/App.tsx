@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
+import { Footer } from './components/Footer'
 import { Dashboard } from './views/Dashboard'
 import { Statistics } from './views/Statistics'
 import { Analytics } from './views/Analytics'
@@ -15,6 +16,7 @@ function App() {
             <Route path="/analytics" element={<Analytics />} />
           </Routes>
         </main>
+        <Footer />
       </div>
     </BrowserRouter>
   )

@@ -8,7 +8,10 @@ import { mockBootstrapResponse, mockLiveResponse } from './fixtures/mock-data'
 
 test.describe('Gameweek Countdown', () => {
   test('displays countdown when all fixtures are finished', async ({ page }) => {
-    // Override bootstrap to make GW18 current and finished, GW19 next
+    // Future deadline for GW19 (always 7 days from now)
+    const futureDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+
+    // Override bootstrap to make GW18 current and finished, GW19 next with future deadline
     const customBootstrap = {
       ...mockBootstrapResponse,
       events: mockBootstrapResponse.events.map((event) => ({
@@ -16,6 +19,8 @@ test.describe('Gameweek Countdown', () => {
         is_current: event.id === 18,
         is_next: event.id === 19,
         finished: event.id <= 18,
+        // Set future deadline for GW19 so countdown displays
+        deadline_time: event.id === 19 ? futureDeadline : event.deadline_time,
       })),
     }
 
@@ -76,6 +81,9 @@ test.describe('Gameweek Countdown', () => {
   })
 
   test('does not display countdown when fixtures are in progress', async ({ page }) => {
+    // Future deadline for GW19 (always 7 days from now)
+    const futureDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+
     // Override bootstrap - GW18 current and not finished
     const customBootstrap = {
       ...mockBootstrapResponse,
@@ -84,6 +92,7 @@ test.describe('Gameweek Countdown', () => {
         is_current: event.id === 18,
         is_next: event.id === 19,
         finished: event.id < 18, // GW18 not finished
+        deadline_time: event.id === 19 ? futureDeadline : event.deadline_time,
       })),
     }
 
