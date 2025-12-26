@@ -1,3 +1,10 @@
+# [0.7.0](https://github.com/quantti/tapas-fpl-app/compare/v0.6.4...v0.7.0) (2025-12-26)
+
+
+### Features
+
+* add graceful error handling for FPL API 503 responses ([70bc8c2](https://github.com/quantti/tapas-fpl-app/commit/70bc8c29c438cf36f102f4d40c1dc2b9f3080d26))
+
 ## [0.6.4](https://github.com/quantti/tapas-fpl-app/compare/v0.6.3...v0.6.4) (2025-12-26)
 
 
