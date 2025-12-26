@@ -1,3 +1,10 @@
+## [0.7.1](https://github.com/quantti/tapas-fpl-app/compare/v0.7.0...v0.7.1) (2025-12-26)
+
+
+### Bug Fixes
+
+* use explicit property declarations for FplApiError class ([bdf678e](https://github.com/quantti/tapas-fpl-app/commit/bdf678e0f69461a57a1db15d37415e180649cbaf))
+
 # [0.7.0](https://github.com/quantti/tapas-fpl-app/compare/v0.6.4...v0.7.0) (2025-12-26)
 
 
