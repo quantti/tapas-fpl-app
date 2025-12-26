@@ -1,3 +1,11 @@
+## [0.6.4](https://github.com/quantti/tapas-fpl-app/compare/v0.6.3...v0.6.4) (2025-12-26)
+
+
+### Bug Fixes
+
+* improve Free Transfers calculation accuracy ([0f20f32](https://github.com/quantti/tapas-fpl-app/commit/0f20f32514fca235e57d2a1a182afb45f5249cf9))
+* reduce bootstrap-static cache TTL from 6h to 5min ([61665df](https://github.com/quantti/tapas-fpl-app/commit/61665df4175469a39e3b63b71505e2aa042bb061))
+
 ## [0.6.3](https://github.com/quantti/tapas-fpl-app/compare/v0.6.2...v0.6.3) (2025-12-26)
 
 
