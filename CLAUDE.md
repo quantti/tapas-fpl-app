@@ -9,29 +9,34 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - **State Management**: TanStack Query (React Query) for server state
 - **Charts**: Recharts for data visualization
 - **Icons**: Lucide React
-- **Backend/Proxy**: Python FastAPI (async caching proxy)
+- **API Proxy**: Cloudflare Workers (edge caching, <50ms cold starts)
+- **Backend**: Python FastAPI on Fly.io (future analytics only)
 - **Database**: Supabase (PostgreSQL 17)
-- **Hosting**: Vercel (frontend), Fly.io (backend)
+- **Hosting**: Vercel (frontend), Cloudflare (worker), Fly.io (backend)
 - **Testing**: Vitest + React Testing Library + Playwright (E2E)
 
 ## Architecture
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   Vite + React  │────▶│  Python FastAPI  │────▶│    FPL API      │
-│   TypeScript    │     │  (Fly.io)        │     │                 │
-│                 │     │  CORS proxy +    │     │                 │
-│   Vercel        │     │  caching         │     │                 │
-│                 │     │                  │     │                 │
-└─────────────────┘     └────────┬─────────┘     └─────────────────┘
-                                 │
-                                 ▼
-                        ┌─────────────────┐
-                        │   Supabase      │
-                        │   PostgreSQL 17 │
-                        │   (EU West)     │
-                        └─────────────────┘
+│   Vite + React  │────▶│ Cloudflare       │────▶│    FPL API      │
+│   TypeScript    │     │ Workers          │     │                 │
+│                 │     │ (Edge proxy +    │     │                 │
+│   Vercel        │     │  tiered caching) │     │                 │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+        │
+        │ (future analytics)
+        ▼
+┌──────────────────┐     ┌─────────────────┐
+│  Python FastAPI  │────▶│   Supabase      │
+│  (Fly.io)        │     │   PostgreSQL 17 │
+│  analytics only  │     │   (EU West)     │
+└──────────────────┘     └─────────────────┘
 ```
+
+**Why this architecture?**
+- Cloudflare Workers: <50ms cold starts (V8 isolates), perfect for API proxy
+- Fly.io: Full Python environment for future ML/analytics (has 2-3s cold starts)
 
 ## Pages & Routing
 
