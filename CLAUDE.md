@@ -279,7 +279,8 @@ Shows the most owned starting XI across all managers in the league, displayed in
 
 **Key files:**
 - `src/components/LeagueTemplateTeam.tsx` - Main component rendering the template team
-- `src/components/PitchLayout.tsx` - Reusable pitch layout with SVG background
+- `src/components/PitchLayout.tsx` - Reusable pitch layout with SVG background and optional bench
+- `src/components/PitchPlayer.tsx` - Shared player display component (shirt, name, stat)
 - `src/utils/templateTeam.ts` - Ownership calculation and team building logic
 - `public/pitch.svg` - Football pitch SVG background
 
@@ -289,7 +290,7 @@ Shows the most owned starting XI across all managers in the league, displayed in
 - Supports formations: picks best available players per position (GK, DEF, MID, FWD)
 - Uses FPL shirt images from official CDN
 - Responsive breakpoints: tablet (≤900px) and mobile (≤480px) with smaller player cards
-- PitchLayout component is reused by ManagerModal for team lineup display
+- PitchLayout and PitchPlayer are reused by ManagerModal for team lineup display
 
 **Algorithm:**
 1. Calculate ownership % for each player (count / total managers × 100)
