@@ -25,7 +25,11 @@ export function FreeTransfers({ managerDetails, currentGameweek, deadlineTime }:
     [managerDetails]
   )
 
-  const { freeTransfers, loading, error } = useFreeTransfers(managerIds, currentGameweek, deadlinePassed)
+  const { freeTransfers, loading, error } = useFreeTransfers(
+    managerIds,
+    currentGameweek,
+    deadlinePassed
+  )
 
   if (loading) {
     return (

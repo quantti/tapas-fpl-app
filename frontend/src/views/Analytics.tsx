@@ -1,10 +1,12 @@
 import { useFplData } from '../hooks/useFplData'
 import { Header } from '../components/Header'
 import { RecommendedPlayers } from '../components/RecommendedPlayers'
+import { FplUpdating } from '../components/FplUpdating'
 import * as styles from './Analytics.module.css'
 
 export function Analytics() {
-  const { managerDetails, currentGameweek, loading, error, bootstrap, teamsMap } = useFplData()
+  const { managerDetails, currentGameweek, loading, error, isApiUnavailable, bootstrap, teamsMap } =
+    useFplData()
 
   if (loading) {
     return (
@@ -22,10 +24,14 @@ export function Analytics() {
     return (
       <div className={styles.Analytics}>
         <Header />
-        <div className={styles.error}>
-          <h3>Error loading data</h3>
-          <p>{error}</p>
-        </div>
+        {isApiUnavailable ? (
+          <FplUpdating />
+        ) : (
+          <div className={styles.error}>
+            <h3>Error loading data</h3>
+            <p>{error}</p>
+          </div>
+        )}
       </div>
     )
   }

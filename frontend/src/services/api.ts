@@ -4,11 +4,33 @@ import type { BootstrapStatic, Fixture, Entry, LeagueStandings, LiveGameweek } f
 // In production, this will be your deployed Cloudflare Worker URL
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8787'
 
+/**
+ * Custom error class for FPL API errors.
+ * Preserves the HTTP status code for smart error handling (e.g., 503 detection).
+ */
+export class FplApiError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly statusText: string
+  ) {
+    super(`API error: ${status} ${statusText}`)
+    this.name = 'FplApiError'
+  }
+
+  /**
+   * Returns true if FPL API is updating (503 Service Unavailable).
+   * This typically happens for 30-60 minutes between gameweeks.
+   */
+  get isServiceUnavailable(): boolean {
+    return this.status === 503
+  }
+}
+
 async function fetchApi<T>(endpoint: string): Promise<T> {
   const response = await fetch(`${API_BASE}/api${endpoint}`)
 
   if (!response.ok) {
-    throw new Error(`API error: ${response.status} ${response.statusText}`)
+    throw new FplApiError(response.status, response.statusText)
   }
 
   return response.json()

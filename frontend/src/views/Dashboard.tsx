@@ -8,12 +8,21 @@ import { GameweekDetails } from '../components/GameweekDetails'
 import { ManagerModal } from '../components/ManagerModal'
 import { GameweekCountdown } from '../components/GameweekCountdown'
 import { Header } from '../components/Header'
+import { FplUpdating } from '../components/FplUpdating'
 import * as styles from './Dashboard.module.css'
 
 export function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { standings, managerDetails, currentGameweek, isLive, loading, error, bootstrap } =
-    useFplData()
+  const {
+    standings,
+    managerDetails,
+    currentGameweek,
+    isLive,
+    loading,
+    error,
+    isApiUnavailable,
+    bootstrap,
+  } = useFplData()
 
   // Fetch live scoring data when games are in progress
   const { liveData, fixtures } = useLiveScoring(currentGameweek?.id ?? 0, isLive)
@@ -66,11 +75,16 @@ export function Dashboard() {
   if (error) {
     return (
       <div className={styles.Dashboard}>
-        <div className={styles.error}>
-          <h3>Error loading data</h3>
-          <p>{error}</p>
-          <p className={styles.errorHint}>Data will refresh automatically. Please wait.</p>
-        </div>
+        <Header />
+        {isApiUnavailable ? (
+          <FplUpdating />
+        ) : (
+          <div className={styles.error}>
+            <h3>Error loading data</h3>
+            <p>{error}</p>
+            <p className={styles.errorHint}>Data will refresh automatically. Please wait.</p>
+          </div>
+        )}
       </div>
     )
   }

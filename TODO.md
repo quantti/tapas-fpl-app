@@ -69,6 +69,7 @@ See CLAUDE.md "Features" section for completed work.
 Key completed optimizations:
 - React Query / TanStack Query setup
 - Shared historical data hook (useHistoricalData)
-- Tiered backend cache TTLs
+- Tiered Cloudflare Worker cache TTLs (bootstrap: 5min, live: 2min, etc.)
 - React Router for internal navigation
 - Dark mode with system preference detection
+- Free Transfers with deadline awareness and 2024/25 5 FT max rule

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useQuery, useQueries } from '@tanstack/react-query'
-import { fplApi } from '../services/api'
+import { fplApi, FplApiError } from '../services/api'
 import type { Player, Team } from '../types/fpl'
 import { LEAGUE_ID, LIVE_REFRESH_INTERVAL, IDLE_REFRESH_INTERVAL } from '../config'
 
@@ -203,12 +203,11 @@ export function useFplData() {
   const loading =
     bootstrapQuery.isLoading || standingsQuery.isLoading || managerQueries.some((q) => q.isLoading)
 
-  // Compute error state
-  const error =
-    bootstrapQuery.error?.message ||
-    standingsQuery.error?.message ||
-    managerQueries.find((q) => q.error)?.error?.message ||
-    null
+  // Compute error state - preserve actual error object for 503 detection
+  const errorObject =
+    bootstrapQuery.error || standingsQuery.error || managerQueries.find((q) => q.error)?.error
+  const error = errorObject?.message || null
+  const isApiUnavailable = errorObject instanceof FplApiError && errorObject.isServiceUnavailable
 
   // Compute last updated time
   const lastUpdated = useMemo(() => {
@@ -239,6 +238,7 @@ export function useFplData() {
     awaitingUpdate,
     loading,
     error,
+    isApiUnavailable,
     lastUpdated,
     refresh,
     playersMap,

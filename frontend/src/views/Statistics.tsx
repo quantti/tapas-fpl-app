@@ -8,11 +8,20 @@ import { FreeTransfers } from '../components/FreeTransfers'
 import { LeaguePositionChart } from '../components/LeaguePositionChart'
 import { PlayerOwnership } from '../components/PlayerOwnership'
 import { LeagueTemplateTeam } from '../components/LeagueTemplateTeam'
+import { FplUpdating } from '../components/FplUpdating'
 import * as styles from './Statistics.module.css'
 
 export function Statistics() {
-  const { managerDetails, currentGameweek, loading, error, bootstrap, playersMap, teamsMap } =
-    useFplData()
+  const {
+    managerDetails,
+    currentGameweek,
+    loading,
+    error,
+    isApiUnavailable,
+    bootstrap,
+    playersMap,
+    teamsMap,
+  } = useFplData()
 
   if (loading) {
     return (
@@ -30,10 +39,14 @@ export function Statistics() {
     return (
       <div className={styles.Statistics}>
         <Header />
-        <div className={styles.error}>
-          <h3>Error loading data</h3>
-          <p>{error}</p>
-        </div>
+        {isApiUnavailable ? (
+          <FplUpdating />
+        ) : (
+          <div className={styles.error}>
+            <h3>Error loading data</h3>
+            <p>{error}</p>
+          </div>
+        )}
       </div>
     )
   }
