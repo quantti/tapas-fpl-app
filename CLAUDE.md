@@ -293,19 +293,74 @@ Shows the most owned starting XI across all managers in the league, displayed in
 4. Determine formation string (e.g., "3-5-2") from selected players
 
 ### Live Scoring
-Real-time updates during active gameweeks.
+Real-time updates during active gameweeks with automatic table re-sorting and provisional bonus display.
 
 **Key files:**
-- `src/hooks/useLiveScoring.ts` - Polls live data and fixtures
-- `src/hooks/useFplData.ts` - Main data hook with TanStack Query
-- `src/utils/liveScoring.ts` - Points calculation utilities
+- `src/hooks/useFplData.ts` - Main data hook, determines `isLive` state, fetches manager picks
+- `src/hooks/useLiveScoring.ts` - Polls live data and fixtures at intervals
+- `src/utils/liveScoring.ts` - Points calculation utilities (bonus, multipliers)
+- `src/components/LeagueStandings.tsx` - Displays live-sorted standings with provisional bonus
+- `src/views/Dashboard.tsx` - Orchestrates live data flow to components
 
-**Implementation notes:**
-- `isLive` = deadline passed AND `currentGameweek.finished === false`
-- `hasGamesInProgress` uses `finished_provisional` (updates immediately when match ends)
-- `finished` only becomes true after bonus points confirmed (~1 hour delay)
-- Live total = previous total + live GW points
-- Table re-sorts by live total during active games
+**Data Flow:**
+```
+useFplData (isLive, managerDetails with picks)
+     │
+     ▼
+useLiveScoring (liveData, fixtures) ──polling when isLive──▶ FPL API
+     │
+     ▼
+LeagueStandings
+  ├── calculateLiveManagerPoints() for each manager
+  ├── Re-sort by liveTotal
+  └── Display provisional bonus (+X)
+```
+
+**State Determination:**
+
+| State | Condition | Behavior |
+|-------|-----------|----------|
+| `isLive` | `deadline_time < now AND !currentGameweek.finished` | Enables polling, live calculations |
+| `hasGamesInProgress` | `fixtures.some(f => f.started && !f.finished_provisional)` | Shows "LIVE" badge |
+
+**Live Points Calculation (`calculateLiveManagerPoints`):**
+1. For each pick with `multiplier > 0` (starting XI):
+   - Get `total_points` from `/event/{gw}/live/` endpoint
+   - Apply captain multiplier (1=normal, 2=captain, 3=triple captain)
+2. Add provisional bonus (if `stats.bonus === 0` and fixture >= 60 mins)
+3. Subtract transfer hits cost
+4. Return: `{ basePoints, provisionalBonus, totalPoints, hitsCost, netPoints }`
+
+**Provisional Bonus Logic (`calculateProvisionalBonus`):**
+- Calculated from BPS (Bonus Points System) scores per fixture
+- Top 3 BPS get 3/2/1 bonus points
+- Tie handling: tied players share same bonus (e.g., two tied for 1st both get 3)
+- Only shown when fixture >= 60 minutes OR finished (via `shouldShowProvisionalBonus`)
+- Once official bonus awarded (`stats.bonus > 0`), provisional is ignored
+
+**Fixture State Flags:**
+| Flag | When True | Use Case |
+|------|-----------|----------|
+| `started` | Match kicked off | Show points instead of "–" |
+| `finished_provisional` | Full time whistle blown | Stop "LIVE" badge, match ended |
+| `finished` | Bonus points confirmed (~1hr delay) | Official final points |
+
+**Polling Behavior (`useLiveScoring`):**
+- Default interval: 60 seconds (`DEFAULT_POLL_INTERVAL`)
+- Always fetches once on mount (even when `!isLive`) for fixture status
+- Only sets up interval polling when `isLive === true`
+- Cleans up interval on unmount or when `isLive` changes
+- Fetches both `/event/{gw}/live/` and `/fixtures?event={gw}` in parallel
+
+**Live Total Calculation:**
+```typescript
+// entry.total already includes entry.event_total
+const previousTotal = entry.total - entry.event_total
+const liveTotal = previousTotal + livePoints.netPoints
+```
+
+**Table Re-sorting:**
+When `isLive && liveData`, standings sort by `liveTotal` descending. Display rank = position in sorted array (1-indexed).
 
 ## Testing
 
