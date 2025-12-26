@@ -9,12 +9,14 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8787'
  * Preserves the HTTP status code for smart error handling (e.g., 503 detection).
  */
 export class FplApiError extends Error {
-  constructor(
-    public readonly status: number,
-    public readonly statusText: string
-  ) {
+  readonly status: number
+  readonly statusText: string
+
+  constructor(status: number, statusText: string) {
     super(`API error: ${status} ${statusText}`)
     this.name = 'FplApiError'
+    this.status = status
+    this.statusText = statusText
   }
 
   /**
