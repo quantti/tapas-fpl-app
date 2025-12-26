@@ -367,6 +367,50 @@ const liveTotal = previousTotal + livePoints.netPoints
 **Table Re-sorting:**
 When `isLive && liveData`, standings sort by `liveTotal` descending. Display rank = position in sorted array (1-indexed).
 
+### Player Recommendations
+Three recommendation lists for transfer planning: Punts (differential picks), Defensive (template picks), and Time to Sell (underperforming owned players).
+
+**Key files:**
+- `src/hooks/useRecommendedPlayers.ts` - Core calculation logic with scoring algorithms
+- `src/hooks/useRecommendedPlayers.test.tsx` - Comprehensive test suite (38 tests)
+- `src/components/RecommendedPlayers.tsx` - Three-card display component
+
+**Recommendation Types:**
+
+| Type | Ownership Filter | Description |
+|------|------------------|-------------|
+| Punts | < 40% | Differential picks - low ownership, high upside |
+| Defensive | 40-100% | Template picks - safe, popular choices |
+| Time to Sell | > 0% (owned) | Underperforming players to remove |
+
+**Scoring Algorithm:**
+1. Calculate per-90 stats: xG90, xA90, xGC90, CS90, form
+2. Calculate percentiles against all eligible outfield players
+3. Apply position-specific weights (DEF/MID/FWD have different priorities)
+4. Combine with fixture difficulty score (next 5 GWs, weighted by proximity)
+
+**Position Weights:**
+- **DEF**: High weight on xGC, clean sheets, form
+- **MID**: Balanced xG + xA, high form weight
+- **FWD**: Heavy xG weight, very high form weight
+
+**Fixture Score:**
+```typescript
+// FIXTURE_WEIGHTS = [0.35, 0.25, 0.2, 0.12, 0.08] - nearer GWs weighted more
+// Difficulty 1-5 converted to ease 0-1 (5=hardest=0, 1=easiest=1)
+```
+
+**Filters:**
+- Excludes goalkeepers (element_type !== 1)
+- Requires status 'a' (available)
+- Minimum 450 minutes played
+- toSell: requires score > 0.5 (worse than average)
+
+**Test Coverage (38 tests):**
+- Unit tests for `getPercentile`, `calculateFixtureScore`, `calculateLeagueOwnership`
+- Characterization tests for all filter conditions and ownership thresholds
+- Error handling and graceful degradation when fixtures API fails
+
 ## Testing
 
 ### Commands
@@ -729,8 +773,8 @@ npm run build            # Production build
 npm run preview          # Preview production build
 npm run ts               # TypeScript type checking (no emit)
 npm run lint             # Run ESLint (JS/TS linting)
-npm run format           # Run Biome formatter (code + CSS)
-npm run format:check     # Check formatting without fixing
+npm run format           # Check formatting (Biome)
+npm run format:fix       # Fix formatting (Biome)
 npm run css:types        # Generate CSS module type definitions
 npm test                 # Run unit tests in watch mode
 npm test -- --run        # Run unit tests once

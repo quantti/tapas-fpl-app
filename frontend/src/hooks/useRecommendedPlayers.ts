@@ -58,7 +58,8 @@ const SELL_WEIGHTS: Record<number, PositionWeights> = {
 // Fixture weights: nearer gameweeks matter more
 const FIXTURE_WEIGHTS = [0.35, 0.25, 0.2, 0.12, 0.08]
 
-function calculateLeagueOwnership(
+// Exported for testing
+export function calculateLeagueOwnership(
   players: Player[],
   managerDetails: ManagerGameweekData[]
 ): Map<number, number> {
@@ -84,7 +85,8 @@ function calculateLeagueOwnership(
   return ownershipMap
 }
 
-function calculateFixtureScore(teamId: number, fixtures: Fixture[], currentGW: number): number {
+// Exported for testing
+export function calculateFixtureScore(teamId: number, fixtures: Fixture[], currentGW: number): number {
   const upcoming = fixtures
     .filter((f) => f.event !== null && f.event > currentGW && f.event <= currentGW + 5)
     .sort((a, b) => (a.event ?? 0) - (b.event ?? 0))
@@ -100,11 +102,94 @@ function calculateFixtureScore(teamId: number, fixtures: Fixture[], currentGW: n
   }, 0)
 }
 
-function getPercentile(value: number, allValues: number[]): number {
+// Exported for testing
+export function getPercentile(value: number, allValues: number[]): number {
   if (allValues.length === 0) return 0.5
   const sorted = [...allValues].sort((a, b) => a - b)
   const rank = sorted.filter((v) => v < value).length
   return rank / sorted.length
+}
+
+// Helper: Check if player is eligible for recommendations
+function isEligibleOutfieldPlayer(player: Player): boolean {
+  return player.element_type !== 1 && player.status === 'a' && player.minutes >= 450
+}
+
+// Helper: Calculate per-90 stats for a player
+interface PlayerStats {
+  xG90: number
+  xA90: number
+  xGC90: number
+  cs90: number
+  form: number
+}
+
+function calculatePlayerStats(player: Player): PlayerStats {
+  const minutes90 = player.minutes / 90
+  return {
+    xG90: minutes90 > 0 ? (Number.parseFloat(player.expected_goals) || 0) / minutes90 : 0,
+    xA90: minutes90 > 0 ? (Number.parseFloat(player.expected_assists) || 0) / minutes90 : 0,
+    xGC90: minutes90 > 0 ? (Number.parseFloat(player.expected_goals_conceded) || 0) / minutes90 : 0,
+    cs90: minutes90 > 0 ? player.clean_sheets / minutes90 : 0,
+    form: Number.parseFloat(player.form) || 0,
+  }
+}
+
+// Helper: Calculate percentiles for player stats
+interface Percentiles {
+  xG90: number[]
+  xA90: number[]
+  xGC90: number[]
+  cs90: number[]
+  form: number[]
+}
+
+interface PlayerPercentiles {
+  xG90Pct: number
+  xA90Pct: number
+  xGC90Pct: number
+  cs90Pct: number
+  formPct: number
+}
+
+function calculatePlayerPercentiles(
+  stats: PlayerStats,
+  percentiles: Percentiles,
+  invertXGC: boolean
+): PlayerPercentiles {
+  return {
+    xG90Pct: getPercentile(stats.xG90, percentiles.xG90),
+    xA90Pct: getPercentile(stats.xA90, percentiles.xA90),
+    xGC90Pct: invertXGC
+      ? 1 - getPercentile(stats.xGC90, percentiles.xGC90)
+      : getPercentile(stats.xGC90, percentiles.xGC90),
+    cs90Pct: getPercentile(stats.cs90, percentiles.cs90),
+    formPct: getPercentile(stats.form, percentiles.form),
+  }
+}
+
+// Helper: Calculate "buy" score (for punts and defensive)
+function calculateBuyScore(pct: PlayerPercentiles, weights: PositionWeights, fixtureScore: number): number {
+  return (
+    pct.xG90Pct * weights.xG +
+    pct.xA90Pct * weights.xA +
+    pct.xGC90Pct * weights.xGC +
+    pct.cs90Pct * weights.cs +
+    pct.formPct * weights.form +
+    fixtureScore * weights.fix
+  )
+}
+
+// Helper: Calculate "sell" score (inverted - higher = worse player)
+function calculateSellScore(pct: PlayerPercentiles, weights: PositionWeights, fixtureScore: number): number {
+  return (
+    (1 - pct.xG90Pct) * weights.xG +
+    (1 - pct.xA90Pct) * weights.xA +
+    pct.xGC90Pct * weights.xGC + // High xGC is bad (not inverted in pct)
+    (1 - pct.cs90Pct) * weights.cs +
+    (1 - pct.formPct) * weights.form +
+    (1 - fixtureScore) * weights.fix
+  )
 }
 
 export function useRecommendedPlayers(
@@ -172,194 +257,80 @@ export function useRecommendedPlayers(
     return { xG90, xA90, xGC90, cs90, form }
   }, [players])
 
-  // Calculate PUNTS
+  // Calculate PUNTS - low ownership differential picks
   const punts = useMemo(() => {
     const candidates: RecommendedPlayer[] = []
 
     for (const player of players) {
-      // Filter: exclude GKs
-      if (player.element_type === 1) continue
-
-      // Filter: must be available
-      if (player.status !== 'a') continue
-
-      // Filter: minimum minutes
-      if (player.minutes < 450) continue
+      if (!isEligibleOutfieldPlayer(player)) continue
 
       const ownership = leagueOwnership.get(player.id) ?? 0
-
-      // Filter: ownership < 40%
       if (ownership >= 0.4) continue
 
       const team = teamsMap.get(player.team)
       if (!team) continue
 
       const fixtureScore = teamFixtureScores.get(player.team) ?? 0.5
-      const minutes90 = player.minutes / 90
+      const stats = calculatePlayerStats(player)
+      const pct = calculatePlayerPercentiles(stats, percentiles, true)
+      const weights = PUNT_WEIGHTS[player.element_type] ?? PUNT_WEIGHTS[3]
+      const score = calculateBuyScore(pct, weights, fixtureScore)
 
-      // Calculate per-90 stats (guard against NaN from invalid strings)
-      const xG90 = minutes90 > 0 ? (Number.parseFloat(player.expected_goals) || 0) / minutes90 : 0
-      const xA90 = minutes90 > 0 ? (Number.parseFloat(player.expected_assists) || 0) / minutes90 : 0
-      const xGC90 =
-        minutes90 > 0 ? (Number.parseFloat(player.expected_goals_conceded) || 0) / minutes90 : 0
-      const cs90 = minutes90 > 0 ? player.clean_sheets / minutes90 : 0
-      const formValue = Number.parseFloat(player.form) || 0
-
-      // Calculate percentiles
-      const xG90Pct = getPercentile(xG90, percentiles.xG90)
-      const xA90Pct = getPercentile(xA90, percentiles.xA90)
-      const formPct = getPercentile(formValue, percentiles.form)
-      // For xGC, lower is better - so invert the percentile
-      const xGC90Pct = 1 - getPercentile(xGC90, percentiles.xGC90)
-      const cs90Pct = getPercentile(cs90, percentiles.cs90)
-
-      // Get position-specific weights
-      const w = PUNT_WEIGHTS[player.element_type] ?? PUNT_WEIGHTS[3]
-      const score =
-        xG90Pct * w.xG +
-        xA90Pct * w.xA +
-        xGC90Pct * w.xGC +
-        cs90Pct * w.cs +
-        formPct * w.form +
-        fixtureScore * w.fix
-
-      candidates.push({
-        player,
-        team,
-        score,
-        fixtureScore,
-        leagueOwnership: ownership,
-      })
+      candidates.push({ player, team, score, fixtureScore, leagueOwnership: ownership })
     }
 
     return candidates.sort((a, b) => b.score - a.score).slice(0, 20)
   }, [players, leagueOwnership, teamsMap, teamFixtureScores, percentiles])
 
-  // Calculate DEFENSIVE OPTIONS
+  // Calculate DEFENSIVE OPTIONS - template picks with moderate ownership
   const defensive = useMemo(() => {
     const candidates: RecommendedPlayer[] = []
 
     for (const player of players) {
-      // Filter: exclude GKs
-      if (player.element_type === 1) continue
-
-      // Filter: must be available
-      if (player.status !== 'a') continue
-
-      // Filter: minimum minutes
-      if (player.minutes < 450) continue
+      if (!isEligibleOutfieldPlayer(player)) continue
 
       const ownership = leagueOwnership.get(player.id) ?? 0
-
-      // Filter: ownership > 40% and < 100%
       if (ownership <= 0.4 || ownership >= 1) continue
 
       const team = teamsMap.get(player.team)
       if (!team) continue
 
       const fixtureScore = teamFixtureScores.get(player.team) ?? 0.5
-      const minutes90 = player.minutes / 90
+      const stats = calculatePlayerStats(player)
+      const pct = calculatePlayerPercentiles(stats, percentiles, true)
+      const weights = DEFENSIVE_WEIGHTS[player.element_type] ?? DEFENSIVE_WEIGHTS[3]
+      const score = calculateBuyScore(pct, weights, fixtureScore)
 
-      // Calculate per-90 stats
-      const xG90 = minutes90 > 0 ? (Number.parseFloat(player.expected_goals) || 0) / minutes90 : 0
-      const xA90 = minutes90 > 0 ? (Number.parseFloat(player.expected_assists) || 0) / minutes90 : 0
-      const xGC90 =
-        minutes90 > 0 ? (Number.parseFloat(player.expected_goals_conceded) || 0) / minutes90 : 0
-      const cs90 = minutes90 > 0 ? player.clean_sheets / minutes90 : 0
-      const formValue = Number.parseFloat(player.form) || 0
-
-      // Calculate percentiles
-      const xG90Pct = getPercentile(xG90, percentiles.xG90)
-      const xA90Pct = getPercentile(xA90, percentiles.xA90)
-      const formPct = getPercentile(formValue, percentiles.form)
-      const xGC90Pct = 1 - getPercentile(xGC90, percentiles.xGC90)
-      const cs90Pct = getPercentile(cs90, percentiles.cs90)
-
-      // Get position-specific weights
-      const w = DEFENSIVE_WEIGHTS[player.element_type] ?? DEFENSIVE_WEIGHTS[3]
-      const score =
-        xG90Pct * w.xG +
-        xA90Pct * w.xA +
-        xGC90Pct * w.xGC +
-        cs90Pct * w.cs +
-        formPct * w.form +
-        fixtureScore * w.fix
-
-      candidates.push({
-        player,
-        team,
-        score,
-        fixtureScore,
-        leagueOwnership: ownership,
-      })
+      candidates.push({ player, team, score, fixtureScore, leagueOwnership: ownership })
     }
 
     return candidates.sort((a, b) => b.score - a.score).slice(0, 10)
   }, [players, leagueOwnership, teamsMap, teamFixtureScores, percentiles])
 
-  // Calculate TO SELL - players to get rid of (poor form, tough fixtures)
+  // Calculate TO SELL - underperforming owned players
   const toSell = useMemo(() => {
     const candidates: RecommendedPlayer[] = []
 
     for (const player of players) {
-      // Filter: exclude GKs
-      if (player.element_type === 1) continue
-
-      // Filter: must be available (no point flagging injured)
-      if (player.status !== 'a') continue
-
-      // Filter: minimum minutes
-      if (player.minutes < 450) continue
+      if (!isEligibleOutfieldPlayer(player)) continue
 
       const ownership = leagueOwnership.get(player.id) ?? 0
-
-      // Filter: at least one manager in league owns this player
       if (ownership === 0) continue
 
       const team = teamsMap.get(player.team)
       if (!team) continue
 
       const fixtureScore = teamFixtureScores.get(player.team) ?? 0.5
-      const minutes90 = player.minutes / 90
-
-      // Calculate per-90 stats
-      const xG90 = minutes90 > 0 ? (Number.parseFloat(player.expected_goals) || 0) / minutes90 : 0
-      const xA90 = minutes90 > 0 ? (Number.parseFloat(player.expected_assists) || 0) / minutes90 : 0
-      const xGC90 =
-        minutes90 > 0 ? (Number.parseFloat(player.expected_goals_conceded) || 0) / minutes90 : 0
-      const cs90 = minutes90 > 0 ? player.clean_sheets / minutes90 : 0
-      const formValue = Number.parseFloat(player.form) || 0
-
-      // Calculate percentiles (NOT inverted - we want LOW percentiles)
-      const xG90Pct = getPercentile(xG90, percentiles.xG90)
-      const xA90Pct = getPercentile(xA90, percentiles.xA90)
-      const formPct = getPercentile(formValue, percentiles.form)
-      // For xGC, high is bad for defenders - don't invert here
-      const xGC90Pct = getPercentile(xGC90, percentiles.xGC90)
-      // Low clean sheets is bad
-      const cs90Pct = getPercentile(cs90, percentiles.cs90)
-
-      // Get position-specific weights and calculate "badness" score
-      // Lower percentiles = worse player = higher sell score
-      const w = SELL_WEIGHTS[player.element_type] ?? SELL_WEIGHTS[3]
-      const score =
-        (1 - xG90Pct) * w.xG +
-        (1 - xA90Pct) * w.xA +
-        xGC90Pct * w.xGC + // High xGC is bad
-        (1 - cs90Pct) * w.cs +
-        (1 - formPct) * w.form +
-        (1 - fixtureScore) * w.fix // Tough fixtures
+      const stats = calculatePlayerStats(player)
+      // For sell: don't invert xGC (high xGC = bad = higher sell score)
+      const pct = calculatePlayerPercentiles(stats, percentiles, false)
+      const weights = SELL_WEIGHTS[player.element_type] ?? SELL_WEIGHTS[3]
+      const score = calculateSellScore(pct, weights, fixtureScore)
 
       // Only include if genuinely bad (score > 0.5 = worse than average)
       if (score <= 0.5) continue
 
-      candidates.push({
-        player,
-        team,
-        score,
-        fixtureScore,
-        leagueOwnership: ownership,
-      })
+      candidates.push({ player, team, score, fixtureScore, leagueOwnership: ownership })
     }
 
     return candidates.sort((a, b) => b.score - a.score).slice(0, 10)
