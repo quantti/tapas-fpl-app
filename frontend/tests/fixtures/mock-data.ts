@@ -67,7 +67,7 @@ export const mockBootstrapResponse = {
       id: 18,
       name: 'Gameweek 18',
       deadline_time: '2025-12-21T11:00:00Z',
-      finished: true,
+      finished: false, // Not finished - enables isLive mode for provisional bonus
       is_current: true,
       is_next: false,
       data_checked: true,
@@ -559,9 +559,10 @@ export const mockFixturesResponse = [
     team_a: 17,
     team_h_score: 3,
     team_a_score: 0,
-    finished: true,
-    finished_provisional: true,
+    finished: false, // Match still in progress - triggers provisional bonus display
+    finished_provisional: false,
     started: true,
+    minutes: 75, // >= 60 mins - enables provisional bonus calculation
     kickoff_time: '2025-12-21T15:00:00Z',
     team_h_difficulty: 2,
     team_a_difficulty: 5,
@@ -576,6 +577,7 @@ export const mockFixturesResponse = [
     finished: true,
     finished_provisional: true,
     started: true,
+    minutes: 90,
     kickoff_time: '2025-12-21T17:30:00Z',
     team_h_difficulty: 5,
     team_a_difficulty: 4,
@@ -891,7 +893,7 @@ export const mockLeagueResponse = {
  */
 export const mockLiveResponse = {
   elements: [
-    // Midfielders - fixture 1 (team 11 vs team 17)
+    // Midfielders - fixture 1 (team 11 vs team 17) - bonus: 0 for provisional display
     {
       id: 1,
       stats: {
@@ -906,8 +908,8 @@ export const mockLiveResponse = {
         yellow_cards: 0,
         red_cards: 0,
         saves: 0,
-        bonus: 3,
-        bps: 45,
+        bonus: 0, // Not yet awarded - provisional bonus calculated from BPS
+        bps: 45, // Highest BPS in fixture 1 → gets 3 provisional bonus
         total_points: 12,
       },
       explain: [{ fixture: 1, stats: [] }],
@@ -926,8 +928,8 @@ export const mockLiveResponse = {
         yellow_cards: 0,
         red_cards: 0,
         saves: 0,
-        bonus: 1,
-        bps: 35,
+        bonus: 0, // Not yet awarded - provisional bonus calculated from BPS
+        bps: 35, // 2nd highest BPS in fixture 1 → gets 2 provisional bonus
         total_points: 9,
       },
       explain: [{ fixture: 1, stats: [] }],
@@ -1033,7 +1035,7 @@ export const mockLiveResponse = {
       },
       explain: [{ fixture: 3, stats: [] }],
     },
-    // Defenders
+    // Defenders - fixture 1 players have bonus: 0 for provisional display
     {
       id: 5,
       stats: {
@@ -1048,7 +1050,7 @@ export const mockLiveResponse = {
         yellow_cards: 0,
         red_cards: 0,
         saves: 0,
-        bonus: 2,
+        bonus: 0, // Not yet awarded
         bps: 30,
         total_points: 8,
       },
@@ -1068,7 +1070,7 @@ export const mockLiveResponse = {
         yellow_cards: 0,
         red_cards: 0,
         saves: 0,
-        bonus: 1,
+        bonus: 0, // Not yet awarded - 3rd highest BPS in fixture 1 → gets 1 provisional
         bps: 32,
         total_points: 9,
       },
@@ -1134,7 +1136,7 @@ export const mockLiveResponse = {
       },
       explain: [{ fixture: 3, stats: [] }],
     },
-    // Goalkeepers
+    // Goalkeepers - fixture 1 player has bonus: 0 for provisional display
     {
       id: 6,
       stats: {
@@ -1149,7 +1151,7 @@ export const mockLiveResponse = {
         yellow_cards: 0,
         red_cards: 0,
         saves: 3,
-        bonus: 1,
+        bonus: 0, // Not yet awarded
         bps: 28,
         total_points: 8,
       },
