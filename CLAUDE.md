@@ -293,6 +293,7 @@ Shows the most owned starting XI across all managers in the league, displayed in
 4. Determine formation string (e.g., "3-5-2") from selected players
 
 ### Live Scoring
+Real-time updates during active gameweeks.
 
 **Key files:**
 - `src/hooks/useLiveScoring.ts` - Polls live data and fixtures
