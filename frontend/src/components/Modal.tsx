@@ -65,9 +65,19 @@ export function Modal({ isOpen, onClose, title, children }: Props) {
     e.stopPropagation()
   }, [])
 
+  const handleContentKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // Prevent keydown inside content from bubbling (for consistency with click)
+    e.stopPropagation()
+  }, [])
+
   return (
     <dialog ref={dialogRef} className={styles.Modal}>
-      <div className={styles.content} onClick={handleContentClick}>
+      <div
+        className={styles.content}
+        onClick={handleContentClick}
+        onKeyDown={handleContentKeyDown}
+        role="presentation"
+      >
         <div className={styles.header}>
           {title && <h2 className={styles.title}>{title}</h2>}
           <button

@@ -36,9 +36,9 @@ interface Props {
 
 // Position labels and colors
 const POSITION_CONFIG: Record<number, { label: string; color: string }> = {
-  2: { label: 'DEF', color: '#ef4444' }, // red
-  3: { label: 'MID', color: '#3b82f6' }, // blue
-  4: { label: 'FWD', color: '#22c55e' }, // green
+  2: { label: 'DEF', color: '#b91c1c' }, // red-700 (WCAG AA: 5.83:1 with white)
+  3: { label: 'MID', color: '#1d4ed8' }, // blue-700 (WCAG AA: 6.07:1 with white)
+  4: { label: 'FWD', color: '#15803d' }, // green-700 (WCAG AA: 5.67:1 with white)
 }
 
 function PositionBadge({ elementType }: { elementType: number }) {
