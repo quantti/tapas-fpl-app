@@ -4,6 +4,8 @@
 import { test, expect } from '@playwright/test'
 import { VIEWPORTS } from './helpers/page-utils'
 
+const FPL_UPDATING_SELECTOR = '[data-testid="fpl-updating"]'
+
 /**
  * Setup API mocking to return 503 Service Unavailable.
  * This simulates FPL API being down during gameweek updates.
@@ -27,7 +29,7 @@ test.describe('FPL Updating Error State', () => {
 
   test('Dashboard shows FPL updating message on 503', async ({ page }) => {
     await page.goto('/')
-    await page.waitForSelector('[data-testid="fpl-updating"]', { timeout: 10000 })
+    await page.waitForSelector(FPL_UPDATING_SELECTOR, { timeout: 10000 })
 
     const updating = page.getByTestId('fpl-updating')
     await expect(updating).toBeVisible()
@@ -37,7 +39,7 @@ test.describe('FPL Updating Error State', () => {
 
   test('Statistics shows FPL updating message on 503', async ({ page }) => {
     await page.goto('/statistics')
-    await page.waitForSelector('[data-testid="fpl-updating"]', { timeout: 10000 })
+    await page.waitForSelector(FPL_UPDATING_SELECTOR, { timeout: 10000 })
 
     const updating = page.getByTestId('fpl-updating')
     await expect(updating).toBeVisible()
@@ -46,7 +48,7 @@ test.describe('FPL Updating Error State', () => {
 
   test('Analytics shows FPL updating message on 503', async ({ page }) => {
     await page.goto('/analytics')
-    await page.waitForSelector('[data-testid="fpl-updating"]', { timeout: 10000 })
+    await page.waitForSelector(FPL_UPDATING_SELECTOR, { timeout: 10000 })
 
     const updating = page.getByTestId('fpl-updating')
     await expect(updating).toBeVisible()
@@ -56,7 +58,7 @@ test.describe('FPL Updating Error State', () => {
   test('FPL updating message visual snapshot - desktop', async ({ page }) => {
     await page.setViewportSize(VIEWPORTS.DESKTOP)
     await page.goto('/')
-    await page.waitForSelector('[data-testid="fpl-updating"]', { timeout: 10000 })
+    await page.waitForSelector(FPL_UPDATING_SELECTOR, { timeout: 10000 })
 
     // Wait for animation to stabilize (the spinning icon)
     await page.waitForTimeout(100)
@@ -69,7 +71,7 @@ test.describe('FPL Updating Error State', () => {
   test('FPL updating message visual snapshot - mobile', async ({ page }) => {
     await page.setViewportSize(VIEWPORTS.MOBILE)
     await page.goto('/')
-    await page.waitForSelector('[data-testid="fpl-updating"]', { timeout: 10000 })
+    await page.waitForSelector(FPL_UPDATING_SELECTOR, { timeout: 10000 })
 
     await page.waitForTimeout(100)
 

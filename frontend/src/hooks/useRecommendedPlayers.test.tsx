@@ -19,6 +19,19 @@ vi.mock('../services/api', () => ({
   },
 }))
 
+// Shared test helpers
+const makeManager = (id: number, playerIds: number[]): ManagerGameweekData =>
+  ({
+    entry: id,
+    picks: playerIds.map((pid) => ({
+      playerId: pid,
+      position: 1,
+      multiplier: 1,
+      is_captain: false,
+      is_vice_captain: false,
+    })),
+  }) as ManagerGameweekData
+
 // ============================================================================
 // Unit Tests: getPercentile
 // ============================================================================
@@ -191,18 +204,6 @@ describe('calculateLeagueOwnership', () => {
       clean_sheets: 5,
     }) as Player
 
-  const makeManager = (id: number, playerIds: number[]): ManagerGameweekData =>
-    ({
-      entry: id,
-      picks: playerIds.map((pid) => ({
-        playerId: pid,
-        position: 1,
-        multiplier: 1,
-        is_captain: false,
-        is_vice_captain: false,
-      })),
-    }) as ManagerGameweekData
-
   it('returns empty map for empty managers', () => {
     const players = [makePlayer(1), makePlayer(2)]
     const result = calculateLeagueOwnership(players, [])
@@ -288,18 +289,6 @@ describe('useRecommendedPlayers', () => {
       name: `Team ${id}`,
       short_name: `T${id}`,
     }) as Team
-
-  const makeManager = (id: number, playerIds: number[]): ManagerGameweekData =>
-    ({
-      entry: id,
-      picks: playerIds.map((pid) => ({
-        playerId: pid,
-        position: 1,
-        multiplier: 1,
-        is_captain: false,
-        is_vice_captain: false,
-      })),
-    }) as ManagerGameweekData
 
   const mockFixtures: Fixture[] = [
     {

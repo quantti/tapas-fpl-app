@@ -3,6 +3,7 @@ import { Modal } from './Modal'
 import { PitchLayout, type PitchPlayer as BasePitchPlayer } from './PitchLayout'
 import { PitchPlayer } from './PitchPlayer'
 import { fplApi } from '../services/api'
+import { getCaptainBadge } from '../utils/picks'
 import type { Player, BootstrapStatic, LiveGameweek, Fixture } from '../types/fpl'
 import * as styles from './ManagerModal.module.css'
 
@@ -223,7 +224,7 @@ export function ManagerModal({
 
     const renderPitchPlayer = (data: ManagerPitchPlayer, isBench = false) => {
       const team = teamsMap.get(data.player.team)
-      const badge = data.pick.is_captain ? 'C' : data.pick.is_vice_captain ? 'V' : undefined
+      const badge = getCaptainBadge(data.pick)
 
       return (
         <PitchPlayer
