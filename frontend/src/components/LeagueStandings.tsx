@@ -53,21 +53,27 @@ export function LeagueStandings({
 
       // If live and we have manager picks, calculate live points
       if (isLive && liveData && details) {
-        const livePoints = calculateLiveManagerPoints(
-          details.picks,
-          liveData,
-          fixtures,
-          details.transfersCost
-        )
+        // Calculate live player points (raw points + provisional bonus)
+        // Note: hitsCost is NOT used here because:
+        // - event_total from standings = raw GW points (no hits)
+        // - total from standings = cumulative WITH hits
+        // - Our display should match event_total = raw points
+        const livePoints = calculateLiveManagerPoints(details.picks, liveData, fixtures, 0)
 
-        // Live total = previous total (before this GW) + live GW points
-        // entry.total already includes entry.event_total, so subtract it first
+        // Live GW points = raw player points (NO hit subtraction)
+        // This matches FPL's display and the event_total field
+        const liveGwPoints = livePoints.totalPoints
+
+        // Live total = previous total + live GW points
+        // entry.total already has all hits factored in
+        // entry.event_total is raw points, so subtracting it gives us "total minus current raw"
+        // Adding our live raw calculation gives the correct total
         const previousTotal = entry.total - entry.event_total
-        const liveTotal = previousTotal + livePoints.netPoints
+        const liveTotal = previousTotal + liveGwPoints
 
         return {
           ...entry,
-          liveGwPoints: livePoints.netPoints,
+          liveGwPoints,
           provisionalBonus: livePoints.provisionalBonus,
           liveTotal,
           isLive: true,
