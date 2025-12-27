@@ -1,3 +1,16 @@
+# [0.8.0](https://github.com/quantti/tapas-fpl-app/compare/v0.7.1...v0.8.0) (2025-12-27)
+
+
+### Bug Fixes
+
+* remove double hit deduction from live GW points ([a3f3e3b](https://github.com/quantti/tapas-fpl-app/commit/a3f3e3bb7c87c1dd79f8cd0bf48766d797d85b0e))
+* rename format scripts for consistency ([0637ce2](https://github.com/quantti/tapas-fpl-app/commit/0637ce2997f8adc4f1a46709e61122bc96ebc8b2))
+
+
+### Features
+
+* **a11y:** add accessibility testing and fix color contrast issues ([dcc9d8f](https://github.com/quantti/tapas-fpl-app/commit/dcc9d8f5c6f767ecd086ea9bd2cdbd65d9b82968))
+
 ## [0.7.1](https://github.com/quantti/tapas-fpl-app/compare/v0.7.0...v0.7.1) (2025-12-26)
 
 
