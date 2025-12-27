@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useHistoricalData } from './useHistoricalData'
+import { STARTING_XI_MAX_POSITION } from '../constants/positions'
 
 interface ManagerBenchPoints {
   managerId: number
@@ -51,7 +52,7 @@ export function useBenchPoints(
         if (picks.activeChip === 'bboost') continue
 
         // Bench players are positions 12-15 (multiplier=0)
-        const benchPicks = picks.picks.filter((p) => p.position > 11)
+        const benchPicks = picks.picks.filter((p) => p.position > STARTING_XI_MAX_POSITION)
 
         for (const pick of benchPicks) {
           const playerLive = liveData.elements.find((e) => e.id === pick.element)

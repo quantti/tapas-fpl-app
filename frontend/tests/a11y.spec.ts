@@ -13,9 +13,7 @@ const pages = [
 
 test.describe('Accessibility', () => {
   for (const { path, name } of pages) {
-    test(`${name} page should have no critical a11y violations`, async ({
-      page,
-    }) => {
+    test(`${name} page should have no critical a11y violations`, async ({ page }) => {
       await page.goto(path)
       await page.waitForLoadState('networkidle')
 

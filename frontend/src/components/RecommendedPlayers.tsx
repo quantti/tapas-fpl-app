@@ -2,6 +2,7 @@ import { Dices, Shield, Info, TrendingDown } from 'lucide-react'
 import type { Player, Team } from '../types/fpl'
 import type { ManagerGameweekData } from '../hooks/useFplData'
 import { useRecommendedPlayers } from '../hooks/useRecommendedPlayers'
+import { getPositionLabel, getPositionColor } from '../constants/positions'
 import * as styles from './RecommendedPlayers.module.css'
 
 const PUNTS_INFO =
@@ -34,18 +35,13 @@ interface Props {
   currentGameweek: number
 }
 
-// Position labels and colors
-const POSITION_CONFIG: Record<number, { label: string; color: string }> = {
-  2: { label: 'DEF', color: '#b91c1c' }, // red-700 (WCAG AA: 5.83:1 with white)
-  3: { label: 'MID', color: '#1d4ed8' }, // blue-700 (WCAG AA: 6.07:1 with white)
-  4: { label: 'FWD', color: '#15803d' }, // green-700 (WCAG AA: 5.67:1 with white)
-}
-
 function PositionBadge({ elementType }: { elementType: number }) {
-  const config = POSITION_CONFIG[elementType] ?? { label: '?', color: '#6b7280' }
   return (
-    <span className={styles.positionBadge} style={{ backgroundColor: config.color }}>
-      {config.label}
+    <span
+      className={styles.positionBadge}
+      style={{ backgroundColor: getPositionColor(elementType) }}
+    >
+      {getPositionLabel(elementType)}
     </span>
   )
 }

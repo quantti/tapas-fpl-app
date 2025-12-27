@@ -1,28 +1,10 @@
 import { useState, useEffect } from 'react'
+import { calculateTimeRemaining, type TimeRemaining } from '../utils/countdown'
 import * as styles from './GameweekCountdown.module.css'
 
 interface Props {
   deadline: string
   gameweekId: number
-}
-
-interface TimeRemaining {
-  days: number
-  hours: number
-  minutes: number
-  seconds: number
-}
-
-function calculateTimeRemaining(deadline: string): TimeRemaining | null {
-  const diff = new Date(deadline).getTime() - Date.now()
-  if (diff <= 0) return null
-
-  return {
-    days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-    hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-    minutes: Math.floor((diff / (1000 * 60)) % 60),
-    seconds: Math.floor((diff / 1000) % 60),
-  }
 }
 
 function pad(num: number): string {
@@ -35,8 +17,19 @@ export function GameweekCountdown({ deadline, gameweekId }: Props) {
   )
 
   useEffect(() => {
+    // Don't start interval if already expired (initial state handles this)
+    if (calculateTimeRemaining(deadline) === null) {
+      return
+    }
+
     const interval = setInterval(() => {
-      setTimeRemaining(calculateTimeRemaining(deadline))
+      const remaining = calculateTimeRemaining(deadline)
+      setTimeRemaining(remaining)
+
+      // Stop interval once countdown expires to prevent memory leak
+      if (remaining === null) {
+        clearInterval(interval)
+      }
     }, 1000)
 
     return () => clearInterval(interval)

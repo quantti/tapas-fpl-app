@@ -4,6 +4,7 @@ import { PitchLayout, type PitchPlayer as BasePitchPlayer } from './PitchLayout'
 import { PitchPlayer } from './PitchPlayer'
 import { fplApi } from '../services/api'
 import { getCaptainBadge } from '../utils/picks'
+import { STARTING_XI_MAX_POSITION } from '../constants/positions'
 import type { Player, BootstrapStatic, LiveGameweek, Fixture } from '../types/fpl'
 import * as styles from './ManagerModal.module.css'
 
@@ -177,8 +178,8 @@ export function ManagerModal({
       player: Player
     }
 
-    const startingPicks = picks.picks.filter((p) => p.position <= 11)
-    const benchPicks = picks.picks.filter((p) => p.position > 11)
+    const startingPicks = picks.picks.filter((p) => p.position <= STARTING_XI_MAX_POSITION)
+    const benchPicks = picks.picks.filter((p) => p.position > STARTING_XI_MAX_POSITION)
 
     const startingPlayers: ManagerPitchPlayer[] = startingPicks
       .map((pick) => {
