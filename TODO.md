@@ -11,11 +11,7 @@
 
 ### UI Enhancements
 - [x] Free transfers card - show how many free transfers each manager has
-- [ ] Player recommendation modal - clicking a player opens modal with:
-  - Next 5 fixtures
-  - Last 5 gameweek results
-  - xGI stats
-  - Current price and recent price changes
+- [ ] Player recommendation modal - see [docs/player-modal-plan.md](docs/player-modal-plan.md)
 - [x] Better position indicators - replace colored dots with text labels (DEF, MID, FWD) in badges
 - [ ] H2H manager comparison view
 - [ ] Points breakdown by position
