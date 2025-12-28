@@ -1,4 +1,5 @@
 export const __esModule: true
+export const autoSubIndicator: string
 export const captain: string
 export const cell: string
 export const center: string

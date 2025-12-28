@@ -1,5 +1,7 @@
-import type { Fixture, LivePlayer, LiveGameweek } from '../types/fpl'
+import type { Fixture, LivePlayer, LiveGameweek, Player } from '../types/fpl'
 import type { ManagerPick } from '../hooks/useFplData'
+import type { AutoSubResult } from '../types/autoSubs'
+import { calculateAutoSubs } from './autoSubs'
 
 export interface BpsScore {
   playerId: number
@@ -12,6 +14,7 @@ export interface LiveManagerPoints {
   totalPoints: number // basePoints + provisionalBonus
   hitsCost: number // Transfer hits deducted
   netPoints: number // totalPoints - hitsCost
+  autoSubResult?: AutoSubResult // Auto-substitution details (if calculated)
 }
 
 /**
@@ -115,17 +118,21 @@ export function shouldShowProvisionalBonus(fixture: Fixture): boolean {
 /**
  * Calculate live points for a manager's team.
  * Includes live player points with multipliers and provisional bonus.
+ * When playersMap is provided, calculates auto-substitutions for players
+ * whose fixtures have finished and who didn't contribute.
  *
  * @param picks - Manager's 15 picks with positions and multipliers
  * @param liveData - Live gameweek data with all player stats
  * @param fixtures - Current gameweek fixtures for bonus calculation
  * @param hitsCost - Transfer hits cost for this gameweek
+ * @param playersMap - Optional player data map for auto-sub calculation
  */
 export function calculateLiveManagerPoints(
   picks: ManagerPick[],
   liveData: LiveGameweek | null,
   fixtures: Fixture[],
-  hitsCost: number = 0
+  hitsCost: number = 0,
+  playersMap?: Map<number, Player>
 ): LiveManagerPoints {
   if (!liveData || picks.length === 0) {
     return {
@@ -135,6 +142,15 @@ export function calculateLiveManagerPoints(
       hitsCost,
       netPoints: -hitsCost,
     }
+  }
+
+  // Calculate auto-subs if playersMap is provided
+  let effectivePicks = picks
+  let autoSubResult: AutoSubResult | undefined
+
+  if (playersMap && playersMap.size > 0) {
+    autoSubResult = calculateAutoSubs(picks, liveData, fixtures, playersMap)
+    effectivePicks = autoSubResult.adjustedPicks
   }
 
   // Create lookup map for live player data
@@ -149,7 +165,7 @@ export function calculateLiveManagerPoints(
   // Calculate points for starting XI (multiplier > 0)
   // Position 1-11 are starters, 12-15 are bench
   // But we use multiplier to determine who plays (handles auto-subs)
-  for (const pick of picks) {
+  for (const pick of effectivePicks) {
     if (pick.multiplier === 0) continue // Benched, skip
 
     const livePlayer = livePlayersMap.get(pick.playerId)
@@ -177,6 +193,7 @@ export function calculateLiveManagerPoints(
     totalPoints,
     hitsCost,
     netPoints,
+    autoSubResult,
   }
 }
 

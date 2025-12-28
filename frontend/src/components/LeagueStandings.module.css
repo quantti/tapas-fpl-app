@@ -248,6 +248,25 @@
     opacity: 0.85;
   }
 
+  .autoSubIndicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: var(--space-4);
+    padding: var(--space-2) var(--space-4);
+    background: color-mix(in srgb, #f59e0b 15%, transparent);
+    color: #f59e0b;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    cursor: help;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background: color-mix(in srgb, #f59e0b 25%, transparent);
+    }
+  }
+
   .totalPoints {
     font-weight: 500;
   }

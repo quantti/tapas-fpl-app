@@ -22,6 +22,7 @@ export function Dashboard() {
     error,
     isApiUnavailable,
     bootstrap,
+    playersMap,
   } = useFplData()
 
   // Fetch live scoring data when games are in progress
@@ -129,6 +130,7 @@ export function Dashboard() {
             fixtures={fixtures}
             onManagerClick={handleManagerClick}
             gameweekFinished={currentGameweek.finished}
+            playersMap={playersMap}
           />
         </div>
         <div className={styles.sideColumn}>

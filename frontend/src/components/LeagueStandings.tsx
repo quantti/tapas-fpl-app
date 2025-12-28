@@ -1,7 +1,13 @@
 import { useMemo } from 'react'
-import { ChevronRight, CircleChevronUp, CircleChevronDown } from 'lucide-react'
-import type { LeagueStandings as LeagueStandingsType, LiveGameweek, Fixture } from '../types/fpl'
+import { ChevronRight, CircleChevronUp, CircleChevronDown, ArrowRightLeft } from 'lucide-react'
+import type {
+  LeagueStandings as LeagueStandingsType,
+  LiveGameweek,
+  Fixture,
+  Player,
+} from '../types/fpl'
 import type { ManagerGameweekData } from '../hooks/useFplData'
+import type { AutoSubResult } from '../types/autoSubs'
 import { calculateLiveManagerPoints } from '../utils/liveScoring'
 import * as styles from './LeagueStandings.module.css'
 
@@ -13,6 +19,7 @@ interface Props {
   fixtures?: Fixture[]
   onManagerClick?: (managerId: number) => void
   gameweekFinished?: boolean // Official FPL update complete (not just finished_provisional)
+  playersMap?: Map<number, Player> // For auto-substitution calculation
 }
 
 function getRankChange(
@@ -33,6 +40,7 @@ export function LeagueStandings({
   fixtures = [],
   onManagerClick,
   gameweekFinished = false,
+  playersMap,
 }: Props) {
   const detailsMap = useMemo(
     () => new Map(managerDetails.map((m) => [m.managerId, m])),
@@ -58,7 +66,14 @@ export function LeagueStandings({
         // - event_total from standings = raw GW points (no hits)
         // - total from standings = cumulative WITH hits
         // - Our display should match event_total = raw points
-        const livePoints = calculateLiveManagerPoints(details.picks, liveData, fixtures, 0)
+        // Pass playersMap to enable auto-substitution calculation
+        const livePoints = calculateLiveManagerPoints(
+          details.picks,
+          liveData,
+          fixtures,
+          0,
+          playersMap
+        )
 
         // Live GW points = raw player points (NO hit subtraction)
         // This matches FPL's display and the event_total field
@@ -77,6 +92,7 @@ export function LeagueStandings({
           provisionalBonus: livePoints.provisionalBonus,
           liveTotal,
           isLive: true,
+          autoSubResult: livePoints.autoSubResult,
         }
       }
 
@@ -87,6 +103,7 @@ export function LeagueStandings({
         provisionalBonus: 0,
         liveTotal: entry.total,
         isLive: false,
+        autoSubResult: undefined as AutoSubResult | undefined,
       }
     })
 
@@ -96,7 +113,7 @@ export function LeagueStandings({
     }
 
     return results
-  }, [standings.standings.results, detailsMap, isLive, liveData, fixtures])
+  }, [standings.standings.results, detailsMap, isLive, liveData, fixtures, playersMap])
 
   return (
     <div className={styles.LeagueStandings}>
@@ -161,6 +178,15 @@ export function LeagueStandings({
                     {entry.liveGwPoints}
                     {entry.provisionalBonus > 0 && (
                       <span className={styles.provisionalBonus}>(+{entry.provisionalBonus})</span>
+                    )}
+                    {entry.autoSubResult && entry.autoSubResult.autoSubs.length > 0 && (
+                      <span
+                        className={styles.autoSubIndicator}
+                        title={formatAutoSubs(entry.autoSubResult)}
+                      >
+                        <ArrowRightLeft size={12} />
+                        {entry.autoSubResult.autoSubs.length}
+                      </span>
                     )}
                   </span>
                 </td>
@@ -227,4 +253,15 @@ function formatChip(chip: string): string {
     wildcard: 'WC',
   }
   return chips[chip] || chip.toUpperCase()
+}
+
+function formatAutoSubs(autoSubResult: AutoSubResult): string {
+  const subs = autoSubResult.autoSubs.map(
+    (sub) => `${sub.playerOut.webName} → ${sub.playerIn.webName}`
+  )
+  const lines = [...subs]
+  if (autoSubResult.captainPromoted) {
+    lines.push('Vice-captain promoted to captain')
+  }
+  return lines.join('\n')
 }
