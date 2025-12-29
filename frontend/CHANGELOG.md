@@ -1,3 +1,11 @@
+# [0.9.0](https://github.com/quantti/tapas-fpl-app/compare/v0.8.0...v0.9.0) (2025-12-29)
+
+
+### Features
+
+* **dashboard:** add Game Rewards card with bonus and DefCon points ([ea29cee](https://github.com/quantti/tapas-fpl-app/commit/ea29cee9777e982711a30f32bd7b16e9ca8250b2))
+* **live:** add local auto-substitution calculation ([fabaa46](https://github.com/quantti/tapas-fpl-app/commit/fabaa46d3db78bea0c2ccc9d1793f248cb95759f))
+
 # [0.8.0](https://github.com/quantti/tapas-fpl-app/compare/v0.7.1...v0.8.0) (2025-12-27)
 
 
