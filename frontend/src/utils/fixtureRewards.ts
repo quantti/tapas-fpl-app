@@ -41,6 +41,8 @@ function getStatEntries(
   fixture: Fixture,
   identifier: string
 ): { element: number; value: number }[] {
+  // Defensive check for missing stats array (can happen with mock data or partial API responses)
+  if (!fixture.stats || !Array.isArray(fixture.stats)) return []
   const stat = fixture.stats.find((s) => s.identifier === identifier)
   if (!stat) return []
   return [...stat.h, ...stat.a]
