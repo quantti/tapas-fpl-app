@@ -1,3 +1,10 @@
+## [0.9.1](https://github.com/quantti/tapas-fpl-app/compare/v0.9.0...v0.9.1) (2025-12-29)
+
+
+### Bug Fixes
+
+* add defensive check for missing fixture stats array ([610cb8b](https://github.com/quantti/tapas-fpl-app/commit/610cb8be32ae54d7a18a25d655d8a3878d9b480d))
+
 # [0.9.0](https://github.com/quantti/tapas-fpl-app/compare/v0.8.0...v0.9.0) (2025-12-29)
 
 
