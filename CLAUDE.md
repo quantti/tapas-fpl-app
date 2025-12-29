@@ -86,6 +86,7 @@ The Worker proxy (`worker/src/index.ts`) uses tiered cache TTLs to balance fresh
 - [x] Player recommendations (Punts, Defensive, Time to Sell) with position badges
 - [x] League Template Team (most owned starting XI in pitch formation)
 - [x] Graceful 503 error handling ("FPL is updating" message during gameweek transitions)
+- [x] Game Rewards (bonus points + DefCon per fixture with position-specific thresholds)
 
 ## FPL API Reference
 
@@ -462,6 +463,60 @@ if (gwComplete) {
 - Uses chip history to detect wildcards and free hits
 - `deadlineTime` from bootstrap determines if deadline passed
 
+### Game Rewards Feature
+Shows bonus points (3/2/1) and defensive contribution (DefCon) points per fixture during live gameweeks.
+
+**Key files:**
+- `src/utils/fixtureRewards.ts` - Core extraction logic with DefCon threshold filtering
+- `src/utils/fixtureRewards.test.ts` - Comprehensive test suite (20 tests)
+- `src/components/GameRewards.tsx` - Card component displaying per-fixture rewards
+- `src/components/GameRewards.module.css` - Styles (nested inside root class)
+
+**FPL 2025/26 Rules:**
+- **Bonus Points**: Top 3 BPS scores get 3/2/1 points (ties share same tier)
+- **Defensive Contributions (DefCon)**: 2 points for meeting threshold
+  - Defenders: 10+ CBIT (Clearances, Blocks, Interceptions, Tackles)
+  - Midfielders/Forwards: 12+ CBITr (includes Recoveries)
+  - Clean sheet NOT required
+
+**API Data Structure:**
+```typescript
+// Fixture stats array includes:
+// - `bonus` identifier: Final confirmed bonus (1-3 pts)
+// - `defensive_contribution` identifier: DefCon stat (2 pts if threshold met)
+fixture.stats = [
+  { identifier: 'bonus', h: [{ element: 123, value: 3 }], a: [...] },
+  { identifier: 'defensive_contribution', h: [...], a: [...] }
+]
+```
+
+**Display Logic:**
+
+| Fixture State | Show Rewards |
+|--------------|--------------|
+| Not started | No - show "Not started" |
+| In progress < 60 mins | No - show "In progress" |
+| In progress >= 60 mins | Yes - provisional bonus + DefCon |
+| Finished | Yes - confirmed bonus + DefCon |
+
+**Type Safety:**
+```typescript
+// Position type guard for DefCon threshold lookup
+type OutfieldPosition = 2 | 3 | 4  // DEF, MID, FWD
+const DEFCON_THRESHOLDS: Record<OutfieldPosition, number> = {
+  2: 10,  // Defenders
+  3: 12,  // Midfielders
+  4: 12,  // Forwards
+}
+```
+
+**Implementation notes:**
+- Uses `shouldShowProvisionalBonus()` from `liveScoring.ts` for timing
+- DefCon entries filtered by position-specific thresholds
+- Goalkeepers excluded from DefCon (no threshold defined)
+- `useMemo` for teamsMap transformation to prevent recalculation
+- Defensive null checks for undefined maps
+
 ### Player Recommendations
 Three recommendation lists for transfer planning: Punts (differential picks), Defensive (template picks), and Time to Sell (underperforming owned players).
 
@@ -779,6 +834,11 @@ import { IconName } from 'lucide-react'
 | Position DEF | Text badge | `#ef4444` (red) | White text on colored bg |
 | Position MID | Text badge | `#3b82f6` (blue) | White text on colored bg |
 | Position FWD | Text badge | `#22c55e` (green) | White text on colored bg |
+| Game Rewards | `Trophy` | `#FFD700` (gold) | Section header |
+| Bonus 3pts | `Award` | `#FFD700` (gold) | Gold medal |
+| Bonus 2pts | `Award` | `#C0C0C0` (silver) | Silver medal |
+| Bonus 1pt | `Award` | `#CD7F32` (bronze) | Bronze medal |
+| DefCon | `Shield` | `#14B8A6` (teal) | Filled |
 
 ### Custom Icon Compositions
 
@@ -824,7 +884,8 @@ tapas-fpl-app/
 │   │   │   ├── StatsCards.tsx          # Team value, hits
 │   │   │   ├── LeagueTemplateTeam.tsx  # Most owned starting XI
 │   │   │   ├── PitchLayout.tsx         # Reusable pitch formation layout
-│   │   │   └── FplUpdating.tsx         # 503 error message component
+│   │   │   ├── FplUpdating.tsx         # 503 error message component
+│   │   │   └── GameRewards.tsx         # Bonus + DefCon per fixture
 │   │   ├── hooks/
 │   │   │   ├── useFplData.ts           # Main data hook (TanStack Query)
 │   │   │   ├── useLiveScoring.ts       # Live polling
@@ -836,7 +897,8 @@ tapas-fpl-app/
 │   │   ├── styles/           # Global CSS variables
 │   │   ├── types/fpl.ts      # TypeScript types
 │   │   └── utils/            # Utility functions
-│   │       └── templateTeam.ts   # Template team calculation
+│   │       ├── templateTeam.ts      # Template team calculation
+│   │       └── fixtureRewards.ts    # Bonus + DefCon extraction
 │   ├── tests/                # Playwright e2e tests
 │   ├── package.json
 │   └── vite.config.ts

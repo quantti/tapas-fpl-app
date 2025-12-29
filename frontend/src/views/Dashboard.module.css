@@ -132,6 +132,7 @@
     display: grid;
     grid-template-columns: 1fr 520px;
     gap: var(--space-20);
+    align-items: start;
 
     @media (max-width: 1200px) {
       grid-template-columns: 1fr 460px;

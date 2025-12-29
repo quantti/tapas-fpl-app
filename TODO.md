@@ -22,6 +22,9 @@
   - [ ] ChipsRemaining.module.css
   - [ ] BenchPoints.module.css
   - [x] FreeTransfers.module.css
+  - [ ] GameRewards.module.css - nesting doesn't reflect DOM hierarchy
+  - [ ] Audit all CSS modules - nesting should mirror actual DOM structure (e.g., `.bonusRow` should be nested inside `.rewardsList` if that's the parent in JSX)
+- [ ] Extract `FixtureCard` from `GameRewards.tsx` into separate component
 
 ### Polish
 - [x] Error boundaries for graceful failure handling (503 "FPL is updating" message)

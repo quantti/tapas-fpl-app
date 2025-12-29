@@ -5,6 +5,7 @@ import { useFplData } from '../hooks/useFplData'
 import { useLiveScoring } from '../hooks/useLiveScoring'
 import { LeagueStandings } from '../components/LeagueStandings'
 import { GameweekDetails } from '../components/GameweekDetails'
+import { GameRewards } from '../components/GameRewards'
 import { ManagerModal } from '../components/ManagerModal'
 import { GameweekCountdown } from '../components/GameweekCountdown'
 import { Header } from '../components/Header'
@@ -31,6 +32,12 @@ export function Dashboard() {
   // Check if any games are actually in progress (not just deadline passed)
   // Use finished_provisional as it updates immediately; finished waits for bonus confirmation
   const hasGamesInProgress = fixtures.some((f) => f.started && !f.finished_provisional)
+
+  // Create teams map for GameRewards
+  const teamsMap = useMemo(() => {
+    if (!bootstrap?.teams) return new Map()
+    return new Map(bootstrap.teams.map((team) => [team.id, team]))
+  }, [bootstrap])
 
   // Get next gameweek for countdown (after all current GW games finished)
   const nextGameweek = useMemo(() => {
@@ -141,6 +148,9 @@ export function Dashboard() {
           />
         </div>
       </div>
+
+      {/* Game Rewards - Full width after standings */}
+      <GameRewards fixtures={fixtures} playersMap={playersMap} teamsMap={teamsMap} />
 
       {/* Transfers - Full width grid */}
       {managerDetails.some((m) => m.transfersIn.length > 0) && (

@@ -1,0 +1,113 @@
+.GameRewards {
+  background: var(--color-background);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-16);
+  margin-top: var(--space-20);
+
+  .title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-12) 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .fixtureGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-12);
+  }
+
+  .fixtureCard {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding: var(--space-12);
+  }
+
+  .fixtureHeader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-8);
+    margin-bottom: var(--space-8);
+    padding-bottom: var(--space-8);
+    border-bottom: 1px solid var(--color-border-light);
+  }
+
+  .teamName {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text);
+    min-width: 40px;
+
+    &:first-child {
+      text-align: right;
+    }
+
+    &:last-child {
+      text-align: left;
+    }
+  }
+
+  .score {
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    min-width: 36px;
+    text-align: center;
+  }
+
+  .statusMessage {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    text-align: center;
+    font-style: italic;
+  }
+
+  .rewardsList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .bonusRow {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+  }
+
+  .bonusPoints {
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    min-width: 20px;
+  }
+
+  .playerNames {
+    color: var(--color-text);
+    flex: 1;
+  }
+
+  .defconRow {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+    margin-top: var(--space-4);
+    padding-top: var(--space-8);
+    border-top: 1px solid var(--color-border-light);
+  }
+
+  .defconLabel {
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+  }
+}
