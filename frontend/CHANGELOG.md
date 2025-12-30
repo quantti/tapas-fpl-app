@@ -1,3 +1,10 @@
+# [0.12.0](https://github.com/quantti/tapas-fpl-app/compare/v0.11.1...v0.12.0) (2025-12-30)
+
+
+### Features
+
+* add league recalculation warning banner ([8c84acc](https://github.com/quantti/tapas-fpl-app/commit/8c84accc43a2c35133ad6701939db5dc4d81d0ad))
+
 ## [0.11.1](https://github.com/quantti/tapas-fpl-app/compare/v0.11.0...v0.11.1) (2025-12-30)
 
 
