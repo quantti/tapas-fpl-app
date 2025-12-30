@@ -1,3 +1,10 @@
+# [0.11.0](https://github.com/quantti/tapas-fpl-app/compare/v0.10.0...v0.11.0) (2025-12-30)
+
+
+### Features
+
+* add live provisional bonus to GameRewards component ([bd80e18](https://github.com/quantti/tapas-fpl-app/commit/bd80e18e45e01c0ad3733b1ef3b8f78348f0b608))
+
 # [0.10.0](https://github.com/quantti/tapas-fpl-app/compare/v0.9.1...v0.10.0) (2025-12-30)
 
 
