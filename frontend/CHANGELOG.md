@@ -1,3 +1,10 @@
+# [0.10.0](https://github.com/quantti/tapas-fpl-app/compare/v0.9.1...v0.10.0) (2025-12-30)
+
+
+### Features
+
+* add roadmap page and fix layout consistency ([84454fb](https://github.com/quantti/tapas-fpl-app/commit/84454fb69a83d52ae8d6f1716a9ddeab05f79566))
+
 ## [0.9.1](https://github.com/quantti/tapas-fpl-app/compare/v0.9.0...v0.9.1) (2025-12-29)
 
 
