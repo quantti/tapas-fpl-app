@@ -73,6 +73,13 @@ export function Header() {
           >
             Roadmap
           </Link>
+          <Link
+            to="/changelog"
+            className={`${styles.navLink} ${location.pathname === '/changelog' ? styles.active : ''}`}
+            onClick={() => setMenuOpen(false)}
+          >
+            What&apos;s New
+          </Link>
           <div className={styles.themeRow}>
             <span className={styles.themeLabel}>
               {theme === 'dark' ? <Moon size={16} /> : <Sun size={16} />}

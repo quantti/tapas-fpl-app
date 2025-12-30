@@ -5,6 +5,7 @@ import { Dashboard } from './views/Dashboard'
 import { Statistics } from './views/Statistics'
 import { Analytics } from './views/Analytics'
 import { Roadmap } from './views/Roadmap'
+import { Changelog } from './views/Changelog'
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
             <Route path="/statistics" element={<Statistics />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/roadmap" element={<Roadmap />} />
+            <Route path="/changelog" element={<Changelog />} />
           </Routes>
         </main>
         <Footer />
