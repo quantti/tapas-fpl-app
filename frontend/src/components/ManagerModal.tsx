@@ -57,10 +57,16 @@ export function ManagerModal({
   const [picks, setPicks] = useState<PicksResponse | null>(null)
   const [bootstrap, setBootstrap] = useState<BootstrapStatic | null>(preloadedBootstrap ?? null)
   const [managerInfo, setManagerInfo] = useState<ManagerInfo | null>(null)
-  const [liveData, setLiveData] = useState<LiveGameweek | null>(preloadedLiveData ?? null)
-  const [fixtures, setFixtures] = useState<Fixture[]>(preloadedFixtures ?? [])
+  // Only use local state for live data/fixtures if not provided via props
+  // When provided, use props directly so we react to Dashboard's polling updates
+  const [fetchedLiveData, setFetchedLiveData] = useState<LiveGameweek | null>(null)
+  const [fetchedFixtures, setFetchedFixtures] = useState<Fixture[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Use preloaded data if available, otherwise fall back to fetched data
+  const liveData = preloadedLiveData ?? fetchedLiveData
+  const fixtures = preloadedFixtures ?? fetchedFixtures
 
   useEffect(() => {
     if (!managerId) {
@@ -73,28 +79,42 @@ export function ManagerModal({
         setLoading(true)
         setError(null)
 
-        // Always fetch live data and fixtures for accurate points
-        // Bootstrap can be reused from Dashboard
+        // Only fetch data that wasn't provided via props
         const needsBootstrap = !preloadedBootstrap
+        const needsLiveData = !preloadedLiveData
+        const needsFixtures = !preloadedFixtures
 
-        // Fetch all required data in parallel
-        const [live, fixtureData, picksData, managerData] = await Promise.all([
-          fplApi.getLiveGameweek(gameweek),
-          fplApi.getFixtures(gameweek),
+        // Build parallel fetch array based on what we need
+        const fetches: Promise<unknown>[] = [
           fplApi.getEntryPicks(managerId!, gameweek),
           fplApi.getEntry(managerId!),
-        ])
+        ]
 
-        // Fetch bootstrap separately if needed (different return type)
+        // Add optional fetches
+        if (needsLiveData) fetches.push(fplApi.getLiveGameweek(gameweek))
+        if (needsFixtures) fetches.push(fplApi.getFixtures(gameweek))
+
+        const results = await Promise.all(fetches)
+
+        // Extract results (picks and manager are always first two)
+        const [picksData, managerData, ...optionalResults] = results
+        setPicks(picksData as PicksResponse)
+        setManagerInfo(managerData as ManagerInfo)
+
+        // Extract optional results if we fetched them
+        let resultIndex = 0
+        if (needsLiveData) {
+          setFetchedLiveData(optionalResults[resultIndex++] as LiveGameweek)
+        }
+        if (needsFixtures) {
+          setFetchedFixtures(optionalResults[resultIndex++] as Fixture[])
+        }
+
+        // Fetch bootstrap separately if needed
         if (needsBootstrap) {
           const bootstrapData = await fplApi.getBootstrapStatic()
           setBootstrap(bootstrapData)
         }
-
-        setLiveData(live)
-        setFixtures(fixtureData)
-        setPicks(picksData as PicksResponse)
-        setManagerInfo(managerData as ManagerInfo)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load lineup')
       } finally {
@@ -103,7 +123,7 @@ export function ManagerModal({
     }
 
     fetchData()
-  }, [managerId, gameweek, preloadedBootstrap])
+  }, [managerId, gameweek, preloadedBootstrap, preloadedLiveData, preloadedFixtures])
 
   if (!managerId) return null
 
