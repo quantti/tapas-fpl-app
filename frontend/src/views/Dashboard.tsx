@@ -10,6 +10,7 @@ import { ManagerModal } from '../components/ManagerModal'
 import { GameweekCountdown } from '../components/GameweekCountdown'
 import { Header } from '../components/Header'
 import { FplUpdating } from '../components/FplUpdating'
+import { LeagueUpdating } from '../components/LeagueUpdating'
 import * as styles from './Dashboard.module.css'
 
 export function Dashboard() {
@@ -19,6 +20,7 @@ export function Dashboard() {
     managerDetails,
     currentGameweek,
     isLive,
+    leaguesUpdating,
     loading,
     error,
     isApiUnavailable,
@@ -111,6 +113,9 @@ export function Dashboard() {
   return (
     <div className={styles.Dashboard}>
       <Header />
+
+      {/* League Recalculating Banner */}
+      {leaguesUpdating && <LeagueUpdating />}
 
       {/* Status Bar - only shown when live */}
       {hasGamesInProgress && (

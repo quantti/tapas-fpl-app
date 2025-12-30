@@ -1,0 +1,37 @@
+.LeagueUpdating {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--color-warning-bg, #fef3c7);
+  border: 1px solid var(--color-warning-border, #f59e0b);
+  border-radius: 0.5rem;
+  color: var(--color-warning-text, #92400e);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+
+  .icon {
+    flex-shrink: 0;
+    animation: spin 2s linear infinite;
+  }
+
+  .message {
+    flex: 1;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Dark theme */
+[data-theme="dark"] .LeagueUpdating {
+  background-color: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fcd34d;
+}

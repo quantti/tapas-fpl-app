@@ -83,7 +83,19 @@ export function useFplData() {
     )
   }, [currentGameweek])
 
-  // 2. Fetch league standings
+  // 2. Fetch event status (league recalculation state)
+  // Polls frequently during live games to detect when leagues are updating
+  const eventStatusQuery = useQuery({
+    queryKey: ['eventStatus'],
+    queryFn: () => fplApi.getEventStatus(),
+    staleTime: isLive ? 30 * 1000 : 60 * 1000,
+    refetchInterval: isLive ? LIVE_REFRESH_INTERVAL : IDLE_REFRESH_INTERVAL,
+    enabled: !!bootstrap,
+  })
+
+  const leaguesUpdating = eventStatusQuery.data?.leagues === 'Updating'
+
+  // 3. Fetch league standings
   // Refetch more frequently during live games
   const standingsQuery = useQuery({
     queryKey: ['standings', LEAGUE_ID],
@@ -101,7 +113,7 @@ export function useFplData() {
     return standings.standings.results.slice(0, 20)
   }, [standings])
 
-  // 3. Fetch manager details (picks, history, transfers) in parallel
+  // 4. Fetch manager details (picks, history, transfers) in parallel
   // Each manager requires 3 API calls, so we use useQueries
   const managerQueries = useQueries({
     queries: managers.map((manager) => ({
@@ -223,6 +235,7 @@ export function useFplData() {
   // Manual refresh function - invalidates all queries
   const refresh = () => {
     bootstrapQuery.refetch()
+    eventStatusQuery.refetch()
     standingsQuery.refetch()
     for (const q of managerQueries) {
       q.refetch()
@@ -235,6 +248,7 @@ export function useFplData() {
     managerDetails,
     currentGameweek,
     isLive,
+    leaguesUpdating,
     awaitingUpdate,
     loading,
     error,
