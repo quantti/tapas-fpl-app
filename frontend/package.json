@@ -10,6 +10,7 @@
     "format": "biome ci --formatter-enabled=true --linter-enabled=false --assist-enabled=false .",
     "format:fix": "biome format --write .",
     "ts": "tsc --noEmit",
+    "check": "npm run ts && npm run lint && npm run format && npm run test:run",
     "preview": "vite preview",
     "css:types": "tcm src --namedExports && node scripts/fix-css-types.cjs src && biome format --write src",
     "css:types:watch": "tcm src --namedExports --watch",
