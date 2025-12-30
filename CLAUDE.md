@@ -86,6 +86,7 @@ The Worker proxy (`worker/src/index.ts`) uses tiered cache TTLs to balance fresh
 - [x] Player recommendations (Punts, Defensive, Time to Sell) with position badges
 - [x] League Template Team (most owned starting XI in pitch formation)
 - [x] Graceful 503 error handling ("FPL is updating" message during gameweek transitions)
+- [x] League recalculation banner (warns when league tables are being updated)
 - [x] Game Rewards (bonus points + DefCon per fixture with position-specific thresholds)
 
 ## FPL API Reference
@@ -103,6 +104,7 @@ Base URL: `https://fantasy.premierleague.com/api/`
 | `/leagues-classic/{league_id}/standings/` | Classic league standings |
 | `/event/{gw}/live/` | Live gameweek data (points, bonus, etc.) |
 | `/element-summary/{player_id}/` | Individual player detailed stats |
+| `/event-status/` | League recalculation state and bonus processing status |
 
 ### Notes
 
@@ -188,6 +190,35 @@ if (error) {
 - All views (Dashboard, Statistics, Analytics) check `isApiUnavailable`
 - FplUpdating shows spinning refresh icon with explanation text
 - E2E tests in `tests/error-states.spec.ts` verify 503 handling
+
+### League Recalculation Banner
+When FPL is recalculating league tables (different from 503 - API works but data may be stale), the app shows a warning banner.
+
+**Key files:**
+- `src/hooks/useFplData.ts` - Fetches `/event-status/` and exposes `leaguesUpdating` boolean
+- `src/components/LeagueUpdating.tsx` - Warning banner component
+- `src/views/Dashboard.tsx` - Shows banner when `leaguesUpdating` is true
+
+**Event Status API:**
+```typescript
+// GET /event-status/
+{
+  "status": [...],      // Bonus processing status per event
+  "leagues": "Updated"  // or "Updating" when recalculating
+}
+```
+
+**Usage:**
+```typescript
+const { leaguesUpdating } = useFplData()
+
+// In Dashboard return:
+{leaguesUpdating && <LeagueUpdating />}
+```
+
+**Key difference from 503:**
+- 503 = API down, no data → replace entire page with `FplUpdating`
+- `leagues: "Updating"` = API works, data may be stale → show warning banner above content
 
 ## Styling - CSS Modules
 
@@ -376,12 +407,24 @@ useFplData (isLive, managerDetails with picks)
      ▼
 useLiveScoring (liveData, fixtures) ──polling when isLive──▶ FPL API
      │
-     ▼
-LeagueStandings
-  ├── calculateLiveManagerPoints() for each manager
-  ├── Re-sort by liveTotal
-  └── Display provisional bonus (+X)
+     ├─────────────────────────────────┐
+     ▼                                 ▼
+LeagueStandings                   ManagerModal
+  ├── calculateLiveManagerPoints()   ├── Uses liveData from props (reactive)
+  ├── Re-sort by liveTotal           ├── Updates when Dashboard polls
+  └── Display provisional bonus      └── Only fetches picks/manager info
 ```
+
+**ManagerModal Reactive Data:**
+The modal uses preloaded live data directly from Dashboard props instead of copying to local state. This ensures player scores in the pitch view update when Dashboard polls (every 60s during live games).
+
+```typescript
+// ManagerModal uses props directly for live data
+const liveData = preloadedLiveData ?? fetchedLiveData
+const fixtures = preloadedFixtures ?? fetchedFixtures
+```
+
+Only `picks` and `managerInfo` are fetched when modal opens (these are manager-specific). Live data and fixtures come from Dashboard's polling.
 
 **State Determination:**
 
