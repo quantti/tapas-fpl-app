@@ -4,6 +4,7 @@ import { Footer } from './components/Footer'
 import { Dashboard } from './views/Dashboard'
 import { Statistics } from './views/Statistics'
 import { Analytics } from './views/Analytics'
+import { Roadmap } from './views/Roadmap'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/statistics" element={<Statistics />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/roadmap" element={<Roadmap />} />
           </Routes>
         </main>
         <Footer />
