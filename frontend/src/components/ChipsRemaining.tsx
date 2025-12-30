@@ -26,11 +26,7 @@ const CHIP_LABELS: Record<string, string> = {
   wildcard: 'WC',
 }
 
-function getRemainingChips(
-  chipsUsed: ChipUsage[],
-  currentGameweek: number,
-  isSecondHalf: boolean
-): string[] {
+function getRemainingChips(chipsUsed: ChipUsage[], isSecondHalf: boolean): string[] {
   const remaining = [...AVAILABLE_CHIPS]
 
   // Filter chips by which half they were used in
@@ -65,7 +61,7 @@ export function ChipsRemaining({ managerDetails, currentGameweek, deadlineTime }
   const managersWithChips = managerDetails
     .map((manager) => ({
       ...manager,
-      remainingChips: getRemainingChips(manager.chipsUsed, currentGameweek, isSecondHalf),
+      remainingChips: getRemainingChips(manager.chipsUsed, isSecondHalf),
     }))
     .filter((manager) => manager.remainingChips.length > 0)
     .sort((a, b) => a.rank - b.rank)

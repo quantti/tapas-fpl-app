@@ -154,7 +154,7 @@ export function Dashboard() {
         fixtures={fixtures}
         playersMap={playersMap}
         teamsMap={teamsMap}
-        liveData={liveData}
+        liveData={liveData ?? undefined}
       />
 
       {/* Transfers - Full width grid */}
