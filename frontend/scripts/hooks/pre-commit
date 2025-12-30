@@ -1,0 +1,25 @@
+#!/bin/sh
+# Pre-commit hook: runs all checks before allowing commit
+
+echo "Running pre-commit checks..."
+
+# Change to frontend directory (handle being called from repo root)
+if [ -d "frontend" ]; then
+    cd frontend
+fi
+
+# Run all checks
+npm run check
+
+# Capture exit code
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "❌ Pre-commit checks failed. Commit aborted."
+    echo "Fix the issues above and try again."
+    exit 1
+fi
+
+echo "✅ All checks passed!"
+exit 0

@@ -11,6 +11,7 @@
     "format:fix": "biome format --write .",
     "ts": "tsc --noEmit",
     "check": "npm run ts && npm run lint && npm run format && npm run test:run",
+    "setup-hooks": "sh scripts/setup-hooks.sh",
     "preview": "vite preview",
     "css:types": "tcm src --namedExports && node scripts/fix-css-types.cjs src && biome format --write src",
     "css:types:watch": "tcm src --namedExports --watch",
