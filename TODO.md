@@ -25,6 +25,14 @@
   - [ ] GameRewards.module.css - nesting doesn't reflect DOM hierarchy
   - [ ] Audit all CSS modules - nesting should mirror actual DOM structure (e.g., `.bonusRow` should be nested inside `.rewardsList` if that's the parent in JSX)
 - [ ] Extract `FixtureCard` from `GameRewards.tsx` into separate component
+- [ ] Create shared `Layout` component to eliminate Header duplication:
+  - [ ] Create `src/components/Layout.tsx` with Header + content wrapper
+  - [ ] Create `src/components/Layout.module.css` with shared styles (max-width: 1200px, margin: 0 auto, padding: 0 1rem)
+  - [ ] Update Dashboard to use Layout
+  - [ ] Update Statistics to use Layout
+  - [ ] Update Analytics to use Layout
+  - [ ] Update Roadmap to use Layout
+  - [ ] Remove duplicated width/padding styles from individual view CSS modules
 
 ### Polish
 - [x] Error boundaries for graceful failure handling (503 "FPL is updating" message)
