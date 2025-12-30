@@ -464,16 +464,17 @@ if (gwComplete) {
 - `deadlineTime` from bootstrap determines if deadline passed
 
 ### Game Rewards Feature
-Shows bonus points (3/2/1) and defensive contribution (DefCon) points per fixture during live gameweeks.
+Shows bonus points (3/2/1) and defensive contribution (DefCon) points per fixture during live gameweeks. Displays provisional bonus from BPS scores during live matches (≥60 minutes), using the same calculation logic as the live league standings.
 
 **Key files:**
-- `src/utils/fixtureRewards.ts` - Core extraction logic with DefCon threshold filtering
-- `src/utils/fixtureRewards.test.ts` - Comprehensive test suite (20 tests)
+- `src/utils/fixtureRewards.ts` - Core extraction logic with DefCon threshold filtering and provisional bonus
+- `src/utils/fixtureRewards.test.ts` - Comprehensive test suite (26 tests)
 - `src/components/GameRewards.tsx` - Card component displaying per-fixture rewards
 - `src/components/GameRewards.module.css` - Styles (nested inside root class)
 
 **FPL 2025/26 Rules:**
-- **Bonus Points**: Top 3 BPS scores get 3/2/1 points (ties share same tier)
+- **Bonus Points**: Top 3 BPS scores get 3/2/1 points
+- **Tie handling**: Tied players share same tier, next tier is skipped (e.g., two tied for 1st both get 3, third gets 1)
 - **Defensive Contributions (DefCon)**: 2 points for meeting threshold
   - Defenders: 10+ CBIT (Clearances, Blocks, Interceptions, Tackles)
   - Midfielders/Forwards: 12+ CBITr (includes Recoveries)
@@ -482,12 +483,32 @@ Shows bonus points (3/2/1) and defensive contribution (DefCon) points per fixtur
 **API Data Structure:**
 ```typescript
 // Fixture stats array includes:
-// - `bonus` identifier: Final confirmed bonus (1-3 pts)
+// - `bonus` identifier: Final confirmed bonus (1-3 pts) - only populated after match ends
 // - `defensive_contribution` identifier: DefCon stat (2 pts if threshold met)
 fixture.stats = [
   { identifier: 'bonus', h: [{ element: 123, value: 3 }], a: [...] },
   { identifier: 'defensive_contribution', h: [...], a: [...] }
 ]
+```
+
+**Provisional Bonus Calculation:**
+When `fixture.stats.bonus` is empty (live match), calculates from BPS in `liveData`:
+```
+calculateProvisionalBonusForFixture(fixture, liveData, playersMap):
+  1. Filter players by fixture ID (via liveData.elements[].explain.fixture)
+  2. Extract BPS from each player's stats.bps
+  3. Call shared calculateProvisionalBonus() from liveScoring.ts
+  4. Return PlayerReward[] with player names
+```
+
+**Data Flow:**
+```
+Dashboard (liveData from useLiveScoring)
+  │
+  ▼
+GameRewards
+  └── extractAllFixtureRewards(fixtures, playersMap, teamsMap, liveData)
+        └── Per fixture: confirmed bonus OR provisional from BPS
 ```
 
 **Display Logic:**

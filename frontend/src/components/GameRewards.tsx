@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Award, Shield, Trophy } from 'lucide-react'
-import type { Fixture, Player, Team } from '../types/fpl'
+import type { Fixture, Player, Team, LiveGameweek } from '../types/fpl'
 import {
   extractAllFixtureRewards,
   type FixtureRewards,
@@ -12,6 +12,7 @@ interface Props {
   fixtures: Fixture[]
   playersMap: Map<number, Player>
   teamsMap: Map<number, Team>
+  liveData?: LiveGameweek
 }
 
 // Medal colors for bonus points tiers
@@ -88,7 +89,7 @@ function FixtureCard({ rewards }: { rewards: FixtureRewards }) {
   )
 }
 
-export function GameRewards({ fixtures, playersMap, teamsMap }: Props) {
+export function GameRewards({ fixtures, playersMap, teamsMap, liveData }: Props) {
   // Memoize teams map transformation to prevent unnecessary recalculations
   // Handles empty teamsMap gracefully - useMemo must be called before any early returns
   const teamsMapForRewards = useMemo(
@@ -109,7 +110,7 @@ export function GameRewards({ fixtures, playersMap, teamsMap }: Props) {
     return null
   }
 
-  const allRewards = extractAllFixtureRewards(fixtures, playersMap, teamsMapForRewards)
+  const allRewards = extractAllFixtureRewards(fixtures, playersMap, teamsMapForRewards, liveData)
 
   if (allRewards.length === 0) {
     return null

@@ -1,5 +1,5 @@
-import type { Fixture, Player } from '../types/fpl'
-import { shouldShowProvisionalBonus } from './liveScoring'
+import type { Fixture, Player, LiveGameweek } from '../types/fpl'
+import { shouldShowProvisionalBonus, calculateProvisionalBonus, type BpsScore } from './liveScoring'
 
 // FPL position element_types: 1=GK, 2=DEF, 3=MID, 4=FWD
 type OutfieldPosition = 2 | 3 | 4
@@ -115,12 +115,56 @@ function getFixtureStatus(fixture: Fixture): FixtureStatus {
 }
 
 /**
- * Extract bonus and defensive contribution rewards from a single fixture
+ * Calculate provisional bonus from live BPS data for a fixture.
+ * Used when fixture.stats.bonus is not yet populated (live matches).
+ */
+function calculateProvisionalBonusForFixture(
+  fixture: Fixture,
+  liveData: LiveGameweek,
+  playersMap: Map<number, Player>
+): PlayerReward[] {
+  // Get all players in this fixture by checking their explain array
+  const playersInFixture = liveData.elements.filter((p) =>
+    p.explain.some((e) => e.fixture === fixture.id)
+  )
+
+  if (playersInFixture.length === 0) return []
+
+  // Build BPS scores array
+  const bpsScores: BpsScore[] = playersInFixture.map((p) => ({
+    playerId: p.id,
+    bps: p.stats.bps,
+  }))
+
+  // Calculate provisional bonus (3/2/1 for top BPS scores)
+  const bonusMap = calculateProvisionalBonus(bpsScores)
+
+  // Convert to PlayerReward array
+  const rewards: PlayerReward[] = []
+  for (const [playerId, bonus] of bonusMap) {
+    if (bonus > 0) {
+      const player = playersMap.get(playerId)
+      rewards.push({
+        playerId,
+        webName: player?.web_name ?? `#${playerId}`,
+        points: bonus,
+      })
+    }
+  }
+
+  return rewards.sort((a, b) => b.points - a.points)
+}
+
+/**
+ * Extract bonus and defensive contribution rewards from a single fixture.
+ * When liveData is provided and fixture.stats.bonus is empty, calculates
+ * provisional bonus from BPS scores (for live matches >= 60 minutes).
  */
 export function extractFixtureRewards(
   fixture: Fixture,
   playersMap: Map<number, Player>,
-  teamsMap: Map<number, { name: string; short_name: string }>
+  teamsMap: Map<number, { name: string; short_name: string }>,
+  liveData?: LiveGameweek
 ): FixtureRewards {
   const homeTeam = teamsMap.get(fixture.team_h)
   const awayTeam = teamsMap.get(fixture.team_a)
@@ -129,26 +173,40 @@ export function extractFixtureRewards(
   const shouldShowRewards = status === 'rewards_available'
 
   // Only extract rewards if we should show them
-  const bonusEntries = shouldShowRewards ? getStatEntries(fixture, 'bonus') : []
   const defconEntries = shouldShowRewards ? getStatEntries(fixture, 'defensive_contribution') : []
+
+  // Get bonus: prefer confirmed stats, fallback to provisional from BPS
+  let bonus: PlayerReward[] = []
+  if (shouldShowRewards) {
+    const bonusEntries = getStatEntries(fixture, 'bonus')
+    if (bonusEntries.length > 0) {
+      // Confirmed bonus available
+      bonus = mapToPlayerRewards(bonusEntries, playersMap)
+    } else if (liveData) {
+      // No confirmed bonus - calculate provisional from BPS
+      bonus = calculateProvisionalBonusForFixture(fixture, liveData, playersMap)
+    }
+  }
 
   return {
     fixture,
     homeTeamName: homeTeam?.short_name ?? `Team ${fixture.team_h}`,
     awayTeamName: awayTeam?.short_name ?? `Team ${fixture.team_a}`,
-    bonus: mapToPlayerRewards(bonusEntries, playersMap),
+    bonus,
     defcon: filterAndMapDefconRewards(defconEntries, playersMap),
     status,
   }
 }
 
 /**
- * Extract rewards for all fixtures in a gameweek
+ * Extract rewards for all fixtures in a gameweek.
+ * When liveData is provided, provisional bonus is calculated from BPS for live matches.
  */
 export function extractAllFixtureRewards(
   fixtures: Fixture[],
   playersMap: Map<number, Player>,
-  teamsMap: Map<number, { name: string; short_name: string }>
+  teamsMap: Map<number, { name: string; short_name: string }>,
+  liveData?: LiveGameweek
 ): FixtureRewards[] {
   return fixtures
     .filter((f) => f.event !== null) // Only fixtures with assigned gameweek
@@ -159,5 +217,5 @@ export function extractAllFixtureRewards(
       }
       return a.id - b.id
     })
-    .map((fixture) => extractFixtureRewards(fixture, playersMap, teamsMap))
+    .map((fixture) => extractFixtureRewards(fixture, playersMap, teamsMap, liveData))
 }

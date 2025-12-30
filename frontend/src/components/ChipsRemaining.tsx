@@ -1,17 +1,23 @@
+import { useMemo } from 'react'
 import { Zap } from 'lucide-react'
 import type { ManagerGameweekData } from '../hooks/useFplData'
 import { Card } from './ui/Card'
 import { CardHeader } from './ui/CardHeader'
 import * as styles from './ChipsRemaining.module.css'
 
+interface ChipUsage {
+  name: string
+  event: number
+}
+
 interface Props {
   managerDetails: ManagerGameweekData[]
   currentGameweek: number
+  deadlineTime?: string
 }
 
-// Chips available in each half of the season
-const FIRST_HALF_CHIPS = ['bboost', '3xc', 'freehit', 'wildcard']
-const SECOND_HALF_CHIPS = ['bboost', '3xc', 'freehit', 'wildcard']
+// Chips available in each half of the season (2025/26 rules: full reset at GW20)
+const AVAILABLE_CHIPS = ['bboost', '3xc', 'freehit', 'wildcard']
 
 const CHIP_LABELS: Record<string, string> = {
   bboost: 'BB',
@@ -20,16 +26,21 @@ const CHIP_LABELS: Record<string, string> = {
   wildcard: 'WC',
 }
 
-function getRemainingChips(chipsUsed: string[], currentGameweek: number): string[] {
-  // Before GW20, only first half chips are available
-  // From GW20 onwards, both sets are available
-  const availableChips =
-    currentGameweek >= 20 ? [...FIRST_HALF_CHIPS, ...SECOND_HALF_CHIPS] : [...FIRST_HALF_CHIPS]
+function getRemainingChips(
+  chipsUsed: ChipUsage[],
+  currentGameweek: number,
+  isSecondHalf: boolean
+): string[] {
+  const remaining = [...AVAILABLE_CHIPS]
 
-  const remaining = [...availableChips]
+  // Filter chips by which half they were used in
+  const relevantChips = chipsUsed.filter((chip) => {
+    const usedInFirstHalf = chip.event < 20
+    return isSecondHalf ? !usedInFirstHalf : usedInFirstHalf
+  })
 
-  for (const used of chipsUsed) {
-    const normalizedUsed = used.toLowerCase()
+  for (const used of relevantChips) {
+    const normalizedUsed = used.name.toLowerCase()
     const index = remaining.indexOf(normalizedUsed)
     if (index !== -1) {
       remaining.splice(index, 1)
@@ -39,12 +50,22 @@ function getRemainingChips(chipsUsed: string[], currentGameweek: number): string
   return remaining
 }
 
-export function ChipsRemaining({ managerDetails, currentGameweek }: Props) {
+export function ChipsRemaining({ managerDetails, currentGameweek, deadlineTime }: Props) {
+  // Determine which half of the season we're in (2025/26 rules: full chip reset at GW20)
+  // Second half starts when GW19 deadline passes (chips for GW20+ available)
+  const isSecondHalf = useMemo(() => {
+    if (currentGameweek >= 20) return true
+    if (currentGameweek === 19 && deadlineTime) {
+      return new Date() > new Date(deadlineTime)
+    }
+    return false
+  }, [currentGameweek, deadlineTime])
+
   // Calculate remaining chips for each manager
   const managersWithChips = managerDetails
     .map((manager) => ({
       ...manager,
-      remainingChips: getRemainingChips(manager.chipsUsed, currentGameweek),
+      remainingChips: getRemainingChips(manager.chipsUsed, currentGameweek, isSecondHalf),
     }))
     .filter((manager) => manager.remainingChips.length > 0)
     .sort((a, b) => a.rank - b.rank)

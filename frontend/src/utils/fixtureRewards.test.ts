@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { extractFixtureRewards, extractAllFixtureRewards } from './fixtureRewards'
-import type { Fixture, Player } from '../types/fpl'
+import type { Fixture, Player, LiveGameweek, LivePlayer } from '../types/fpl'
 
 // Helper to create a mock player
 function createMockPlayer(id: number, webName: string, elementType: number): Player {
@@ -492,6 +492,218 @@ describe('fixtureRewards', () => {
 
       expect(result).toHaveLength(2)
       expect(result.map((r) => r.fixture.id)).toEqual([1, 3])
+    })
+  })
+
+  describe('Provisional bonus from BPS (live matches)', () => {
+    // Helper to create mock LivePlayer
+    function createMockLivePlayer(id: number, bps: number, fixtureId: number): LivePlayer {
+      return {
+        id,
+        stats: {
+          minutes: 90,
+          goals_scored: 0,
+          assists: 0,
+          clean_sheets: 0,
+          goals_conceded: 0,
+          own_goals: 0,
+          penalties_saved: 0,
+          penalties_missed: 0,
+          yellow_cards: 0,
+          red_cards: 0,
+          saves: 0,
+          bonus: 0,
+          bps,
+          influence: '0',
+          creativity: '0',
+          threat: '0',
+          ict_index: '0',
+          total_points: 0,
+          in_dreamteam: false,
+        },
+        explain: [{ fixture: fixtureId, stats: [] }],
+      }
+    }
+
+    it('should calculate provisional bonus from BPS when no confirmed bonus', () => {
+      const playersMap = new Map<number, Player>([
+        [200, createMockPlayer(200, 'Saka', 3)],
+        [201, createMockPlayer(201, 'Havertz', 3)],
+        [202, createMockPlayer(202, 'Martinelli', 3)],
+      ])
+
+      // Fixture at 60+ minutes with empty bonus stats
+      const fixture = createMockFixture({
+        id: 1,
+        started: true,
+        finished: false,
+        finished_provisional: false,
+        minutes: 75,
+        stats: [], // No confirmed bonus
+      })
+
+      // Live data with BPS scores
+      const liveData: LiveGameweek = {
+        elements: [
+          createMockLivePlayer(200, 45, 1), // Highest BPS -> 3 bonus
+          createMockLivePlayer(201, 38, 1), // Second -> 2 bonus
+          createMockLivePlayer(202, 30, 1), // Third -> 1 bonus
+        ],
+      }
+
+      const result = extractFixtureRewards(fixture, playersMap, createTeamsMap(), liveData)
+
+      expect(result.status).toBe('rewards_available')
+      expect(result.bonus).toHaveLength(3)
+      expect(result.bonus[0]).toEqual({ playerId: 200, webName: 'Saka', points: 3 })
+      expect(result.bonus[1]).toEqual({ playerId: 201, webName: 'Havertz', points: 2 })
+      expect(result.bonus[2]).toEqual({ playerId: 202, webName: 'Martinelli', points: 1 })
+    })
+
+    it('should handle BPS ties (same bonus for tied players, skip tiers)', () => {
+      const playersMap = new Map<number, Player>([
+        [200, createMockPlayer(200, 'Saka', 3)],
+        [201, createMockPlayer(201, 'Havertz', 3)],
+        [202, createMockPlayer(202, 'Martinelli', 3)],
+      ])
+
+      const fixture = createMockFixture({
+        id: 1,
+        started: true,
+        finished: false,
+        minutes: 80,
+        stats: [],
+      })
+
+      // Two players tied for highest BPS
+      // FPL rule: both get 3 bonus, third gets 1 (2nd place tier is skipped)
+      const liveData: LiveGameweek = {
+        elements: [
+          createMockLivePlayer(200, 45, 1), // Tied for first -> 3 bonus
+          createMockLivePlayer(201, 45, 1), // Tied for first -> 3 bonus
+          createMockLivePlayer(202, 30, 1), // Third -> 1 bonus (skips 2)
+        ],
+      }
+
+      const result = extractFixtureRewards(fixture, playersMap, createTeamsMap(), liveData)
+
+      expect(result.bonus).toHaveLength(3)
+      // Both tied players get 3 bonus
+      const sakaBonus = result.bonus.find((b) => b.playerId === 200)
+      const havertzBonus = result.bonus.find((b) => b.playerId === 201)
+      const martinelliBonus = result.bonus.find((b) => b.playerId === 202)
+      expect(sakaBonus?.points).toBe(3)
+      expect(havertzBonus?.points).toBe(3)
+      // Third player gets 1 bonus (2nd tier is skipped when two tie for 1st)
+      expect(martinelliBonus?.points).toBe(1)
+    })
+
+    it('should prefer confirmed bonus over provisional when available', () => {
+      const playersMap = new Map<number, Player>([
+        [200, createMockPlayer(200, 'Saka', 3)],
+        [201, createMockPlayer(201, 'Havertz', 3)],
+      ])
+
+      // Fixture with confirmed bonus in stats
+      const fixture = createMockFixture({
+        id: 1,
+        started: true,
+        finished: true,
+        finished_provisional: true,
+        minutes: 90,
+        stats: [
+          {
+            identifier: 'bonus',
+            h: [
+              { element: 200, value: 3 },
+              { element: 201, value: 2 },
+            ],
+            a: [],
+          },
+        ],
+      })
+
+      // Live data with DIFFERENT BPS that would give different provisional
+      const liveData: LiveGameweek = {
+        elements: [
+          createMockLivePlayer(201, 50, 1), // Would be first by BPS
+          createMockLivePlayer(200, 30, 1), // Would be second by BPS
+        ],
+      }
+
+      const result = extractFixtureRewards(fixture, playersMap, createTeamsMap(), liveData)
+
+      // Should use confirmed bonus (Saka=3, Havertz=2), not provisional (Havertz=3, Saka=2)
+      expect(result.bonus[0]).toEqual({ playerId: 200, webName: 'Saka', points: 3 })
+      expect(result.bonus[1]).toEqual({ playerId: 201, webName: 'Havertz', points: 2 })
+    })
+
+    it('should not calculate provisional bonus for fixture under 60 minutes', () => {
+      const playersMap = new Map<number, Player>([[200, createMockPlayer(200, 'Saka', 3)]])
+
+      const fixture = createMockFixture({
+        id: 1,
+        started: true,
+        finished: false,
+        minutes: 45, // Under 60 minutes
+        stats: [],
+      })
+
+      const liveData: LiveGameweek = {
+        elements: [createMockLivePlayer(200, 45, 1)],
+      }
+
+      const result = extractFixtureRewards(fixture, playersMap, createTeamsMap(), liveData)
+
+      expect(result.status).toBe('in_progress')
+      expect(result.bonus).toHaveLength(0)
+    })
+
+    it('should filter players by fixture ID when calculating provisional bonus', () => {
+      const playersMap = new Map<number, Player>([
+        [200, createMockPlayer(200, 'Saka', 3)],
+        [201, createMockPlayer(201, 'Salah', 3)], // Different fixture
+      ])
+
+      const fixture = createMockFixture({
+        id: 1,
+        started: true,
+        finished: false,
+        minutes: 75,
+        stats: [],
+      })
+
+      // Salah is in a different fixture (id: 2)
+      const liveData: LiveGameweek = {
+        elements: [
+          createMockLivePlayer(200, 45, 1), // In our fixture
+          createMockLivePlayer(201, 60, 2), // In different fixture
+        ],
+      }
+
+      const result = extractFixtureRewards(fixture, playersMap, createTeamsMap(), liveData)
+
+      // Only Saka should get bonus (Salah is filtered out)
+      expect(result.bonus).toHaveLength(1)
+      expect(result.bonus[0].playerId).toBe(200)
+    })
+
+    it('should return empty bonus when no liveData provided and no confirmed bonus', () => {
+      const playersMap = new Map<number, Player>([[200, createMockPlayer(200, 'Saka', 3)]])
+
+      const fixture = createMockFixture({
+        id: 1,
+        started: true,
+        finished: false,
+        minutes: 75,
+        stats: [], // No confirmed bonus
+      })
+
+      // No liveData provided
+      const result = extractFixtureRewards(fixture, playersMap, createTeamsMap())
+
+      expect(result.status).toBe('rewards_available')
+      expect(result.bonus).toHaveLength(0) // Can't calculate without liveData
     })
   })
 })

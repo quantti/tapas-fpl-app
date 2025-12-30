@@ -76,7 +76,11 @@ export function Statistics() {
           gameweeks={bootstrap?.events ?? []}
           playersMap={playersMap}
         />
-        <ChipsRemaining managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
+        <ChipsRemaining
+          managerDetails={managerDetails}
+          currentGameweek={currentGameweek.id}
+          deadlineTime={currentGameweek.deadline_time}
+        />
         <FreeTransfers
           managerDetails={managerDetails}
           currentGameweek={currentGameweek.id}

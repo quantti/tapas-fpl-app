@@ -150,7 +150,12 @@ export function Dashboard() {
       </div>
 
       {/* Game Rewards - Full width after standings */}
-      <GameRewards fixtures={fixtures} playersMap={playersMap} teamsMap={teamsMap} />
+      <GameRewards
+        fixtures={fixtures}
+        playersMap={playersMap}
+        teamsMap={teamsMap}
+        liveData={liveData}
+      />
 
       {/* Transfers - Full width grid */}
       {managerDetails.some((m) => m.transfersIn.length > 0) && (

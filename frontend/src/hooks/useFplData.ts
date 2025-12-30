@@ -35,8 +35,8 @@ export interface ManagerGameweekData {
   totalHitsCost: number
   teamValue: number
   bank: number
-  // Chips data
-  chipsUsed: string[]
+  // Chips data - includes event number for 2025/26 half-season tracking
+  chipsUsed: { name: string; event: number }[]
 }
 
 /**
@@ -172,7 +172,7 @@ export function useFplData() {
             totalHitsCost,
             teamValue: (picks.entry_history.value || 0) / 10,
             bank: (picks.entry_history.bank || 0) / 10,
-            chipsUsed: history.chips.map((c) => c.name),
+            chipsUsed: history.chips.map((c) => ({ name: c.name, event: c.event })),
           }
         } catch (err) {
           console.warn(`Failed to fetch data for manager ${manager.entry}:`, err)
