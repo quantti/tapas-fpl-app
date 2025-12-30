@@ -1,3 +1,10 @@
+## [0.11.1](https://github.com/quantti/tapas-fpl-app/compare/v0.11.0...v0.11.1) (2025-12-30)
+
+
+### Bug Fixes
+
+* resolve TypeScript errors from CI ([c59d773](https://github.com/quantti/tapas-fpl-app/commit/c59d77343efcb4eed2436d36a7632bea45a008fb))
+
 # [0.11.0](https://github.com/quantti/tapas-fpl-app/compare/v0.10.0...v0.11.0) (2025-12-30)
 
 
