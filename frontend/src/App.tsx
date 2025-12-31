@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
+import { CookieConsentBanner } from './components/CookieConsent'
 import { Footer } from './components/Footer'
 import { Dashboard } from './views/Dashboard'
 import { Statistics } from './views/Statistics'
@@ -10,6 +11,7 @@ import { Changelog } from './views/Changelog'
 function App() {
   return (
     <BrowserRouter>
+      <CookieConsentBanner />
       <div className="app">
         <main className="appMain">
           <Routes>
