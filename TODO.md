@@ -17,6 +17,28 @@
 - [ ] Points breakdown by position
 - [ ] Transfer history timeline
 
+### Player Modal Improvements
+- [ ] Per-game expected stats table in History tab:
+  - [ ] Show xG, xA, xGI per fixture (data already in `PlayerHistory`)
+  - [ ] Add xGC for defenders/goalkeepers
+  - [ ] Visual delta: actual vs expected (green/red indicators)
+- [ ] Per-90 stats section in Overview tab:
+  - [ ] Already calculated in `usePlayerDetails.ts` (xG90, xA90, xGI90, xGC90)
+  - [ ] Display in a clear stat row with labels
+- [ ] Form trend mini-chart (sparkline of last 5 GWs)
+- [ ] Price change history from `history_past`
+
+### Player Recommendations Improvements
+- [ ] Per-game xStats analysis (not just season totals):
+  - [ ] Weight recent games more heavily (rolling 5-game xG90/xA90)
+  - [ ] Detect form inflection points (sudden improvement/decline)
+- [ ] Add "Why?" tooltip explaining recommendation:
+  - [ ] Show key stats driving the score
+  - [ ] Fixture difficulty breakdown
+- [ ] Filter by price range (budget punts vs premium)
+- [ ] Filter by position (show DEF-only, MID-only, etc.)
+- [ ] "Rising Stars" category: players with improving xG90 trend
+
 ### Code Quality
 - [ ] Split `frontend/CLAUDE.md` if it exceeds 40k chars (currently ~15k):
   - Candidates: testing docs, feature docs, FPL API reference
