@@ -18,6 +18,8 @@
 - [ ] Transfer history timeline
 
 ### Code Quality
+- [ ] Split `frontend/CLAUDE.md` if it exceeds 40k chars (currently ~15k):
+  - Candidates: testing docs, feature docs, FPL API reference
 - [ ] Refactor CSS modules to follow nested pattern (root class matching filename):
   - [ ] ChipsRemaining.module.css
   - [ ] BenchPoints.module.css
