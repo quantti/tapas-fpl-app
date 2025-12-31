@@ -1,6 +1,6 @@
 # Technical Debt & Code Quality Report
 
-> Generated: December 31, 2025
+> Generated: December 31, 2025 (Updated: January 1, 2026)
 > Codebase: frontend/src
 
 ## Overview
@@ -287,12 +287,177 @@ if (player.element_type === POSITION_TYPES.GOALKEEPER)
 
 ---
 
+## Architecture Improvements (From Analysis)
+
+### High Priority
+
+#### 11. Query Key Factory Missing
+
+**Impact:** Scattered query key definitions across hooks, risk of typos and cache invalidation issues
+
+**Current pattern:**
+```typescript
+// Various locations - inconsistent
+queryKey: ['picks', managerId, gw]
+queryKey: ['bootstrap-static']
+queryKey: ['live', currentGw]
+queryKey: ['entry', managerId, 'history']
+```
+
+**Fix:** Create `services/queryKeys.ts`:
+```typescript
+export const queryKeys = {
+  bootstrap: ['bootstrap-static'] as const,
+  picks: (managerId: number, gw: number) => ['picks', managerId, gw] as const,
+  live: (gw: number) => ['live', gw] as const,
+  history: (managerId: number) => ['entry', managerId, 'history'] as const,
+} as const
+```
+
+---
+
+#### 12. useRecommendedPlayers.ts Too Large (306 lines)
+
+**Location:** `hooks/useRecommendedPlayers.ts`
+
+**Issue:** Mixes pure scoring functions with data fetching and filtering logic.
+
+**Functions that should be utilities (lines 37-180):**
+- `getPercentile()` - pure calculation
+- `calculateFixtureScore()` - pure calculation
+- `calculatePlayerScore()` - pure calculation
+
+**Fix:** Split into:
+```
+hooks/useRecommendedPlayers.ts  # Data fetching only (~100 lines)
+utils/playerScoring.ts          # Pure scoring functions (~200 lines)
+```
+
+---
+
+### Medium Priority
+
+#### 13. Historical Data Fetching Duplication
+
+**Impact:** 3 hooks fetch same `/entry/{id}/event/{gw}/picks/` pattern
+
+| Hook | Purpose |
+|------|---------|
+| `useBenchPoints.ts:24-46` | Fetches all picks for bench analysis |
+| `useCaptainSuccess.ts:35-56` | Fetches all picks for captain analysis |
+| `useLeaguePositionHistory.ts:25-50` | Fetches entry history |
+
+**Fix:** Create `hooks/useManagerHistoricalData.ts`:
+```typescript
+export function useManagerHistoricalData(managerIds: number[], currentGw: number) {
+  // Fetch all picks for all managers for GWs 1 to currentGw
+  // Return { picksByManager, historiesByManager }
+}
+```
+
+---
+
+#### 14. Fixture State Checking Scattered
+
+**Pattern repeated in multiple files:**
+```typescript
+const hasFixtureStarted = fixture.started || fixture.finished
+const isLiveFixture = fixture.started && !fixture.finished_provisional
+```
+
+**Fix:** Create `utils/fixtures.ts`:
+```typescript
+export function hasFixtureStarted(fixture: Fixture): boolean
+export function isFixtureLive(fixture: Fixture): boolean
+export function isFixtureFinished(fixture: Fixture): boolean
+```
+
+**Note:** Some of this was addressed in `utils/autoSubs.ts` but could be more centralized.
+
+---
+
+#### 15. Prop Drilling Through Multiple Levels
+
+**Current flow:**
+```
+Dashboard
+  └── LeagueStandings (receives 7 props)
+        └── ManagerModal (receives 7 props)
+```
+
+**Heavily passed props:** `bootstrap`, `liveData`, `fixtures`, `playersMap`
+
+**Options:**
+1. React Context for widely-used data (bootstrap, maps)
+2. Let child components fetch their own data via hooks
+3. Accept current pattern (props are explicit and traceable)
+
+---
+
+### Low Priority
+
+#### 16. Manual Polling vs TanStack Query refetchInterval
+
+**Location:** `hooks/useLiveScoring.ts:27-45`
+
+**Current:** Manual `setInterval` implementation
+```typescript
+useEffect(() => {
+  if (isLive) {
+    const intervalId = setInterval(refetch, pollInterval)
+    return () => clearInterval(intervalId)
+  }
+}, [isLive, refetch, pollInterval])
+```
+
+**Alternative:** Use TanStack Query built-in:
+```typescript
+const { data } = useQuery({
+  queryKey: queryKeys.live(gw),
+  queryFn: ...,
+  refetchInterval: isLive ? 60000 : false,
+})
+```
+
+---
+
+#### 17. Consider Feature Folder Structure
+
+**Current:** Flat `components/` with 22 files
+
+**Proposed grouping:**
+```
+features/
+├── standings/         # LeagueStandings, ManagerModal
+├── statistics/        # BenchPoints, CaptainSuccess, ChipsRemaining, etc.
+├── template-team/     # LeagueTemplateTeam, PitchLayout, PitchPlayer
+├── recommendations/   # RecommendedPlayers + hook
+└── game-rewards/      # GameRewards + utility
+components/            # Truly shared: Header, FplUpdating, PositionBadge
+```
+
+---
+
+## Architecture Strengths (Preserve These)
+
+- **Central `useFplData` hook** provides bootstrap data to all views
+- **Effective `useMemo`** usage for maps and computed values
+- **Co-located CSS Modules** prevent style conflicts
+- **Tests next to source files** aids discoverability
+- **Proper `enabled` flags** for dependent queries
+- **`staleTime: Infinity`** for immutable historical data
+
+---
+
 ## Files Requiring Most Attention
 
 | File | Issues | Priority | Status |
 |------|--------|----------|--------|
 | ~~`components/PlayerModal.tsx`~~ | ~~High complexity~~ Sub-components extracted | ~~Medium~~ | ✅ Resolved |
 | ~~`components/ManagerModal.tsx`~~ | ~~Nested helper functions~~ | ~~Medium~~ | ✅ Resolved |
-| `hooks/useRecommendedPlayers.ts` | Weight config duplication | Low | Open |
+| `hooks/useRecommendedPlayers.ts` | 306 lines, mix scoring logic with data fetching | High | Open |
+| `services/queryKeys.ts` | Missing - scattered query keys | High | Open |
+| `hooks/useBenchPoints.ts` | Duplicates historical data fetching | Medium | Open |
+| `hooks/useCaptainSuccess.ts` | Duplicates historical data fetching | Medium | Open |
 | ~~3 view CSS modules~~ | ~~Spinner/loading duplication~~ | ~~High~~ | ✅ Resolved |
 | ~~`hooks/useFplData.ts`~~ | ~~Boolean naming~~ | ~~Medium~~ | ✅ Resolved |
