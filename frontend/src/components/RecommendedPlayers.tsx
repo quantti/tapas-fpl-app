@@ -33,6 +33,7 @@ interface Props {
   managerDetails: ManagerGameweekData[]
   teamsMap: Map<number, Team>
   currentGameweek: number
+  onPlayerClick?: (player: Player) => void
 }
 
 function PositionBadge({ elementType }: { elementType: number }) {
@@ -61,7 +62,13 @@ function ScoreStars({ score }: { score: number }) {
   )
 }
 
-export function RecommendedPlayers({ players, managerDetails, teamsMap, currentGameweek }: Props) {
+export function RecommendedPlayers({
+  players,
+  managerDetails,
+  teamsMap,
+  currentGameweek,
+  onPlayerClick,
+}: Props) {
   const { punts, defensive, toSell, loading, error } = useRecommendedPlayers(
     players,
     managerDetails,
@@ -107,12 +114,18 @@ export function RecommendedPlayers({ players, managerDetails, teamsMap, currentG
         ) : (
           <div className={styles.list}>
             {punts.map(({ player, team, score }) => (
-              <div key={player.id} className={styles.row}>
+              <button
+                key={player.id}
+                type="button"
+                className={`${styles.row} ${onPlayerClick ? styles.clickable : ''}`}
+                onClick={() => onPlayerClick?.(player)}
+                disabled={!onPlayerClick}
+              >
                 <PositionBadge elementType={player.element_type} />
                 <span className={styles.playerName}>{player.web_name}</span>
                 <span className={styles.teamName}>{team.short_name}</span>
                 <ScoreStars score={score} />
-              </div>
+              </button>
             ))}
           </div>
         )}
@@ -132,12 +145,18 @@ export function RecommendedPlayers({ players, managerDetails, teamsMap, currentG
           ) : (
             <div className={styles.list}>
               {defensive.map(({ player, team, score }) => (
-                <div key={player.id} className={styles.row}>
+                <button
+                  key={player.id}
+                  type="button"
+                  className={`${styles.row} ${onPlayerClick ? styles.clickable : ''}`}
+                  onClick={() => onPlayerClick?.(player)}
+                  disabled={!onPlayerClick}
+                >
                   <PositionBadge elementType={player.element_type} />
                   <span className={styles.playerName}>{player.web_name}</span>
                   <span className={styles.teamName}>{team.short_name}</span>
                   <ScoreStars score={score} />
-                </div>
+                </button>
               ))}
             </div>
           )}
@@ -155,12 +174,18 @@ export function RecommendedPlayers({ players, managerDetails, teamsMap, currentG
           ) : (
             <div className={styles.list}>
               {toSell.map(({ player, team, score }) => (
-                <div key={player.id} className={styles.row}>
+                <button
+                  key={player.id}
+                  type="button"
+                  className={`${styles.row} ${onPlayerClick ? styles.clickable : ''}`}
+                  onClick={() => onPlayerClick?.(player)}
+                  disabled={!onPlayerClick}
+                >
                   <PositionBadge elementType={player.element_type} />
                   <span className={styles.playerName}>{player.web_name}</span>
                   <span className={styles.teamName}>{team.short_name}</span>
                   <ScoreStars score={score} />
-                </div>
+                </button>
               ))}
             </div>
           )}

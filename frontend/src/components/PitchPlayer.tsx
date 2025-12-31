@@ -9,6 +9,7 @@ interface Props {
   badge?: 'C' | 'V'
   isBench?: boolean
   testId?: string
+  onClick?: () => void
 }
 
 const getShirtUrl = (teamCode: number): string => {
@@ -23,12 +24,10 @@ export function PitchPlayer({
   badge,
   isBench = false,
   testId = 'player',
+  onClick,
 }: Props) {
-  return (
-    <div
-      className={`${styles.PitchPlayer}${isBench ? ` ${styles.bench}` : ''}`}
-      data-testid={testId}
-    >
+  const content = (
+    <>
       <div className={styles.shirt}>
         <img
           src={shirtUrl}
@@ -42,6 +41,22 @@ export function PitchPlayer({
         {name}
       </div>
       <div className={styles.stat}>{stat}</div>
+    </>
+  )
+
+  const className = `${styles.PitchPlayer}${isBench ? ` ${styles.bench}` : ''}${onClick ? ` ${styles.clickable}` : ''}`
+
+  if (onClick) {
+    return (
+      <button type="button" className={className} data-testid={testId} onClick={onClick}>
+        {content}
+      </button>
+    )
+  }
+
+  return (
+    <div className={className} data-testid={testId}>
+      {content}
     </div>
   )
 }

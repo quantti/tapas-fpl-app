@@ -24,6 +24,7 @@ export interface Player {
   team_code: number
   element_type: number // 1=GK, 2=DEF, 3=MID, 4=FWD
   now_cost: number // price * 10
+  photo: string // e.g., "154561.jpg" - use with getPlayerPhotoUrl()
   selected_by_percent: string
   total_points: number
   event_points: number // points for current gameweek
@@ -53,6 +54,8 @@ export interface Player {
   expected_assists: string
   expected_goal_involvements: string
   expected_goals_conceded: string
+  // Defensive contribution points (2025/26 season) - 2pts per match meeting CBIT threshold
+  defensive_contribution: number
 }
 
 export interface Gameweek {
@@ -238,4 +241,105 @@ export interface LivePlayer {
     fixture: number
     stats: { identifier: string; points: number; value: number }[]
   }[]
+}
+
+/**
+ * Player's upcoming fixture from element-summary endpoint
+ */
+export interface PlayerFixture {
+  id: number
+  code: number
+  team_h: number
+  team_a: number
+  team_h_score: number | null
+  team_a_score: number | null
+  event: number
+  finished: boolean
+  minutes: number
+  provisional_start_time: boolean
+  kickoff_time: string
+  event_name: string
+  is_home: boolean
+  difficulty: number
+}
+
+/**
+ * Player's per-gameweek history from element-summary endpoint
+ */
+export interface PlayerHistory {
+  element: number
+  fixture: number
+  opponent_team: number
+  total_points: number
+  was_home: boolean
+  kickoff_time: string
+  team_h_score: number
+  team_a_score: number
+  round: number
+  minutes: number
+  goals_scored: number
+  assists: number
+  clean_sheets: number
+  goals_conceded: number
+  own_goals: number
+  penalties_saved: number
+  penalties_missed: number
+  yellow_cards: number
+  red_cards: number
+  saves: number
+  bonus: number
+  bps: number
+  influence: string
+  creativity: string
+  threat: string
+  ict_index: string
+  value: number
+  transfers_balance: number
+  selected: number
+  transfers_in: number
+  transfers_out: number
+  // 25/26 season additions
+  defensive_contribution: number // DefCon FPL points (0 or 2) per game
+  starts: number
+  expected_goals: string
+  expected_assists: string
+  expected_goal_involvements: string
+  expected_goals_conceded: string
+}
+
+/**
+ * Player's past season summary from element-summary endpoint
+ */
+export interface PlayerHistoryPast {
+  season_name: string
+  element_code: number
+  start_cost: number
+  end_cost: number
+  total_points: number
+  minutes: number
+  goals_scored: number
+  assists: number
+  clean_sheets: number
+  goals_conceded: number
+  own_goals: number
+  penalties_saved: number
+  penalties_missed: number
+  yellow_cards: number
+  red_cards: number
+  saves: number
+  bonus: number
+  bps: number
+  influence: string
+  creativity: string
+  threat: string
+  ict_index: string
+}
+
+/**
+ * Full element-summary response from /element-summary/{player_id}
+ */
+export interface ElementSummary {
+  fixtures: PlayerFixture[]
+  history: PlayerHistory[]
+  history_past: PlayerHistoryPast[]
 }

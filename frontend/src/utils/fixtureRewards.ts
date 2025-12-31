@@ -1,20 +1,6 @@
 import type { Fixture, Player, LiveGameweek } from '../types/fpl'
 import { shouldShowProvisionalBonus, calculateProvisionalBonus, type BpsScore } from './liveScoring'
-
-// FPL position element_types: 1=GK, 2=DEF, 3=MID, 4=FWD
-type OutfieldPosition = 2 | 3 | 4
-
-// DefCon thresholds by position (FPL 2025/26 rules)
-// Defenders: 10+ CBIT (Clearances, Blocks, Interceptions, Tackles)
-// Midfielders/Forwards: 12+ CBITr (includes ball Recoveries)
-const DEFCON_THRESHOLDS: Record<OutfieldPosition, number> = {
-  2: 10, // Defenders: 10+ CBIT
-  3: 12, // Midfielders: 12+ CBITr
-  4: 12, // Forwards: 12+ CBITr
-}
-
-// DefCon awards 2 bonus points when threshold is met (capped at 2)
-const DEFCON_BONUS_POINTS = 2
+import { DEFCON_THRESHOLDS, DEFCON_BONUS_POINTS, isOutfieldPosition } from './defcon'
 
 export interface PlayerReward {
   playerId: number
@@ -71,10 +57,6 @@ function mapToPlayerRewards(
  * Filter DefCon entries to only include players who met their position's threshold
  * and map to rewards with the fixed bonus point value
  */
-function isOutfieldPosition(elementType: number): elementType is OutfieldPosition {
-  return elementType === 2 || elementType === 3 || elementType === 4
-}
-
 function filterAndMapDefconRewards(
   entries: { element: number; value: number }[],
   playersMap: Map<number, Player>

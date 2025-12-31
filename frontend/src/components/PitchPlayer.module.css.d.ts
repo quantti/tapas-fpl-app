@@ -1,6 +1,7 @@
 export const __esModule: true
 export const badge: string
 export const bench: string
+export const clickable: string
 export const name: string
 export const PitchPlayer: string
 export const shirt: string

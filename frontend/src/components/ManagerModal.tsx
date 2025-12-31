@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Modal } from './Modal'
+import { PlayerModal } from './PlayerModal'
 import { PitchLayout, type PitchPlayer as BasePitchPlayer } from './PitchLayout'
 import { PitchPlayer } from './PitchPlayer'
 import { fplApi } from '../services/api'
@@ -63,6 +64,7 @@ export function ManagerModal({
   const [fetchedFixtures, setFetchedFixtures] = useState<Fixture[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
 
   // Use preloaded data if available, otherwise fall back to fetched data
   const liveData = preloadedLiveData ?? fetchedLiveData
@@ -256,6 +258,7 @@ export function ManagerModal({
           stat={getPointsDisplay(data.pick, data.player)}
           badge={badge}
           isBench={isBench}
+          onClick={() => setSelectedPlayer(data.player)}
         />
       )
     }
@@ -273,8 +276,16 @@ export function ManagerModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={getModalTitle()}>
-      <div className={styles.ManagerModal}>{renderContent()}</div>
-    </Modal>
+    <>
+      <Modal isOpen={isOpen} onClose={onClose} title={getModalTitle()}>
+        <div className={styles.ManagerModal}>{renderContent()}</div>
+      </Modal>
+      <PlayerModal
+        player={selectedPlayer}
+        teams={bootstrap?.teams ?? []}
+        elementTypes={bootstrap?.element_types ?? []}
+        onClose={() => setSelectedPlayer(null)}
+      />
+    </>
   )
 }

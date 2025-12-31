@@ -1,5 +1,6 @@
 export const __esModule: true
 export const card: string
+export const clickable: string
 export const disclaimer: string
 export const empty: string
 export const error: string

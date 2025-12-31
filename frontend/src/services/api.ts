@@ -1,4 +1,11 @@
-import type { BootstrapStatic, Fixture, Entry, LeagueStandings, LiveGameweek } from '../types/fpl'
+import type {
+  BootstrapStatic,
+  ElementSummary,
+  Entry,
+  Fixture,
+  LeagueStandings,
+  LiveGameweek,
+} from '../types/fpl'
 
 // API base URL - in development, we'll use the worker locally
 // In production, this will be your deployed Cloudflare Worker URL
@@ -120,25 +127,7 @@ export const fplApi = {
   /**
    * Get detailed player info including fixture history and upcoming
    */
-  getPlayerSummary: (playerId: number) =>
-    fetchApi<{
-      fixtures: {
-        id: number
-        event: number
-        difficulty: number
-        is_home: boolean
-        team_h: number
-        team_a: number
-      }[]
-      history: {
-        element: number
-        fixture: number
-        total_points: number
-        round: number
-        minutes: number
-      }[]
-      history_past: { season_name: string; element_code: number; total_points: number }[]
-    }>(`/element-summary/${playerId}`),
+  getPlayerSummary: (playerId: number) => fetchApi<ElementSummary>(`/element-summary/${playerId}`),
 
   /**
    * Get all transfers made by a manager this season

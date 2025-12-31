@@ -1,12 +1,16 @@
+import { useState } from 'react'
 import { useFplData } from '../hooks/useFplData'
 import { Header } from '../components/Header'
 import { RecommendedPlayers } from '../components/RecommendedPlayers'
+import { PlayerModal } from '../components/PlayerModal'
 import { FplUpdating } from '../components/FplUpdating'
+import type { Player } from '../types/fpl'
 import * as styles from './Analytics.module.css'
 
 export function Analytics() {
   const { managerDetails, currentGameweek, loading, error, isApiUnavailable, bootstrap, teamsMap } =
     useFplData()
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
 
   if (loading) {
     return (
@@ -60,8 +64,16 @@ export function Analytics() {
           managerDetails={managerDetails}
           teamsMap={teamsMap}
           currentGameweek={currentGameweek.id}
+          onPlayerClick={setSelectedPlayer}
         />
       </section>
+
+      <PlayerModal
+        player={selectedPlayer}
+        teams={bootstrap?.teams ?? []}
+        elementTypes={bootstrap?.element_types ?? []}
+        onClose={() => setSelectedPlayer(null)}
+      />
     </div>
   )
 }

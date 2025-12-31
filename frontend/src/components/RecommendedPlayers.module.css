@@ -51,9 +51,38 @@
     display: flex;
     align-items: center;
     gap: var(--space-8);
-    padding: var(--space-4) 0;
+    padding: var(--space-4) var(--space-8);
     font-size: var(--font-size-sm);
     height: 28px;
+    width: 100%;
+    /* Reset button styles */
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    text-align: left;
+    cursor: default;
+    transition: background-color 0.15s ease;
+
+    &.clickable {
+      cursor: pointer;
+
+      &:hover {
+        background: var(--color-surface);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+      }
+
+      &:active {
+        background: var(--color-border);
+      }
+    }
+
+    &:disabled {
+      cursor: default;
+    }
   }
 
   .positionBadge {
