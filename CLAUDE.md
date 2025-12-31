@@ -1018,6 +1018,45 @@ uvicorn app.main:app --reload  # Start dev server (port 8000)
 python -m pytest               # Run tests
 ```
 
+## Release Notes Workflow
+
+**IMPORTANT**: Before every `feat:` or `fix:` commit, add a release note first.
+
+### Process
+1. Complete your feature or fix
+2. Add release note: `cd frontend && node scripts/add-release-note.js "Title" "Description" [type]`
+3. Stage all changes including Changelog.tsx
+4. Commit with `feat:` or `fix:` prefix
+
+### Commands
+```bash
+# Add a feature release note
+cd frontend && node scripts/add-release-note.js "Feature Title" "User-facing description of what changed." feature
+
+# Add a fix release note
+cd frontend && node scripts/add-release-note.js "Bug Fix Title" "What was fixed." fix
+
+# Interactive mode (prompts for input)
+cd frontend && node scripts/add-release-note.js
+```
+
+### How It Works
+- `commit-msg` hook warns if `feat:`/`fix:` commit has no "Next Release" section
+- The hook only checks if section EXISTS, not if current work is documented
+- **Claude must add a release note before EVERY feat/fix commit**
+- On push, semantic-release converts "Next Release" → versioned release (e.g., "0.13.0")
+
+### Multiple Features Per Release
+If adding multiple features before pushing:
+1. Add release note for Feature A → commit Feature A
+2. Add release note for Feature B → commit Feature B
+3. Push → both notes appear in same version release
+
+### Files
+- `frontend/src/views/Changelog.tsx` - User-visible changelog (What's New page)
+- `frontend/scripts/add-release-note.js` - CLI tool to add notes
+- `.git/hooks/commit-msg` - Validation hook (local, not in repo)
+
 ## Design Principles
 
 - Keep it simple — avoid over-engineering
