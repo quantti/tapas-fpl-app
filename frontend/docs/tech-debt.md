@@ -449,6 +449,122 @@ components/            # Truly shared: Header, FplUpdating, PositionBadge
 
 ---
 
+## State Management Architecture
+
+### Current Approach (Keep This)
+
+TanStack Query handles all server state. This is the correct pattern and aligns with 2025 React best practices.
+
+**Why TanStack Query is sufficient:**
+- Automatic caching, deduplication, background refetching
+- Built-in loading/error states
+- Optimistic updates when needed
+- The majority of our "state" is server state from FPL API
+
+### When to Use React Context
+
+**Do use Context for:**
+- Derived Maps that multiple components need (`playersMap`, `teamsMap`)
+- Low-frequency updates (theme, auth state)
+- Data that changes together (bootstrap elements → playersMap + teamsMap)
+
+**Don't use Context for:**
+- Live data that polls frequently (`liveData`, `fixtures`) — causes unnecessary re-renders
+- Manager-specific data (`picks`, `managerInfo`) — fetch in consuming component
+- Any data where selective subscriptions matter
+
+### When to Add Zustand (Future)
+
+**2025 industry consensus:** TanStack Query + Zustand is the modern standard, but don't add Zustand preemptively.
+
+**Add Zustand only when:**
+1. Multiple unrelated components need to share client-side state
+2. You need selective subscriptions (update one slice without re-rendering others)
+3. State updates are frequent and Context re-renders become a performance issue
+4. You have genuine client-side state (not server state)
+
+**Current assessment:** Not needed yet. The real problem is duplicate Map creation in views, not complex state management.
+
+### Proposed: FplDataContext for Derived Maps
+
+**Problem:** Each view creates identical `playersMap` and `teamsMap` from bootstrap data.
+
+**Solution:** Single Context providing pre-computed Maps.
+
+```typescript
+// contexts/FplDataContext.tsx
+import { createContext, useContext, useMemo, type ReactNode } from 'react'
+import { useFplData } from '../hooks/useFplData'
+import type { Player, Team, BootstrapData, LeagueStandings, Gameweek } from '../types/fpl'
+
+interface FplDataContextValue {
+  bootstrap: BootstrapData | undefined
+  league: LeagueStandings | undefined
+  currentGameweek: Gameweek | undefined
+  playersMap: Map<number, Player>
+  teamsMap: Map<number, Team>
+  isLoading: boolean
+  error: string | null
+  isApiUnavailable: boolean
+  leaguesUpdating: boolean
+}
+
+const FplDataContext = createContext<FplDataContextValue | null>(null)
+
+export function FplDataProvider({ children }: { children: ReactNode }) {
+  const { bootstrap, league, currentGameweek, isLoading, error, isApiUnavailable, leaguesUpdating } = useFplData()
+
+  const playersMap = useMemo(() => {
+    if (!bootstrap?.elements) return new Map<number, Player>()
+    return new Map(bootstrap.elements.map((p) => [p.id, p]))
+  }, [bootstrap?.elements])
+
+  const teamsMap = useMemo(() => {
+    if (!bootstrap?.teams) return new Map<number, Team>()
+    return new Map(bootstrap.teams.map((t) => [t.id, t]))
+  }, [bootstrap?.teams])
+
+  const value = useMemo(() => ({
+    bootstrap, league, currentGameweek, playersMap, teamsMap,
+    isLoading, error, isApiUnavailable, leaguesUpdating
+  }), [bootstrap, league, currentGameweek, playersMap, teamsMap,
+      isLoading, error, isApiUnavailable, leaguesUpdating])
+
+  return <FplDataContext.Provider value={value}>{children}</FplDataContext.Provider>
+}
+
+export function useFplContext() {
+  const context = useContext(FplDataContext)
+  if (!context) throw new Error('useFplContext must be used within FplDataProvider')
+  return context
+}
+```
+
+**Benefits:**
+- Maps computed once, shared by all consumers
+- Eliminates 8 duplicate Map creations across views
+- Context re-renders only when bootstrap changes (infrequent)
+- Views become simpler: `const { playersMap, teamsMap } = useFplContext()`
+
+**What stays out of Context:**
+- `liveData` — polls every 60s, would cause excessive re-renders
+- `fixtures` — tied to live polling
+- Manager-specific data — fetch where needed
+
+### Reference: 2025 React State Management Landscape
+
+| Tool | Weekly Downloads | Use Case |
+|------|------------------|----------|
+| TanStack Query | 5.3M+ | Server state (we use this) |
+| Zustand | 4.5M+ | Client state when needed |
+| Redux Toolkit | 3.8M+ | Complex apps, time-travel debugging |
+| Jotai | 1.5M+ | Atomic state, fine-grained reactivity |
+| MobX | 1.2M+ | Observable patterns, class-based |
+
+**TkDodo (TanStack Query maintainer):** "When using TanStack Query, you often don't need additional client state management."
+
+---
+
 ## Files Requiring Most Attention
 
 | File | Issues | Priority | Status |
