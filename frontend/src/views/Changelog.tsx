@@ -64,9 +64,11 @@ export function Changelog() {
           <p className={styles.subtitle}>Updates and improvements to Tapas &amp; Tackles</p>
         </div>
         <div className={styles.releases}>
-          {releases.map((release) => (
-            <ReleaseCard key={release.version} release={release} />
-          ))}
+          {releases
+            .filter((release) => release.items.length > 0)
+            .map((release) => (
+              <ReleaseCard key={release.version} release={release} />
+            ))}
         </div>
       </div>
     </div>

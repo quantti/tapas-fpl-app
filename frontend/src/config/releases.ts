@@ -14,6 +14,11 @@ export const releases: Release[] = [
   {
     version: 'Next Release',
     date: '',
+    items: [],
+  },
+  {
+    version: '0.14.0',
+    date: 'December 31, 2025',
     items: [
       {
         title: 'Player Details Modal',
