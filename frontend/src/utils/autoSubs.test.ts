@@ -2,13 +2,15 @@ import { describe, it, expect } from 'vitest'
 import {
   buildTeamFixtureMap,
   isPlayerFixtureFinished,
+  hasFixtureStarted,
+  getOpponentInfo,
   hasContribution,
   countFormation,
   canSubstitute,
   calculateAutoSubs,
   POSITION_LIMITS,
 } from './autoSubs'
-import type { Fixture, LiveGameweek, LivePlayer, Player } from '../types/fpl'
+import type { Fixture, LiveGameweek, LivePlayer, Player, Team } from '../types/fpl'
 import type { ManagerPick } from '../hooks/useFplData'
 
 // Helper to create a minimal LivePlayer
@@ -812,5 +814,107 @@ describe('POSITION_LIMITS', () => {
     expect(POSITION_LIMITS[2]).toEqual({ min: 3, max: 5 })
     expect(POSITION_LIMITS[3]).toEqual({ min: 2, max: 5 })
     expect(POSITION_LIMITS[4]).toEqual({ min: 1, max: 3 })
+  })
+})
+
+// Helper to create a minimal Team
+function createTeam(id: number, short_name: string, code = id): Team {
+  return {
+    id,
+    name: `Team ${id}`,
+    short_name,
+    code,
+    strength: 3,
+    strength_overall_home: 1000,
+    strength_overall_away: 1000,
+    strength_attack_home: 1000,
+    strength_attack_away: 1000,
+    strength_defence_home: 1000,
+    strength_defence_away: 1000,
+  }
+}
+
+describe('hasFixtureStarted', () => {
+  it('should return true when fixture has started', () => {
+    const fixture = createFixture(1, 10, 20, false, false)
+    fixture.started = true
+    const map = buildTeamFixtureMap([fixture])
+
+    expect(hasFixtureStarted(10, map)).toBe(true)
+    expect(hasFixtureStarted(20, map)).toBe(true)
+  })
+
+  it('should return true when fixture is finished (implies started)', () => {
+    const fixture = createFixture(1, 10, 20, false, true)
+    const map = buildTeamFixtureMap([fixture])
+
+    expect(hasFixtureStarted(10, map)).toBe(true)
+  })
+
+  it('should return true when fixture is finished_provisional (implies started)', () => {
+    const fixture = createFixture(1, 10, 20, true, false)
+    const map = buildTeamFixtureMap([fixture])
+
+    expect(hasFixtureStarted(10, map)).toBe(true)
+  })
+
+  it('should return false when fixture has not started', () => {
+    const fixture = createFixture(1, 10, 20, false, false)
+    fixture.started = false
+    const map = buildTeamFixtureMap([fixture])
+
+    expect(hasFixtureStarted(10, map)).toBe(false)
+  })
+
+  it('should return false when team has no fixture', () => {
+    const map = new Map<number, Fixture>()
+    expect(hasFixtureStarted(999, map)).toBe(false)
+  })
+})
+
+describe('getOpponentInfo', () => {
+  it('should return opponent info for home team', () => {
+    const fixtures = [createFixture(1, 10, 20)]
+    const teams = new Map([
+      [10, createTeam(10, 'HOM')],
+      [20, createTeam(20, 'AWY')],
+    ])
+    const fixtureMap = buildTeamFixtureMap(fixtures)
+
+    const result = getOpponentInfo(10, fixtureMap, teams)
+
+    expect(result).toEqual({ shortName: 'AWY', isHome: true })
+  })
+
+  it('should return opponent info for away team', () => {
+    const fixtures = [createFixture(1, 10, 20)]
+    const teams = new Map([
+      [10, createTeam(10, 'HOM')],
+      [20, createTeam(20, 'AWY')],
+    ])
+    const fixtureMap = buildTeamFixtureMap(fixtures)
+
+    const result = getOpponentInfo(20, fixtureMap, teams)
+
+    expect(result).toEqual({ shortName: 'HOM', isHome: false })
+  })
+
+  it('should return null when team has no fixture', () => {
+    const fixtureMap = new Map<number, Fixture>()
+    const teams = new Map<number, Team>()
+
+    const result = getOpponentInfo(999, fixtureMap, teams)
+
+    expect(result).toBeNull()
+  })
+
+  it('should return null when opponent team not found in teams map', () => {
+    const fixtures = [createFixture(1, 10, 20)]
+    const teams = new Map([[10, createTeam(10, 'HOM')]]) // Missing team 20
+    const fixtureMap = buildTeamFixtureMap(fixtures)
+
+    const result = getOpponentInfo(10, fixtureMap, teams)
+
+    expect(result).toBeNull()
   })
 })

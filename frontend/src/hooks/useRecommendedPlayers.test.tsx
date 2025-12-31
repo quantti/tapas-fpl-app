@@ -9,6 +9,7 @@ import {
   useRecommendedPlayers,
 } from './useRecommendedPlayers'
 import { fplApi } from '../services/api'
+import { POSITION_TYPES } from '../constants/positions'
 import type { Player, Fixture, Team } from '../types/fpl'
 import type { ManagerGameweekData } from './useFplData'
 
@@ -352,7 +353,7 @@ describe('useRecommendedPlayers', () => {
       ...result.current.defensive,
       ...result.current.toSell,
     ]
-    expect(allPlayers.every((p) => p.player.element_type !== 1)).toBe(true)
+    expect(allPlayers.every((p) => p.player.element_type !== POSITION_TYPES.GOALKEEPER)).toBe(true)
   })
 
   it('excludes unavailable players', async () => {

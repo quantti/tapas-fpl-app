@@ -2,6 +2,7 @@ import type { Fixture, LivePlayer, LiveGameweek, Player } from '../types/fpl'
 import type { ManagerPick } from '../hooks/useFplData'
 import type { AutoSubResult } from '../types/autoSubs'
 import { calculateAutoSubs } from './autoSubs'
+import { createLivePlayersMap } from './mappers'
 
 export interface BpsScore {
   playerId: number
@@ -154,7 +155,7 @@ export function calculateLiveManagerPoints(
   }
 
   // Create lookup map for live player data
-  const livePlayersMap = new Map(liveData.elements.map((p) => [p.id, p]))
+  const livePlayersMap = createLivePlayersMap(liveData.elements)
 
   // Build provisional bonus map for all fixtures that qualify
   const provisionalBonusMap = buildProvisionalBonusMap(liveData, fixtures)

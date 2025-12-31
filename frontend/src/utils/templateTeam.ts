@@ -1,5 +1,6 @@
 import type { Player, Team } from '../types/fpl'
 import type { ManagerGameweekData } from '../hooks/useFplData'
+import { POSITION_TYPES } from '../constants/positions'
 
 export interface PlayerWithOwnership {
   player: Player
@@ -178,8 +179,8 @@ export function buildTemplateTeam(
  * Get the formation string (e.g., "4-4-2")
  */
 export function getFormationString(players: PlayerWithOwnership[]): string {
-  const def = players.filter((p) => p.player.element_type === 2).length
-  const mid = players.filter((p) => p.player.element_type === 3).length
-  const fwd = players.filter((p) => p.player.element_type === 4).length
+  const def = players.filter((p) => p.player.element_type === POSITION_TYPES.DEFENDER).length
+  const mid = players.filter((p) => p.player.element_type === POSITION_TYPES.MIDFIELDER).length
+  const fwd = players.filter((p) => p.player.element_type === POSITION_TYPES.FORWARD).length
   return `${def}-${mid}-${fwd}`
 }

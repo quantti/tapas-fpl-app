@@ -9,13 +9,14 @@ import { LeaguePositionChart } from '../components/LeaguePositionChart'
 import { PlayerOwnership } from '../components/PlayerOwnership'
 import { LeagueTemplateTeam } from '../components/LeagueTemplateTeam'
 import { FplUpdating } from '../components/FplUpdating'
+import { LoadingState } from '../components/LoadingState'
 import * as styles from './Statistics.module.css'
 
 export function Statistics() {
   const {
     managerDetails,
     currentGameweek,
-    loading,
+    isLoading,
     error,
     isApiUnavailable,
     bootstrap,
@@ -23,14 +24,11 @@ export function Statistics() {
     teamsMap,
   } = useFplData()
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className={styles.Statistics}>
         <Header />
-        <div className={styles.loading}>
-          <div className={styles.spinner} />
-          <p>Loading statistics...</p>
-        </div>
+        <LoadingState message="Loading statistics..." />
       </div>
     )
   }

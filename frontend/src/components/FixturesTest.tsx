@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { fplApi } from '../services/api'
 import type { Fixture, Team } from '../types/fpl'
 import { formatDateTime } from '../config/locale'
+import { createTeamsMap } from '../utils/mappers'
 import * as styles from './FixturesTest.module.css'
 
 export function FixturesTest() {
@@ -15,8 +16,7 @@ export function FixturesTest() {
       try {
         // Load teams first for team names
         const bootstrap = await fplApi.getBootstrapStatic()
-        const teamsMap = new Map(bootstrap.teams.map((t) => [t.id, t]))
-        setTeams(teamsMap)
+        setTeams(createTeamsMap(bootstrap.teams))
 
         // Load fixtures
         const fixtureData = await fplApi.getFixtures()

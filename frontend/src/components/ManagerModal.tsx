@@ -6,6 +6,8 @@ import { PitchPlayer } from './PitchPlayer'
 import { fplApi } from '../services/api'
 import { getCaptainBadge } from '../utils/picks'
 import { STARTING_XI_MAX_POSITION } from '../constants/positions'
+import { createPlayersMap, createTeamsMap, createLivePlayersMap } from '../utils/mappers'
+import { buildTeamFixtureMap, hasFixtureStarted, getOpponentInfo } from '../utils/autoSubs'
 import type { Player, BootstrapStatic, LiveGameweek, Fixture } from '../types/fpl'
 import * as styles from './ManagerModal.module.css'
 
@@ -160,39 +162,13 @@ export function ManagerModal({
       return null
     }
 
-    const playersMap = new Map(bootstrap.elements.map((p) => [p.id, p]))
-    const teamsMap = new Map(bootstrap.teams.map((t) => [t.id, t]))
-    const liveMap = liveData ? new Map(liveData.elements.map((e) => [e.id, e])) : new Map()
+    const playersMap = createPlayersMap(bootstrap.elements)
+    const teamsMap = createTeamsMap(bootstrap.teams)
+    const liveMap = liveData ? createLivePlayersMap(liveData.elements) : new Map()
 
-    // Filter fixtures to only current gameweek
+    // Filter fixtures to only current gameweek and build lookup map
     const gwFixtures = fixtures.filter((f) => f.event === gameweek)
-    const teamFixtureMap = new Map<number, Fixture>()
-    for (const fixture of gwFixtures) {
-      teamFixtureMap.set(fixture.team_h, fixture)
-      teamFixtureMap.set(fixture.team_a, fixture)
-    }
-
-    const hasFixtureStarted = (teamId: number): boolean => {
-      const fixture = teamFixtureMap.get(teamId)
-      return fixture ? fixture.started || fixture.finished : false
-    }
-
-    // Get shirt image URL from team code
-    const getShirtUrl = (teamCode: number): string => {
-      return `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}-110.webp`
-    }
-
-    // Get opponent info for a player's fixture
-    const getOpponentInfo = (teamId: number): { shortName: string; isHome: boolean } | null => {
-      const fixture = teamFixtureMap.get(teamId)
-      if (!fixture) return null
-
-      const isHome = fixture.team_h === teamId
-      const opponentId = isHome ? fixture.team_a : fixture.team_h
-      const opponent = teamsMap.get(opponentId)
-
-      return opponent ? { shortName: opponent.short_name, isHome } : null
-    }
+    const teamFixtureMap = buildTeamFixtureMap(gwFixtures)
 
     // Build player data for PitchLayout
     interface ManagerPitchPlayer extends BasePitchPlayer {
@@ -232,13 +208,13 @@ export function ManagerModal({
     // Get points display string for a player
     const getPointsDisplay = (pick: Pick, player: Player): string => {
       const live = liveMap.get(player.id)
-      const fixtureStarted = hasFixtureStarted(player.team)
+      const fixtureStarted = hasFixtureStarted(player.team, teamFixtureMap)
       const basePoints = live?.stats.total_points ?? 0
       const points = pick.multiplier > 0 ? basePoints * pick.multiplier : basePoints
 
       if (fixtureStarted) return String(points)
 
-      const opponentInfo = getOpponentInfo(player.team)
+      const opponentInfo = getOpponentInfo(player.team, teamFixtureMap, teamsMap)
       if (opponentInfo) {
         return `${opponentInfo.shortName} (${opponentInfo.isHome ? 'H' : 'A'})`
       }
@@ -253,7 +229,7 @@ export function ManagerModal({
         <PitchPlayer
           key={data.id}
           name={data.player.web_name}
-          shirtUrl={team ? getShirtUrl(team.code) : ''}
+          shirtUrl={team ? PitchPlayer.getShirtUrl(team.code) : ''}
           teamShortName={team?.short_name ?? ''}
           stat={getPointsDisplay(data.pick, data.player)}
           badge={badge}

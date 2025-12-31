@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 import { useQuery, useQueries } from '@tanstack/react-query'
 import { fplApi, FplApiError } from '../services/api'
 import type { Player, Team } from '../types/fpl'
-import { LEAGUE_ID, LIVE_REFRESH_INTERVAL, IDLE_REFRESH_INTERVAL } from '../config'
+import { CACHE_TIMES, LEAGUE_ID, LIVE_REFRESH_INTERVAL, IDLE_REFRESH_INTERVAL } from '../config'
+import { createPlayersMap, createTeamsMap } from '../utils/mappers'
 
 export interface ManagerPick {
   playerId: number
@@ -49,8 +50,8 @@ export function useFplData() {
   const bootstrapQuery = useQuery({
     queryKey: ['bootstrap'],
     queryFn: () => fplApi.getBootstrapStatic(),
-    staleTime: 5 * 60 * 1000, // Consider fresh for 5 minutes
-    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    staleTime: CACHE_TIMES.FIVE_MINUTES,
+    gcTime: CACHE_TIMES.THIRTY_MINUTES,
   })
 
   const bootstrap = bootstrapQuery.data ?? null
@@ -64,8 +65,8 @@ export function useFplData() {
       }
     }
     return {
-      playersMap: new Map(bootstrap.elements.map((p) => [p.id, p])),
-      teamsMap: new Map(bootstrap.teams.map((t) => [t.id, t])),
+      playersMap: createPlayersMap(bootstrap.elements),
+      teamsMap: createTeamsMap(bootstrap.teams),
     }
   }, [bootstrap])
 
@@ -212,7 +213,7 @@ export function useFplData() {
   }, [currentGameweek, standings, managerDetails])
 
   // Compute loading state
-  const loading =
+  const isLoading =
     bootstrapQuery.isLoading || standingsQuery.isLoading || managerQueries.some((q) => q.isLoading)
 
   // Compute error state - preserve actual error object for 503 detection
@@ -250,7 +251,7 @@ export function useFplData() {
     isLive,
     leaguesUpdating,
     awaitingUpdate,
-    loading,
+    isLoading,
     error,
     isApiUnavailable,
     lastUpdated,

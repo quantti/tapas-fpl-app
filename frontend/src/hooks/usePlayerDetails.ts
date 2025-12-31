@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { fplApi } from '../services/api'
+import { CACHE_TIMES } from '../config'
 import type { ElementSummary, Player, Team } from '../types/fpl'
 
 /**
@@ -56,7 +57,7 @@ export function usePlayerDetails({
     queryKey: ['playerSummary', player?.id],
     queryFn: () => fplApi.getPlayerSummary(player!.id),
     enabled: enabled && player !== null,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: CACHE_TIMES.FIVE_MINUTES,
   })
 
   if (!player) return null

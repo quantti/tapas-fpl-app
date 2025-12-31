@@ -4,15 +4,16 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import './index.css'
 import App from './App.tsx'
+import { CACHE_TIMES } from './config'
 
 // Configure React Query with sensible defaults
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       // Keep data fresh for 5 minutes by default
-      staleTime: 5 * 60 * 1000,
+      staleTime: CACHE_TIMES.FIVE_MINUTES,
       // Keep unused data in cache for 30 minutes
-      gcTime: 30 * 60 * 1000,
+      gcTime: CACHE_TIMES.THIRTY_MINUTES,
       // Don't refetch on window focus for this app
       refetchOnWindowFocus: false,
       // Retry failed requests once

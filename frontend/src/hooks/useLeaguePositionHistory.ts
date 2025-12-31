@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { fplApi } from '../services/api'
+import { CACHE_TIMES } from '../config'
 
 interface ManagerInfo {
   id: number
@@ -52,8 +53,8 @@ export function useLeaguePositionHistory(
     queries: managers.map((manager) => ({
       queryKey: ['entryHistory', manager.id] as const,
       queryFn: () => fplApi.getEntryHistory(manager.id),
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 30 * 60 * 1000, // 30 minutes
+      staleTime: CACHE_TIMES.FIVE_MINUTES,
+      gcTime: CACHE_TIMES.THIRTY_MINUTES,
       enabled: managers.length > 0 && currentGameweek > 0,
     })),
   })

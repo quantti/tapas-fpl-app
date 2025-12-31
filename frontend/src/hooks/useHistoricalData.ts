@@ -1,5 +1,6 @@
 import { useQueries } from '@tanstack/react-query'
 import { fplApi } from '../services/api'
+import { CACHE_TIMES } from '../config'
 import type { LiveGameweek } from '../types/fpl'
 
 export interface ManagerPicks {
@@ -52,7 +53,7 @@ export function useHistoricalData({
       queryKey: ['liveGameweek', gw] as const,
       queryFn: () => fplApi.getLiveGameweek(gw),
       staleTime: Infinity, // Completed GWs never change
-      gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
+      gcTime: CACHE_TIMES.ONE_HOUR,
       enabled: enabled && completedGameweeks.length > 0,
     })),
   })
@@ -80,7 +81,7 @@ export function useHistoricalData({
                 }
               },
               staleTime: Infinity, // Past picks never change
-              gcTime: 60 * 60 * 1000,
+              gcTime: CACHE_TIMES.ONE_HOUR,
               enabled: enabled && completedGameweeks.length > 0,
             }))
           )

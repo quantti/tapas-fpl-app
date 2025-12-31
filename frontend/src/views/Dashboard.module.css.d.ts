@@ -8,7 +8,6 @@ export const gameweekLabel: string
 export const grid: string
 export const lastUpdated: string
 export const liveIndicator: string
-export const loading: string
 export const mainColumn: string
 export const playerIn: string
 export const playerOut: string
@@ -20,8 +19,6 @@ export const sideColumn: string
 export const skeleton: string
 export const skeletonContent: string
 export const skeletonTitle: string
-export const spin: string
-export const spinner: string
 export const statusBar: string
 export const statusInfo: string
 export const transferIcon: string

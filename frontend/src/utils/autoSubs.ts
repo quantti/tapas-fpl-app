@@ -1,4 +1,4 @@
-import type { Fixture, LiveGameweek, LivePlayer, Player } from '../types/fpl'
+import type { Fixture, LiveGameweek, LivePlayer, Player, Team } from '../types/fpl'
 import type { ManagerPick } from '../hooks/useFplData'
 import type { AutoSubstitution, AutoSubResult, PlayerEligibility } from '../types/autoSubs'
 
@@ -35,6 +35,43 @@ export function isPlayerFixtureFinished(
   const fixture = teamFixtureMap.get(playerTeamId)
   if (!fixture) return false
   return fixture.finished_provisional || fixture.finished
+}
+
+/**
+ * Check if a team's fixture has started (for showing points vs "–")
+ * Use this to determine whether to display player points or fixture info
+ */
+export function hasFixtureStarted(teamId: number, teamFixtureMap: Map<number, Fixture>): boolean {
+  const fixture = teamFixtureMap.get(teamId)
+  if (!fixture) return false
+  return fixture.started || fixture.finished
+}
+
+/**
+ * Result type for getOpponentInfo
+ */
+export interface OpponentInfo {
+  shortName: string
+  isHome: boolean
+}
+
+/**
+ * Get opponent info for a team's fixture
+ * Used for displaying "ARS (H)" or "MUN (A)" style fixture info
+ */
+export function getOpponentInfo(
+  teamId: number,
+  teamFixtureMap: Map<number, Fixture>,
+  teamsMap: Map<number, Team>
+): OpponentInfo | null {
+  const fixture = teamFixtureMap.get(teamId)
+  if (!fixture) return null
+
+  const isHome = fixture.team_h === teamId
+  const opponentId = isHome ? fixture.team_a : fixture.team_h
+  const opponent = teamsMap.get(opponentId)
+
+  return opponent ? { shortName: opponent.short_name, isHome } : null
 }
 
 /**

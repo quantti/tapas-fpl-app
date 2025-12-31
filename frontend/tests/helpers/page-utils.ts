@@ -31,6 +31,9 @@ export const SELECTORS = {
 
   // Statistics page
   STATS_PATH: '/statistics',
+
+  // Analytics page
+  ANALYTICS_PATH: '/analytics',
 } as const
 
 /**

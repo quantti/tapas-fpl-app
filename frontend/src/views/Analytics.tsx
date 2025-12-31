@@ -4,22 +4,27 @@ import { Header } from '../components/Header'
 import { RecommendedPlayers } from '../components/RecommendedPlayers'
 import { PlayerModal } from '../components/PlayerModal'
 import { FplUpdating } from '../components/FplUpdating'
+import { LoadingState } from '../components/LoadingState'
 import type { Player } from '../types/fpl'
 import * as styles from './Analytics.module.css'
 
 export function Analytics() {
-  const { managerDetails, currentGameweek, loading, error, isApiUnavailable, bootstrap, teamsMap } =
-    useFplData()
+  const {
+    managerDetails,
+    currentGameweek,
+    isLoading,
+    error,
+    isApiUnavailable,
+    bootstrap,
+    teamsMap,
+  } = useFplData()
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className={styles.Analytics}>
         <Header />
-        <div className={styles.loading}>
-          <div className={styles.spinner} />
-          <p>Loading analytics...</p>
-        </div>
+        <LoadingState message="Loading analytics..." />
       </div>
     )
   }

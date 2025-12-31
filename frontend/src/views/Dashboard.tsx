@@ -12,6 +12,7 @@ import { Header } from '../components/Header'
 import { FplUpdating } from '../components/FplUpdating'
 import { LeagueUpdating } from '../components/LeagueUpdating'
 import { ReleaseNotification } from '../components/ReleaseNotification'
+import { LoadingState } from '../components/LoadingState'
 import * as styles from './Dashboard.module.css'
 
 export function Dashboard() {
@@ -22,7 +23,7 @@ export function Dashboard() {
     currentGameweek,
     isLive,
     leaguesUpdating,
-    loading,
+    isLoading,
     error,
     isApiUnavailable,
     bootstrap,
@@ -72,13 +73,10 @@ export function Dashboard() {
     setSearchParams({})
   }, [setSearchParams])
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className={styles.Dashboard}>
-        <div className={styles.loading}>
-          <div className={styles.spinner} />
-          <p>Loading league data...</p>
-        </div>
+        <LoadingState message="Loading league data..." />
       </div>
     )
   }

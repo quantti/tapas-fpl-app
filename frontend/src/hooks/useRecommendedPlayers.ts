@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fplApi } from '../services/api'
+import { CACHE_TIMES } from '../config'
+import { POSITION_TYPES } from '../constants/positions'
 import type { Player, Fixture, Team } from '../types/fpl'
 import type { ManagerGameweekData } from './useFplData'
 
@@ -116,7 +118,11 @@ export function getPercentile(value: number, allValues: number[]): number {
 
 // Helper: Check if player is eligible for recommendations
 function isEligibleOutfieldPlayer(player: Player): boolean {
-  return player.element_type !== 1 && player.status === 'a' && player.minutes >= 450
+  return (
+    player.element_type !== POSITION_TYPES.GOALKEEPER &&
+    player.status === 'a' &&
+    player.minutes >= 450
+  )
 }
 
 // Helper: Calculate per-90 stats for a player
@@ -214,8 +220,8 @@ export function useRecommendedPlayers(
   const fixturesQuery = useQuery({
     queryKey: ['fixtures-all'],
     queryFn: () => fplApi.getFixtures(),
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: CACHE_TIMES.TEN_MINUTES,
+    gcTime: CACHE_TIMES.THIRTY_MINUTES,
     enabled: players.length > 0 && currentGameweek > 0,
   })
 
@@ -238,9 +244,9 @@ export function useRecommendedPlayers(
   // Build percentile arrays for outfield players only
   const percentiles = useMemo(() => {
     const outfieldPlayers = players.filter(
-      (p) => p.element_type !== 1 && p.minutes >= 450 && p.status === 'a'
+      (p) => p.element_type !== POSITION_TYPES.GOALKEEPER && p.minutes >= 450 && p.status === 'a'
     )
-    const defenders = outfieldPlayers.filter((p) => p.element_type === 2)
+    const defenders = outfieldPlayers.filter((p) => p.element_type === POSITION_TYPES.DEFENDER)
 
     const xG90: number[] = []
     const xA90: number[] = []
