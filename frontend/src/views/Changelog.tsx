@@ -16,8 +16,8 @@ interface Release {
 
 const releases: Release[] = [
   {
-    version: 'Next Release',
-    date: '',
+    version: '0.13.0',
+    date: 'December 31, 2025',
     items: [
       {
         title: "What's New Page",

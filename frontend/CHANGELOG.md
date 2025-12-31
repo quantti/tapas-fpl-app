@@ -1,3 +1,15 @@
+# [0.13.0](https://github.com/quantti/tapas-fpl-app/compare/v0.12.0...v0.13.0) (2025-12-31)
+
+
+### Bug Fixes
+
+* **modal:** use reactive live data for real-time player score updates ([ca9451e](https://github.com/quantti/tapas-fpl-app/commit/ca9451ef143ea76d2543f0df6479834a768403a5))
+
+
+### Features
+
+* add changelog page with release notes automation ([efc6a25](https://github.com/quantti/tapas-fpl-app/commit/efc6a257477097196d665a05253328de2f1d84f6))
+
 # [0.12.0](https://github.com/quantti/tapas-fpl-app/compare/v0.11.1...v0.12.0) (2025-12-30)
 
 
