@@ -11,6 +11,7 @@ import { GameweekCountdown } from '../components/GameweekCountdown'
 import { Header } from '../components/Header'
 import { FplUpdating } from '../components/FplUpdating'
 import { LeagueUpdating } from '../components/LeagueUpdating'
+import { ReleaseNotification } from '../components/ReleaseNotification'
 import * as styles from './Dashboard.module.css'
 
 export function Dashboard() {
@@ -113,6 +114,9 @@ export function Dashboard() {
   return (
     <div className={styles.Dashboard}>
       <Header />
+
+      {/* New Release Banner */}
+      <ReleaseNotification />
 
       {/* League Recalculating Banner */}
       {leaguesUpdating && <LeagueUpdating />}
