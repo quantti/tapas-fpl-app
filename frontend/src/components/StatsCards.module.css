@@ -18,4 +18,37 @@
     flex-direction: column;
     gap: var(--space-4);
   }
+
+  .financeTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+
+    th,
+    td {
+      padding: var(--space-6) var(--space-8);
+      text-align: left;
+      line-height: 2;
+    }
+
+    th {
+      font-weight: 500;
+      color: var(--color-text-muted);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    tr:not(:last-child) td {
+      border-bottom: 1px solid var(--color-border-light);
+    }
+  }
+
+  .teamCol {
+    width: 50%;
+  }
+
+  .valueCol {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-success);
+  }
 }
