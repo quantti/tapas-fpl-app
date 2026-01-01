@@ -6,7 +6,6 @@ import { FplUpdating } from '../components/FplUpdating'
 import { GameRewards } from '../components/GameRewards'
 import { GameweekCountdown } from '../components/GameweekCountdown'
 import { GameweekDetails } from '../components/GameweekDetails'
-import { Header } from '../components/Header'
 import { LeagueStandings } from '../components/LeagueStandings'
 import { LeagueUpdating } from '../components/LeagueUpdating'
 import { LoadingState } from '../components/LoadingState'
@@ -85,7 +84,6 @@ export function Dashboard() {
   if (error) {
     return (
       <div className={styles.Dashboard}>
-        <Header />
         {isApiUnavailable ? (
           <FplUpdating />
         ) : (
@@ -112,8 +110,6 @@ export function Dashboard() {
 
   return (
     <div className={styles.Dashboard}>
-      <Header />
-
       {/* New Release Banner */}
       <ReleaseNotification />
 

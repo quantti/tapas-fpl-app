@@ -2,10 +2,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 0;
-  margin-bottom: 1.5rem;
+  padding: 1rem var(--space-12);
   border-bottom: 1px solid var(--color-border-light);
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  max-width: 1400px;
+  margin: 0 auto;
+  z-index: 10;
+  background: var(--color-background);
+
+  @media (min-width: 640px) {
+    padding: 1rem var(--space-24);
+  }
 
   .logo {
     font-size: 1.25rem;

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 
 import { FplUpdating } from '../components/FplUpdating'
-import { Header } from '../components/Header'
 import { LoadingState } from '../components/LoadingState'
 import { PlayerDetails } from '../features/PlayerDetails'
 import { Recommendations } from '../features/Recommendations'
@@ -26,7 +25,6 @@ export function Analytics() {
   if (isLoading) {
     return (
       <div className={styles.Analytics}>
-        <Header />
         <LoadingState message="Loading analytics..." />
       </div>
     )
@@ -35,7 +33,6 @@ export function Analytics() {
   if (error) {
     return (
       <div className={styles.Analytics}>
-        <Header />
         {isApiUnavailable ? (
           <FplUpdating />
         ) : (
@@ -51,7 +48,6 @@ export function Analytics() {
   if (!currentGameweek) {
     return (
       <div className={styles.Analytics}>
-        <Header />
         <div className={styles.error}>
           <h3>No data available</h3>
           <p>Could not load analytics.</p>
@@ -62,7 +58,6 @@ export function Analytics() {
 
   return (
     <div className={styles.Analytics}>
-      <Header />
       <h1 className={styles.title}>Analytics</h1>
 
       <section className={styles.section}>

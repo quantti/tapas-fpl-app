@@ -13,5 +13,5 @@
 }
 
 .appMain {
-  /* Main content area */
+  padding-top: 70px; /* Account for fixed header height */
 }

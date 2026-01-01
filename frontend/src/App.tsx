@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import { CookieConsentBanner } from './components/CookieConsent'
 import { Footer } from './components/Footer'
+import { Header } from './components/Header'
 import { Analytics } from './views/Analytics'
 import { Changelog } from './views/Changelog'
 import { Dashboard } from './views/Dashboard'
@@ -14,6 +15,7 @@ function App() {
     <BrowserRouter>
       <CookieConsentBanner />
       <div className="app">
+        <Header />
         <main className="appMain">
           <Routes>
             <Route path="/" element={<Dashboard />} />

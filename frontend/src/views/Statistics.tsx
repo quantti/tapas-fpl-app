@@ -1,6 +1,5 @@
 import { ChipsRemaining } from '../components/ChipsRemaining'
 import { FplUpdating } from '../components/FplUpdating'
-import { Header } from '../components/Header'
 import { LeagueTemplateTeam } from '../components/LeagueTemplateTeam'
 import { LoadingState } from '../components/LoadingState'
 import { PlayerOwnership } from '../components/PlayerOwnership'
@@ -28,7 +27,6 @@ export function Statistics() {
   if (isLoading) {
     return (
       <div className={styles.Statistics}>
-        <Header />
         <LoadingState message="Loading statistics..." />
       </div>
     )
@@ -37,7 +35,6 @@ export function Statistics() {
   if (error) {
     return (
       <div className={styles.Statistics}>
-        <Header />
         {isApiUnavailable ? (
           <FplUpdating />
         ) : (
@@ -53,7 +50,6 @@ export function Statistics() {
   if (!currentGameweek) {
     return (
       <div className={styles.Statistics}>
-        <Header />
         <div className={styles.error}>
           <h3>No data available</h3>
           <p>Could not load statistics.</p>
@@ -64,7 +60,6 @@ export function Statistics() {
 
   return (
     <div className={styles.Statistics}>
-      <Header />
       <h1 className={styles.title}>Statistics</h1>
       <div className={styles.statsGrid} data-testid="stats-grid">
         <StatsCards managerDetails={managerDetails} />
