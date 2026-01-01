@@ -1,6 +1,8 @@
 import { Sparkles, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
+
 import { useReleaseNotification, getReleaseSummary } from '../hooks/useReleaseNotification'
+
 import * as styles from './ReleaseNotification.module.css'
 
 /**

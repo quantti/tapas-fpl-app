@@ -1,12 +1,15 @@
-import { useMemo } from 'react'
 import { Award, Shield, Trophy } from 'lucide-react'
-import type { Fixture, Player, Team, LiveGameweek } from '../types/fpl'
+import { useMemo } from 'react'
+
 import {
   extractAllFixtureRewards,
   type FixtureRewards,
   type PlayerReward,
 } from '../utils/fixtureRewards'
+
 import * as styles from './GameRewards.module.css'
+
+import type { Fixture, Player, Team, LiveGameweek } from '../types/fpl'
 
 interface Props {
   fixtures: Fixture[]

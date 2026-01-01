@@ -1,0 +1,227 @@
+.HistoryTable {
+  .empty {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+
+  .tableWrapper {
+    overflow: hidden;
+
+    &.expanded {
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 0.25rem;
+
+      /* Custom scrollbar */
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: var(--color-surface);
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: var(--color-border);
+        border-radius: 3px;
+
+        &:hover {
+          background: var(--color-text-muted);
+        }
+      }
+    }
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 0.375rem;
+  }
+
+  /* Header row */
+  .headerRow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .headerCell {
+    padding: 0.25rem 0.5rem;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Data rows */
+  .row {
+    background: var(--color-surface);
+    font-size: 0.875rem;
+    transition: background-color 0.15s ease;
+
+    &:nth-child(even) {
+      background: var(--color-background);
+    }
+
+    &:hover {
+      background: var(--color-border);
+    }
+  }
+
+  .cell {
+    padding: 0.5rem 0.5rem;
+    white-space: nowrap;
+
+    &:first-child {
+      border-radius: 6px 0 0 6px;
+    }
+
+    &:last-child {
+      border-radius: 0 6px 6px 0;
+    }
+  }
+
+  /* Column-specific styles */
+  .colGw {
+    width: 38px;
+    min-width: 38px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+  }
+
+  .colOpponent {
+    color: var(--color-text);
+  }
+
+  .colIcons {
+    width: 48px;
+    min-width: 48px;
+  }
+
+  .colPts {
+    width: 36px;
+    min-width: 36px;
+    text-align: right;
+    font-weight: 600;
+    color: var(--color-primary-text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .colMin {
+    width: 36px;
+    min-width: 36px;
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .colXstats {
+    width: 40px;
+    min-width: 40px;
+    text-align: right;
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Icons container */
+  .icons {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .bonusCircle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ffd700;
+    color: #1a1a1a;
+    font-size: 0.625rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  /* Show more button */
+  .showMoreButton {
+    display: block;
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    border: 1px dashed var(--color-border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary-text);
+      background: var(--color-surface);
+    }
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .HistoryTable {
+    .headerRow {
+      font-size: 0.625rem;
+    }
+
+    .row {
+      font-size: 0.8125rem;
+    }
+
+    .cell {
+      padding: 0.5rem 0.375rem;
+    }
+
+    .colGw {
+      width: 28px;
+      min-width: 28px;
+    }
+
+    .colIcons {
+      width: 44px;
+      min-width: 44px;
+    }
+
+    .colPts {
+      width: 28px;
+      min-width: 28px;
+    }
+
+    .colMin {
+      width: 28px;
+      min-width: 28px;
+      font-size: 0.6875rem;
+    }
+
+    .colXstats {
+      width: 32px;
+      min-width: 32px;
+      font-size: 0.625rem;
+    }
+
+    .icons {
+      gap: 0.25rem;
+    }
+  }
+}

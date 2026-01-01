@@ -1,18 +1,21 @@
+import { Circle, ArrowRight, ArrowLeft } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Circle, ArrowRight, ArrowLeft } from 'lucide-react'
-import { useFplData } from '../hooks/useFplData'
-import { useLiveScoring } from '../hooks/useLiveScoring'
-import { LeagueStandings } from '../components/LeagueStandings'
-import { GameweekDetails } from '../components/GameweekDetails'
-import { GameRewards } from '../components/GameRewards'
-import { ManagerModal } from '../components/ManagerModal'
-import { GameweekCountdown } from '../components/GameweekCountdown'
-import { Header } from '../components/Header'
+
 import { FplUpdating } from '../components/FplUpdating'
+import { GameRewards } from '../components/GameRewards'
+import { GameweekCountdown } from '../components/GameweekCountdown'
+import { GameweekDetails } from '../components/GameweekDetails'
+import { Header } from '../components/Header'
+import { LeagueStandings } from '../components/LeagueStandings'
 import { LeagueUpdating } from '../components/LeagueUpdating'
-import { ReleaseNotification } from '../components/ReleaseNotification'
 import { LoadingState } from '../components/LoadingState'
+import { ManagerModal } from '../components/ManagerModal'
+import { ReleaseNotification } from '../components/ReleaseNotification'
+import { useFplData } from '../services/queries/useFplData'
+import { useLiveScoring } from '../services/queries/useLiveScoring'
+import { hasGamesInProgress, allFixturesFinished } from '../utils/liveScoring'
+
 import * as styles from './Dashboard.module.css'
 
 export function Dashboard() {
@@ -34,8 +37,7 @@ export function Dashboard() {
   const { liveData, fixtures } = useLiveScoring(currentGameweek?.id ?? 0, isLive)
 
   // Check if any games are actually in progress (not just deadline passed)
-  // Use finished_provisional as it updates immediately; finished waits for bonus confirmation
-  const hasGamesInProgress = fixtures.some((f) => f.started && !f.finished_provisional)
+  const gamesInProgress = hasGamesInProgress(fixtures)
 
   // Create teams map for GameRewards
   const teamsMap = useMemo(() => {
@@ -52,8 +54,7 @@ export function Dashboard() {
     if (currentGameweek.id === 38) return null
 
     // Check if all fixtures for current GW are finished
-    const allGamesFinished = fixtures.length > 0 && fixtures.every((f) => f.finished_provisional)
-    if (!allGamesFinished) return null
+    if (!allFixturesFinished(fixtures)) return null
 
     // Find the next gameweek
     return events.find((e) => e.is_next) ?? null
@@ -120,7 +121,7 @@ export function Dashboard() {
       {leaguesUpdating && <LeagueUpdating />}
 
       {/* Status Bar - only shown when live */}
-      {hasGamesInProgress && (
+      {gamesInProgress && (
         <div className={styles.statusBar}>
           <span className={styles.liveIndicator}>
             <Circle size={8} fill="currentColor" /> Live
@@ -143,7 +144,6 @@ export function Dashboard() {
             liveData={liveData}
             fixtures={fixtures}
             onManagerClick={handleManagerClick}
-            gameweekFinished={currentGameweek.finished}
             playersMap={playersMap}
           />
         </div>

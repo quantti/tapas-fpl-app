@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react'
 import * as styles from './PitchLayout.module.css'
+
+import type { ReactNode } from 'react'
 
 export interface PitchPlayer {
   id: number

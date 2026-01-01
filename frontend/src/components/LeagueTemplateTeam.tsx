@@ -1,16 +1,19 @@
-import { useMemo } from 'react'
 import { Users } from 'lucide-react'
-import type { ManagerGameweekData } from '../hooks/useFplData'
-import type { Player, Team } from '../types/fpl'
-import { Card } from './ui/Card'
-import { CardHeader } from './ui/CardHeader'
-import { PitchLayout, type PitchPlayer as BasePitchPlayer } from './PitchLayout'
-import { PitchPlayer } from './PitchPlayer'
+import { useMemo } from 'react'
+
 import {
   calculateOwnership,
   buildTemplateTeam,
   type PlayerWithOwnership,
 } from '../utils/templateTeam'
+
+import { Card } from './Card'
+import { CardHeader } from './CardHeader'
+import { PitchLayout, type PitchPlayer as BasePitchPlayer } from './PitchLayout'
+import { PitchPlayer } from './PitchPlayer'
+
+import type { ManagerGameweekData } from '../services/queries/useFplData'
+import type { Player, Team } from '../types/fpl'
 
 interface Props {
   managerDetails: ManagerGameweekData[]

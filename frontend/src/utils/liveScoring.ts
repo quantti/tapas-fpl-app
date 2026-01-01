@@ -1,8 +1,9 @@
-import type { Fixture, LivePlayer, LiveGameweek, Player } from '../types/fpl'
-import type { ManagerPick } from '../hooks/useFplData'
-import type { AutoSubResult } from '../types/autoSubs'
 import { calculateAutoSubs } from './autoSubs'
 import { createLivePlayersMap } from './mappers'
+
+import type { ManagerPick } from '../services/queries/useFplData'
+import type { AutoSubResult } from '../types/autoSubs'
+import type { Fixture, LivePlayer, LiveGameweek, Player } from '../types/fpl'
 
 export interface BpsScore {
   playerId: number
@@ -100,6 +101,30 @@ export function calculateLivePoints(livePlayer: LivePlayer, multiplier: number):
  */
 export function isFixtureLive(fixture: Fixture): boolean {
   return fixture.started && !fixture.finished && !fixture.finished_provisional
+}
+
+/**
+ * Check if any fixtures in the list are currently in progress.
+ * A fixture is in progress if started but not finished (provisional).
+ */
+export function hasGamesInProgress(fixtures: Fixture[]): boolean {
+  return fixtures.some((f) => f.started && !f.finished_provisional)
+}
+
+/**
+ * Check if all fixtures in the list have finished.
+ * Uses finished_provisional as it updates immediately (finished waits for bonus confirmation).
+ * Returns false for empty array.
+ */
+export function allFixturesFinished(fixtures: Fixture[]): boolean {
+  return fixtures.length > 0 && fixtures.every((f) => f.finished_provisional)
+}
+
+/**
+ * Check if any fixture in the list has started.
+ */
+export function hasAnyFixtureStarted(fixtures: Fixture[]): boolean {
+  return fixtures.some((f) => f.started)
 }
 
 /**

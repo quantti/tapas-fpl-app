@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { LivePlayer, Player, Team } from '../types/fpl'
+
 import { createLivePlayersMap, createPlayersMap, createTeamsMap } from './mappers'
+
+import type { LivePlayer, Player, Team } from '../types/fpl'
 
 describe('createPlayersMap', () => {
   it('creates a map from player id to player', () => {

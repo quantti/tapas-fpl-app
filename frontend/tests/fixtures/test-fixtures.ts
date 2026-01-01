@@ -6,6 +6,7 @@
  */
 
 import { test as base, Page } from '@playwright/test'
+
 import {
   mockBootstrapResponse,
   mockFixturesResponse,

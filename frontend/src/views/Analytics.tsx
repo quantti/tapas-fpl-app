@@ -1,12 +1,15 @@
 import { useState } from 'react'
-import { useFplData } from '../hooks/useFplData'
-import { Header } from '../components/Header'
-import { RecommendedPlayers } from '../components/RecommendedPlayers'
-import { PlayerModal } from '../components/PlayerModal'
+
 import { FplUpdating } from '../components/FplUpdating'
+import { Header } from '../components/Header'
 import { LoadingState } from '../components/LoadingState'
-import type { Player } from '../types/fpl'
+import { PlayerDetails } from '../features/PlayerDetails'
+import { Recommendations } from '../features/Recommendations'
+import { useFplData } from '../services/queries/useFplData'
+
 import * as styles from './Analytics.module.css'
+
+import type { Player } from '../types/fpl'
 
 export function Analytics() {
   const {
@@ -64,7 +67,7 @@ export function Analytics() {
 
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Recommendations</h2>
-        <RecommendedPlayers
+        <Recommendations
           players={bootstrap?.elements ?? []}
           managerDetails={managerDetails}
           teamsMap={teamsMap}
@@ -73,7 +76,7 @@ export function Analytics() {
         />
       </section>
 
-      <PlayerModal
+      <PlayerDetails
         player={selectedPlayer}
         teams={bootstrap?.teams ?? []}
         elementTypes={bootstrap?.element_types ?? []}

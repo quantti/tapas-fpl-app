@@ -7,6 +7,8 @@ import unicorn from 'eslint-plugin-unicorn'
 import sonarjs from 'eslint-plugin-sonarjs'
 import jsxA11y from 'eslint-plugin-jsx-a11y'
 import vitest from '@vitest/eslint-plugin'
+import importPlugin from 'eslint-plugin-import'
+import boundaries from 'eslint-plugin-boundaries'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
@@ -27,8 +29,111 @@ export default defineConfig([
     plugins: {
       unicorn,
       sonarjs,
+      import: importPlugin,
+      boundaries,
+    },
+    settings: {
+      'boundaries/elements': [
+        { type: 'views', pattern: 'src/views/*' },
+        { type: 'components', pattern: 'src/components/*' },
+        { type: 'hooks', pattern: 'src/hooks/*' },
+        { type: 'queries', pattern: 'src/services/queries/*' },
+        { type: 'services', pattern: ['src/services/api.ts', 'src/services/queryKeys.ts'] },
+        { type: 'utils', pattern: 'src/utils/*' },
+        { type: 'types', pattern: 'src/types/*' },
+        { type: 'constants', pattern: 'src/constants/*' },
+        { type: 'config', pattern: 'src/config.ts' },
+      ],
+      'boundaries/ignore': ['**/*.test.*', '**/*.spec.*'],
     },
     rules: {
+      // Boundaries - enforce architecture layers
+      'boundaries/element-types': [
+        'error',
+        {
+          default: 'disallow',
+          rules: [
+            // Views can import from anywhere
+            {
+              from: 'views',
+              allow: [
+                'views',
+                'components',
+                'hooks',
+                'queries',
+                'services',
+                'utils',
+                'types',
+                'constants',
+                'config',
+              ],
+            },
+            // Components: pure UI, no queries allowed
+            {
+              from: 'components',
+              allow: ['components', 'hooks', 'utils', 'types', 'constants', 'config'],
+            },
+            // UI hooks: no data fetching
+            {
+              from: 'hooks',
+              allow: ['hooks', 'utils', 'types', 'constants', 'config'],
+            },
+            // Queries can use services and utilities
+            {
+              from: 'queries',
+              allow: ['queries', 'services', 'utils', 'types', 'constants', 'config'],
+            },
+            // Services: API layer
+            {
+              from: 'services',
+              allow: ['services', 'utils', 'types', 'constants', 'config'],
+            },
+            // Utils: pure functions only
+            {
+              from: 'utils',
+              allow: ['utils', 'types', 'constants'],
+            },
+            // Types: no runtime dependencies
+            {
+              from: 'types',
+              allow: ['types'],
+            },
+            // Constants: no dependencies
+            {
+              from: 'constants',
+              allow: ['constants', 'types'],
+            },
+            // Config: minimal dependencies
+            {
+              from: 'config',
+              allow: ['types'],
+            },
+          ],
+        },
+      ],
+
+      // Import sorting
+      'import/order': [
+        'warn',
+        {
+          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'type'],
+          pathGroups: [
+            { pattern: 'assets/**', group: 'internal', position: 'before' },
+            { pattern: 'components/**', group: 'internal', position: 'before' },
+            { pattern: 'config', group: 'internal', position: 'before' },
+            { pattern: 'constants/**', group: 'internal', position: 'before' },
+            { pattern: 'features/**', group: 'internal', position: 'before' },
+            { pattern: 'hooks/**', group: 'internal', position: 'before' },
+            { pattern: 'services/**', group: 'internal', position: 'before' },
+            { pattern: 'types/**', group: 'internal', position: 'before' },
+            { pattern: 'utils/**', group: 'internal', position: 'before' },
+          ],
+          pathGroupsExcludedImportTypes: ['type'],
+          'newlines-between': 'always',
+          alphabetize: { order: 'asc', caseInsensitive: true },
+        },
+      ],
+
       // Unicorn - unopinionated, only the most useful rules
       'unicorn/no-array-for-each': 'warn',
       'unicorn/no-array-reduce': 'off', // reduce is fine
@@ -64,6 +169,8 @@ export default defineConfig([
     },
     rules: {
       ...vitest.configs.recommended.rules,
+      // Test data often has duplicate strings - this is fine
+      'sonarjs/no-duplicate-string': 'off',
     },
     languageOptions: {
       globals: {

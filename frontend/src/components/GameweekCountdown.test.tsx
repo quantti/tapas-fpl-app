@@ -1,7 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, act } from '@testing-library/react'
-import { GameweekCountdown } from './GameweekCountdown'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+
 import { calculateTimeRemaining } from '../utils/countdown'
+
+import { GameweekCountdown } from './GameweekCountdown'
 
 // Test constants
 const TEST_TIME_NOON = '2024-01-01T12:00:00Z'

@@ -1,12 +1,13 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+
 import './App.css'
 import { CookieConsentBanner } from './components/CookieConsent'
 import { Footer } from './components/Footer'
-import { Dashboard } from './views/Dashboard'
-import { Statistics } from './views/Statistics'
 import { Analytics } from './views/Analytics'
-import { Roadmap } from './views/Roadmap'
 import { Changelog } from './views/Changelog'
+import { Dashboard } from './views/Dashboard'
+import { Roadmap } from './views/Roadmap'
+import { Statistics } from './views/Statistics'
 
 function App() {
   return (

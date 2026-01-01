@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react'
 import { Users } from 'lucide-react'
-import type { ManagerGameweekData } from '../hooks/useFplData'
-import type { Player, Team } from '../types/fpl'
-import { Card } from './ui/Card'
-import { CardHeader } from './ui/CardHeader'
-import { ListRowButton } from './ui/ListRowButton'
-import { PlayerOwnershipModal } from './PlayerOwnershipModal'
+import { useMemo, useState } from 'react'
+
+import { Card } from './Card'
+import { CardHeader } from './CardHeader'
+import { ListRowButton } from './ListRowButton'
 import * as styles from './PlayerOwnership.module.css'
+import { PlayerOwnershipModal } from './PlayerOwnershipModal'
+
+import type { ManagerGameweekData } from '../services/queries/useFplData'
+import type { Player, Team } from '../types/fpl'
 
 interface Props {
   managerDetails: ManagerGameweekData[]

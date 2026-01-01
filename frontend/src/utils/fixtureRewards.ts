@@ -1,6 +1,7 @@
-import type { Fixture, Player, LiveGameweek } from '../types/fpl'
-import { shouldShowProvisionalBonus, calculateProvisionalBonus, type BpsScore } from './liveScoring'
 import { DEFCON_THRESHOLDS, DEFCON_BONUS_POINTS, isOutfieldPosition } from './defcon'
+import { shouldShowProvisionalBonus, calculateProvisionalBonus, type BpsScore } from './liveScoring'
+
+import type { Fixture, Player, LiveGameweek } from '../types/fpl'
 
 export interface PlayerReward {
   playerId: number

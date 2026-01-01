@@ -1,6 +1,17 @@
 import { POSITION_TYPES } from '../constants/positions'
 
 /**
+ * Parse FPL numeric string to number.
+ * FPL API returns many values as strings (e.g., expected_goals: "1.23").
+ * Handles undefined, null, empty strings, and invalid values.
+ */
+export function parseNumericString(value: string | undefined | null): number {
+  if (!value) return 0
+  const parsed = Number.parseFloat(value)
+  return Number.isNaN(parsed) ? 0 : parsed
+}
+
+/**
  * Format a numeric delta value with explicit sign (+/-)
  * @param value - The delta value to format
  * @param precision - Number of decimal places (default: 1)

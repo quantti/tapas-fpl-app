@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
+
+import { POSITION_TYPES } from '../constants/positions'
+
 import {
+  parseNumericString,
   formatDelta,
   getDeltaClass,
   getGoalsDeltaLegend,
@@ -8,9 +12,43 @@ import {
   getGoalInvolvementsDeltaLegend,
   getSeasonSummary,
 } from './playerStats'
-import { POSITION_TYPES } from '../constants/positions'
 
 describe('playerStats utilities', () => {
+  describe('parseNumericString', () => {
+    it('parses valid numeric strings', () => {
+      expect(parseNumericString('1.23')).toBe(1.23)
+      expect(parseNumericString('0.5')).toBe(0.5)
+      expect(parseNumericString('10')).toBe(10)
+      expect(parseNumericString('-2.5')).toBe(-2.5)
+    })
+
+    it('returns 0 for empty string', () => {
+      expect(parseNumericString('')).toBe(0)
+    })
+
+    it('returns 0 for null', () => {
+      expect(parseNumericString(null)).toBe(0)
+    })
+
+    it('returns 0 for undefined', () => {
+      expect(parseNumericString()).toBe(0)
+    })
+
+    it('returns 0 for invalid strings', () => {
+      expect(parseNumericString('abc')).toBe(0)
+      expect(parseNumericString('not a number')).toBe(0)
+    })
+
+    it('parses strings with leading/trailing whitespace', () => {
+      expect(parseNumericString(' 1.5 ')).toBe(1.5)
+    })
+
+    it('handles zero string correctly', () => {
+      expect(parseNumericString('0')).toBe(0)
+      expect(parseNumericString('0.0')).toBe(0)
+    })
+  })
+
   describe('formatDelta', () => {
     it('formats positive values with + sign', () => {
       expect(formatDelta(1.5)).toBe('+1.5')

@@ -89,7 +89,8 @@
     .colOverallRank {
       width: 95px;
 
-      @media (max-width: 640px) {
+      /* Hide OR column at tablet widths to give more space to manager column */
+      @media (max-width: 1100px) {
         display: none;
       }
     }

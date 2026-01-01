@@ -1,10 +1,15 @@
 import { describe, it, expect } from 'vitest'
+
 import {
   calculateProvisionalBonus,
   calculateLivePoints,
   isFixtureLive,
+  hasGamesInProgress,
+  allFixturesFinished,
+  hasAnyFixtureStarted,
   shouldShowProvisionalBonus,
 } from './liveScoring'
+
 import type { Fixture, LivePlayer } from '../types/fpl'
 
 describe('calculateProvisionalBonus', () => {
@@ -288,5 +293,69 @@ describe('shouldShowProvisionalBonus', () => {
     }
 
     expect(shouldShowProvisionalBonus(fixture as Fixture)).toBe(false)
+  })
+})
+
+describe('hasGamesInProgress', () => {
+  const makeFixture = (started: boolean, finished_provisional: boolean): Fixture =>
+    ({ started, finished_provisional }) as Fixture
+
+  it('should return true when any fixture is in progress', () => {
+    const fixtures = [
+      makeFixture(true, false), // in progress
+      makeFixture(true, true), // finished
+    ]
+    expect(hasGamesInProgress(fixtures)).toBe(true)
+  })
+
+  it('should return false when all fixtures are finished', () => {
+    const fixtures = [makeFixture(true, true), makeFixture(true, true)]
+    expect(hasGamesInProgress(fixtures)).toBe(false)
+  })
+
+  it('should return false when no fixtures have started', () => {
+    const fixtures = [makeFixture(false, false), makeFixture(false, false)]
+    expect(hasGamesInProgress(fixtures)).toBe(false)
+  })
+
+  it('should return false for empty array', () => {
+    expect(hasGamesInProgress([])).toBe(false)
+  })
+})
+
+describe('allFixturesFinished', () => {
+  const makeFixture = (finished_provisional: boolean): Fixture =>
+    ({ finished_provisional }) as Fixture
+
+  it('should return true when all fixtures are finished', () => {
+    const fixtures = [makeFixture(true), makeFixture(true)]
+    expect(allFixturesFinished(fixtures)).toBe(true)
+  })
+
+  it('should return false when any fixture is not finished', () => {
+    const fixtures = [makeFixture(true), makeFixture(false)]
+    expect(allFixturesFinished(fixtures)).toBe(false)
+  })
+
+  it('should return false for empty array', () => {
+    expect(allFixturesFinished([])).toBe(false)
+  })
+})
+
+describe('hasAnyFixtureStarted', () => {
+  const makeFixture = (started: boolean): Fixture => ({ started }) as Fixture
+
+  it('should return true when any fixture has started', () => {
+    const fixtures = [makeFixture(false), makeFixture(true)]
+    expect(hasAnyFixtureStarted(fixtures)).toBe(true)
+  })
+
+  it('should return false when no fixtures have started', () => {
+    const fixtures = [makeFixture(false), makeFixture(false)]
+    expect(hasAnyFixtureStarted(fixtures)).toBe(false)
+  })
+
+  it('should return false for empty array', () => {
+    expect(hasAnyFixtureStarted([])).toBe(false)
   })
 })

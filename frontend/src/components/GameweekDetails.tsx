@@ -1,9 +1,12 @@
-import { useMemo } from 'react'
 import { Zap, TrendingDown, Copyright } from 'lucide-react'
-import type { Gameweek, Fixture } from '../types/fpl'
-import type { ManagerGameweekData } from '../hooks/useFplData'
+import { useMemo } from 'react'
+
 import { formatDate } from '../config/locale'
+
 import * as styles from './GameweekDetails.module.css'
+
+import type { ManagerGameweekData } from '../services/queries/useFplData'
+import type { Gameweek, Fixture } from '../types/fpl'
 
 interface Props {
   gameweek: Gameweek

@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react'
-import { fplApi } from '../services/api'
-import type { Fixture, Team } from '../types/fpl'
+
 import { formatDateTime } from '../config/locale'
+import { fplApi } from '../services/api'
+import { isFixtureLive } from '../utils/liveScoring'
 import { createTeamsMap } from '../utils/mappers'
+
 import * as styles from './FixturesTest.module.css'
+
+import type { Fixture, Team } from '../types/fpl'
 
 export function FixturesTest() {
   const [fixtures, setFixtures] = useState<Fixture[]>([])
@@ -82,7 +86,7 @@ export function FixturesTest() {
                   minute: '2-digit',
                 })
               : 'TBD'
-            const isLive = fixture.started && !fixture.finished
+            const isLive = isFixtureLive(fixture)
 
             return (
               <tr key={fixture.id} className={`${styles.row} ${isLive ? styles.live : ''}`}>

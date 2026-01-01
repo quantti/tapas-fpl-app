@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+
 import {
   buildTeamFixtureMap,
   isPlayerFixtureFinished,
@@ -10,8 +11,9 @@ import {
   calculateAutoSubs,
   POSITION_LIMITS,
 } from './autoSubs'
+
+import type { ManagerPick } from '../services/queries/useFplData'
 import type { Fixture, LiveGameweek, LivePlayer, Player, Team } from '../types/fpl'
-import type { ManagerPick } from '../hooks/useFplData'
 
 // Helper to create a minimal LivePlayer
 function createLivePlayer(

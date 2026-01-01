@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react'
 import * as styles from './PitchPlayer.module.css'
+
+import type { ReactNode } from 'react'
 
 interface Props {
   name: string

@@ -1,6 +1,8 @@
 import { Sparkles, Bug, Clock } from 'lucide-react'
+
 import { Header } from '../components/Header'
 import { releases, type Release } from '../config/releases'
+
 import * as styles from './Changelog.module.css'
 
 function ReleaseCard({ release }: { release: Release }) {

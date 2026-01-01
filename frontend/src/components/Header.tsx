@@ -1,7 +1,9 @@
+import { Menu, X, Sun, Moon } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, Sun, Moon } from 'lucide-react'
+
 import { useTheme } from '../hooks/useTheme'
+
 import * as styles from './Header.module.css'
 
 export function Header() {

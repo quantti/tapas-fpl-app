@@ -1,9 +1,11 @@
-import { useMemo } from 'react'
 import { Zap } from 'lucide-react'
-import type { ManagerGameweekData } from '../hooks/useFplData'
-import { Card } from './ui/Card'
-import { CardHeader } from './ui/CardHeader'
+import { useMemo } from 'react'
+
+import { Card } from './Card'
+import { CardHeader } from './CardHeader'
 import * as styles from './ChipsRemaining.module.css'
+
+import type { ManagerGameweekData } from '../services/queries/useFplData'
 
 interface ChipUsage {
   name: string

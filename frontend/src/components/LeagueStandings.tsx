@@ -1,15 +1,22 @@
-import { useMemo } from 'react'
 import { ChevronRight, CircleChevronUp, CircleChevronDown, ArrowRightLeft } from 'lucide-react'
+import { useMemo } from 'react'
+
+import {
+  calculateLiveManagerPoints,
+  hasGamesInProgress,
+  hasAnyFixtureStarted,
+} from '../utils/liveScoring'
+
+import * as styles from './LeagueStandings.module.css'
+
+import type { ManagerGameweekData } from '../services/queries/useFplData'
+import type { AutoSubResult } from '../types/autoSubs'
 import type {
   LeagueStandings as LeagueStandingsType,
   LiveGameweek,
   Fixture,
   Player,
 } from '../types/fpl'
-import type { ManagerGameweekData } from '../hooks/useFplData'
-import type { AutoSubResult } from '../types/autoSubs'
-import { calculateLiveManagerPoints } from '../utils/liveScoring'
-import * as styles from './LeagueStandings.module.css'
 
 interface Props {
   standings: LeagueStandingsType
@@ -18,7 +25,6 @@ interface Props {
   liveData?: LiveGameweek | null
   fixtures?: Fixture[]
   onManagerClick?: (managerId: number) => void
-  gameweekFinished?: boolean // Official FPL update complete (not just finished_provisional)
   playersMap?: Map<number, Player> // For auto-substitution calculation
 }
 
@@ -39,7 +45,6 @@ export function LeagueStandings({
   liveData,
   fixtures = [],
   onManagerClick,
-  gameweekFinished = false,
   playersMap,
 }: Props) {
   const detailsMap = useMemo(
@@ -47,12 +52,11 @@ export function LeagueStandings({
     [managerDetails]
   )
 
-  // Check if any games are actually in progress
-  // Use finished_provisional as it updates immediately; finished waits for bonus confirmation
-  const hasGamesInProgress = fixtures.some((f) => f.started && !f.finished_provisional)
+  // Check if any games are actually in progress (for live badge)
+  const gamesInProgress = hasGamesInProgress(fixtures)
 
   // Check if any fixtures have started this gameweek (for showing rank changes)
-  const hasGamesStarted = fixtures.some((f) => f.started)
+  const gamesStarted = hasAnyFixtureStarted(fixtures)
 
   // Calculate live points and totals for each manager, then sort by live total
   const sortedResults = useMemo(() => {
@@ -119,7 +123,7 @@ export function LeagueStandings({
     <div className={styles.LeagueStandings}>
       <div className={styles.header}>
         <h2 className={styles.title}>{standings.league.name}</h2>
-        {hasGamesInProgress && <span className={styles.liveBadge}>LIVE</span>}
+        {gamesInProgress && <span className={styles.liveBadge}>LIVE</span>}
       </div>
 
       <table className={styles.table} data-testid="standings-table">
@@ -147,7 +151,7 @@ export function LeagueStandings({
                 <td className={`${styles.cell} ${styles.colRank}`}>
                   <div className={styles.rank}>
                     <span className={styles.rankNumber}>{displayRank}</span>
-                    {hasGamesStarted && rankChange.direction !== 'same' && (
+                    {gamesStarted && rankChange.direction !== 'same' && (
                       <span className={`${styles.rankChange} ${styles[rankChange.direction]}`}>
                         {rankChange.direction === 'up' ? (
                           <CircleChevronUp size={14} />
@@ -199,7 +203,7 @@ export function LeagueStandings({
                       <span className={styles.overallRankNumber}>
                         {details.overallRank.toLocaleString()}
                       </span>
-                      {gameweekFinished &&
+                      {gamesStarted &&
                         details.lastOverallRank > 0 &&
                         (() => {
                           const orChange = getRankChange(

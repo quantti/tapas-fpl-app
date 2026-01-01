@@ -2,8 +2,8 @@
  * Accessibility tests using axe-core.
  * Tests all pages for WCAG 2.1 Level AA compliance.
  */
-import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
+import { test, expect } from '@playwright/test'
 
 const pages = [
   { path: '/', name: 'Dashboard' },

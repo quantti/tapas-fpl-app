@@ -1,4 +1,5 @@
 import { RefreshCw } from 'lucide-react'
+
 import * as styles from './LeagueUpdating.module.css'
 
 /**

@@ -1,5 +1,5 @@
-import { Spinner } from './Spinner'
 import * as styles from './LoadingState.module.css'
+import { Spinner } from './Spinner'
 
 interface LoadingStateProps {
   /** Message to display below spinner */

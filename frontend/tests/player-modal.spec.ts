@@ -6,6 +6,11 @@ import {
   openManagerModal,
 } from './helpers/page-utils'
 
+const SELECTORS = {
+  PITCH_PLAYER: '[data-testid="player"]',
+  PLAYER_MODAL: '[data-testid="player-modal"]',
+} as const
+
 test.describe('PlayerModal', () => {
   test.describe('desktop viewport', () => {
     test.use({ viewport: VIEWPORTS.DESKTOP })
@@ -19,11 +24,11 @@ test.describe('PlayerModal', () => {
       await openManagerModal(page)
 
       // Click on a player in the pitch to open player modal
-      const pitchPlayer = page.locator('[data-testid="player"]').first()
+      const pitchPlayer = page.locator(SELECTORS.PITCH_PLAYER).first()
       await pitchPlayer.click()
 
       // Wait for player modal to open
-      const playerModal = page.locator('[data-testid="player-modal"]')
+      const playerModal = page.locator(SELECTORS.PLAYER_MODAL)
       await expect(playerModal).toBeVisible({ timeout: 5000 })
 
       // Take screenshot of the player modal
@@ -39,10 +44,10 @@ test.describe('PlayerModal', () => {
       await openManagerModal(page)
 
       // Click on a player to open player modal
-      const pitchPlayer = page.locator('[data-testid="player"]').first()
+      const pitchPlayer = page.locator(SELECTORS.PITCH_PLAYER).first()
       await pitchPlayer.click()
 
-      const playerModal = page.locator('[data-testid="player-modal"]')
+      const playerModal = page.locator(SELECTORS.PLAYER_MODAL)
       await expect(playerModal).toBeVisible({ timeout: 5000 })
 
       // Click on History tab (it's a button, not ARIA tab)
@@ -76,10 +81,10 @@ test.describe('PlayerModal', () => {
       await openManagerModal(page)
 
       // Click on a player to open player modal
-      const pitchPlayer = page.locator('[data-testid="player"]').first()
+      const pitchPlayer = page.locator(SELECTORS.PITCH_PLAYER).first()
       await pitchPlayer.click()
 
-      const playerModal = page.locator('[data-testid="player-modal"]')
+      const playerModal = page.locator(SELECTORS.PLAYER_MODAL)
       await expect(playerModal).toBeVisible({ timeout: 5000 })
 
       // Take screenshot
@@ -99,10 +104,10 @@ test.describe('PlayerModal', () => {
       await openManagerModal(page)
 
       // Click on a player to open player modal
-      const pitchPlayer = page.locator('[data-testid="player"]').first()
+      const pitchPlayer = page.locator(SELECTORS.PITCH_PLAYER).first()
       await pitchPlayer.click()
 
-      const playerModal = page.locator('[data-testid="player-modal"]')
+      const playerModal = page.locator(SELECTORS.PLAYER_MODAL)
       await expect(playerModal).toBeVisible({ timeout: 5000 })
 
       // Take screenshot

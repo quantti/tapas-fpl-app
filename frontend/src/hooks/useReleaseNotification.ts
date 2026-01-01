@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+
 import { getLatestRelease, type Release } from '../config/releases'
 
 const STORAGE_KEY = 'tapas_last_seen_version'

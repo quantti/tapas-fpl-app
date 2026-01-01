@@ -2,6 +2,7 @@
  * E2E tests for error states, including 503 "FPL Updating" message.
  */
 import { test, expect } from '@playwright/test'
+
 import { VIEWPORTS } from './helpers/page-utils'
 
 const FPL_UPDATING_SELECTOR = '[data-testid="fpl-updating"]'

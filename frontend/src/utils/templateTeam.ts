@@ -1,6 +1,7 @@
-import type { Player, Team } from '../types/fpl'
-import type { ManagerGameweekData } from '../hooks/useFplData'
 import { POSITION_TYPES } from '../constants/positions'
+
+import type { ManagerGameweekData } from '../services/queries/useFplData'
+import type { Player, Team } from '../types/fpl'
 
 export interface PlayerWithOwnership {
   player: Player

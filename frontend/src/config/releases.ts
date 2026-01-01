@@ -181,15 +181,16 @@ export const releases: Release[] = [
 ]
 
 /**
- * Get the latest release
+ * Get the latest release (skips "Next Release" placeholder if empty)
  */
 export function getLatestRelease(): Release {
-  return releases[0]
+  // Skip placeholder entries with no items
+  return releases.find((r) => r.items.length > 0) ?? releases[0]
 }
 
 /**
  * Get the latest version string
  */
 export function getLatestVersion(): string {
-  return releases[0].version
+  return getLatestRelease().version
 }

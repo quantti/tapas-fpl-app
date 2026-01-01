@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+
 import {
   DEFCON_THRESHOLDS,
   DEFCON_BONUS_POINTS,
@@ -7,6 +8,7 @@ import {
   metDefConThreshold,
   calculatePlayerSeasonDefCon,
 } from './defcon'
+
 import type { PlayerHistory } from '../types/fpl'
 
 // Helper to create mock PlayerHistory entry

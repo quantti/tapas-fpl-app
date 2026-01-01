@@ -1,9 +1,11 @@
 import { Coins, TrendingDown } from 'lucide-react'
-import type { ManagerGameweekData } from '../hooks/useFplData'
-import { Card } from './ui/Card'
-import { CardHeader } from './ui/CardHeader'
-import { RankedRow } from './ui/RankedRow'
+
+import { Card } from './Card'
+import { CardHeader } from './CardHeader'
+import { RankedRow } from './RankedRow'
 import * as styles from './StatsCards.module.css'
+
+import type { ManagerGameweekData } from '../services/queries/useFplData'
 
 interface Props {
   managerDetails: ManagerGameweekData[]

@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { describe, it, expect } from 'vitest'
+
 import { PlayerOwnership } from './PlayerOwnership'
-import type { ManagerGameweekData } from '../hooks/useFplData'
+
+import type { ManagerGameweekData } from '../services/queries/useFplData'
 import type { Player, Team } from '../types/fpl'
 
 const mockPlayer = (id: number, webName: string, teamId: number): Player => ({

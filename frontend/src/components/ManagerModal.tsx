@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react'
+
+import { STARTING_XI_MAX_POSITION } from '../constants/positions'
+import { PlayerDetails } from '../features/PlayerDetails'
+import { fplApi } from '../services/api'
+import { buildTeamFixtureMap, hasFixtureStarted, getOpponentInfo } from '../utils/autoSubs'
+import { createPlayersMap, createTeamsMap, createLivePlayersMap } from '../utils/mappers'
+import { getCaptainBadge } from '../utils/picks'
+
+import * as styles from './ManagerModal.module.css'
 import { Modal } from './Modal'
-import { PlayerModal } from './PlayerModal'
 import { PitchLayout, type PitchPlayer as BasePitchPlayer } from './PitchLayout'
 import { PitchPlayer } from './PitchPlayer'
-import { fplApi } from '../services/api'
-import { getCaptainBadge } from '../utils/picks'
-import { STARTING_XI_MAX_POSITION } from '../constants/positions'
-import { createPlayersMap, createTeamsMap, createLivePlayersMap } from '../utils/mappers'
-import { buildTeamFixtureMap, hasFixtureStarted, getOpponentInfo } from '../utils/autoSubs'
+
 import type { Player, BootstrapStatic, LiveGameweek, Fixture } from '../types/fpl'
-import * as styles from './ManagerModal.module.css'
 
 interface Pick {
   element: number
@@ -256,7 +259,7 @@ export function ManagerModal({
       <Modal isOpen={isOpen} onClose={onClose} title={getModalTitle()}>
         <div className={styles.ManagerModal}>{renderContent()}</div>
       </Modal>
-      <PlayerModal
+      <PlayerDetails
         player={selectedPlayer}
         teams={bootstrap?.teams ?? []}
         elementTypes={bootstrap?.element_types ?? []}

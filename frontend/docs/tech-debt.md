@@ -1,6 +1,6 @@
 # Technical Debt & Code Quality Report
 
-> Generated: December 31, 2025 (Updated: January 1, 2026)
+> Generated: December 31, 2025 (Updated: January 1, 2026 - Issues #3-5, #10, #13, #14, #16, #17 marked resolved)
 > Codebase: frontend/src
 
 ## Overview
@@ -11,30 +11,26 @@ This document tracks identified technical debt, code quality issues, and improve
 
 ## Critical Issues (High Priority)
 
-### 1. Map Creation Pattern Duplication
+### 1. Map Creation Pattern Duplication ✅ RESOLVED
 
-**Impact:** 8 duplicate implementations
-**Pattern:** `new Map(array.map((item) => [item.id, item]))`
+**Original Impact:** 8 duplicate implementations of `new Map(array.map((item) => [item.id, item]))`
 
-| Location | Code |
-|----------|------|
-| `hooks/useFplData.ts:67-68` | playersMap, teamsMap creation |
-| `components/ManagerModal.tsx:163-165` | Three maps created identically |
-| `components/PlayerModal.tsx:286` | teamsMap creation |
-| `components/FixturesTest.tsx:18` | teamsMap creation |
-| `utils/liveScoring.ts:157` | livePlayersMap creation |
+**Resolution:** Created `src/utils/mappers.ts` with reusable utility functions:
+- `createPlayersMap(players)` - Player ID → Player
+- `createTeamsMap(teams)` - Team ID → Team
+- `createLivePlayersMap(liveData)` - Player ID → LivePlayer
 
-**Fix:** Create reusable utility functions:
-```typescript
-// src/utils/mappers.ts
-export function createPlayersMap(players: Player[]): Map<number, Player> {
-  return new Map(players.map((p) => [p.id, p]))
-}
+**Files updated:**
+- `hooks/useFplData.ts` - uses createPlayersMap, createTeamsMap
+- `components/ManagerModal.tsx` - uses all three mapper functions
+- `components/PlayerModal.tsx` - uses createTeamsMap
+- `components/HistoryTable.tsx` - uses createTeamsMap
+- `components/FixturesTest.tsx` - uses createTeamsMap
+- `utils/liveScoring.ts` - uses createLivePlayersMap
 
-export function createTeamsMap(teams: Team[]): Map<number, Team> {
-  return new Map(teams.map((t) => [t.id, t]))
-}
-```
+**Test coverage:** 10 unit tests in `utils/mappers.test.ts`
+
+**Note:** `LeagueStandings.tsx` has a different map type (managerDetails by managerId) which is a one-off use case, not covered by common mappers.
 
 ---
 
@@ -60,7 +56,7 @@ export function createTeamsMap(teams: Team[]): Map<number, Team> {
 
 ---
 
-### 3. Time Constant Magic Numbers
+### 3. Time Constant Magic Numbers ✅ RESOLVED
 
 **Impact:** Maintenance burden, inconsistency risk
 
@@ -83,7 +79,7 @@ export const CACHE_TIMES = {
 
 ---
 
-### 4. Position Type Magic Numbers
+### 4. Position Type Magic Numbers ✅ RESOLVED
 
 **Impact:** 10+ occurrences, reduced readability
 
@@ -110,7 +106,7 @@ if (player.element_type === POSITION_TYPES.GOALKEEPER)
 
 ---
 
-### 5. PlayerModal.tsx Complexity
+### 5. PlayerModal.tsx Complexity ✅ RESOLVED
 
 **Impact:** 267-line `renderContent()` function, high cyclomatic complexity
 
@@ -156,13 +152,17 @@ if (player.element_type === POSITION_TYPES.GOALKEEPER)
 
 ---
 
-### 7. Weight Configuration Duplication
+### 7. Weight Configuration Duplication — WON'T FIX
 
-**Location:** `hooks/useRecommendedPlayers.ts:36-56`
+**Location:** Now in `utils/playerScoring.ts` (extracted during #12)
 
-**Issue:** Three weight configurations (PUNT_WEIGHTS, DEFENSIVE_WEIGHTS, SELL_WEIGHTS) with similar structure.
+**Decision:** Keep separate weight configs with shared `PositionWeights` type.
 
-**Fix:** Consider a weight factory or config builder to reduce repetition.
+**Rationale:**
+- All three configs (PUNT, DEFENSIVE, SELL) need different values for different use cases
+- Shared TypeScript type `PositionWeights` ensures consistent structure
+- A factory/builder would add complexity without reducing code or improving clarity
+- Current design is explicit and easy to understand
 
 ---
 
@@ -187,21 +187,32 @@ if (player.element_type === POSITION_TYPES.GOALKEEPER)
 
 ## Low Priority Issues
 
-### 9. Type Assertions
+### 9. Type Assertions — WON'T FIX
 
-**Location:** `hooks/useHistoricalData.ts:122`, `components/ManagerModal.tsx:102-104`
+**Location:** `hooks/useHistoricalData.ts:78,124`, `components/ManagerModal.tsx:105-114`
 
-**Issue:** Type assertions (`as Type`) without runtime validation.
+**Decision:** Keep current type assertions - they're standard TypeScript patterns.
 
-**Fix:** Add type guards where critical.
+**Rationale:**
+- `Promise.all` returns `unknown[]` - assertions are necessary for typed results
+- Object literal assertions (e.g., `{} as ManagerPicks`) are standard for constructing typed objects
+- Runtime validation would add overhead without benefit (API responses are already validated by TypeScript types)
+- These are not "unsafe" casts - they're typing hints for the compiler
 
 ---
 
-### 10. Import Organization
+### 10. Import Organization ✅ RESOLVED
 
-**Issue:** Minor inconsistencies in import grouping.
+**Original Issue:** Minor inconsistencies in import grouping across files.
 
-**Fix:** Enforce with ESLint import sorting rule.
+**Resolution:** Added `eslint-plugin-import` with `import/order` rule:
+- Groups: builtin → external → internal → parent → sibling → index → type
+- Alphabetized imports within each group
+- Blank lines between groups for visual separation
+
+**Files updated:**
+- `eslint.config.js` - Added import plugin and import/order rule
+- All source files auto-fixed with `eslint --fix`
 
 ---
 
@@ -222,7 +233,7 @@ if (player.element_type === POSITION_TYPES.GOALKEEPER)
 - [x] Create `src/utils/mappers.ts` with createPlayersMap/createTeamsMap/createLivePlayersMap
 - [x] Add CACHE_TIMES to `src/config.ts`
 - [x] Add POSITION_TYPES to `src/constants/positions.ts`
-- [x] Update all 8 map creation usages
+- [x] Update all 8 map creation usages (Issue #1 ✅ RESOLVED)
 - [x] Update all time magic numbers (5 files)
 - [x] Update all position magic numbers (4 files)
 
@@ -281,7 +292,7 @@ if (player.element_type === POSITION_TYPES.GOALKEEPER)
 - Visual snapshots for all viewports
 
 **Current Test Counts:**
-- Unit tests: 353 passing
+- Unit tests: 387 passing (+51 playerScoring tests, -24 duplicate hook tests, +7 others)
 - E2E tests: 83 passing
 - Visual snapshots: 12 total (dashboard, statistics, analytics, error states)
 
@@ -291,150 +302,278 @@ if (player.element_type === POSITION_TYPES.GOALKEEPER)
 
 ### High Priority
 
-#### 11. Query Key Factory Missing
+#### 11. Query Key Factory Missing ✅ RESOLVED
 
-**Impact:** Scattered query key definitions across hooks, risk of typos and cache invalidation issues
+**Original Impact:** Scattered query key definitions across hooks, risk of typos and cache invalidation issues
 
-**Current pattern:**
-```typescript
-// Various locations - inconsistent
-queryKey: ['picks', managerId, gw]
-queryKey: ['bootstrap-static']
-queryKey: ['live', currentGw]
-queryKey: ['entry', managerId, 'history']
-```
+**Resolution:** Created `services/queryKeys.ts` with centralized type-safe query key factory.
 
-**Fix:** Create `services/queryKeys.ts`:
+**Files updated:**
+- `services/queryKeys.ts` - New centralized factory with 9 query keys
+- `hooks/useFplData.ts` - Updated 4 query keys (bootstrap, eventStatus, standings, managerDetails)
+- `hooks/useRecommendedPlayers.ts` - Updated 1 query key (fixturesAll)
+- `hooks/usePlayerDetails.ts` - Updated 1 query key (playerSummary)
+- `hooks/useHistoricalData.ts` - Updated 2 query keys (liveGameweek, entryPicks)
+- `hooks/useLeaguePositionHistory.ts` - Updated 1 query key (entryHistory)
+- `hooks/useFreeTransfers.ts` - Updated 1 query key (entryHistory)
+
+**Query keys defined:**
 ```typescript
 export const queryKeys = {
-  bootstrap: ['bootstrap-static'] as const,
-  picks: (managerId: number, gw: number) => ['picks', managerId, gw] as const,
-  live: (gw: number) => ['live', gw] as const,
-  history: (managerId: number) => ['entry', managerId, 'history'] as const,
+  bootstrap: ['bootstrap'] as const,
+  eventStatus: ['eventStatus'] as const,
+  fixturesAll: ['fixtures-all'] as const,
+  standings: (leagueId: number) => ['standings', leagueId] as const,
+  managerDetails: (managerId: number, gameweekId: number | undefined) =>
+    ['managerDetails', managerId, gameweekId] as const,
+  entryHistory: (managerId: number) => ['entryHistory', managerId] as const,
+  entryPicks: (managerId: number, gameweek: number) =>
+    ['entryPicks', managerId, gameweek] as const,
+  liveGameweek: (gameweek: number) => ['liveGameweek', gameweek] as const,
+  playerSummary: (playerId: number | undefined) =>
+    ['playerSummary', playerId] as const,
 } as const
 ```
 
+**Benefits:**
+- Type-safe query keys prevent typos
+- Single source of truth for cache invalidation
+- Easier refactoring of key structure
+- Better IDE autocomplete support
+
 ---
 
-#### 12. useRecommendedPlayers.ts Too Large (306 lines)
+#### 12. useRecommendedPlayers.ts Too Large ✅ RESOLVED
 
-**Location:** `hooks/useRecommendedPlayers.ts`
+**Original Issue:** 306-line hook mixing pure scoring functions with data fetching logic.
 
-**Issue:** Mixes pure scoring functions with data fetching and filtering logic.
+**Resolution:** Extracted pure functions to `utils/playerScoring.ts` (TDD approach):
 
-**Functions that should be utilities (lines 37-180):**
-- `getPercentile()` - pure calculation
-- `calculateFixtureScore()` - pure calculation
-- `calculatePlayerScore()` - pure calculation
+**New file: `utils/playerScoring.ts` (239 lines):**
+- `isEligibleOutfieldPlayer()` - Eligibility check (outfield, available, min minutes)
+- `calculatePlayerStats()` - Per-90 stats calculation
+- `getPercentile()` - Percentile ranking against distribution
+- `calculatePlayerPercentiles()` - Composite percentile calculation
+- `calculateBuyScore()` - Score for punt/defensive recommendations
+- `calculateSellScore()` - Score for "time to sell" recommendations
+- `calculateFixtureScore()` - Weighted fixture difficulty score
+- `calculateLeagueOwnership()` - League ownership percentage calculation
+- Weight configs: `PUNT_WEIGHTS`, `DEFENSIVE_WEIGHTS`, `SELL_WEIGHTS`, `FIXTURE_WEIGHTS`
 
-**Fix:** Split into:
-```
-hooks/useRecommendedPlayers.ts  # Data fetching only (~100 lines)
-utils/playerScoring.ts          # Pure scoring functions (~200 lines)
-```
+**Test coverage:** `utils/playerScoring.test.ts` with 51 unit tests
+
+**Result:**
+- `hooks/useRecommendedPlayers.ts` reduced from 366 → 191 lines (48% smaller)
+- `hooks/useRecommendedPlayers.test.tsx` reduced from 609 → 385 lines (duplicate unit tests removed)
+- All scoring logic now testable in isolation
+- Hook focuses purely on data fetching and orchestration
 
 ---
 
 ### Medium Priority
 
-#### 13. Historical Data Fetching Duplication
+#### 13. Historical Data Fetching Duplication ✅ RESOLVED
 
-**Impact:** 3 hooks fetch same `/entry/{id}/event/{gw}/picks/` pattern
+**Original Impact:** Multiple hooks fetching same `/entry/{id}/event/{gw}/picks/` pattern
 
-| Hook | Purpose |
-|------|---------|
-| `useBenchPoints.ts:24-46` | Fetches all picks for bench analysis |
-| `useCaptainSuccess.ts:35-56` | Fetches all picks for captain analysis |
-| `useLeaguePositionHistory.ts:25-50` | Fetches entry history |
+**Resolution:** Created `hooks/useHistoricalData.ts` as shared data fetching hook:
+- Fetches all completed gameweek data (live scoring + manager picks)
+- Uses `staleTime: Infinity` for immutable completed gameweek data
+- TanStack Query deduplication prevents redundant API calls
+- Single source of truth for historical data
 
-**Fix:** Create `hooks/useManagerHistoricalData.ts`:
-```typescript
-export function useManagerHistoricalData(managerIds: number[], currentGw: number) {
-  // Fetch all picks for all managers for GWs 1 to currentGw
-  // Return { picksByManager, historiesByManager }
-}
-```
+**Files updated:**
+- `hooks/useBenchPoints.ts` - imports and uses `useHistoricalData`
+- `hooks/useCaptainSuccess.ts` - imports and uses `useHistoricalData`
 
----
-
-#### 14. Fixture State Checking Scattered
-
-**Pattern repeated in multiple files:**
-```typescript
-const hasFixtureStarted = fixture.started || fixture.finished
-const isLiveFixture = fixture.started && !fixture.finished_provisional
-```
-
-**Fix:** Create `utils/fixtures.ts`:
-```typescript
-export function hasFixtureStarted(fixture: Fixture): boolean
-export function isFixtureLive(fixture: Fixture): boolean
-export function isFixtureFinished(fixture: Fixture): boolean
-```
-
-**Note:** Some of this was addressed in `utils/autoSubs.ts` but could be more centralized.
+**Benefits:**
+- Eliminates duplicate API fetching across hooks
+- Optimal caching for immutable historical data
+- Cleaner separation: useHistoricalData fetches, consumer hooks calculate
 
 ---
 
-#### 15. Prop Drilling Through Multiple Levels
+#### 14. Fixture State Checking Scattered ✅ RESOLVED
 
-**Current flow:**
-```
-Dashboard
-  └── LeagueStandings (receives 7 props)
-        └── ManagerModal (receives 7 props)
-```
+**Original Issue:** Fixture state checking logic duplicated across views and components.
 
-**Heavily passed props:** `bootstrap`, `liveData`, `fixtures`, `playersMap`
+**Resolution:** Centralized in `utils/liveScoring.ts` and `utils/autoSubs.ts`:
 
-**Options:**
-1. React Context for widely-used data (bootstrap, maps)
-2. Let child components fetch their own data via hooks
-3. Accept current pattern (props are explicit and traceable)
+**New utilities in `utils/liveScoring.ts`:**
+- `isFixtureLive(fixture)` - Check if fixture is in play (started && !finished && !finished_provisional)
+- `hasGamesInProgress(fixtures)` - Check if any fixtures in list are in progress
+- `allFixturesFinished(fixtures)` - Check if all fixtures are finished (provisional)
+- `hasAnyFixtureStarted(fixtures)` - Check if any fixture has started
+
+**Existing utilities in `utils/autoSubs.ts`:**
+- `hasFixtureStarted(teamId, map)` - Check if team's fixture has started (for showing points)
+- `isPlayerFixtureFinished(teamId, map)` - Check if team's fixture is finished
+
+**Files updated:**
+- `views/Dashboard.tsx` - uses `hasGamesInProgress()`, `allFixturesFinished()`
+- `components/LeagueStandings.tsx` - uses `hasGamesInProgress()`, `hasAnyFixtureStarted()`
+- `components/FixturesTest.tsx` - uses `isFixtureLive()`
+
+**Test coverage:** 10 new tests in `utils/liveScoring.test.ts` (397 total unit tests)
+
+---
+
+#### 15. Prop Drilling Through Multiple Levels — WON'T FIX
+
+**Decision:** Keep explicit props over React Context.
+
+**Rationale:**
+- Props are explicit and traceable (easier debugging)
+- TanStack Query already handles caching/deduplication
+- Context for frequently-updating data causes unnecessary re-renders
+- Current prop depth (2-3 levels) is manageable
+- Maps are already memoized at view level
 
 ---
 
 ### Low Priority
 
-#### 16. Manual Polling vs TanStack Query refetchInterval
+#### 16. Manual Polling vs TanStack Query refetchInterval ✅ RESOLVED
 
-**Location:** `hooks/useLiveScoring.ts:27-45`
+**Original Issue:** Manual `setInterval` for live data polling instead of TanStack Query built-in.
 
-**Current:** Manual `setInterval` implementation
+**Resolution:** Refactored `hooks/useLiveScoring.ts` to use TanStack Query's `refetchInterval`:
 ```typescript
-useEffect(() => {
-  if (isLive) {
-    const intervalId = setInterval(refetch, pollInterval)
-    return () => clearInterval(intervalId)
-  }
-}, [isLive, refetch, pollInterval])
-```
-
-**Alternative:** Use TanStack Query built-in:
-```typescript
-const { data } = useQuery({
-  queryKey: queryKeys.live(gw),
-  queryFn: ...,
-  refetchInterval: isLive ? 60000 : false,
+const { data, dataUpdatedAt, refetch } = useQuery({
+  queryKey: queryKeys.liveGameweek(gameweek),
+  queryFn: () => fplApi.getLiveGameweek(gameweek),
+  enabled: gameweek > 0,
+  refetchInterval: isLive ? pollInterval : false,
+  staleTime: isLive ? 0 : 5 * 60 * 1000, // Always fresh when live, 5min when not
 })
 ```
 
+**Benefits:**
+- Removed ~30 lines of manual interval management code
+- Automatic cleanup on unmount (no manual clearInterval)
+- Better integration with TanStack Query's caching/deduplication
+- `dataUpdatedAt` provides accurate timestamp (vs manual `lastUpdated` state)
+- Consistent polling behavior across live data and fixtures queries
+
+**Files updated:**
+- `hooks/useLiveScoring.ts` - Complete rewrite using TanStack Query
+- `hooks/useLiveScoring.test.ts` - Updated tests with QueryClientProvider wrapper
+
+**Test coverage:** All 12 hook tests pass (397 total unit tests)
+
 ---
 
-#### 17. Consider Feature Folder Structure
+#### 17. Feature Folder Structure ✅ RESOLVED
 
-**Current:** Flat `components/` with 22 files
+**Original Issue:** Flat `components/` with 22 files mixed concerns.
 
-**Proposed grouping:**
+**Resolution:** Implemented feature folder structure:
+
 ```
 features/
-├── standings/         # LeagueStandings, ManagerModal
-├── statistics/        # BenchPoints, CaptainSuccess, ChipsRemaining, etc.
-├── template-team/     # LeagueTemplateTeam, PitchLayout, PitchPlayer
-├── recommendations/   # RecommendedPlayers + hook
-└── game-rewards/      # GameRewards + utility
-components/            # Truly shared: Header, FplUpdating, PositionBadge
+├── BenchPoints/           # BenchPoints.tsx + .module.css + index.ts
+├── CaptainSuccess/        # CaptainSuccess.tsx + DifferentialModal + index.ts
+├── FreeTransfers/         # FreeTransfers.tsx + .module.css + index.ts
+├── LeaguePosition/        # LeaguePosition.tsx (chart) + index.ts
+├── PlayerDetails/         # PlayerDetails.tsx + HistoryTable + index.ts
+└── Recommendations/       # Recommendations.tsx + index.ts
+
+services/queries/          # Data-fetching hooks (moved from hooks/)
+├── useBenchPoints.ts
+├── useCaptainSuccess.ts
+├── useFplData.ts
+├── useFreeTransfers.ts
+├── useHistoricalData.ts
+├── useLeaguePositionHistory.ts
+├── useLiveScoring.ts
+├── usePlayerDetails.ts
+└── useRecommendedPlayers.ts
+
+hooks/                     # UI-only hooks (theme, release notification)
+├── useTheme.ts
+├── useReleaseNotification.ts
+└── useCookieConsent.ts
+
+components/                # Truly shared UI components
+├── Card.tsx, CardHeader.tsx
+├── Modal.tsx, PitchLayout.tsx, PitchPlayer.tsx
+├── LoadingState.tsx, Spinner.tsx
+├── Header.tsx, ThemeToggle.tsx
+└── ...etc
 ```
+
+**Benefits:**
+- Clear separation: features vs shared components vs data hooks
+- Co-located CSS modules within feature folders
+- Barrel exports (`index.ts`) for clean imports
+- Data-fetching hooks isolated in `services/queries/`
+
+---
+
+#### 18. TanStack Table + React Compiler Compatibility
+
+**Status:** Known issue - monitoring for TanStack Table v9
+
+**Impact:** React Compiler shows `react-hooks/incompatible-library` warning for components using TanStack Table.
+
+**Root Cause:**
+TanStack Table's `useReactTable()` hook returns getter functions that create new object references on each call. This breaks React Compiler's memoization assumptions.
+
+```typescript
+// TanStack Table pattern - getters return new objects each call
+const table = useReactTable({...})
+table.getRowModel()  // New object every time
+table.getHeaderGroups()  // New object every time
+```
+
+**Current Impact:** Near zero for small tables (~38 rows in HistoryTable). React Compiler simply skips optimizing that component and uses React's normal diffing.
+
+**Future Concerns:** If implementing large tables (e.g., all 750+ FPL players):
+
+| Solution | Tradeoff |
+|----------|----------|
+| `'use no memo'` directive | Disables React Compiler for that file |
+| `@tanstack/react-virtual` | Add windowing for 1000+ row tables |
+| Wait for TanStack Table v9 | May include React Compiler fixes |
+
+**Affected File:** `src/features/PlayerDetails/components/HistoryTable.tsx`
+
+**Decision:** Accept warning for now. Monitor TanStack Table v9 release notes. Add virtualization when implementing all-players table.
+
+---
+
+#### 19. Path Aliases Configuration ✅ IMPLEMENTED
+
+**Why:** Cleaner imports with absolute paths instead of `../../utils/foo`.
+
+**Files Configured:**
+- `tsconfig.app.json` - TypeScript path aliases
+- `vite.config.ts` - Vite resolve aliases (must match TypeScript)
+- `vitest.config.ts` - Vitest resolve aliases (required for tests)
+- `eslint.config.js` - pathGroups for import/order rule
+
+**Available Aliases:**
+```typescript
+import { Card } from 'components/Card'       // src/components/
+import { useFplData } from 'services/queries/useFplData'  // src/services/
+import { formatDelta } from 'utils/playerStats'  // src/utils/
+import { CACHE_TIMES } from 'config'          // src/config.ts
+import type { Player } from 'types/fpl'       // src/types/
+import { POSITION_TYPES } from 'constants/positions'  // src/constants/
+import { BenchPoints } from 'features/BenchPoints'  // src/features/
+import Logo from 'assets/logo.svg?react'      // src/assets/
+```
+
+**ESLint pathGroups:** Required to recognize aliased imports as "internal" group for proper sorting:
+```javascript
+pathGroups: [
+  { pattern: 'assets/**', group: 'internal', position: 'before' },
+  { pattern: 'components/**', group: 'internal', position: 'before' },
+  // ...etc for all aliases
+]
+```
+
+**Gotcha:** Vitest needs its own `resolve.alias` config separate from Vite - tests will fail without it.
 
 ---
 
@@ -483,73 +622,7 @@ TanStack Query handles all server state. This is the correct pattern and aligns 
 3. State updates are frequent and Context re-renders become a performance issue
 4. You have genuine client-side state (not server state)
 
-**Current assessment:** Not needed yet. The real problem is duplicate Map creation in views, not complex state management.
-
-### Proposed: FplDataContext for Derived Maps
-
-**Problem:** Each view creates identical `playersMap` and `teamsMap` from bootstrap data.
-
-**Solution:** Single Context providing pre-computed Maps.
-
-```typescript
-// contexts/FplDataContext.tsx
-import { createContext, useContext, useMemo, type ReactNode } from 'react'
-import { useFplData } from '../hooks/useFplData'
-import type { Player, Team, BootstrapData, LeagueStandings, Gameweek } from '../types/fpl'
-
-interface FplDataContextValue {
-  bootstrap: BootstrapData | undefined
-  league: LeagueStandings | undefined
-  currentGameweek: Gameweek | undefined
-  playersMap: Map<number, Player>
-  teamsMap: Map<number, Team>
-  isLoading: boolean
-  error: string | null
-  isApiUnavailable: boolean
-  leaguesUpdating: boolean
-}
-
-const FplDataContext = createContext<FplDataContextValue | null>(null)
-
-export function FplDataProvider({ children }: { children: ReactNode }) {
-  const { bootstrap, league, currentGameweek, isLoading, error, isApiUnavailable, leaguesUpdating } = useFplData()
-
-  const playersMap = useMemo(() => {
-    if (!bootstrap?.elements) return new Map<number, Player>()
-    return new Map(bootstrap.elements.map((p) => [p.id, p]))
-  }, [bootstrap?.elements])
-
-  const teamsMap = useMemo(() => {
-    if (!bootstrap?.teams) return new Map<number, Team>()
-    return new Map(bootstrap.teams.map((t) => [t.id, t]))
-  }, [bootstrap?.teams])
-
-  const value = useMemo(() => ({
-    bootstrap, league, currentGameweek, playersMap, teamsMap,
-    isLoading, error, isApiUnavailable, leaguesUpdating
-  }), [bootstrap, league, currentGameweek, playersMap, teamsMap,
-      isLoading, error, isApiUnavailable, leaguesUpdating])
-
-  return <FplDataContext.Provider value={value}>{children}</FplDataContext.Provider>
-}
-
-export function useFplContext() {
-  const context = useContext(FplDataContext)
-  if (!context) throw new Error('useFplContext must be used within FplDataProvider')
-  return context
-}
-```
-
-**Benefits:**
-- Maps computed once, shared by all consumers
-- Eliminates 8 duplicate Map creations across views
-- Context re-renders only when bootstrap changes (infrequent)
-- Views become simpler: `const { playersMap, teamsMap } = useFplContext()`
-
-**What stays out of Context:**
-- `liveData` — polls every 60s, would cause excessive re-renders
-- `fixtures` — tied to live polling
-- Manager-specific data — fetch where needed
+**Current assessment:** Not needed. Map utilities (`createPlayersMap`, `createTeamsMap`) with `useMemo` are sufficient.
 
 ### Reference: 2025 React State Management Landscape
 
@@ -571,9 +644,13 @@ export function useFplContext() {
 |------|--------|----------|--------|
 | ~~`components/PlayerModal.tsx`~~ | ~~High complexity~~ Sub-components extracted | ~~Medium~~ | ✅ Resolved |
 | ~~`components/ManagerModal.tsx`~~ | ~~Nested helper functions~~ | ~~Medium~~ | ✅ Resolved |
-| `hooks/useRecommendedPlayers.ts` | 306 lines, mix scoring logic with data fetching | High | Open |
-| `services/queryKeys.ts` | Missing - scattered query keys | High | Open |
-| `hooks/useBenchPoints.ts` | Duplicates historical data fetching | Medium | Open |
-| `hooks/useCaptainSuccess.ts` | Duplicates historical data fetching | Medium | Open |
+| ~~`hooks/useRecommendedPlayers.ts`~~ | ~~306 lines~~ → 191 lines, pure funcs extracted | ~~High~~ | ✅ Resolved |
+| ~~`services/queryKeys.ts`~~ | ~~Missing - scattered query keys~~ | ~~High~~ | ✅ Resolved |
+| ~~`utils/mappers.ts`~~ | ~~Map creation duplication~~ → 10 tests | ~~High~~ | ✅ Resolved |
+| ~~`hooks/useBenchPoints.ts`~~ | ~~Duplicates historical data fetching~~ → uses useHistoricalData | ~~Medium~~ | ✅ Resolved |
+| ~~`hooks/useCaptainSuccess.ts`~~ | ~~Duplicates historical data fetching~~ → uses useHistoricalData | ~~Medium~~ | ✅ Resolved |
 | ~~3 view CSS modules~~ | ~~Spinner/loading duplication~~ | ~~High~~ | ✅ Resolved |
 | ~~`hooks/useFplData.ts`~~ | ~~Boolean naming~~ | ~~Medium~~ | ✅ Resolved |
+| ~~Flat components/ folder~~ | ~~22 files mixed concerns~~ → feature folders | ~~Low~~ | ✅ Resolved |
+| `HistoryTable.tsx` | TanStack Table + React Compiler warning | Low | Known Issue |
+| ~~Path aliases~~ | ~~Relative imports `../../`~~ → absolute | ~~Low~~ | ✅ Resolved |

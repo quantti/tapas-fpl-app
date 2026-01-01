@@ -1,15 +1,16 @@
-import { useFplData } from '../hooks/useFplData'
-import { Header } from '../components/Header'
-import { StatsCards } from '../components/StatsCards'
-import { BenchPoints } from '../components/BenchPoints'
-import { CaptainSuccess } from '../components/CaptainSuccess'
 import { ChipsRemaining } from '../components/ChipsRemaining'
-import { FreeTransfers } from '../components/FreeTransfers'
-import { LeaguePositionChart } from '../components/LeaguePositionChart'
-import { PlayerOwnership } from '../components/PlayerOwnership'
-import { LeagueTemplateTeam } from '../components/LeagueTemplateTeam'
 import { FplUpdating } from '../components/FplUpdating'
+import { Header } from '../components/Header'
+import { LeagueTemplateTeam } from '../components/LeagueTemplateTeam'
 import { LoadingState } from '../components/LoadingState'
+import { PlayerOwnership } from '../components/PlayerOwnership'
+import { StatsCards } from '../components/StatsCards'
+import { BenchPoints } from '../features/BenchPoints'
+import { CaptainSuccess } from '../features/CaptainSuccess'
+import { FreeTransfers } from '../features/FreeTransfers'
+import { LeaguePosition } from '../features/LeaguePosition'
+import { useFplData } from '../services/queries/useFplData'
+
 import * as styles from './Statistics.module.css'
 
 export function Statistics() {
@@ -84,7 +85,7 @@ export function Statistics() {
           currentGameweek={currentGameweek.id}
           deadlineTime={currentGameweek.deadline_time}
         />
-        <LeaguePositionChart managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
+        <LeaguePosition managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
         <PlayerOwnership
           managerDetails={managerDetails}
           playersMap={playersMap}
