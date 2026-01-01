@@ -1,3 +1,17 @@
+# [0.14.0](https://github.com/quantti/tapas-fpl-app/compare/v0.13.0...v0.14.0) (2026-01-01)
+
+
+### Bug Fixes
+
+* resolve TypeScript error with dynamic CSS module access ([5990ed0](https://github.com/quantti/tapas-fpl-app/commit/5990ed045ee07e06f9838a25cdf8055c389eb331))
+
+
+### Features
+
+* add GDPR cookie consent banner ([2a113de](https://github.com/quantti/tapas-fpl-app/commit/2a113de7ab0a5a2c5dd102726958221bd1c72b33))
+* add player modal with history enhancements ([0f3bca0](https://github.com/quantti/tapas-fpl-app/commit/0f3bca003a235ac8a238773e659fd63d524e1176))
+* add release notification banner ([eb82b7f](https://github.com/quantti/tapas-fpl-app/commit/eb82b7f75a602dba6f98bc9665e8bd665b3a2cfb))
+
 # [0.14.0](https://github.com/quantti/tapas-fpl-app/compare/v0.13.0...v0.14.0) (2025-12-31)
 
 
