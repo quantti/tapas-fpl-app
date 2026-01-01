@@ -1,7 +1,5 @@
 import clsx from 'clsx'
 
-import { Header } from '../components/Header'
-
 import * as styles from './Roadmap.module.css'
 
 interface Feature {
@@ -11,9 +9,9 @@ interface Feature {
 
 const nowFeatures: Feature[] = [
   {
-    title: 'Player Recommendation Modal',
+    title: 'Points Breakdown by Position',
     description:
-      'Click any recommended player for detailed stats: xG, xA, fixture difficulty, ownership trends, price changes.',
+      'See where your points come from - defense, midfield, or attack. Identify squad weaknesses.',
   },
 ]
 
@@ -22,11 +20,6 @@ const nextFeatures: Feature[] = [
     title: 'H2H Manager Comparison',
     description:
       'Compare two managers side-by-side: captain choices, transfer history, chip usage, points breakdown.',
-  },
-  {
-    title: 'Points Breakdown by Position',
-    description:
-      'See where your points come from - defense, midfield, or attack. Identify squad weaknesses.',
   },
   {
     title: 'Transfer History Timeline',
@@ -53,7 +46,8 @@ interface ColumnProps {
 function Column({ title, subtitle, features, variant }: ColumnProps) {
   return (
     <div className={styles.column}>
-      <div className={clsx(styles.columnHeader, styles[variant])}>
+      <div className={styles.columnHeader}>
+        <div className={clsx(styles.statusDot, styles[variant])} />
         <h2 className={styles.columnTitle}>{title}</h2>
         <span className={styles.columnSubtitle}>{subtitle}</span>
       </div>
@@ -73,7 +67,6 @@ function Column({ title, subtitle, features, variant }: ColumnProps) {
 export function Roadmap() {
   return (
     <div className={styles.Roadmap}>
-      <Header />
       <div className={styles.content}>
         <div className={styles.header}>
           <h1 className={styles.title}>Roadmap for 2026</h1>

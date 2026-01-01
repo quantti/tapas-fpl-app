@@ -1,29 +1,21 @@
 .Roadmap {
-  min-height: 100vh;
-  background: var(--color-background);
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 1rem 50px;
 
   .content {
     padding-top: var(--space-8);
   }
 
   .header {
-    text-align: center;
     margin-bottom: var(--space-32);
   }
 
   .title {
-    font-size: var(--font-size-2xl);
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--color-text);
-    margin: 0 0 var(--space-8) 0;
-  }
-
-  .subtitle {
-    font-size: var(--font-size-base);
-    color: var(--color-text-muted);
     margin: 0;
   }
 
@@ -40,56 +32,61 @@
   .column {
     display: flex;
     flex-direction: column;
-    background: var(--color-background);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    box-shadow: var(--shadow-sm);
+    gap: var(--space-12);
   }
 
   .columnHeader {
-    padding: var(--space-16) var(--space-20);
-    border-bottom: 3px solid;
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    padding-bottom: var(--space-12);
+    border-bottom: 1px solid var(--color-border-light);
   }
 
-  .columnHeader.now {
-    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-    border-color: #22c55e;
+  .statusDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
   }
 
-  .columnHeader.next {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border-color: #f59e0b;
+  .statusDot.now {
+    background: var(--color-secondary);
+    box-shadow: 0 0 8px var(--color-secondary);
   }
 
-  .columnHeader.later {
-    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-    border-color: #6366f1;
+  .statusDot.next {
+    background: var(--color-warning);
+  }
+
+  .statusDot.later {
+    background: var(--color-text-muted);
   }
 
   .columnTitle {
-    font-size: var(--font-size-lg);
-    font-weight: 700;
-    color: var(--gray-900);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--color-text);
     margin: 0;
   }
 
   .columnSubtitle {
     font-size: var(--font-size-sm);
-    color: var(--gray-600);
+    color: var(--color-text-muted);
+    margin-left: auto;
   }
 
   .cards {
     display: flex;
     flex-direction: column;
     gap: var(--space-12);
-    padding: var(--space-16);
-    flex: 1;
   }
 
   .card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
     padding: var(--space-16);
     transition:
       transform 0.15s,

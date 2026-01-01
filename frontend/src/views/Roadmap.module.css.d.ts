@@ -15,5 +15,5 @@ export const later: string
 export const next: string
 export const now: string
 export const Roadmap: string
-export const subtitle: string
+export const statusDot: string
 export const title: string

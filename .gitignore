@@ -33,3 +33,4 @@ Thumbs.db
 test-results/
 .vercel
 .env*.local
+.playwright-mcp/
