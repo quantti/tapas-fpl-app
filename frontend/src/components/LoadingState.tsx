@@ -1,3 +1,5 @@
+import clsx from 'clsx'
+
 import * as styles from './LoadingState.module.css'
 import { Spinner } from './Spinner'
 
@@ -17,10 +19,10 @@ interface LoadingStateProps {
 export function LoadingState({
   message = 'Loading...',
   size = 'md',
-  className = '',
+  className,
 }: LoadingStateProps) {
   return (
-    <div className={`${styles.LoadingState} ${className}`.trim()}>
+    <div className={clsx(styles.LoadingState, className)}>
       <Spinner size={size} />
       {message && <p>{message}</p>}
     </div>

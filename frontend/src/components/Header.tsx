@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { Menu, X, Sun, Moon } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
@@ -49,35 +50,35 @@ export function Header() {
         <nav ref={menuRef} className={styles.nav} data-testid="nav-menu">
           <Link
             to="/"
-            className={`${styles.navLink} ${location.pathname === '/' ? styles.active : ''}`}
+            className={clsx(styles.navLink, location.pathname === '/' && styles.active)}
             onClick={() => setMenuOpen(false)}
           >
             Dashboard
           </Link>
           <Link
             to="/statistics"
-            className={`${styles.navLink} ${location.pathname === '/statistics' ? styles.active : ''}`}
+            className={clsx(styles.navLink, location.pathname === '/statistics' && styles.active)}
             onClick={() => setMenuOpen(false)}
           >
             Statistics
           </Link>
           <Link
             to="/analytics"
-            className={`${styles.navLink} ${location.pathname === '/analytics' ? styles.active : ''}`}
+            className={clsx(styles.navLink, location.pathname === '/analytics' && styles.active)}
             onClick={() => setMenuOpen(false)}
           >
             Analytics
           </Link>
           <Link
             to="/roadmap"
-            className={`${styles.navLink} ${location.pathname === '/roadmap' ? styles.active : ''}`}
+            className={clsx(styles.navLink, location.pathname === '/roadmap' && styles.active)}
             onClick={() => setMenuOpen(false)}
           >
             Roadmap
           </Link>
           <Link
             to="/changelog"
-            className={`${styles.navLink} ${location.pathname === '/changelog' ? styles.active : ''}`}
+            className={clsx(styles.navLink, location.pathname === '/changelog' && styles.active)}
             onClick={() => setMenuOpen(false)}
           >
             What&apos;s New
@@ -88,7 +89,7 @@ export function Header() {
               Dark Mode
             </span>
             <button
-              className={`${styles.toggle} ${theme === 'dark' ? styles.toggleOn : ''}`}
+              className={clsx(styles.toggle, theme === 'dark' && styles.toggleOn)}
               onClick={toggleTheme}
               role="switch"
               aria-checked={theme === 'dark'}

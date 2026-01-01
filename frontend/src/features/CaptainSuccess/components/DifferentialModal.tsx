@@ -1,3 +1,5 @@
+import clsx from 'clsx'
+
 import { Modal } from 'components/Modal'
 
 import * as styles from './DifferentialModal.module.css'
@@ -39,7 +41,7 @@ export function CaptainDifferentialModal({ isOpen, onClose, teamName, details, t
                 <td className={styles.numCol}>{d.captainPoints}</td>
                 <td className={styles.numCol}>{d.templatePoints}</td>
                 <td
-                  className={`${styles.numCol} ${d.gain >= 0 ? styles.positive : styles.negative}`}
+                  className={clsx(styles.numCol, d.gain >= 0 ? styles.positive : styles.negative)}
                 >
                   {d.gain >= 0 ? '+' : ''}
                   {d.gain}
@@ -53,7 +55,7 @@ export function CaptainDifferentialModal({ isOpen, onClose, teamName, details, t
                 Total
               </td>
               <td
-                className={`${styles.numCol} ${totalGain >= 0 ? styles.positive : styles.negative}`}
+                className={clsx(styles.numCol, totalGain >= 0 ? styles.positive : styles.negative)}
               >
                 {totalGain >= 0 ? '+' : ''}
                 {totalGain}

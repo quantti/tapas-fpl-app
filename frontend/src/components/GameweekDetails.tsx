@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { Zap, TrendingDown, Copyright } from 'lucide-react'
 import { useMemo } from 'react'
 
@@ -82,7 +83,7 @@ export function GameweekDetails({ gameweek, managerDetails, fixtures }: Props) {
                 .filter((m) => m.transfersCost > 0)
                 .sort((a, b) => b.transfersCost - a.transfersCost)
                 .map((m) => (
-                  <div key={m.managerId} className={`${styles.tag} ${styles.hitTag}`}>
+                  <div key={m.managerId} className={clsx(styles.tag, styles.hitTag)}>
                     <span className={styles.hitBadge}>-{m.transfersCost}</span>
                     <span className={styles.tagName}>{m.teamName}</span>
                   </div>

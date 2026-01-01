@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { Crown } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -88,7 +89,10 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
                 <span className={styles.stats}>
                   <span className={styles.picks}>{data.differentialPicks}×</span>
                   <span
-                    className={`${styles.gain} ${data.differentialGain >= 0 ? styles.positive : styles.negative}`}
+                    className={clsx(
+                      styles.gain,
+                      data.differentialGain >= 0 ? styles.positive : styles.negative
+                    )}
                   >
                     {data.differentialGain >= 0 ? '+' : ''}
                     {data.differentialGain}

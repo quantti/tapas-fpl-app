@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { Dices, Shield, Info, TrendingDown } from 'lucide-react'
 
 import { getPositionLabel, getPositionColor } from 'constants/positions'
@@ -121,7 +122,7 @@ export function Recommendations({
               <button
                 key={player.id}
                 type="button"
-                className={`${styles.row} ${onPlayerClick ? styles.clickable : ''}`}
+                className={clsx(styles.row, onPlayerClick && styles.clickable)}
                 onClick={() => onPlayerClick?.(player)}
                 disabled={!onPlayerClick}
               >
@@ -152,7 +153,7 @@ export function Recommendations({
                 <button
                   key={player.id}
                   type="button"
-                  className={`${styles.row} ${onPlayerClick ? styles.clickable : ''}`}
+                  className={clsx(styles.row, onPlayerClick && styles.clickable)}
                   onClick={() => onPlayerClick?.(player)}
                   disabled={!onPlayerClick}
                 >
@@ -181,7 +182,7 @@ export function Recommendations({
                 <button
                   key={player.id}
                   type="button"
-                  className={`${styles.row} ${onPlayerClick ? styles.clickable : ''}`}
+                  className={clsx(styles.row, onPlayerClick && styles.clickable)}
                   onClick={() => onPlayerClick?.(player)}
                   disabled={!onPlayerClick}
                 >

@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 
 import { formatDateTime } from '../config/locale'
@@ -69,7 +70,7 @@ export function FixturesTest() {
         <thead className={styles.tableHead}>
           <tr>
             <th className={styles.headerCell}>Home</th>
-            <th className={`${styles.headerCell} ${styles.center}`}>Score</th>
+            <th className={clsx(styles.headerCell, styles.center)}>Score</th>
             <th className={styles.headerCell}>Away</th>
             <th className={styles.headerCell}>Kickoff</th>
           </tr>
@@ -89,9 +90,9 @@ export function FixturesTest() {
             const isLive = isFixtureLive(fixture)
 
             return (
-              <tr key={fixture.id} className={`${styles.row} ${isLive ? styles.live : ''}`}>
+              <tr key={fixture.id} className={clsx(styles.row, isLive && styles.live)}>
                 <td className={styles.cell}>{homeTeam?.name || fixture.team_h}</td>
-                <td className={`${styles.cell} ${styles.center}`}>
+                <td className={clsx(styles.cell, styles.center)}>
                   <span className={styles.score}>
                     {fixture.started
                       ? `${fixture.team_h_score ?? 0} - ${fixture.team_a_score ?? 0}`
@@ -99,7 +100,7 @@ export function FixturesTest() {
                   </span>
                 </td>
                 <td className={styles.cell}>{awayTeam?.name || fixture.team_a}</td>
-                <td className={`${styles.cell} ${styles.muted}`}>{kickoff}</td>
+                <td className={clsx(styles.cell, styles.muted)}>{kickoff}</td>
               </tr>
             )
           })}

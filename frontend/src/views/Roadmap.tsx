@@ -1,3 +1,5 @@
+import clsx from 'clsx'
+
 import { Header } from '../components/Header'
 
 import * as styles from './Roadmap.module.css'
@@ -51,7 +53,7 @@ interface ColumnProps {
 function Column({ title, subtitle, features, variant }: ColumnProps) {
   return (
     <div className={styles.column}>
-      <div className={`${styles.columnHeader} ${styles[variant]}`}>
+      <div className={clsx(styles.columnHeader, styles[variant])}>
         <h2 className={styles.columnTitle}>{title}</h2>
         <span className={styles.columnSubtitle}>{subtitle}</span>
       </div>

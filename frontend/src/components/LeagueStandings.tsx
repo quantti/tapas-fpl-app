@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { ChevronRight, CircleChevronUp, CircleChevronDown, ArrowRightLeft } from 'lucide-react'
 import { useMemo } from 'react'
 
@@ -129,13 +130,13 @@ export function LeagueStandings({
       <table className={styles.table} data-testid="standings-table">
         <thead className={styles.tableHead}>
           <tr>
-            <th className={`${styles.headerCell} ${styles.colRank}`}>#</th>
-            <th className={`${styles.headerCell} ${styles.colManager}`}>Team & Manager</th>
-            <th className={`${styles.headerCell} ${styles.center} ${styles.colGw}`}>GW</th>
-            <th className={`${styles.headerCell} ${styles.center} ${styles.colTotal}`}>Total</th>
-            <th className={`${styles.headerCell} ${styles.center} ${styles.colOverallRank}`}>OR</th>
-            <th className={`${styles.headerCell} ${styles.center} ${styles.colCaptain}`}>C</th>
-            <th className={`${styles.headerCell} ${styles.center} ${styles.colChip}`}></th>
+            <th className={clsx(styles.headerCell, styles.colRank)}>#</th>
+            <th className={clsx(styles.headerCell, styles.colManager)}>Team & Manager</th>
+            <th className={clsx(styles.headerCell, styles.center, styles.colGw)}>GW</th>
+            <th className={clsx(styles.headerCell, styles.center, styles.colTotal)}>Total</th>
+            <th className={clsx(styles.headerCell, styles.center, styles.colOverallRank)}>OR</th>
+            <th className={clsx(styles.headerCell, styles.center, styles.colCaptain)}>C</th>
+            <th className={clsx(styles.headerCell, styles.center, styles.colChip)}></th>
           </tr>
         </thead>
         <tbody className={styles.tableBody}>
@@ -148,11 +149,11 @@ export function LeagueStandings({
 
             return (
               <tr key={entry.entry} className={styles.row}>
-                <td className={`${styles.cell} ${styles.colRank}`}>
+                <td className={clsx(styles.cell, styles.colRank)}>
                   <div className={styles.rank}>
                     <span className={styles.rankNumber}>{displayRank}</span>
                     {gamesStarted && rankChange.direction !== 'same' && (
-                      <span className={`${styles.rankChange} ${styles[rankChange.direction]}`}>
+                      <span className={clsx(styles.rankChange, styles[rankChange.direction])}>
                         {rankChange.direction === 'up' ? (
                           <CircleChevronUp size={14} />
                         ) : (
@@ -163,7 +164,7 @@ export function LeagueStandings({
                     )}
                   </div>
                 </td>
-                <td className={`${styles.cell} ${styles.colManager}`}>
+                <td className={clsx(styles.cell, styles.colManager)}>
                   <div className={styles.manager}>
                     <button
                       type="button"
@@ -177,7 +178,7 @@ export function LeagueStandings({
                     <span className={styles.playerName}>{entry.player_name}</span>
                   </div>
                 </td>
-                <td className={`${styles.cell} ${styles.center} ${styles.colGw}`}>
+                <td className={clsx(styles.cell, styles.center, styles.colGw)}>
                   <span className={styles.gwPoints}>
                     {entry.liveGwPoints}
                     {entry.provisionalBonus > 0 && (
@@ -194,10 +195,10 @@ export function LeagueStandings({
                     )}
                   </span>
                 </td>
-                <td className={`${styles.cell} ${styles.center} ${styles.colTotal}`}>
+                <td className={clsx(styles.cell, styles.center, styles.colTotal)}>
                   <span className={styles.totalPoints}>{entry.liveTotal}</span>
                 </td>
-                <td className={`${styles.cell} ${styles.center} ${styles.colOverallRank}`}>
+                <td className={clsx(styles.cell, styles.center, styles.colOverallRank)}>
                   {details?.overallRank ? (
                     <div className={styles.overallRank}>
                       <span className={styles.overallRankNumber}>
@@ -212,7 +213,7 @@ export function LeagueStandings({
                           )
                           if (orChange.direction === 'same') return null
                           return (
-                            <span className={`${styles.rankChange} ${styles[orChange.direction]}`}>
+                            <span className={clsx(styles.rankChange, styles[orChange.direction])}>
                               {orChange.direction === 'up' ? (
                                 <CircleChevronUp size={12} />
                               ) : (
@@ -226,14 +227,14 @@ export function LeagueStandings({
                     <span className={styles.muted}>—</span>
                   )}
                 </td>
-                <td className={`${styles.cell} ${styles.center} ${styles.colCaptain}`}>
+                <td className={clsx(styles.cell, styles.center, styles.colCaptain)}>
                   {details?.captain ? (
                     <span className={styles.captain}>{details.captain.web_name}</span>
                   ) : (
                     <span className={styles.muted}>—</span>
                   )}
                 </td>
-                <td className={`${styles.cell} ${styles.center} ${styles.colChip}`}>
+                <td className={clsx(styles.cell, styles.center, styles.colChip)}>
                   {details?.activeChip ? (
                     <span className={styles.chip}>{formatChip(details.activeChip)}</span>
                   ) : (

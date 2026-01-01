@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { ArrowLeftRight } from 'lucide-react'
 import { useMemo } from 'react'
 
@@ -72,9 +73,7 @@ export function FreeTransfers({ managerDetails, currentGameweek, deadlineTime }:
           {managersWithFT.map((manager) => (
             <div key={manager.managerId} className={styles.row}>
               <span className={styles.teamName}>{manager.teamName}</span>
-              <span
-                className={`${styles.ftCount} ${manager.freeTransfers === 2 ? styles.maxFt : ''}`}
-              >
+              <span className={clsx(styles.ftCount, manager.freeTransfers === 2 && styles.maxFt)}>
                 {manager.freeTransfers} FT
               </span>
             </div>

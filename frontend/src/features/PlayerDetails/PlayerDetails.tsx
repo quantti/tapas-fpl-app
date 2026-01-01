@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { CheckCircle, AlertCircle, XCircle, TrendingUp, TrendingDown } from 'lucide-react'
 import { useState, useMemo } from 'react'
 
@@ -103,7 +104,7 @@ function FdrBadge({
   const fdrClass = getFdrColor(difficulty)
 
   return (
-    <div className={`${styles.fdrBadge} ${styles[fdrClass]}`}>
+    <div className={clsx(styles.fdrBadge, styles[fdrClass])}>
       <span className={styles.fdrGw}>GW{gameweek}</span>
       <span className={styles.fdrTeam}>{teamShortName}</span>
       <span className={styles.fdrVenue}>{isHome ? 'H' : 'A'}</span>
@@ -157,7 +158,10 @@ function PlayerHeader({
             {price}
             {priceChangeFormatted && (
               <span
-                className={`${styles.priceChange} ${priceChange > 0 ? styles.positive : styles.negative}`}
+                className={clsx(
+                  styles.priceChange,
+                  priceChange > 0 ? styles.positive : styles.negative
+                )}
                 title={`Price change since season start`}
               >
                 {priceChangeFormatted}
@@ -300,13 +304,13 @@ function PerformanceDeltas({
           <>
             <span className={styles.deltaItem}>
               <span className={styles.deltaLabel}>Goals vs xG</span>
-              <span className={`${styles.deltaValue} ${styles[getDeltaClass(xgDelta)]}`}>
+              <span className={clsx(styles.deltaValue, styles[getDeltaClass(xgDelta)])}>
                 {formatDelta(xgDelta)}
               </span>
             </span>
             <span className={styles.deltaItem}>
               <span className={styles.deltaLabel}>Assists vs xA</span>
-              <span className={`${styles.deltaValue} ${styles[getDeltaClass(xaDelta)]}`}>
+              <span className={clsx(styles.deltaValue, styles[getDeltaClass(xaDelta)])}>
                 {formatDelta(xaDelta)}
               </span>
             </span>
@@ -316,7 +320,7 @@ function PerformanceDeltas({
         {isDefender && (
           <span className={styles.deltaItem}>
             <span className={styles.deltaLabel}>G+A vs xGI</span>
-            <span className={`${styles.deltaValue} ${styles[getDeltaClass(xgiDelta)]}`}>
+            <span className={clsx(styles.deltaValue, styles[getDeltaClass(xgiDelta)])}>
               {formatDelta(xgiDelta)}
             </span>
           </span>
@@ -325,7 +329,7 @@ function PerformanceDeltas({
         {(isGoalkeeper || isDefender) && (
           <span className={styles.deltaItem}>
             <span className={styles.deltaLabel}>GC vs xGC</span>
-            <span className={`${styles.deltaValue} ${styles[getDeltaClass(xgcDelta, true)]}`}>
+            <span className={clsx(styles.deltaValue, styles[getDeltaClass(xgcDelta, true)])}>
               {formatDelta(xgcDelta)}
             </span>
           </span>
@@ -385,14 +389,14 @@ function TabContent({
       <div className={styles.tabButtons}>
         <button
           type="button"
-          className={`${styles.tabButton} ${activeTab === 'fixtures' ? styles.active : ''}`}
+          className={clsx(styles.tabButton, activeTab === 'fixtures' && styles.active)}
           onClick={() => setActiveTab('fixtures')}
         >
           Fixtures
         </button>
         <button
           type="button"
-          className={`${styles.tabButton} ${activeTab === 'history' ? styles.active : ''}`}
+          className={clsx(styles.tabButton, activeTab === 'history' && styles.active)}
           onClick={() => setActiveTab('history')}
         >
           History
