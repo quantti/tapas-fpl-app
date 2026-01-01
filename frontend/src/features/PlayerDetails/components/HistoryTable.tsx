@@ -5,6 +5,7 @@ import {
   flexRender,
   type ColumnDef,
 } from '@tanstack/react-table'
+import clsx from 'clsx'
 import { Footprints, Shield } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -27,6 +28,16 @@ interface HistoryTableProps {
 }
 
 const PREVIEW_COUNT = 5
+
+// Type-safe column class lookup (avoids dynamic styles[] indexing)
+const columnClasses: Record<string, string | undefined> = {
+  gw: styles.colGw,
+  opponent: styles.colOpponent,
+  icons: styles.colIcons,
+  pts: styles.colPts,
+  min: styles.colMin,
+  xstats: styles.colXstats,
+}
 
 export function HistoryTable({ data, playerPosition, teams }: HistoryTableProps) {
   const [showAll, setShowAll] = useState(false)
@@ -162,16 +173,13 @@ export function HistoryTable({ data, playerPosition, teams }: HistoryTableProps)
 
   return (
     <div className={styles.HistoryTable}>
-      <div className={`${styles.tableWrapper} ${showAll ? styles.expanded : ''}`}>
+      <div className={clsx(styles.tableWrapper, showAll && styles.expanded)}>
         <table className={styles.table}>
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id} className={styles.headerRow}>
                 {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className={`${styles.headerCell} ${styles[`col${header.id.charAt(0).toUpperCase() + header.id.slice(1)}`] ?? ''}`}
-                  >
+                  <th key={header.id} className={clsx(styles.headerCell, columnClasses[header.id])}>
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}
@@ -184,10 +192,7 @@ export function HistoryTable({ data, playerPosition, teams }: HistoryTableProps)
             {table.getRowModel().rows.map((row) => (
               <tr key={row.id} className={styles.row}>
                 {row.getVisibleCells().map((cell) => (
-                  <td
-                    key={cell.id}
-                    className={`${styles.cell} ${styles[`col${cell.column.id.charAt(0).toUpperCase() + cell.column.id.slice(1)}`] ?? ''}`}
-                  >
+                  <td key={cell.id} className={clsx(styles.cell, columnClasses[cell.column.id])}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
