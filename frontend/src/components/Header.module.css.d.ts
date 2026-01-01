@@ -1,4 +1,5 @@
 export const __esModule: true
+export const accountLink: string
 export const active: string
 export const Header: string
 export const logo: string

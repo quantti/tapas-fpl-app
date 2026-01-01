@@ -4,6 +4,8 @@ import './App.css'
 import { CookieConsentBanner } from './components/CookieConsent'
 import { Footer } from './components/Footer'
 import { Header } from './components/Header'
+import { ManagerIdProvider } from './contexts/ManagerIdProvider'
+import { Account } from './views/Account'
 import { Analytics } from './views/Analytics'
 import { Changelog } from './views/Changelog'
 import { Dashboard } from './views/Dashboard'
@@ -13,20 +15,23 @@ import { Statistics } from './views/Statistics'
 function App() {
   return (
     <BrowserRouter>
-      <CookieConsentBanner />
-      <div className="app">
-        <Header />
-        <main className="appMain">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/statistics" element={<Statistics />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/roadmap" element={<Roadmap />} />
-            <Route path="/changelog" element={<Changelog />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
+      <ManagerIdProvider>
+        <CookieConsentBanner />
+        <div className="app">
+          <Header />
+          <main className="appMain">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/statistics" element={<Statistics />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/roadmap" element={<Roadmap />} />
+              <Route path="/changelog" element={<Changelog />} />
+              <Route path="/account" element={<Account />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+      </ManagerIdProvider>
     </BrowserRouter>
   )
 }

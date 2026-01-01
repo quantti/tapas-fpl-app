@@ -1,8 +1,9 @@
 import clsx from 'clsx'
-import { Menu, X, Sun, Moon } from 'lucide-react'
+import { Menu, X, Sun, Moon, User, LogOut } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
+import { useManagerId } from '../hooks/useManagerId'
 import { useTheme } from '../hooks/useTheme'
 
 import * as styles from './Header.module.css'
@@ -10,6 +11,7 @@ import * as styles from './Header.module.css'
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { theme, toggleTheme } = useTheme()
+  const { isLoggedIn, clearManagerId } = useManagerId()
   const location = useLocation()
   const menuRef = useRef<HTMLElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -83,6 +85,32 @@ export function Header() {
           >
             What&apos;s New
           </Link>
+          {isLoggedIn ? (
+            <button
+              type="button"
+              className={clsx(styles.navLink, styles.accountLink)}
+              onClick={() => {
+                clearManagerId()
+                setMenuOpen(false)
+              }}
+            >
+              <LogOut size={16} />
+              Logout
+            </button>
+          ) : (
+            <Link
+              to="/account"
+              className={clsx(
+                styles.navLink,
+                styles.accountLink,
+                location.pathname === '/account' && styles.active
+              )}
+              onClick={() => setMenuOpen(false)}
+            >
+              <User size={16} />
+              Login
+            </Link>
+          )}
           <div className={styles.themeRow}>
             <span className={styles.themeLabel}>
               {theme === 'dark' ? <Moon size={16} /> : <Sun size={16} />}

@@ -1,0 +1,204 @@
+.Account {
+  min-height: 100vh;
+  background: var(--color-background);
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 0 1rem;
+
+  .content {
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-32);
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: var(--space-32);
+  }
+
+  .title {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0 0 var(--space-8) 0;
+  }
+
+  .subtitle {
+    font-size: var(--font-size-base);
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-24);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .cardHeader {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    margin-bottom: var(--space-20);
+    color: var(--color-text);
+  }
+
+  .cardTitle {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+  }
+
+  .inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+  }
+
+  .label {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  .input {
+    padding: var(--space-12) var(--space-16);
+    font-size: var(--font-size-base);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-background);
+    color: var(--color-text);
+    transition: border-color 0.15s;
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-secondary);
+    }
+
+    &::placeholder {
+      color: var(--color-text-muted);
+    }
+  }
+
+  .hint {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin: 0;
+    line-height: 1.5;
+
+    strong {
+      color: var(--color-text);
+    }
+  }
+
+  .submitButton {
+    padding: var(--space-12) var(--space-24);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-primary);
+    background: var(--color-secondary);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition:
+      opacity 0.15s,
+      transform 0.15s;
+
+    &:hover:not(:disabled) {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .loggedIn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-16);
+  }
+
+  .status {
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    margin: 0;
+
+    strong {
+      color: var(--color-secondary);
+    }
+  }
+
+  .logoutButton {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    padding: var(--space-8) var(--space-16);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover {
+      color: var(--color-error);
+      border-color: var(--color-error);
+    }
+  }
+
+  .consentWarning {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-8);
+    margin-top: var(--space-16);
+    padding: var(--space-12);
+    font-size: var(--font-size-xs);
+    color: var(--color-warning);
+    background: rgba(161, 98, 7, 0.1);
+    border-radius: var(--radius-md);
+    line-height: 1.4;
+
+    svg {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+  }
+
+  .futureCard {
+    margin-top: var(--space-24);
+    padding: var(--space-20);
+    background: var(--color-surface);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+    text-align: center;
+  }
+
+  .futureTitle {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-8) 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .futureText {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+}

@@ -75,6 +75,22 @@
     }
   }
 
+  .accountLink {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-top: 1px solid var(--color-border-light);
+    /* Button reset for logout button */
+    background: transparent;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    font: inherit;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+  }
+
   .themeRow {
     display: flex;
     align-items: center;
