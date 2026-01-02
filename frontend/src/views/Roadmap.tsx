@@ -9,18 +9,13 @@ interface Feature {
 
 const nowFeatures: Feature[] = [
   {
-    title: 'Points Breakdown by Position',
-    description:
-      'See where your points come from - defense, midfield, or attack. Identify squad weaknesses.',
-  },
-]
-
-const nextFeatures: Feature[] = [
-  {
     title: 'H2H Manager Comparison',
     description:
       'Compare two managers side-by-side: captain choices, transfer history, chip usage, points breakdown.',
   },
+]
+
+const nextFeatures: Feature[] = [
   {
     title: 'Transfer History Timeline',
     description:
