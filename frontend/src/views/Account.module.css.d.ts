@@ -5,6 +5,7 @@ export const cardHeader: string
 export const cardTitle: string
 export const consentWarning: string
 export const content: string
+export const error: string
 export const form: string
 export const futureCard: string
 export const futureText: string
@@ -12,6 +13,7 @@ export const futureTitle: string
 export const header: string
 export const hint: string
 export const input: string
+export const inputError: string
 export const inputGroup: string
 export const label: string
 export const loggedIn: string

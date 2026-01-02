@@ -1,4 +1,4 @@
-import { useState, useCallback, type ReactNode } from 'react'
+import { useState, useCallback, useMemo, type ReactNode } from 'react'
 
 import { hasPreferencesConsent } from '../hooks/useCookieConsent'
 
@@ -51,16 +51,15 @@ export function ManagerIdProvider({ children }: { children: ReactNode }) {
     setManagerIdState(null)
   }, [])
 
-  return (
-    <ManagerIdContext.Provider
-      value={{
-        managerId,
-        setManagerId,
-        clearManagerId,
-        isLoggedIn: managerId !== null,
-      }}
-    >
-      {children}
-    </ManagerIdContext.Provider>
+  const value = useMemo(
+    () => ({
+      managerId,
+      setManagerId,
+      clearManagerId,
+      isLoggedIn: managerId !== null,
+    }),
+    [managerId, setManagerId, clearManagerId]
   )
+
+  return <ManagerIdContext.Provider value={value}>{children}</ManagerIdContext.Provider>
 }

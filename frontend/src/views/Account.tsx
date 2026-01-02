@@ -10,15 +10,32 @@ export function Account() {
   const { managerId, setManagerId, clearManagerId, isLoggedIn } = useManagerId()
   const [inputValue, setInputValue] = useState(managerId?.toString() ?? '')
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    const id = Number.parseInt(inputValue.trim(), 10)
-    if (!Number.isNaN(id) && id > 0) {
-      setManagerId(id)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+    setError(null)
+
+    const trimmed = inputValue.trim()
+    if (!trimmed) {
+      setError('Please enter a manager ID')
+      return
     }
+
+    const id = Number.parseInt(trimmed, 10)
+    if (Number.isNaN(id)) {
+      setError('Please enter a valid number')
+      return
+    }
+
+    if (id <= 0) {
+      setError('Manager ID must be a positive number')
+      return
+    }
+
+    setManagerId(id)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
   }
 
   const handleLogout = () => {
@@ -67,9 +84,13 @@ export function Account() {
                   pattern="[0-9]*"
                   placeholder="e.g. 123456"
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  className={styles.input}
+                  onChange={(e) => {
+                    setInputValue(e.target.value)
+                    setError(null)
+                  }}
+                  className={`${styles.input} ${error ? styles.inputError : ''}`}
                 />
+                {error && <p className={styles.error}>{error}</p>}
                 <p className={styles.hint}>
                   Find your ID in your FPL team URL: fantasy.premierleague.com/entry/
                   <strong>123456</strong>/...

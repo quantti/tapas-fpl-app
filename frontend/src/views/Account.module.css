@@ -98,6 +98,20 @@
     }
   }
 
+  .error {
+    font-size: var(--font-size-xs);
+    color: var(--color-error);
+    margin: 0;
+  }
+
+  .inputError {
+    border-color: var(--color-error);
+
+    &:focus {
+      border-color: var(--color-error);
+    }
+  }
+
   .submitButton {
     padding: var(--space-12) var(--space-24);
     font-size: var(--font-size-sm);
