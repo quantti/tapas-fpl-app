@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/quantti/tapas-fpl-app/compare/v1.1.0...v1.1.1) (2026-01-02)
+
+
+### Bug Fixes
+
+* filter undefined values from managerDetails to prevent Statistics crash on reload ([3b4a49d](https://github.com/quantti/tapas-fpl-app/commit/3b4a49d3ab72e4207d72f72aface3ff743af3fbc))
+
 # [1.1.0](https://github.com/quantti/tapas-fpl-app/compare/v1.0.0...v1.1.0) (2026-01-02)
 
 
