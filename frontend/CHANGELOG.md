@@ -1,3 +1,11 @@
+## [0.16.1](https://github.com/quantti/tapas-fpl-app/compare/v0.16.0...v0.16.1) (2026-01-02)
+
+
+### Bug Fixes
+
+* **header:** make logo clickable to navigate to dashboard ([a3a28e0](https://github.com/quantti/tapas-fpl-app/commit/a3a28e0b21a22b101c81057e4d0f319a34110289))
+* **release:** update version script to use releases.ts ([fcb8f24](https://github.com/quantti/tapas-fpl-app/commit/fcb8f243c2c9f1781a9b9e5da72eef7d55352403))
+
 # [0.16.0](https://github.com/quantti/tapas-fpl-app/compare/v0.15.1...v0.16.0) (2026-01-02)
 
 
