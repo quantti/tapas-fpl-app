@@ -1,3 +1,10 @@
+## [0.16.2](https://github.com/quantti/tapas-fpl-app/compare/v0.16.1...v0.16.2) (2026-01-02)
+
+
+### Bug Fixes
+
+* **tests:** update flaky test to look for Finance card ([b75afab](https://github.com/quantti/tapas-fpl-app/commit/b75afabb957b8823421e9a5c9f25f716fb982fb4))
+
 ## [0.16.1](https://github.com/quantti/tapas-fpl-app/compare/v0.16.0...v0.16.1) (2026-01-02)
 
 
