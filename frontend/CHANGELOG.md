@@ -1,3 +1,42 @@
+# [1.1.0](https://github.com/quantti/tapas-fpl-app/compare/v1.0.0...v1.1.0) (2026-01-02)
+
+
+### Bug Fixes
+
+* **Account:** add validation error states for manager ID input ([647b2a4](https://github.com/quantti/tapas-fpl-app/commit/647b2a4e294044268ba078700153c18f60c2460a))
+* add defensive check for missing fixture stats array ([610cb8b](https://github.com/quantti/tapas-fpl-app/commit/610cb8be32ae54d7a18a25d655d8a3878d9b480d))
+* add missing EntryPicksResponse type export for positionBreakdownUtils ([627aa8d](https://github.com/quantti/tapas-fpl-app/commit/627aa8da728855e51df4963d801ecfb398992e6d))
+* **ci:** add format:check script for CI pipeline ([66e9a6c](https://github.com/quantti/tapas-fpl-app/commit/66e9a6c0e1f61119675c4a2d2247880d7be8ee94))
+* improve Free Transfers calculation accuracy ([0f20f32](https://github.com/quantti/tapas-fpl-app/commit/0f20f32514fca235e57d2a1a182afb45f5249cf9))
+* **modal:** use reactive live data for real-time player score updates ([ca9451e](https://github.com/quantti/tapas-fpl-app/commit/ca9451ef143ea76d2543f0df6479834a768403a5))
+* **PitchPlayer:** rename -bench modifier to bench for CSS types compatibility ([2460587](https://github.com/quantti/tapas-fpl-app/commit/2460587576ffd1c92a11ecea5f224f97e312354d))
+* reduce bootstrap-static cache TTL from 6h to 5min ([61665df](https://github.com/quantti/tapas-fpl-app/commit/61665df4175469a39e3b63b71505e2aa042bb061))
+* remove double hit deduction from live GW points ([a3f3e3b](https://github.com/quantti/tapas-fpl-app/commit/a3f3e3bb7c87c1dd79f8cd0bf48766d797d85b0e))
+* rename format scripts for consistency ([0637ce2](https://github.com/quantti/tapas-fpl-app/commit/0637ce2997f8adc4f1a46709e61122bc96ebc8b2))
+* resolve TypeScript error with dynamic CSS module access ([5990ed0](https://github.com/quantti/tapas-fpl-app/commit/5990ed045ee07e06f9838a25cdf8055c389eb331))
+* resolve TypeScript errors from CI ([c59d773](https://github.com/quantti/tapas-fpl-app/commit/c59d77343efcb4eed2436d36a7632bea45a008fb))
+* show remaining FT and hide arrows when GW hasn't started ([d9d9219](https://github.com/quantti/tapas-fpl-app/commit/d9d9219d5b786b6d7cf9b5dea2b094d553a55caa))
+* use explicit property declarations for FplApiError class ([bdf678e](https://github.com/quantti/tapas-fpl-app/commit/bdf678e0f69461a57a1db15d37415e180649cbaf))
+
+
+### Features
+
+* **a11y:** add accessibility testing and fix color contrast issues ([dcc9d8f](https://github.com/quantti/tapas-fpl-app/commit/dcc9d8f5c6f767ecd086ea9bd2cdbd65d9b82968))
+* add Account page with manager ID cookie storage ([557ef7b](https://github.com/quantti/tapas-fpl-app/commit/557ef7b18d2ab98452f0003e8bef0678822de9ba))
+* add changelog page with release notes automation ([efc6a25](https://github.com/quantti/tapas-fpl-app/commit/efc6a257477097196d665a05253328de2f1d84f6))
+* add footer with copyright ([8743698](https://github.com/quantti/tapas-fpl-app/commit/8743698209c67e1371e2f5050354ad6b05dbe5d7))
+* add GDPR cookie consent banner ([2a113de](https://github.com/quantti/tapas-fpl-app/commit/2a113de7ab0a5a2c5dd102726958221bd1c72b33))
+* add graceful error handling for FPL API 503 responses ([70bc8c2](https://github.com/quantti/tapas-fpl-app/commit/70bc8c29c438cf36f102f4d40c1dc2b9f3080d26))
+* add league recalculation warning banner ([8c84acc](https://github.com/quantti/tapas-fpl-app/commit/8c84accc43a2c35133ad6701939db5dc4d81d0ad))
+* add live provisional bonus to GameRewards component ([bd80e18](https://github.com/quantti/tapas-fpl-app/commit/bd80e18e45e01c0ad3733b1ef3b8f78348f0b608))
+* add player modal with history enhancements ([0f3bca0](https://github.com/quantti/tapas-fpl-app/commit/0f3bca003a235ac8a238773e659fd63d524e1176))
+* add release notification banner ([eb82b7f](https://github.com/quantti/tapas-fpl-app/commit/eb82b7f75a602dba6f98bc9665e8bd665b3a2cfb))
+* add roadmap page and fix layout consistency ([84454fb](https://github.com/quantti/tapas-fpl-app/commit/84454fb69a83d52ae8d6f1716a9ddeab05f79566))
+* **dashboard:** add Game Rewards card with bonus and DefCon points ([ea29cee](https://github.com/quantti/tapas-fpl-app/commit/ea29cee9777e982711a30f32bd7b16e9ca8250b2))
+* **live:** add local auto-substitution calculation ([fabaa46](https://github.com/quantti/tapas-fpl-app/commit/fabaa46d3db78bea0c2ccc9d1793f248cb95759f))
+* **PersonalStats:** add position breakdown showing points by GK/DEF/MID/FWD ([900a91d](https://github.com/quantti/tapas-fpl-app/commit/900a91dc116e61791d62ae2456949829dc113f91))
+* **statistics:** add Free Transfers Tracker card ([e530396](https://github.com/quantti/tapas-fpl-app/commit/e5303960e22d898ac7659331fdfb81411d889129))
+
 # [0.14.0](https://github.com/quantti/tapas-fpl-app/compare/v0.13.0...v0.14.0) (2026-01-02)
 
 
