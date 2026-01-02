@@ -156,9 +156,9 @@ export default defineConfig([
       'sonarjs/no-identical-functions': 'error',
       'sonarjs/no-collapsible-if': 'error',
       'sonarjs/no-redundant-jump': 'error',
-      'sonarjs/no-small-switch': 'warn',
-      'sonarjs/prefer-single-boolean-return': 'warn',
-      'sonarjs/no-nested-conditional': 'warn',
+      'sonarjs/no-small-switch': 'error',
+      'sonarjs/prefer-single-boolean-return': 'error',
+      'sonarjs/no-nested-conditional': 'error',
     },
   },
   // Test files - vitest rules
