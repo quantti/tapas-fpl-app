@@ -10,7 +10,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-const CHANGELOG_PATH = path.join(process.cwd(), 'src/views/Changelog.tsx')
+const RELEASES_PATH = path.join(process.cwd(), 'src/config/releases.ts')
 
 function formatDate() {
   const months = [
@@ -45,12 +45,12 @@ function main() {
   // Remove leading 'v' if present
   const cleanVersion = version.replace(/^v/, '')
 
-  // Read current changelog
+  // Read current releases file
   let content
   try {
-    content = fs.readFileSync(CHANGELOG_PATH, 'utf8')
+    content = fs.readFileSync(RELEASES_PATH, 'utf8')
   } catch {
-    console.log('Changelog.tsx not found, skipping version update')
+    console.log('releases.ts not found, skipping version update')
     process.exit(0)
   }
 
@@ -68,9 +68,9 @@ function main() {
     .replace("date: ''", `date: '${date}'`)
 
   // Write updated content
-  fs.writeFileSync(CHANGELOG_PATH, updatedContent)
+  fs.writeFileSync(RELEASES_PATH, updatedContent)
 
-  console.log(`Updated Changelog.tsx: Next Release → ${cleanVersion} (${date})`)
+  console.log(`Updated releases.ts: Next Release → ${cleanVersion} (${date})`)
 }
 
 main()
