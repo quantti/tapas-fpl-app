@@ -12,8 +12,8 @@ export interface Release {
 
 export const releases: Release[] = [
   {
-    version: 'Next Release',
-    date: '',
+    version: '0.16.0',
+    date: 'January 2, 2026',
     items: [
       {
         title: 'Head-to-Head Manager Comparison',
