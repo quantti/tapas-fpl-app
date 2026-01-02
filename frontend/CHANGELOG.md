@@ -1,3 +1,10 @@
+# [0.17.0](https://github.com/quantti/tapas-fpl-app/compare/v0.16.2...v0.17.0) (2026-01-02)
+
+
+### Features
+
+* **h2h:** add world template team comparison ([aab42fa](https://github.com/quantti/tapas-fpl-app/commit/aab42faf7dc5ad6d8e48470bf3a9f285ae4ee662))
+
 ## [0.16.2](https://github.com/quantti/tapas-fpl-app/compare/v0.16.1...v0.16.2) (2026-01-02)
 
 
