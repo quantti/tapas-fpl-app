@@ -203,7 +203,7 @@ export function useFplData() {
 
   // Combine manager details results
   const managerDetails = useMemo(() => {
-    return managerQueries.map((q) => q.data).filter((d): d is ManagerGameweekData => d !== null)
+    return managerQueries.map((q) => q.data).filter((d): d is ManagerGameweekData => d != null)
   }, [managerQueries])
 
   // Detect "awaiting update" period
