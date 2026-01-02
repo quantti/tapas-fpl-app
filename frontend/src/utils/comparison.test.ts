@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { getPlaystyleLabel } from '../services/queries/useHeadToHeadComparison'
+
 import { formatRank, getComparisonClass } from './comparison'
 
 describe('comparison utility', () => {
@@ -158,6 +160,75 @@ describe('comparison utility', () => {
         expect(formatRank(1000)).toBe('1K')
         expect(formatRank(999999)).toBe('1000K')
         expect(formatRank(1000000)).toBe('1.0M')
+      })
+    })
+  })
+
+  describe('getPlaystyleLabel', () => {
+    describe('Template (9-11 matches)', () => {
+      it('should return Template for 11 matches', () => {
+        expect(getPlaystyleLabel(11)).toBe('Template')
+      })
+
+      it('should return Template for 10 matches', () => {
+        expect(getPlaystyleLabel(10)).toBe('Template')
+      })
+
+      it('should return Template for 9 matches (boundary)', () => {
+        expect(getPlaystyleLabel(9)).toBe('Template')
+      })
+    })
+
+    describe('Balanced (6-8 matches)', () => {
+      it('should return Balanced for 8 matches (boundary)', () => {
+        expect(getPlaystyleLabel(8)).toBe('Balanced')
+      })
+
+      it('should return Balanced for 7 matches', () => {
+        expect(getPlaystyleLabel(7)).toBe('Balanced')
+      })
+
+      it('should return Balanced for 6 matches (boundary)', () => {
+        expect(getPlaystyleLabel(6)).toBe('Balanced')
+      })
+    })
+
+    describe('Differential (3-5 matches)', () => {
+      it('should return Differential for 5 matches (boundary)', () => {
+        expect(getPlaystyleLabel(5)).toBe('Differential')
+      })
+
+      it('should return Differential for 4 matches', () => {
+        expect(getPlaystyleLabel(4)).toBe('Differential')
+      })
+
+      it('should return Differential for 3 matches (boundary)', () => {
+        expect(getPlaystyleLabel(3)).toBe('Differential')
+      })
+    })
+
+    describe('Maverick (0-2 matches)', () => {
+      it('should return Maverick for 2 matches (boundary)', () => {
+        expect(getPlaystyleLabel(2)).toBe('Maverick')
+      })
+
+      it('should return Maverick for 1 match', () => {
+        expect(getPlaystyleLabel(1)).toBe('Maverick')
+      })
+
+      it('should return Maverick for 0 matches', () => {
+        expect(getPlaystyleLabel(0)).toBe('Maverick')
+      })
+    })
+
+    describe('edge cases', () => {
+      it('should handle negative values as Maverick', () => {
+        expect(getPlaystyleLabel(-1)).toBe('Maverick')
+      })
+
+      it('should handle values > 11 as Template', () => {
+        expect(getPlaystyleLabel(12)).toBe('Template')
+        expect(getPlaystyleLabel(15)).toBe('Template')
       })
     })
   })

@@ -62,13 +62,15 @@ export interface UseHeadToHeadComparisonReturn {
   managerA: ComparisonStats | null
   managerB: ComparisonStats | null
   loading: boolean
-  error: string | null
+  error: Error | null
 }
 
 /**
  * Get playstyle label based on template match count
+ * @param matchCount Number of players matching the league template (0-11)
+ * @returns Playstyle category label
  */
-function getPlaystyleLabel(matchCount: number): PlaystyleLabel {
+export function getPlaystyleLabel(matchCount: number): PlaystyleLabel {
   if (matchCount >= 9) return 'Template'
   if (matchCount >= 6) return 'Balanced'
   if (matchCount >= 3) return 'Differential'
@@ -287,12 +289,12 @@ export function useHeadToHeadComparison({
   const managerB = useMemo(() => buildStats(managerBData, 1), [buildStats, managerBData])
 
   const historyLoading = historyQueries.some((q) => q.isLoading)
-  const historyError = historyQueries.find((q) => q.error)?.error?.message ?? null
+  const historyError = historyQueries.find((q) => q.error)?.error ?? null
 
   return {
     managerA,
     managerB,
     loading: historyLoading || historicalLoading,
-    error: historyError ?? historicalError?.message ?? null,
+    error: historyError ?? historicalError ?? null,
   }
 }

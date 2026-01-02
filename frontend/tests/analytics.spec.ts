@@ -213,8 +213,8 @@ test.describe('Analytics - Desktop', () => {
 // Head-to-Head Component Tests
 // =============================================================================
 
-const MANAGER_A_SELECT = MANAGER_A_SELECT
-const MANAGER_B_SELECT = MANAGER_B_SELECT
+const MANAGER_A_SELECT = '#manager-a-select'
+const MANAGER_B_SELECT = '#manager-b-select'
 
 test.describe('Analytics - Head-to-Head Component', () => {
   test.use({ viewport: VIEWPORTS.DESKTOP })

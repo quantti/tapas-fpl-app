@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Card } from 'components/Card'
 import { CardHeader } from 'components/CardHeader'
 
+import { FplApiError } from 'services/api'
 import { useHeadToHeadComparison } from 'services/queries/useHeadToHeadComparison'
 
 import { formatRank, getComparisonClass } from 'utils/comparison'
@@ -32,11 +33,33 @@ function getLeadLabel(pointsDiff: number, teamAName: string, teamBName: string):
   return 'Tied!'
 }
 
+/**
+ * Get user-friendly error message based on error type
+ */
+function getErrorMessage(error: Error): string {
+  if (error instanceof FplApiError) {
+    if (error.isServiceUnavailable) {
+      return 'FPL is updating data. Please try again in a few minutes.'
+    }
+    if (error.status === 404) {
+      return 'Manager data not found. They may have joined the league recently.'
+    }
+    if (error.status >= 500) {
+      return 'FPL servers are experiencing issues. Please try again later.'
+    }
+    return `Failed to load data (${error.status}). Please try again.`
+  }
+  if (error.name === 'TypeError' && error.message.includes('fetch')) {
+    return 'Network error. Check your connection and try again.'
+  }
+  return 'Failed to load comparison data. Please try again.'
+}
+
 interface ComparisonContentProps {
   managerAId: number | null
   managerBId: number | null
   loading: boolean
-  error: string | null
+  error: Error | null
   managerA: ComparisonStats | null
   managerB: ComparisonStats | null
 }
@@ -59,7 +82,7 @@ function renderComparisonContent({
     return <p className={styles.loading}>Loading comparison...</p>
   }
   if (error) {
-    return <p className={styles.error}>{error}</p>
+    return <p className={styles.error}>{getErrorMessage(error)}</p>
   }
   if (managerA && managerB) {
     return <ComparisonGrid managerA={managerA} managerB={managerB} />
