@@ -266,6 +266,8 @@
     font-weight: 700;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
+    min-width: 2.75rem;
+    text-align: center;
   }
 
   .templateLabel {
@@ -274,6 +276,16 @@
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.03em;
+    min-width: 5rem;
+  }
+
+  .sectionSubtitle {
+    font-size: 0.625rem;
+    font-weight: 400;
+    color: var(--text-tertiary, var(--text-secondary));
+    text-align: center;
+    margin-bottom: 0.5rem;
+    opacity: 0.8;
   }
 
   /* Progress bar with 11 segments */

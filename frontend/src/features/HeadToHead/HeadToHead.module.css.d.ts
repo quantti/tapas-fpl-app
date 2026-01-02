@@ -9,7 +9,7 @@ export const dropdown: string
 export const empty: string
 export const error: string
 export const filled: string
-export const headToHead: string
+export const HeadToHead: string
 export const headerRow: string
 export const headerVs: string
 export const left: string
@@ -19,6 +19,7 @@ export const neutral: string
 export const progressBar: string
 export const progressSegment: string
 export const right: string
+export const sectionSubtitle: string
 export const sectionTitle: string
 export const selectorGroup: string
 export const selectorLabel: string

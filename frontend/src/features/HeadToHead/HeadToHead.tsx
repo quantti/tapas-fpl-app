@@ -321,6 +321,7 @@ function ComparisonGrid({ managerA, managerB }: ComparisonGridProps) {
 
       {/* Template Overlap */}
       <div className={styles.sectionTitle}>Playstyle</div>
+      <div className={styles.sectionSubtitle}>Players matching template starting XI</div>
       <TemplateOverlapRow
         label="League"
         overlapA={managerA.leagueTemplateOverlap}
