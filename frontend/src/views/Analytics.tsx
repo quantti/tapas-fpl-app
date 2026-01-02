@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { FplUpdating } from '../components/FplUpdating'
 import { LoadingState } from '../components/LoadingState'
+import { HeadToHead } from '../features/HeadToHead'
 import { PlayerDetails } from '../features/PlayerDetails'
 import { Recommendations } from '../features/Recommendations'
 import { useFplData } from '../services/queries/useFplData'
+import { createPlayersMap } from '../utils/mappers'
 
 import * as styles from './Analytics.module.css'
 
@@ -21,6 +23,12 @@ export function Analytics() {
     teamsMap,
   } = useFplData()
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
+
+  // Create players map for HeadToHead component
+  const playersMap = useMemo(
+    () => createPlayersMap(bootstrap?.elements ?? []),
+    [bootstrap?.elements]
+  )
 
   if (isLoading) {
     return (
@@ -68,6 +76,17 @@ export function Analytics() {
           teamsMap={teamsMap}
           currentGameweek={currentGameweek.id}
           onPlayerClick={setSelectedPlayer}
+        />
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Head-to-Head</h2>
+        <HeadToHead
+          managerDetails={managerDetails}
+          currentGameweek={currentGameweek.id}
+          gameweeks={bootstrap?.events ?? []}
+          playersMap={playersMap}
+          teamsMap={teamsMap}
         />
       </section>
 

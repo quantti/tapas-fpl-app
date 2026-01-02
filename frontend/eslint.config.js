@@ -145,17 +145,17 @@ export default defineConfig([
       'unicorn/prefer-array-some': 'warn',
       'unicorn/prefer-number-properties': 'warn',
       'unicorn/prefer-optional-catch-binding': 'warn',
-      'unicorn/no-useless-undefined': 'warn',
+      'unicorn/no-useless-undefined': 'error',
       'unicorn/no-null': 'off', // null is fine in React
       'unicorn/prevent-abbreviations': 'off', // too opinionated
       'unicorn/filename-case': 'off', // React components are PascalCase
 
       // SonarJS - most useful rules for code quality
-      'sonarjs/cognitive-complexity': ['warn', 15],
-      'sonarjs/no-duplicate-string': ['warn', { threshold: 4 }],
-      'sonarjs/no-identical-functions': 'warn',
-      'sonarjs/no-collapsible-if': 'warn',
-      'sonarjs/no-redundant-jump': 'warn',
+      'sonarjs/cognitive-complexity': ['error', 15],
+      'sonarjs/no-duplicate-string': ['error', { threshold: 4 }],
+      'sonarjs/no-identical-functions': 'error',
+      'sonarjs/no-collapsible-if': 'error',
+      'sonarjs/no-redundant-jump': 'error',
       'sonarjs/no-small-switch': 'warn',
       'sonarjs/prefer-single-boolean-return': 'warn',
       'sonarjs/no-nested-conditional': 'warn',

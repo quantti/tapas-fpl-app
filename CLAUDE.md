@@ -65,6 +65,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - [x] Player details modal (xG/xA stats, form, fixtures, history)
 - [x] Cookie consent banner (GDPR-compliant)
 - [x] Release notification banner
+- [x] Head-to-Head manager comparison with template overlap score
 
 ## Project Structure
 

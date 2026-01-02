@@ -13,7 +13,7 @@
 - [x] Free transfers card - show how many free transfers each manager has
 - [ ] Player recommendation modal - see [docs/player-modal-plan.md](docs/player-modal-plan.md)
 - [x] Better position indicators - replace colored dots with text labels (DEF, MID, FWD) in badges
-- [ ] H2H manager comparison view
+- [x] H2H manager comparison view - Phase 1 complete, see [docs/h2h-plan.md](docs/h2h-plan.md)
 - [x] Points breakdown by position (PersonalStats position breakdown)
 - [ ] Transfer history timeline
 

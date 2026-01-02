@@ -1,51 +1,18 @@
 import { Zap } from 'lucide-react'
 import { useMemo } from 'react'
 
+import { CHIP_LABELS, getRemainingChips } from '../utils/chips'
+
 import { Card } from './Card'
 import { CardHeader } from './CardHeader'
 import * as styles from './ChipsRemaining.module.css'
 
 import type { ManagerGameweekData } from '../services/queries/useFplData'
 
-interface ChipUsage {
-  name: string
-  event: number
-}
-
 interface Props {
   managerDetails: ManagerGameweekData[]
   currentGameweek: number
   deadlineTime?: string
-}
-
-// Chips available in each half of the season (2025/26 rules: full reset at GW20)
-const AVAILABLE_CHIPS = ['bboost', '3xc', 'freehit', 'wildcard']
-
-const CHIP_LABELS: Record<string, string> = {
-  bboost: 'BB',
-  '3xc': 'TC',
-  freehit: 'FH',
-  wildcard: 'WC',
-}
-
-function getRemainingChips(chipsUsed: ChipUsage[], isSecondHalf: boolean): string[] {
-  const remaining = [...AVAILABLE_CHIPS]
-
-  // Filter chips by which half they were used in
-  const relevantChips = chipsUsed.filter((chip) => {
-    const usedInFirstHalf = chip.event < 20
-    return isSecondHalf ? !usedInFirstHalf : usedInFirstHalf
-  })
-
-  for (const used of relevantChips) {
-    const normalizedUsed = used.name.toLowerCase()
-    const index = remaining.indexOf(normalizedUsed)
-    if (index !== -1) {
-      remaining.splice(index, 1)
-    }
-  }
-
-  return remaining
 }
 
 export function ChipsRemaining({ managerDetails, currentGameweek, deadlineTime }: Props) {
