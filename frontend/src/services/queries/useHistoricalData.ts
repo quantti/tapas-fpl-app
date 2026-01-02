@@ -1,7 +1,7 @@
 import { useQueries } from '@tanstack/react-query'
 
 import { CACHE_TIMES } from '../../config'
-import { fplApi } from '../api'
+import { FplApiError, fplApi } from '../api'
 import { queryKeys } from '../queryKeys'
 
 import type { LiveGameweek } from '../../types/fpl'
@@ -78,9 +78,13 @@ export function useHistoricalData({
                     activeChip: data.active_chip,
                     picks: data.picks,
                   } as ManagerPicks
-                } catch {
-                  // Manager might not have existed in this gameweek
-                  return null
+                } catch (error) {
+                  // 404 = Manager didn't exist in this gameweek (joined late) - expected
+                  if (error instanceof FplApiError && error.status === 404) {
+                    return null
+                  }
+                  // Re-throw other errors (network, rate limit, server errors)
+                  throw error
                 }
               },
               staleTime: Infinity, // Past picks never change
