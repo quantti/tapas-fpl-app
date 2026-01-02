@@ -14,7 +14,7 @@
 - [ ] Player recommendation modal - see [docs/player-modal-plan.md](docs/player-modal-plan.md)
 - [x] Better position indicators - replace colored dots with text labels (DEF, MID, FWD) in badges
 - [ ] H2H manager comparison view
-- [ ] Points breakdown by position
+- [x] Points breakdown by position (PersonalStats position breakdown)
 - [ ] Transfer history timeline
 
 ### Player Modal Improvements

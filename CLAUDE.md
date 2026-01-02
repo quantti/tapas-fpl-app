@@ -171,3 +171,10 @@ fly secrets set SUPABASE_KEY="<publishable-key>"
 - Unit tests (Vitest)
 - E2E tests (Playwright in Docker)
 - Auto-deploys backend to Fly.io on `main` push
+
+**Releases** (`.github/workflows/release.yml`):
+- Uses [semantic-release](https://semantic-release.gitbook.io/) for automated versioning
+- Auto-triggers on every push to `main`
+- Creates releases based on conventional commits (`feat:` → minor, `fix:` → patch)
+- Manual trigger available with dry-run option: `gh workflow run release -f dry_run=true`
+- Updates `CHANGELOG.md`, bumps `package.json`, creates GitHub release
