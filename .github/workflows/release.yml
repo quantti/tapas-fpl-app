@@ -1,6 +1,8 @@
 name: Release
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -18,7 +20,7 @@ jobs:
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
-    # Manual trigger only - run via GitHub Actions UI or gh workflow run
+    # Auto-runs on push to main, or manual with dry-run option
 
     steps:
       - uses: actions/checkout@v4
