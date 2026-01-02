@@ -86,19 +86,15 @@ test.describe('Statistics - Mobile', () => {
   test('stats cards show values on mobile', async ({ page }) => {
     await waitForDataLoad(page)
 
-    // Check Team Values card shows pound values
-    const teamValuesCard = page.locator('text=Team Values').locator('..').locator('..')
-    await expect(teamValuesCard).toBeVisible({ timeout: 5000 })
+    // Check Finance card shows pound values (Squad and Bank columns)
+    const financeHeading = page.getByRole('heading', { name: 'Finance' })
+    await expect(financeHeading).toBeVisible({ timeout: 5000 })
 
-    const valueElements = teamValuesCard.locator('[class*="value"]')
-    const valueCount = await valueElements.count()
+    // The Finance table has pound values in Squad and Bank columns
+    const financeCard = financeHeading.locator('..').locator('..')
+    const poundValues = financeCard.locator('text=/£[\\d.]+m/')
+    const valueCount = await poundValues.count()
     expect(valueCount).toBeGreaterThan(0)
-
-    // Check that at least one value is visible and contains a pound sign or negative number
-    const firstValue = valueElements.first()
-    await expect(firstValue).toBeVisible()
-    const valueText = await firstValue.textContent()
-    expect(valueText).toMatch(/£[\d.]+m|-\d+/)
   })
 
   test('visual snapshot - mobile statistics', async ({ page }) => {
