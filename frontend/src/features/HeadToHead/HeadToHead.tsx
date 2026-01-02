@@ -1,5 +1,5 @@
 import { Swords } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Card } from 'components/Card'
 import { CardHeader } from 'components/CardHeader'
@@ -78,14 +78,19 @@ function renderComparisonContent({
   if (!managerAId || !managerBId) {
     return <p className={styles.empty}>Select two managers to compare</p>
   }
+  // Show existing data while loading new data (prevents layout shift / scroll jump)
+  if (managerA && managerB) {
+    return (
+      <div className={loading ? styles.loadingOverlay : undefined}>
+        <ComparisonGrid managerA={managerA} managerB={managerB} />
+      </div>
+    )
+  }
   if (loading) {
     return <p className={styles.loading}>Loading comparison...</p>
   }
   if (error) {
     return <p className={styles.error}>{getErrorMessage(error)}</p>
-  }
-  if (managerA && managerB) {
-    return <ComparisonGrid managerA={managerA} managerB={managerB} />
   }
   return null
 }
@@ -346,14 +351,40 @@ export function HeadToHead({
     teamsMap,
   })
 
+  // Scroll to content when data loads for a new manager pair
+  const contentRef = useRef<HTMLDivElement>(null)
+  const lastScrolledPairRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    // Only scroll when both managers are selected and data is loaded
+    if (!managerAId || !managerBId || !managerA || !managerB || loading) return
+
+    const currentPair = `${managerAId}-${managerBId}`
+    // Don't scroll again if we already scrolled for this pair
+    if (lastScrolledPairRef.current === currentPair) return
+
+    lastScrolledPairRef.current = currentPair
+    contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
+  }, [managerAId, managerBId, managerA, managerB, loading])
+
   const handleManagerAChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const scrollY = window.scrollY
     const value = e.target.value
     setManagerAId(value ? Number(value) : null)
+    // Firefox scrolls on select blur - restore after browser's internal handling
+    requestAnimationFrame(() => {
+      window.scrollTo(0, scrollY)
+    })
   }
 
   const handleManagerBChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const scrollY = window.scrollY
     const value = e.target.value
     setManagerBId(value ? Number(value) : null)
+    // Firefox scrolls on select blur - restore after browser's internal handling
+    requestAnimationFrame(() => {
+      window.scrollTo(0, scrollY)
+    })
   }
 
   if (managerDetails.length < 2) return null
@@ -405,14 +436,16 @@ export function HeadToHead({
           </div>
         </div>
 
-        {renderComparisonContent({
-          managerAId,
-          managerBId,
-          loading,
-          error,
-          managerA,
-          managerB,
-        })}
+        <div ref={contentRef} className={styles.content}>
+          {renderComparisonContent({
+            managerAId,
+            managerBId,
+            loading,
+            error,
+            managerA,
+            managerB,
+          })}
+        </div>
       </div>
     </Card>
   )

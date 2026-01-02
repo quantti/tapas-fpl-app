@@ -1,5 +1,5 @@
 export const __esModule: true
-export const Account: string
+export const account: string
 export const card: string
 export const cardHeader: string
 export const cardTitle: string

@@ -4,5 +4,5 @@ export const colorSuccess: string
 export const colorWarning: string
 export const name: string
 export const rank: string
-export const RankedRow: string
+export const rankedRow: string
 export const value: string

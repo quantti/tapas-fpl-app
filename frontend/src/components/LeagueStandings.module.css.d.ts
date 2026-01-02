@@ -15,7 +15,7 @@ export const down: string
 export const gwPoints: string
 export const header: string
 export const headerCell: string
-export const LeagueStandings: string
+export const leagueStandings: string
 export const liveBadge: string
 export const manager: string
 export const muted: string

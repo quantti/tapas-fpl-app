@@ -6,7 +6,7 @@ export const defconRow: string
 export const fixtureCard: string
 export const fixtureGrid: string
 export const fixtureHeader: string
-export const GameRewards: string
+export const gameRewards: string
 export const playerNames: string
 export const rewardsList: string
 export const score: string

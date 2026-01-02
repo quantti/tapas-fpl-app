@@ -14,7 +14,14 @@ export const releases: Release[] = [
   {
     version: 'Next Release',
     date: '',
-    items: [],
+    items: [
+      {
+        title: 'Head-to-Head Manager Comparison',
+        description:
+          'Compare any two managers in your league side-by-side. See total points, ranks, transfers, captain picks, chips used, squad value, and playstyle overlap.',
+        type: 'feature',
+      },
+    ],
   },
   {
     version: '0.15.0',

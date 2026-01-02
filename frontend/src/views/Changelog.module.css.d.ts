@@ -1,5 +1,5 @@
 export const __esModule: true
-export const Changelog: string
+export const changelog: string
 export const content: string
 export const featureIcon: string
 export const fixIcon: string

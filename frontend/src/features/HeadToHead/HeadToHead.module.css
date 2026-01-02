@@ -60,6 +60,19 @@
     letter-spacing: 0.05em;
   }
 
+  /* Content container - prevents scroll jump during loading transitions */
+  .content {
+    overflow-anchor: none; /* Opt out of browser scroll anchoring */
+    contain: layout; /* Isolate layout recalculations from rest of page */
+  }
+
+  /* Semi-transparent overlay while loading new data (keeps height stable) */
+  .loadingOverlay {
+    opacity: 0.5;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+
   /* Empty, loading, error states */
   .empty,
   .loading,

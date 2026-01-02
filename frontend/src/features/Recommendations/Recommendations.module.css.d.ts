@@ -10,7 +10,7 @@ export const list: string
 export const loading: string
 export const playerName: string
 export const positionBadge: string
-export const RecommendedPlayers: string
+export const recommendedPlayers: string
 export const rightColumn: string
 export const row: string
 export const starEmpty: string
