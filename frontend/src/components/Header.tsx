@@ -36,7 +36,9 @@ export function Header() {
 
   return (
     <header className={styles.Header}>
-      <div className={styles.logo}>Tapas & Tackles</div>
+      <Link to="/" className={styles.logo}>
+        Tapas & Tackles
+      </Link>
       <button
         ref={buttonRef}
         className={styles.menuButton}
