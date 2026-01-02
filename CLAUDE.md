@@ -2,10 +2,10 @@
 
 A Fantasy Premier League companion app for tracking league standings, player stats, and live gameweek data.
 
-> **Note**: This file contains high-level architecture. See subdirectory `CLAUDE.md` files for detailed documentation:
-> - `frontend/CLAUDE.md` - React components, hooks, testing, CSS modules
-> - `backend/CLAUDE.md` - Python FastAPI, database schema, Supabase
-> - `worker/CLAUDE.md` - Cloudflare Workers, cache TTLs
+> **Note**: This file contains high-level architecture. See subdirectory docs for detailed documentation:
+> - `frontend/FRONTEND.md` - React components, hooks, testing, CSS modules
+> - `backend/BACKEND.md` - Python FastAPI, database schema, Supabase
+> - `worker/WORKER.md` - Cloudflare Workers, cache TTLs
 
 ## Tech Stack
 
@@ -73,7 +73,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 tapas-fpl-app/
 ├── CLAUDE.md              # This file - high-level architecture
 ├── frontend/              # Vite + React app
-│   ├── CLAUDE.md         # Frontend documentation
+│   ├── FRONTEND.md       # Frontend documentation
 │   ├── src/
 │   │   ├── App.tsx       # Router setup
 │   │   ├── views/        # Page components (Dashboard, Statistics, Analytics)
@@ -87,14 +87,14 @@ tapas-fpl-app/
 │   ├── tests/            # Playwright E2E tests
 │   └── package.json
 ├── backend/               # Python FastAPI
-│   ├── CLAUDE.md         # Backend documentation
+│   ├── BACKEND.md        # Backend documentation
 │   ├── app/              # FastAPI application
 │   ├── migrations/       # SQL migrations for Supabase
 │   ├── tests/            # pytest tests
 │   ├── DB.md             # Database schema documentation
 │   └── fly.toml          # Fly.io deployment config
 └── worker/                # Cloudflare Workers
-    ├── CLAUDE.md         # Worker documentation
+    ├── WORKER.md         # Worker documentation
     ├── src/index.ts      # Worker entry point
     └── wrangler.toml     # Cloudflare config
 ```
