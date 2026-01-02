@@ -1,19 +1,19 @@
-import { useMemo } from 'react'
+import { useMemo } from 'react';
 
-import { STARTING_XI_MAX_POSITION } from '../../constants/positions'
+import { STARTING_XI_MAX_POSITION } from '../../constants/positions';
 
-import { useHistoricalData } from './useHistoricalData'
+import { useHistoricalData } from './useHistoricalData';
 
 interface ManagerBenchPoints {
-  managerId: number
-  teamName: string
-  totalBenchPoints: number
+  managerId: number;
+  teamName: string;
+  totalBenchPoints: number;
 }
 
 interface UseBenchPointsReturn {
-  benchPoints: ManagerBenchPoints[]
-  loading: boolean
-  error: string | null
+  benchPoints: ManagerBenchPoints[];
+  loading: boolean;
+  error: string | null;
 }
 
 /**
@@ -33,42 +33,42 @@ export function useBenchPoints(
       managerIds,
       currentGameweek,
       enabled: managerIds.length > 0 && currentGameweek > 1,
-    })
+    });
 
   // Calculate bench points from cached data
   const benchPoints = useMemo(() => {
     if (isLoading || managerIds.length === 0 || completedGameweeks.length === 0) {
-      return []
+      return [];
     }
 
     return managerIds.map(({ id, teamName }) => {
-      let totalBenchPoints = 0
+      let totalBenchPoints = 0;
 
       for (const gw of completedGameweeks) {
-        const picks = picksByManagerAndGw.get(`${id}-${gw}`)
-        const liveData = liveDataByGw.get(gw)
+        const picks = picksByManagerAndGw.get(`${id}-${gw}`);
+        const liveData = liveDataByGw.get(gw);
 
-        if (!picks || !liveData) continue
+        if (!picks || !liveData) continue;
 
         // Skip bench boost weeks - those points actually counted
-        if (picks.activeChip === 'bboost') continue
+        if (picks.activeChip === 'bboost') continue;
 
         // Bench players are positions 12-15 (multiplier=0)
-        const benchPicks = picks.picks.filter((p) => p.position > STARTING_XI_MAX_POSITION)
+        const benchPicks = picks.picks.filter((p) => p.position > STARTING_XI_MAX_POSITION);
 
         for (const pick of benchPicks) {
-          const playerLive = liveData.elements.find((e) => e.id === pick.element)
-          totalBenchPoints += playerLive?.stats.total_points ?? 0
+          const playerLive = liveData.elements.find((e) => e.id === pick.element);
+          totalBenchPoints += playerLive?.stats.total_points ?? 0;
         }
       }
 
-      return { managerId: id, teamName, totalBenchPoints }
-    })
-  }, [managerIds, completedGameweeks, liveDataByGw, picksByManagerAndGw, isLoading])
+      return { managerId: id, teamName, totalBenchPoints };
+    });
+  }, [managerIds, completedGameweeks, liveDataByGw, picksByManagerAndGw, isLoading]);
 
   return {
     benchPoints,
     loading: isLoading,
     error: error?.message ?? null,
-  }
+  };
 }

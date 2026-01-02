@@ -30,7 +30,7 @@
 }
 
 /* Dark theme */
-[data-theme="dark"] .LeagueUpdating {
+[data-theme='dark'] .LeagueUpdating {
   background-color: rgba(245, 158, 11, 0.15);
   border-color: rgba(245, 158, 11, 0.5);
   color: #fcd34d;

@@ -5,7 +5,7 @@
  */
 
 // League ID used in the app (from environment or default)
-export const MOCK_LEAGUE_ID = 314
+export const MOCK_LEAGUE_ID = 314;
 
 // Manager IDs for the mock league
 export const MOCK_MANAGER_IDS = {
@@ -13,7 +13,7 @@ export const MOCK_MANAGER_IDS = {
   manager2: 67890,
   manager3: 11111,
   manager4: 22222,
-}
+};
 
 // Player IDs for readable mock data (matches bootstrap elements array)
 export const PLAYER_IDS = {
@@ -38,7 +38,7 @@ export const PLAYER_IDS = {
   MARTINEZ: 6,
   ALISSON: 15,
   RAYA: 18,
-} as const
+} as const;
 
 /**
  * Bootstrap static response - contains all players, teams, gameweeks
@@ -546,7 +546,7 @@ export const mockBootstrapResponse = {
     transfers_cap: 20,
     transfers_sell_on_fee: 0.5,
   },
-}
+};
 
 /**
  * Fixtures response - match schedule and results
@@ -596,7 +596,7 @@ export const mockFixturesResponse = [
     team_h_difficulty: 2,
     team_a_difficulty: 3,
   },
-]
+];
 
 /**
  * Entry (manager) response
@@ -607,10 +607,10 @@ export function mockEntryResponse(entryId: number) {
     [MOCK_MANAGER_IDS.manager2]: { name: 'Bob Manager', teamName: 'Bob United' },
     [MOCK_MANAGER_IDS.manager3]: { name: 'Charlie Manager', teamName: 'Charlie City' },
     [MOCK_MANAGER_IDS.manager4]: { name: 'Diana Manager', teamName: 'Diana Town' },
-  }
+  };
 
-  const manager = managers[entryId] || { name: 'Test Manager', teamName: 'Test FC' }
-  const [firstName, lastName] = manager.name.split(' ')
+  const manager = managers[entryId] || { name: 'Test Manager', teamName: 'Test FC' };
+  const [firstName, lastName] = manager.name.split(' ');
 
   return {
     id: entryId,
@@ -624,7 +624,7 @@ export function mockEntryResponse(entryId: number) {
     started_event: 1,
     favourite_team: 11,
     current_event: 18,
-  }
+  };
 }
 
 /**
@@ -632,7 +632,7 @@ export function mockEntryResponse(entryId: number) {
  * Different managers have slightly different picks to create varied ownership percentages
  */
 export function mockPicksResponse(entryId: number, gw: number) {
-  const P = PLAYER_IDS // Shorthand for readability
+  const P = PLAYER_IDS; // Shorthand for readability
 
   // Base picks that all managers share (template players)
   const basePicks = [
@@ -640,16 +640,16 @@ export function mockPicksResponse(entryId: number, gw: number) {
     { element: P.VAN_DIJK, position: 2, multiplier: 1, is_captain: false, is_vice_captain: false },
     { element: P.SALAH, position: 5, multiplier: 2, is_captain: true, is_vice_captain: false },
     { element: P.HAALAND, position: 9, multiplier: 1, is_captain: false, is_vice_captain: false },
-  ]
+  ];
 
   // Varied picks based on manager
   type Pick = {
-    element: number
-    position: number
-    multiplier: number
-    is_captain: boolean
-    is_vice_captain: boolean
-  }
+    element: number;
+    position: number;
+    multiplier: number;
+    is_captain: boolean;
+    is_vice_captain: boolean;
+  };
   const managerVariants: Record<number, Pick[]> = {
     [MOCK_MANAGER_IDS.manager1]: [
       {
@@ -796,11 +796,11 @@ export function mockPicksResponse(entryId: number, gw: number) {
       { element: P.MUNOZ, position: 14, multiplier: 0, is_captain: false, is_vice_captain: false },
       { element: P.RAYA, position: 15, multiplier: 0, is_captain: false, is_vice_captain: false },
     ],
-  }
+  };
 
   // Get picks for this manager, or use default (manager1's) picks
-  const variantPicks = managerVariants[entryId] || managerVariants[MOCK_MANAGER_IDS.manager1]
-  const allPicks = [...basePicks, ...variantPicks]
+  const variantPicks = managerVariants[entryId] || managerVariants[MOCK_MANAGER_IDS.manager1];
+  const allPicks = [...basePicks, ...variantPicks];
 
   // Chips and hits vary by manager for testing UI
   const chipsByManager: Record<number, string | null> = {
@@ -808,14 +808,14 @@ export function mockPicksResponse(entryId: number, gw: number) {
     [MOCK_MANAGER_IDS.manager2]: 'freehit', // Free Hit
     [MOCK_MANAGER_IDS.manager3]: null,
     [MOCK_MANAGER_IDS.manager4]: null,
-  }
+  };
 
   const hitsByManager: Record<number, number> = {
     [MOCK_MANAGER_IDS.manager1]: 0,
     [MOCK_MANAGER_IDS.manager2]: 0,
     [MOCK_MANAGER_IDS.manager3]: 4, // -4 hit
     [MOCK_MANAGER_IDS.manager4]: 8, // -8 hit
-  }
+  };
 
   return {
     active_chip: chipsByManager[entryId] ?? null,
@@ -834,7 +834,7 @@ export function mockPicksResponse(entryId: number, gw: number) {
       points_on_bench: 8,
     },
     picks: allPicks,
-  }
+  };
 }
 
 /**
@@ -901,7 +901,7 @@ export const mockLeagueResponse = {
       },
     ],
   },
-}
+};
 
 /**
  * Live event response - real-time player points
@@ -1254,7 +1254,7 @@ export const mockLiveResponse = {
       explain: [{ fixture: 1, stats: [] }],
     },
   ],
-}
+};
 
 /**
  * Entry history response - historical gameweek data
@@ -1274,7 +1274,7 @@ export function mockEntryHistoryResponse(entryId: number) {
     })),
     past: [{ season_name: '2023/24', total_points: 2100, rank: 150000 }],
     chips: [{ name: 'bboost', time: '2025-01-15T12:00:00Z', event: 5 }],
-  }
+  };
 }
 
 /**
@@ -1300,7 +1300,7 @@ export function mockEntryTransfersResponse(entryId: number) {
       event: 15,
       time: '2025-12-05T14:00:00Z',
     },
-  ]
+  ];
 }
 
 /**
@@ -1406,7 +1406,7 @@ export function mockElementSummaryResponse(playerId: number) {
       },
     ],
     history_past: [{ season_name: '2023/24', element_code: 12345, total_points: 250 }],
-  }
+  };
 }
 
 /**
@@ -1418,4 +1418,4 @@ export const mockEventStatusResponse = {
     { bonus_added: true, date: '2025-12-22', event: 18, points: 'r' },
   ],
   leagues: 'Updated',
-}
+};

@@ -1,16 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react';
 
-import { FplUpdating } from '../components/FplUpdating'
-import { LoadingState } from '../components/LoadingState'
-import { HeadToHead } from '../features/HeadToHead'
-import { PlayerDetails } from '../features/PlayerDetails'
-import { Recommendations } from '../features/Recommendations'
-import { useFplData } from '../services/queries/useFplData'
-import { createPlayersMap } from '../utils/mappers'
+import { FplUpdating } from '../components/FplUpdating';
+import { LoadingState } from '../components/LoadingState';
+import { HeadToHead } from '../features/HeadToHead';
+import { PlayerDetails } from '../features/PlayerDetails';
+import { Recommendations } from '../features/Recommendations';
+import { useFplData } from '../services/queries/useFplData';
+import { createPlayersMap } from '../utils/mappers';
 
-import * as styles from './Analytics.module.css'
+import * as styles from './Analytics.module.css';
 
-import type { Player } from '../types/fpl'
+import type { Player } from '../types/fpl';
 
 export function Analytics() {
   const {
@@ -21,21 +21,21 @@ export function Analytics() {
     isApiUnavailable,
     bootstrap,
     teamsMap,
-  } = useFplData()
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
+  } = useFplData();
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   // Create players map for HeadToHead component
   const playersMap = useMemo(
     () => createPlayersMap(bootstrap?.elements ?? []),
     [bootstrap?.elements]
-  )
+  );
 
   if (isLoading) {
     return (
       <div className={styles.Analytics}>
         <LoadingState message="Loading analytics..." />
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -50,7 +50,7 @@ export function Analytics() {
           </div>
         )}
       </div>
-    )
+    );
   }
 
   if (!currentGameweek) {
@@ -61,7 +61,7 @@ export function Analytics() {
           <p>Could not load analytics.</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -97,5 +97,5 @@ export function Analytics() {
         onClose={() => setSelectedPlayer(null)}
       />
     </div>
-  )
+  );
 }

@@ -1,6 +1,6 @@
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react';
 
-import * as styles from './LeagueUpdating.module.css'
+import * as styles from './LeagueUpdating.module.css';
 
 /**
  * Warning banner displayed when FPL is recalculating league tables.
@@ -15,5 +15,5 @@ export function LeagueUpdating() {
         League tables are being recalculated. Standings may still show old data.
       </span>
     </div>
-  )
+  );
 }

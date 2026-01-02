@@ -1,56 +1,56 @@
-import { TrendingUp } from 'lucide-react'
-import { useMemo, useState, useEffect } from 'react'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { TrendingUp } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-import { Card } from 'components/Card'
-import { CardHeader } from 'components/CardHeader'
+import { Card } from 'components/Card';
+import { CardHeader } from 'components/CardHeader';
 
-import { useLeaguePositionHistory } from 'services/queries/useLeaguePositionHistory'
+import { useLeaguePositionHistory } from 'services/queries/useLeaguePositionHistory';
 
-import * as styles from './LeaguePosition.module.css'
+import * as styles from './LeaguePosition.module.css';
 
-import type { ManagerGameweekData } from 'services/queries/useFplData'
+import type { ManagerGameweekData } from 'services/queries/useFplData';
 
-const MOBILE_BREAKPOINT = 768
+const MOBILE_BREAKPOINT = 768;
 
 function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false)
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
+    const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
-  return isMobile
+  return isMobile;
 }
 
 interface Props {
-  managerDetails: ManagerGameweekData[]
-  currentGameweek: number
+  managerDetails: ManagerGameweekData[];
+  currentGameweek: number;
 }
 
 const AXIS_STYLE = {
   tick: { fontSize: 11, fill: 'var(--color-text-muted)' },
   axisLine: { stroke: 'var(--color-border)' },
   tickLine: { stroke: 'var(--color-border)' },
-}
+};
 
 export function LeaguePosition({ managerDetails, currentGameweek }: Props) {
-  const isMobile = useIsMobile()
+  const isMobile = useIsMobile();
 
   // Extract manager IDs and names for the hook
   const managers = useMemo(
     () => managerDetails.map((m) => ({ id: m.managerId, teamName: m.teamName })),
     [managerDetails]
-  )
+  );
 
-  const { data, loading, error } = useLeaguePositionHistory(managers, currentGameweek)
+  const { data, loading, error } = useLeaguePositionHistory(managers, currentGameweek);
 
-  if (managerDetails.length === 0) return null
+  if (managerDetails.length === 0) return null;
 
-  const managerCount = managerDetails.length
+  const managerCount = managerDetails.length;
 
   return (
     <Card className={styles.card}>
@@ -82,14 +82,14 @@ export function LeaguePosition({ managerDetails, currentGameweek }: Props) {
                 {!isMobile && (
                   <Tooltip
                     content={(props) => {
-                      const { active, payload, label } = props
-                      if (!active || !payload?.length) return null
-                      const sorted = [...payload].sort((a, b) => Number(a.value) - Number(b.value))
+                      const { active, payload, label } = props;
+                      if (!active || !payload?.length) return null;
+                      const sorted = [...payload].sort((a, b) => Number(a.value) - Number(b.value));
                       return (
                         <div className={styles.tooltip}>
                           <div className={styles.tooltipTitle}>Gameweek {label}</div>
                           {sorted.map((entry) => {
-                            const manager = data.managers.find((m) => `m${m.id}` === entry.dataKey)
+                            const manager = data.managers.find((m) => `m${m.id}` === entry.dataKey);
                             return (
                               <div
                                 key={entry.dataKey}
@@ -99,10 +99,10 @@ export function LeaguePosition({ managerDetails, currentGameweek }: Props) {
                                 <span className={styles.tooltipPosition}>{entry.value}.</span>
                                 <span>{manager?.teamName}</span>
                               </div>
-                            )
+                            );
                           })}
                         </div>
-                      )
+                      );
                     }}
                   />
                 )}
@@ -133,5 +133,5 @@ export function LeaguePosition({ managerDetails, currentGameweek }: Props) {
         </div>
       )}
     </Card>
-  )
+  );
 }

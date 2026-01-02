@@ -1,17 +1,17 @@
-import clsx from 'clsx'
+import clsx from 'clsx';
 
-import { Modal } from 'components/Modal'
+import { Modal } from 'components/Modal';
 
-import * as styles from './DifferentialModal.module.css'
+import * as styles from './DifferentialModal.module.css';
 
-import type { DifferentialPick } from 'services/queries/useCaptainSuccess'
+import type { DifferentialPick } from 'services/queries/useCaptainSuccess';
 
 interface Props {
-  isOpen: boolean
-  onClose: () => void
-  teamName: string
-  details: DifferentialPick[]
-  totalGain: number
+  isOpen: boolean;
+  onClose: () => void;
+  teamName: string;
+  details: DifferentialPick[];
+  totalGain: number;
 }
 
 export function CaptainDifferentialModal({ isOpen, onClose, teamName, details, totalGain }: Props) {
@@ -65,5 +65,5 @@ export function CaptainDifferentialModal({ isOpen, onClose, teamName, details, t
         </table>
       </div>
     </Modal>
-  )
+  );
 }

@@ -1,11 +1,11 @@
-import { Sun, Moon } from 'lucide-react'
+import { Sun, Moon } from 'lucide-react';
 
-import { useTheme } from '../hooks/useTheme'
+import { useTheme } from '../hooks/useTheme';
 
-import * as styles from './ThemeToggle.module.css'
+import * as styles from './ThemeToggle.module.css';
 
 export function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme()
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <button
@@ -20,5 +20,5 @@ export function ThemeToggle() {
         <Sun size={16} aria-hidden="true" />
       )}
     </button>
-  )
+  );
 }

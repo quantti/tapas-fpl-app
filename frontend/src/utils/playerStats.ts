@@ -1,4 +1,4 @@
-import { POSITION_TYPES } from '../constants/positions'
+import { POSITION_TYPES } from '../constants/positions';
 
 /**
  * Parse FPL numeric string to number.
@@ -6,9 +6,9 @@ import { POSITION_TYPES } from '../constants/positions'
  * Handles undefined, null, empty strings, and invalid values.
  */
 export function parseNumericString(value: string | undefined | null): number {
-  if (!value) return 0
-  const parsed = Number.parseFloat(value)
-  return Number.isNaN(parsed) ? 0 : parsed
+  if (!value) return 0;
+  const parsed = Number.parseFloat(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
 }
 
 /**
@@ -18,8 +18,8 @@ export function parseNumericString(value: string | undefined | null): number {
  * @returns Formatted string with sign prefix (e.g., "+1.5", "-2.0")
  */
 export function formatDelta(value: number, precision = 1): string {
-  const sign = value >= 0 ? '+' : ''
-  return `${sign}${value.toFixed(precision)}`
+  const sign = value >= 0 ? '+' : '';
+  return `${sign}${value.toFixed(precision)}`;
 }
 
 /**
@@ -32,9 +32,9 @@ export function getDeltaClass(value: number, invertedLogic = false): 'positive' 
   // For inverted logic (e.g., goals conceded), only strictly positive is bad
   // Zero means "as expected" which is neutral/good in both cases
   if (invertedLogic) {
-    return value > 0 ? 'negative' : 'positive'
+    return value > 0 ? 'negative' : 'positive';
   }
-  return value >= 0 ? 'positive' : 'negative'
+  return value >= 0 ? 'positive' : 'negative';
 }
 
 /**
@@ -42,9 +42,9 @@ export function getDeltaClass(value: number, invertedLogic = false): 'positive' 
  * @param delta - Goals scored minus xG
  */
 export function getGoalsDeltaLegend(delta: number): string {
-  if (delta === 0) return 'scoring as expected'
-  const abs = Math.abs(delta).toFixed(1)
-  return delta > 0 ? `scored ${abs} more than xG` : `scored ${abs} fewer than xG`
+  if (delta === 0) return 'scoring as expected';
+  const abs = Math.abs(delta).toFixed(1);
+  return delta > 0 ? `scored ${abs} more than xG` : `scored ${abs} fewer than xG`;
 }
 
 /**
@@ -52,9 +52,9 @@ export function getGoalsDeltaLegend(delta: number): string {
  * @param delta - Assists minus xA
  */
 export function getAssistsDeltaLegend(delta: number): string {
-  if (delta === 0) return 'assisting as expected'
-  const abs = Math.abs(delta).toFixed(1)
-  return delta > 0 ? `${abs} more assists than xA` : `${abs} fewer assists than xA`
+  if (delta === 0) return 'assisting as expected';
+  const abs = Math.abs(delta).toFixed(1);
+  return delta > 0 ? `${abs} more assists than xA` : `${abs} fewer assists than xA`;
 }
 
 /**
@@ -62,9 +62,9 @@ export function getAssistsDeltaLegend(delta: number): string {
  * @param delta - Goals conceded minus xGC (positive = worse)
  */
 export function getGoalsConcededDeltaLegend(delta: number): string {
-  if (delta === 0) return 'conceding as expected'
-  const abs = Math.abs(delta).toFixed(1)
-  return delta > 0 ? `conceded ${abs} more than expected` : `conceded ${abs} fewer than expected`
+  if (delta === 0) return 'conceding as expected';
+  const abs = Math.abs(delta).toFixed(1);
+  return delta > 0 ? `conceded ${abs} more than expected` : `conceded ${abs} fewer than expected`;
 }
 
 /**
@@ -72,15 +72,15 @@ export function getGoalsConcededDeltaLegend(delta: number): string {
  * @param delta - Goal involvements minus xGI
  */
 export function getGoalInvolvementsDeltaLegend(delta: number): string {
-  if (delta === 0) return 'G+A as expected'
-  const abs = Math.abs(delta).toFixed(1)
-  return delta > 0 ? `${abs} more G+A than expected` : `${abs} fewer G+A than expected`
+  if (delta === 0) return 'G+A as expected';
+  const abs = Math.abs(delta).toFixed(1);
+  return delta > 0 ? `${abs} more G+A than expected` : `${abs} fewer G+A than expected`;
 }
 
 interface SeasonStats {
-  goals_scored: number
-  assists: number
-  clean_sheets: number
+  goals_scored: number;
+  assists: number;
+  clean_sheets: number;
 }
 
 /**
@@ -89,17 +89,17 @@ interface SeasonStats {
  * @param stats - Season stats object
  */
 export function getSeasonSummary(positionType: number, stats: SeasonStats): string {
-  const { goals_scored, assists, clean_sheets } = stats
+  const { goals_scored, assists, clean_sheets } = stats;
 
   if (positionType === POSITION_TYPES.GOALKEEPER) {
-    return `${clean_sheets} CS`
+    return `${clean_sheets} CS`;
   }
 
   if (positionType === POSITION_TYPES.DEFENDER) {
-    const goalInvolvements = goals_scored + assists
-    return `${clean_sheets} CS · ${goalInvolvements} G+A`
+    const goalInvolvements = goals_scored + assists;
+    return `${clean_sheets} CS · ${goalInvolvements} G+A`;
   }
 
   // Midfielder and Forward show goals and assists
-  return `${goals_scored}G ${assists}A`
+  return `${goals_scored}G ${assists}A`;
 }

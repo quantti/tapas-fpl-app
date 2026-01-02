@@ -1,65 +1,65 @@
-import { Users } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Users } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
-import { Card } from './Card'
-import { CardHeader } from './CardHeader'
-import { ListRowButton } from './ListRowButton'
-import * as styles from './PlayerOwnership.module.css'
-import { PlayerOwnershipModal } from './PlayerOwnershipModal'
+import { Card } from './Card';
+import { CardHeader } from './CardHeader';
+import { ListRowButton } from './ListRowButton';
+import * as styles from './PlayerOwnership.module.css';
+import { PlayerOwnershipModal } from './PlayerOwnershipModal';
 
-import type { ManagerGameweekData } from '../services/queries/useFplData'
-import type { Player, Team } from '../types/fpl'
+import type { ManagerGameweekData } from '../services/queries/useFplData';
+import type { Player, Team } from '../types/fpl';
 
 interface Props {
-  managerDetails: ManagerGameweekData[]
-  playersMap: Map<number, Player>
-  teamsMap: Map<number, Team>
+  managerDetails: ManagerGameweekData[];
+  playersMap: Map<number, Player>;
+  teamsMap: Map<number, Team>;
 }
 
 interface PlayerOwnershipData {
-  player: Player
-  team: Team | undefined
-  count: number
-  percentage: number
-  ownerTeamNames: string[]
+  player: Player;
+  team: Team | undefined;
+  count: number;
+  percentage: number;
+  ownerTeamNames: string[];
 }
 
 interface ModalState {
-  isOpen: boolean
-  playerName: string
-  teamNames: string[]
+  isOpen: boolean;
+  playerName: string;
+  teamNames: string[];
 }
 
 export function PlayerOwnership({ managerDetails, playersMap, teamsMap }: Props) {
-  const totalManagers = managerDetails.length
+  const totalManagers = managerDetails.length;
 
   const [modal, setModal] = useState<ModalState>({
     isOpen: false,
     playerName: '',
     teamNames: [],
-  })
+  });
 
   const ownership = useMemo(() => {
-    if (totalManagers === 0) return []
+    if (totalManagers === 0) return [];
 
     // Aggregate ownership across all managers, tracking team names
-    const ownershipMap = new Map<number, { count: number; teamNames: string[] }>()
+    const ownershipMap = new Map<number, { count: number; teamNames: string[] }>();
 
     for (const manager of managerDetails) {
       for (const pick of manager.picks) {
-        const current = ownershipMap.get(pick.playerId) || { count: 0, teamNames: [] }
+        const current = ownershipMap.get(pick.playerId) || { count: 0, teamNames: [] };
         ownershipMap.set(pick.playerId, {
           count: current.count + 1,
           teamNames: [...current.teamNames, manager.teamName],
-        })
+        });
       }
     }
 
     // Convert to array with player data
-    const result: PlayerOwnershipData[] = []
+    const result: PlayerOwnershipData[] = [];
 
     for (const [playerId, data] of ownershipMap) {
-      const player = playersMap.get(playerId)
+      const player = playersMap.get(playerId);
       if (player) {
         result.push({
           player,
@@ -67,18 +67,18 @@ export function PlayerOwnership({ managerDetails, playersMap, teamsMap }: Props)
           count: data.count,
           percentage: (data.count / totalManagers) * 100,
           ownerTeamNames: data.teamNames,
-        })
+        });
       }
     }
 
     // Sort by ownership count (descending)
-    result.sort((a, b) => b.count - a.count || a.player.web_name.localeCompare(b.player.web_name))
+    result.sort((a, b) => b.count - a.count || a.player.web_name.localeCompare(b.player.web_name));
 
-    return result
-  }, [managerDetails, playersMap, teamsMap, totalManagers])
+    return result;
+  }, [managerDetails, playersMap, teamsMap, totalManagers]);
 
   if (totalManagers === 0) {
-    return null
+    return null;
   }
 
   const handlePlayerClick = (playerName: string, teamNames: string[]) => {
@@ -86,15 +86,15 @@ export function PlayerOwnership({ managerDetails, playersMap, teamsMap }: Props)
       isOpen: true,
       playerName,
       teamNames,
-    })
-  }
+    });
+  };
 
   return (
     <Card data-testid="player-ownership">
       <CardHeader icon={<Users size={16} color="#14B8A6" />}>Player Ownership</CardHeader>
       <div className={styles.list} data-testid="player-ownership-list">
         {ownership.map(({ player, team, count, percentage, ownerTeamNames }) => {
-          const isClickable = percentage < 100
+          const isClickable = percentage < 100;
 
           if (isClickable) {
             return (
@@ -113,7 +113,7 @@ export function PlayerOwnership({ managerDetails, playersMap, teamsMap }: Props)
                   <span className={styles.percentage}>{Math.round(percentage)}%</span>
                 </span>
               </ListRowButton>
-            )
+            );
           }
 
           return (
@@ -129,7 +129,7 @@ export function PlayerOwnership({ managerDetails, playersMap, teamsMap }: Props)
                 <span className={styles.percentage}>{Math.round(percentage)}%</span>
               </span>
             </div>
-          )
+          );
         })}
       </div>
       <PlayerOwnershipModal
@@ -139,5 +139,5 @@ export function PlayerOwnership({ managerDetails, playersMap, teamsMap }: Props)
         teamNames={modal.teamNames}
       />
     </Card>
-  )
+  );
 }

@@ -1,36 +1,36 @@
-import { useQueries } from '@tanstack/react-query'
+import { useQueries } from '@tanstack/react-query';
 
-import { CACHE_TIMES } from '../../config'
-import { FplApiError, fplApi } from '../api'
-import { queryKeys } from '../queryKeys'
+import { CACHE_TIMES } from '../../config';
+import { FplApiError, fplApi } from '../api';
+import { queryKeys } from '../queryKeys';
 
-import type { LiveGameweek } from '../../types/fpl'
+import type { LiveGameweek } from '../../types/fpl';
 
 export interface ManagerPicks {
-  managerId: number
-  gameweek: number
-  activeChip: string | null
+  managerId: number;
+  gameweek: number;
+  activeChip: string | null;
   picks: {
-    element: number
-    position: number
-    multiplier: number
-    is_captain: boolean
-    is_vice_captain: boolean
-  }[]
+    element: number;
+    position: number;
+    multiplier: number;
+    is_captain: boolean;
+    is_vice_captain: boolean;
+  }[];
 }
 
 interface UseHistoricalDataParams {
-  managerIds: { id: number; teamName: string }[]
-  currentGameweek: number
-  enabled?: boolean
+  managerIds: { id: number; teamName: string }[];
+  currentGameweek: number;
+  enabled?: boolean;
 }
 
 interface UseHistoricalDataReturn {
-  liveDataByGw: Map<number, LiveGameweek>
-  picksByManagerAndGw: Map<string, ManagerPicks> // key: `${managerId}-${gw}`
-  completedGameweeks: number[]
-  isLoading: boolean
-  error: Error | null
+  liveDataByGw: Map<number, LiveGameweek>;
+  picksByManagerAndGw: Map<string, ManagerPicks>; // key: `${managerId}-${gw}`
+  completedGameweeks: number[];
+  isLoading: boolean;
+  error: Error | null;
 }
 
 /**
@@ -47,7 +47,7 @@ export function useHistoricalData({
 }: UseHistoricalDataParams): UseHistoricalDataReturn {
   // Calculate completed gameweeks (all except current)
   const completedGameweeks =
-    currentGameweek > 1 ? Array.from({ length: currentGameweek - 1 }, (_, i) => i + 1) : []
+    currentGameweek > 1 ? Array.from({ length: currentGameweek - 1 }, (_, i) => i + 1) : [];
 
   // Fetch live data for all completed gameweeks
   // These are immutable - staleTime: Infinity means we never refetch
@@ -59,7 +59,7 @@ export function useHistoricalData({
       gcTime: CACHE_TIMES.ONE_HOUR,
       enabled: enabled && completedGameweeks.length > 0,
     })),
-  })
+  });
 
   // Fetch picks for each manager for each completed gameweek
   // Also immutable - manager picks for past GWs don't change
@@ -71,20 +71,20 @@ export function useHistoricalData({
               queryKey: queryKeys.entryPicks(manager.id, gw),
               queryFn: async () => {
                 try {
-                  const data = await fplApi.getEntryPicks(manager.id, gw)
+                  const data = await fplApi.getEntryPicks(manager.id, gw);
                   return {
                     managerId: manager.id,
                     gameweek: gw,
                     activeChip: data.active_chip,
                     picks: data.picks,
-                  } as ManagerPicks
+                  } as ManagerPicks;
                 } catch (error) {
                   // 404 = Manager didn't exist in this gameweek (joined late) - expected
                   if (error instanceof FplApiError && error.status === 404) {
-                    return null
+                    return null;
                   }
                   // Re-throw other errors (network, rate limit, server errors)
-                  throw error
+                  throw error;
                 }
               },
               staleTime: Infinity, // Past picks never change
@@ -93,34 +93,34 @@ export function useHistoricalData({
             }))
           )
         : [],
-  })
+  });
 
   // Build maps for easy lookup
-  const liveDataByGw = new Map<number, LiveGameweek>()
+  const liveDataByGw = new Map<number, LiveGameweek>();
   for (const query of liveQueries) {
     if (query.data) {
       // Find which gameweek this data belongs to by checking the query
-      const gw = completedGameweeks[liveQueries.indexOf(query)]
+      const gw = completedGameweeks[liveQueries.indexOf(query)];
       if (gw !== undefined) {
-        liveDataByGw.set(gw, query.data)
+        liveDataByGw.set(gw, query.data);
       }
     }
   }
 
-  const picksByManagerAndGw = new Map<string, ManagerPicks>()
+  const picksByManagerAndGw = new Map<string, ManagerPicks>();
   for (const query of picksQueries) {
     if (query.data) {
-      const key = `${query.data.managerId}-${query.data.gameweek}`
-      picksByManagerAndGw.set(key, query.data)
+      const key = `${query.data.managerId}-${query.data.gameweek}`;
+      picksByManagerAndGw.set(key, query.data);
     }
   }
 
   // Calculate loading state
-  const isLoading = liveQueries.some((q) => q.isLoading) || picksQueries.some((q) => q.isLoading)
+  const isLoading = liveQueries.some((q) => q.isLoading) || picksQueries.some((q) => q.isLoading);
 
   // Find first error if any
   const error =
-    liveQueries.find((q) => q.error)?.error || picksQueries.find((q) => q.error)?.error || null
+    liveQueries.find((q) => q.error)?.error || picksQueries.find((q) => q.error)?.error || null;
 
   return {
     liveDataByGw,
@@ -128,5 +128,5 @@ export function useHistoricalData({
     completedGameweeks,
     isLoading,
     error: error as Error | null,
-  }
+  };
 }

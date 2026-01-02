@@ -1,31 +1,31 @@
-import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
 
-import { FplUpdating } from './FplUpdating'
+import { FplUpdating } from './FplUpdating';
 
 describe('FplUpdating', () => {
   it('renders default message', () => {
-    render(<FplUpdating />)
+    render(<FplUpdating />);
 
-    expect(screen.getByText('FPL is updating')).toBeInTheDocument()
+    expect(screen.getByText('FPL is updating')).toBeInTheDocument();
     expect(
       screen.getByText(/Fantasy Premier League is updating gameweek data/i)
-    ).toBeInTheDocument()
+    ).toBeInTheDocument();
     expect(
       screen.getByText(/The app will automatically refresh when data is available/i)
-    ).toBeInTheDocument()
-  })
+    ).toBeInTheDocument();
+  });
 
   it('accepts custom title and message', () => {
-    render(<FplUpdating title="Custom Title" message="Custom message text." />)
+    render(<FplUpdating title="Custom Title" message="Custom message text." />);
 
-    expect(screen.getByText('Custom Title')).toBeInTheDocument()
-    expect(screen.getByText('Custom message text.')).toBeInTheDocument()
-  })
+    expect(screen.getByText('Custom Title')).toBeInTheDocument();
+    expect(screen.getByText('Custom message text.')).toBeInTheDocument();
+  });
 
   it('has correct test id', () => {
-    render(<FplUpdating />)
+    render(<FplUpdating />);
 
-    expect(screen.getByTestId('fpl-updating')).toBeInTheDocument()
-  })
-})
+    expect(screen.getByTestId('fpl-updating')).toBeInTheDocument();
+  });
+});

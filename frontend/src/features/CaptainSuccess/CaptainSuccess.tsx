@@ -1,32 +1,32 @@
-import clsx from 'clsx'
-import { Crown } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import clsx from 'clsx';
+import { Crown } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
-import { Card } from 'components/Card'
-import { CardHeader } from 'components/CardHeader'
-import { ListRowButton } from 'components/ListRowButton'
+import { Card } from 'components/Card';
+import { CardHeader } from 'components/CardHeader';
+import { ListRowButton } from 'components/ListRowButton';
 
-import { useCaptainDifferential } from 'services/queries/useCaptainSuccess'
+import { useCaptainDifferential } from 'services/queries/useCaptainSuccess';
 
-import * as styles from './CaptainSuccess.module.css'
-import { CaptainDifferentialModal } from './components/DifferentialModal'
+import * as styles from './CaptainSuccess.module.css';
+import { CaptainDifferentialModal } from './components/DifferentialModal';
 
-import type { DifferentialPick } from 'services/queries/useCaptainSuccess'
-import type { ManagerGameweekData } from 'services/queries/useFplData'
-import type { Gameweek, Player } from 'types/fpl'
+import type { DifferentialPick } from 'services/queries/useCaptainSuccess';
+import type { ManagerGameweekData } from 'services/queries/useFplData';
+import type { Gameweek, Player } from 'types/fpl';
 
 interface Props {
-  managerDetails: ManagerGameweekData[]
-  currentGameweek: number
-  gameweeks: Gameweek[]
-  playersMap: Map<number, Player>
+  managerDetails: ManagerGameweekData[];
+  currentGameweek: number;
+  gameweeks: Gameweek[];
+  playersMap: Map<number, Player>;
 }
 
 interface ModalState {
-  isOpen: boolean
-  teamName: string
-  details: DifferentialPick[]
-  totalGain: number
+  isOpen: boolean;
+  teamName: string;
+  details: DifferentialPick[];
+  totalGain: number;
 }
 
 export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, playersMap }: Props) {
@@ -35,30 +35,30 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
     teamName: '',
     details: [],
     totalGain: 0,
-  })
+  });
 
   const managerIds = useMemo(
     () => managerDetails.map((m) => ({ id: m.managerId, teamName: m.teamName })),
     [managerDetails]
-  )
+  );
 
   const { stats, loading, error } = useCaptainDifferential(
     managerIds,
     currentGameweek,
     gameweeks,
     playersMap
-  )
+  );
 
   // Sort by differential gain (highest first - best differential pickers)
   const sortedData = useMemo(
     () => [...stats].sort((a, b) => b.differentialGain - a.differentialGain),
     [stats]
-  )
+  );
 
-  if (managerDetails.length === 0) return null
+  if (managerDetails.length === 0) return null;
 
   // Check if anyone made differential picks
-  const totalDifferentialPicks = sortedData.reduce((sum, d) => sum + d.differentialPicks, 0)
+  const totalDifferentialPicks = sortedData.reduce((sum, d) => sum + d.differentialPicks, 0);
 
   return (
     <Card>
@@ -110,5 +110,5 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
         totalGain={modal.totalGain}
       />
     </Card>
-  )
+  );
 }

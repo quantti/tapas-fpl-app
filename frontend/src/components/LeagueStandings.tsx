@@ -1,42 +1,42 @@
-import clsx from 'clsx'
-import { ChevronRight, CircleChevronUp, CircleChevronDown, ArrowRightLeft } from 'lucide-react'
-import { useMemo } from 'react'
+import clsx from 'clsx';
+import { ChevronRight, CircleChevronUp, CircleChevronDown, ArrowRightLeft } from 'lucide-react';
+import { useMemo } from 'react';
 
 import {
   calculateLiveManagerPoints,
   hasGamesInProgress,
   hasAnyFixtureStarted,
-} from '../utils/liveScoring'
+} from '../utils/liveScoring';
 
-import * as styles from './LeagueStandings.module.css'
+import * as styles from './LeagueStandings.module.css';
 
-import type { ManagerGameweekData } from '../services/queries/useFplData'
-import type { AutoSubResult } from '../types/autoSubs'
+import type { ManagerGameweekData } from '../services/queries/useFplData';
+import type { AutoSubResult } from '../types/autoSubs';
 import type {
   LeagueStandings as LeagueStandingsType,
   LiveGameweek,
   Fixture,
   Player,
-} from '../types/fpl'
+} from '../types/fpl';
 
 interface Props {
-  standings: LeagueStandingsType
-  managerDetails: ManagerGameweekData[]
-  isLive: boolean
-  liveData?: LiveGameweek | null
-  fixtures?: Fixture[]
-  onManagerClick?: (managerId: number) => void
-  playersMap?: Map<number, Player> // For auto-substitution calculation
+  standings: LeagueStandingsType;
+  managerDetails: ManagerGameweekData[];
+  isLive: boolean;
+  liveData?: LiveGameweek | null;
+  fixtures?: Fixture[];
+  onManagerClick?: (managerId: number) => void;
+  playersMap?: Map<number, Player>; // For auto-substitution calculation
 }
 
 function getRankChange(
   current: number,
   last: number
 ): { direction: 'up' | 'down' | 'same'; diff: number } {
-  if (last === 0 || current === last) return { direction: 'same', diff: 0 }
+  if (last === 0 || current === last) return { direction: 'same', diff: 0 };
   return current < last
     ? { direction: 'up', diff: last - current }
-    : { direction: 'down', diff: current - last }
+    : { direction: 'down', diff: current - last };
 }
 
 export function LeagueStandings({
@@ -51,18 +51,18 @@ export function LeagueStandings({
   const detailsMap = useMemo(
     () => new Map(managerDetails.map((m) => [m.managerId, m])),
     [managerDetails]
-  )
+  );
 
   // Check if any games are actually in progress (for live badge)
-  const gamesInProgress = hasGamesInProgress(fixtures)
+  const gamesInProgress = hasGamesInProgress(fixtures);
 
   // Check if any fixtures have started this gameweek (for showing rank changes)
-  const gamesStarted = hasAnyFixtureStarted(fixtures)
+  const gamesStarted = hasAnyFixtureStarted(fixtures);
 
   // Calculate live points and totals for each manager, then sort by live total
   const sortedResults = useMemo(() => {
     const results = standings.standings.results.map((entry) => {
-      const details = detailsMap.get(entry.entry)
+      const details = detailsMap.get(entry.entry);
 
       // If live and we have manager picks, calculate live points
       if (isLive && liveData && details) {
@@ -78,18 +78,18 @@ export function LeagueStandings({
           fixtures,
           0,
           playersMap
-        )
+        );
 
         // Live GW points = raw player points (NO hit subtraction)
         // This matches FPL's display and the event_total field
-        const liveGwPoints = livePoints.totalPoints
+        const liveGwPoints = livePoints.totalPoints;
 
         // Live total = previous total + live GW points
         // entry.total already has all hits factored in
         // entry.event_total is raw points, so subtracting it gives us "total minus current raw"
         // Adding our live raw calculation gives the correct total
-        const previousTotal = entry.total - entry.event_total
-        const liveTotal = previousTotal + liveGwPoints
+        const previousTotal = entry.total - entry.event_total;
+        const liveTotal = previousTotal + liveGwPoints;
 
         return {
           ...entry,
@@ -98,7 +98,7 @@ export function LeagueStandings({
           liveTotal,
           isLive: true,
           autoSubResult: livePoints.autoSubResult,
-        }
+        };
       }
 
       // Not live or no details - use static values
@@ -109,16 +109,16 @@ export function LeagueStandings({
         liveTotal: entry.total,
         isLive: false,
         autoSubResult: undefined as AutoSubResult | undefined,
-      }
-    })
+      };
+    });
 
     // Sort by live total descending when live
     if (isLive && liveData) {
-      results.sort((a, b) => b.liveTotal - a.liveTotal)
+      results.sort((a, b) => b.liveTotal - a.liveTotal);
     }
 
-    return results
-  }, [standings.standings.results, detailsMap, isLive, liveData, fixtures, playersMap])
+    return results;
+  }, [standings.standings.results, detailsMap, isLive, liveData, fixtures, playersMap]);
 
   return (
     <div className={styles.LeagueStandings}>
@@ -141,11 +141,11 @@ export function LeagueStandings({
         </thead>
         <tbody className={styles.tableBody}>
           {sortedResults.map((entry, index) => {
-            const details = detailsMap.get(entry.entry)
+            const details = detailsMap.get(entry.entry);
             // When live, rank is the current position in sorted array (1-indexed)
             // When not live, use the API rank
-            const displayRank = isLive && liveData ? index + 1 : entry.rank
-            const rankChange = getRankChange(displayRank, entry.last_rank)
+            const displayRank = isLive && liveData ? index + 1 : entry.rank;
+            const rankChange = getRankChange(displayRank, entry.last_rank);
 
             return (
               <tr key={entry.entry} className={styles.row}>
@@ -210,8 +210,8 @@ export function LeagueStandings({
                           const orChange = getRankChange(
                             details.overallRank,
                             details.lastOverallRank
-                          )
-                          if (orChange.direction === 'same') return null
+                          );
+                          if (orChange.direction === 'same') return null;
                           return (
                             <span className={clsx(styles.rankChange, styles[orChange.direction])}>
                               {orChange.direction === 'up' ? (
@@ -220,7 +220,7 @@ export function LeagueStandings({
                                 <CircleChevronDown size={12} />
                               )}
                             </span>
-                          )
+                          );
                         })()}
                     </div>
                   ) : (
@@ -242,12 +242,12 @@ export function LeagueStandings({
                   )}
                 </td>
               </tr>
-            )
+            );
           })}
         </tbody>
       </table>
     </div>
-  )
+  );
 }
 
 function formatChip(chip: string): string {
@@ -256,17 +256,17 @@ function formatChip(chip: string): string {
     '3xc': 'TC',
     freehit: 'FH',
     wildcard: 'WC',
-  }
-  return chips[chip] || chip.toUpperCase()
+  };
+  return chips[chip] || chip.toUpperCase();
 }
 
 function formatAutoSubs(autoSubResult: AutoSubResult): string {
   const subs = autoSubResult.autoSubs.map(
     (sub) => `${sub.playerOut.webName} → ${sub.playerIn.webName}`
-  )
-  const lines = [...subs]
+  );
+  const lines = [...subs];
   if (autoSubResult.captainPromoted) {
-    lines.push('Vice-captain promoted to captain')
+    lines.push('Vice-captain promoted to captain');
   }
-  return lines.join('\n')
+  return lines.join('\n');
 }

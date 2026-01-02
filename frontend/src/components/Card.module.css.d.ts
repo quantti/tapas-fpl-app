@@ -1,2 +1,2 @@
-export const __esModule: true
-export const Card: string
+export const __esModule: true;
+export const Card: string;

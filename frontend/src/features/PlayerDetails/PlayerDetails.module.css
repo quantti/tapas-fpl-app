@@ -528,7 +528,7 @@
 }
 
 /* Dark theme FDR colors */
-[data-theme="dark"] .PlayerModal {
+[data-theme='dark'] .PlayerModal {
   .fdrBadge {
     &.easy {
       --fdr-easy-bg: #166534;

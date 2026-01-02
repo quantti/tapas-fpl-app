@@ -1,10 +1,10 @@
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react';
 
-import * as styles from './FplUpdating.module.css'
+import * as styles from './FplUpdating.module.css';
 
 interface Props {
-  title?: string
-  message?: string
+  title?: string;
+  message?: string;
 }
 
 /**
@@ -22,5 +22,5 @@ export function FplUpdating({
       <p className={styles.message}>{message}</p>
       <p className={styles.hint}>The app will automatically refresh when data is available.</p>
     </div>
-  )
+  );
 }

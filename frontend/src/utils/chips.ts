@@ -4,19 +4,19 @@
  */
 
 export interface ChipUsage {
-  name: string
-  event: number
+  name: string;
+  event: number;
 }
 
 // Chips available in each half of the season
-export const AVAILABLE_CHIPS = ['bboost', '3xc', 'freehit', 'wildcard'] as const
+export const AVAILABLE_CHIPS = ['bboost', '3xc', 'freehit', 'wildcard'] as const;
 
 export const CHIP_LABELS: Record<string, string> = {
   bboost: 'BB',
   '3xc': 'TC',
   freehit: 'FH',
   wildcard: 'WC',
-}
+};
 
 /**
  * Get remaining chips for the current half of the season.
@@ -25,23 +25,23 @@ export const CHIP_LABELS: Record<string, string> = {
  * @returns Array of remaining chip internal names (e.g., 'bboost', 'wildcard')
  */
 export function getRemainingChips(chipsUsed: ChipUsage[], isSecondHalf: boolean): string[] {
-  const remaining = [...AVAILABLE_CHIPS] as string[]
+  const remaining = [...AVAILABLE_CHIPS] as string[];
 
   // Filter chips by which half they were used in
   const relevantChips = chipsUsed.filter((chip) => {
-    const usedInFirstHalf = chip.event < 20
-    return isSecondHalf ? !usedInFirstHalf : usedInFirstHalf
-  })
+    const usedInFirstHalf = chip.event < 20;
+    return isSecondHalf ? !usedInFirstHalf : usedInFirstHalf;
+  });
 
   for (const used of relevantChips) {
-    const normalizedUsed = used.name.toLowerCase()
-    const index = remaining.indexOf(normalizedUsed)
+    const normalizedUsed = used.name.toLowerCase();
+    const index = remaining.indexOf(normalizedUsed);
     if (index !== -1) {
-      remaining.splice(index, 1)
+      remaining.splice(index, 1);
     }
   }
 
-  return remaining
+  return remaining;
 }
 
 /**
@@ -53,17 +53,17 @@ export function getRemainingChips(chipsUsed: ChipUsage[], isSecondHalf: boolean)
 export function getUsedChips(chipsUsed: ChipUsage[], isSecondHalf: boolean): string[] {
   return chipsUsed
     .filter((chip) => {
-      const usedInFirstHalf = chip.event < 20
-      return isSecondHalf ? !usedInFirstHalf : usedInFirstHalf
+      const usedInFirstHalf = chip.event < 20;
+      return isSecondHalf ? !usedInFirstHalf : usedInFirstHalf;
     })
-    .map((chip) => chip.name.toLowerCase())
+    .map((chip) => chip.name.toLowerCase());
 }
 
 /**
  * Get chip display label from internal name.
  */
 export function getChipLabel(name: string): string {
-  return CHIP_LABELS[name.toLowerCase()] ?? name.toUpperCase()
+  return CHIP_LABELS[name.toLowerCase()] ?? name.toUpperCase();
 }
 
 /**
@@ -75,16 +75,16 @@ export function getChipsForCurrentHalf(
   deadlineTime?: string
 ): { used: string[]; remaining: string[] } {
   // Second half starts at GW20, or after GW19 deadline passes
-  let isSecondHalf = currentGameweek >= 20
+  let isSecondHalf = currentGameweek >= 20;
   if (currentGameweek === 19 && deadlineTime) {
-    isSecondHalf = new Date() > new Date(deadlineTime)
+    isSecondHalf = new Date() > new Date(deadlineTime);
   }
 
-  const usedChips = getUsedChips(chipsUsed, isSecondHalf)
-  const remainingChips = getRemainingChips(chipsUsed, isSecondHalf)
+  const usedChips = getUsedChips(chipsUsed, isSecondHalf);
+  const remainingChips = getRemainingChips(chipsUsed, isSecondHalf);
 
   return {
     used: usedChips.map(getChipLabel),
     remaining: remainingChips.map(getChipLabel),
-  }
+  };
 }

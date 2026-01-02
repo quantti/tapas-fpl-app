@@ -1,22 +1,22 @@
-import { Sparkles, X } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Sparkles, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-import { useReleaseNotification, getReleaseSummary } from '../hooks/useReleaseNotification'
+import { useReleaseNotification, getReleaseSummary } from '../hooks/useReleaseNotification';
 
-import * as styles from './ReleaseNotification.module.css'
+import * as styles from './ReleaseNotification.module.css';
 
 /**
  * Banner displayed when there's a new release the user hasn't seen.
  * Clicking the link or the close button dismisses it.
  */
 export function ReleaseNotification() {
-  const { shouldShow, latestRelease, markAsSeen } = useReleaseNotification()
+  const { shouldShow, latestRelease, markAsSeen } = useReleaseNotification();
 
   if (!shouldShow) {
-    return null
+    return null;
   }
 
-  const summary = getReleaseSummary(latestRelease)
+  const summary = getReleaseSummary(latestRelease);
 
   return (
     <div className={styles.ReleaseNotification} data-testid="release-notification">
@@ -35,5 +35,5 @@ export function ReleaseNotification() {
         <X size={16} />
       </button>
     </div>
-  )
+  );
 }

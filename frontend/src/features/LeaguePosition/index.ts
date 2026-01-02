@@ -1,1 +1,1 @@
-export { LeaguePosition } from './LeaguePosition'
+export { LeaguePosition } from './LeaguePosition';

@@ -1,49 +1,49 @@
-import { User, LogOut, Info } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { User, LogOut, Info } from 'lucide-react';
+import { useState, type FormEvent } from 'react';
 
-import { hasPreferencesConsent } from '../hooks/useCookieConsent'
-import { useManagerId } from '../hooks/useManagerId'
+import { hasPreferencesConsent } from '../hooks/useCookieConsent';
+import { useManagerId } from '../hooks/useManagerId';
 
-import * as styles from './Account.module.css'
+import * as styles from './Account.module.css';
 
 export function Account() {
-  const { managerId, setManagerId, clearManagerId, isLoggedIn } = useManagerId()
-  const [inputValue, setInputValue] = useState(managerId?.toString() ?? '')
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { managerId, setManagerId, clearManagerId, isLoggedIn } = useManagerId();
+  const [inputValue, setInputValue] = useState(managerId?.toString() ?? '');
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    setError(null)
+    e.preventDefault();
+    setError(null);
 
-    const trimmed = inputValue.trim()
+    const trimmed = inputValue.trim();
     if (!trimmed) {
-      setError('Please enter a manager ID')
-      return
+      setError('Please enter a manager ID');
+      return;
     }
 
-    const id = Number.parseInt(trimmed, 10)
+    const id = Number.parseInt(trimmed, 10);
     if (Number.isNaN(id)) {
-      setError('Please enter a valid number')
-      return
+      setError('Please enter a valid number');
+      return;
     }
 
     if (id <= 0) {
-      setError('Manager ID must be a positive number')
-      return
+      setError('Manager ID must be a positive number');
+      return;
     }
 
-    setManagerId(id)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-  }
+    setManagerId(id);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   const handleLogout = () => {
-    clearManagerId()
-    setInputValue('')
-  }
+    clearManagerId();
+    setInputValue('');
+  };
 
-  const hasConsent = hasPreferencesConsent()
+  const hasConsent = hasPreferencesConsent();
 
   return (
     <div className={styles.Account}>
@@ -85,8 +85,8 @@ export function Account() {
                   placeholder="e.g. 123456"
                   value={inputValue}
                   onChange={(e) => {
-                    setInputValue(e.target.value)
-                    setError(null)
+                    setInputValue(e.target.value);
+                    setError(null);
                   }}
                   className={`${styles.input} ${error ? styles.inputError : ''}`}
                 />
@@ -125,5 +125,5 @@ export function Account() {
         </div>
       </div>
     </div>
-  )
+  );
 }

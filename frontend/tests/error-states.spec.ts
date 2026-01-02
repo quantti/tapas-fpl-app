@@ -1,11 +1,11 @@
 /**
  * E2E tests for error states, including 503 "FPL Updating" message.
  */
-import { test, expect } from '@playwright/test'
+import { test, expect } from '@playwright/test';
 
-import { VIEWPORTS } from './helpers/page-utils'
+import { VIEWPORTS } from './helpers/page-utils';
 
-const FPL_UPDATING_SELECTOR = '[data-testid="fpl-updating"]'
+const FPL_UPDATING_SELECTOR = '[data-testid="fpl-updating"]';
 
 /**
  * Setup API mocking to return 503 Service Unavailable.
@@ -19,65 +19,65 @@ async function setup503Error(page: import('@playwright/test').Page) {
       statusText: 'Service Unavailable',
       contentType: 'application/json',
       body: JSON.stringify({ error: 'Service Unavailable' }),
-    })
-  })
+    });
+  });
 }
 
 test.describe('FPL Updating Error State', () => {
   test.beforeEach(async ({ page }) => {
-    await setup503Error(page)
-  })
+    await setup503Error(page);
+  });
 
   test('Dashboard shows FPL updating message on 503', async ({ page }) => {
-    await page.goto('/')
-    await page.waitForSelector(FPL_UPDATING_SELECTOR, { timeout: 10000 })
+    await page.goto('/');
+    await page.waitForSelector(FPL_UPDATING_SELECTOR, { timeout: 10000 });
 
-    const updating = page.getByTestId('fpl-updating')
-    await expect(updating).toBeVisible()
-    await expect(page.getByText('FPL is updating')).toBeVisible()
-    await expect(page.getByText(/Fantasy Premier League is updating/)).toBeVisible()
-  })
+    const updating = page.getByTestId('fpl-updating');
+    await expect(updating).toBeVisible();
+    await expect(page.getByText('FPL is updating')).toBeVisible();
+    await expect(page.getByText(/Fantasy Premier League is updating/)).toBeVisible();
+  });
 
   test('Statistics shows FPL updating message on 503', async ({ page }) => {
-    await page.goto('/statistics')
-    await page.waitForSelector(FPL_UPDATING_SELECTOR, { timeout: 10000 })
+    await page.goto('/statistics');
+    await page.waitForSelector(FPL_UPDATING_SELECTOR, { timeout: 10000 });
 
-    const updating = page.getByTestId('fpl-updating')
-    await expect(updating).toBeVisible()
-    await expect(page.getByText('FPL is updating')).toBeVisible()
-  })
+    const updating = page.getByTestId('fpl-updating');
+    await expect(updating).toBeVisible();
+    await expect(page.getByText('FPL is updating')).toBeVisible();
+  });
 
   test('Analytics shows FPL updating message on 503', async ({ page }) => {
-    await page.goto('/analytics')
-    await page.waitForSelector(FPL_UPDATING_SELECTOR, { timeout: 10000 })
+    await page.goto('/analytics');
+    await page.waitForSelector(FPL_UPDATING_SELECTOR, { timeout: 10000 });
 
-    const updating = page.getByTestId('fpl-updating')
-    await expect(updating).toBeVisible()
-    await expect(page.getByText('FPL is updating')).toBeVisible()
-  })
+    const updating = page.getByTestId('fpl-updating');
+    await expect(updating).toBeVisible();
+    await expect(page.getByText('FPL is updating')).toBeVisible();
+  });
 
   test('FPL updating message visual snapshot - desktop', async ({ page }) => {
-    await page.setViewportSize(VIEWPORTS.DESKTOP)
-    await page.goto('/')
-    await page.waitForSelector(FPL_UPDATING_SELECTOR, { timeout: 10000 })
+    await page.setViewportSize(VIEWPORTS.DESKTOP);
+    await page.goto('/');
+    await page.waitForSelector(FPL_UPDATING_SELECTOR, { timeout: 10000 });
 
     // Wait for animation to stabilize (the spinning icon)
-    await page.waitForTimeout(100)
+    await page.waitForTimeout(100);
 
     await expect(page).toHaveScreenshot('fpl-updating-desktop.png', {
       animations: 'disabled',
-    })
-  })
+    });
+  });
 
   test('FPL updating message visual snapshot - mobile', async ({ page }) => {
-    await page.setViewportSize(VIEWPORTS.MOBILE)
-    await page.goto('/')
-    await page.waitForSelector(FPL_UPDATING_SELECTOR, { timeout: 10000 })
+    await page.setViewportSize(VIEWPORTS.MOBILE);
+    await page.goto('/');
+    await page.waitForSelector(FPL_UPDATING_SELECTOR, { timeout: 10000 });
 
-    await page.waitForTimeout(100)
+    await page.waitForTimeout(100);
 
     await expect(page).toHaveScreenshot('fpl-updating-mobile.png', {
       animations: 'disabled',
-    })
-  })
-})
+    });
+  });
+});

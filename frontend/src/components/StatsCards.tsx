@@ -1,21 +1,21 @@
-import { Coins, TrendingDown } from 'lucide-react'
+import { Coins, TrendingDown } from 'lucide-react';
 
-import { Card } from './Card'
-import { CardHeader } from './CardHeader'
-import { RankedRow } from './RankedRow'
-import * as styles from './StatsCards.module.css'
+import { Card } from './Card';
+import { CardHeader } from './CardHeader';
+import { RankedRow } from './RankedRow';
+import * as styles from './StatsCards.module.css';
 
-import type { ManagerGameweekData } from '../services/queries/useFplData'
+import type { ManagerGameweekData } from '../services/queries/useFplData';
 
 interface Props {
-  managerDetails: ManagerGameweekData[]
+  managerDetails: ManagerGameweekData[];
 }
 
 export function StatsCards({ managerDetails }: Props) {
   const sortedByValue = [...managerDetails].sort(
     (a, b) => b.teamValue + b.bank - (a.teamValue + a.bank)
-  )
-  const sortedByHits = [...managerDetails].sort((a, b) => b.totalHitsCost - a.totalHitsCost)
+  );
+  const sortedByHits = [...managerDetails].sort((a, b) => b.totalHitsCost - a.totalHitsCost);
 
   return (
     <div className={styles.StatsCards}>
@@ -58,5 +58,5 @@ export function StatsCards({ managerDetails }: Props) {
         </div>
       </Card>
     </div>
-  )
+  );
 }

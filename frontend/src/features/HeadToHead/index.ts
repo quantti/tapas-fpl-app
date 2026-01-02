@@ -1,1 +1,1 @@
-export { HeadToHead } from './HeadToHead'
+export { HeadToHead } from './HeadToHead';

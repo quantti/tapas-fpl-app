@@ -1,38 +1,38 @@
-import clsx from 'clsx'
-import { Menu, X, Sun, Moon, User, LogOut } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import clsx from 'clsx';
+import { Menu, X, Sun, Moon, User, LogOut } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
-import { useManagerId } from '../hooks/useManagerId'
-import { useTheme } from '../hooks/useTheme'
+import { useManagerId } from '../hooks/useManagerId';
+import { useTheme } from '../hooks/useTheme';
 
-import * as styles from './Header.module.css'
+import * as styles from './Header.module.css';
 
 export function Header() {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const { theme, toggleTheme } = useTheme()
-  const { isLoggedIn, clearManagerId } = useManagerId()
-  const location = useLocation()
-  const menuRef = useRef<HTMLElement>(null)
-  const buttonRef = useRef<HTMLButtonElement>(null)
+  const [menuOpen, setMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const { isLoggedIn, clearManagerId } = useManagerId();
+  const location = useLocation();
+  const menuRef = useRef<HTMLElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Close menu when clicking outside
   useEffect(() => {
-    if (!menuOpen) return
+    if (!menuOpen) return;
 
     function handleClickOutside(event: MouseEvent) {
-      const target = event.target as Node
-      const isOutsideMenu = menuRef.current && !menuRef.current.contains(target)
-      const isOutsideButton = buttonRef.current && !buttonRef.current.contains(target)
+      const target = event.target as Node;
+      const isOutsideMenu = menuRef.current && !menuRef.current.contains(target);
+      const isOutsideButton = buttonRef.current && !buttonRef.current.contains(target);
 
       if (isOutsideMenu && isOutsideButton) {
-        setMenuOpen(false)
+        setMenuOpen(false);
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [menuOpen])
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
 
   return (
     <header className={styles.Header}>
@@ -92,8 +92,8 @@ export function Header() {
               type="button"
               className={clsx(styles.navLink, styles.accountLink)}
               onClick={() => {
-                clearManagerId()
-                setMenuOpen(false)
+                clearManagerId();
+                setMenuOpen(false);
               }}
             >
               <LogOut size={16} />
@@ -132,5 +132,5 @@ export function Header() {
         </nav>
       )}
     </header>
-  )
+  );
 }

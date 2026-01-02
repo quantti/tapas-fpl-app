@@ -1,21 +1,21 @@
-import * as styles from './PitchLayout.module.css'
+import * as styles from './PitchLayout.module.css';
 
-import type { ReactNode } from 'react'
+import type { ReactNode } from 'react';
 
 export interface PitchPlayer {
-  id: number
-  elementType: number // 1=GK, 2=DEF, 3=MID, 4=FWD
+  id: number;
+  elementType: number; // 1=GK, 2=DEF, 3=MID, 4=FWD
 }
 
 interface BenchConfig<T> {
-  players: T[]
-  renderPlayer: (player: T) => ReactNode
+  players: T[];
+  renderPlayer: (player: T) => ReactNode;
 }
 
 interface PitchLayoutProps<T extends PitchPlayer, B = T> {
-  players: T[]
-  renderPlayer: (player: T) => ReactNode
-  bench?: BenchConfig<B>
+  players: T[];
+  renderPlayer: (player: T) => ReactNode;
+  bench?: BenchConfig<B>;
 }
 
 export function PitchLayout<T extends PitchPlayer, B = T>({
@@ -23,10 +23,10 @@ export function PitchLayout<T extends PitchPlayer, B = T>({
   renderPlayer,
   bench,
 }: PitchLayoutProps<T, B>) {
-  const goalkeepers = players.filter((p) => p.elementType === 1)
-  const defenders = players.filter((p) => p.elementType === 2)
-  const midfielders = players.filter((p) => p.elementType === 3)
-  const forwards = players.filter((p) => p.elementType === 4)
+  const goalkeepers = players.filter((p) => p.elementType === 1);
+  const defenders = players.filter((p) => p.elementType === 2);
+  const midfielders = players.filter((p) => p.elementType === 3);
+  const forwards = players.filter((p) => p.elementType === 4);
 
   return (
     <>
@@ -66,5 +66,5 @@ export function PitchLayout<T extends PitchPlayer, B = T>({
         </div>
       )}
     </>
-  )
+  );
 }

@@ -1,14 +1,14 @@
-import * as styles from './Card.module.css'
+import * as styles from './Card.module.css';
 
-import type { HTMLAttributes } from 'react'
+import type { HTMLAttributes } from 'react';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode
-  className?: string
-  scrollable?: boolean
-  maxHeight?: number
+  children: React.ReactNode;
+  className?: string;
+  scrollable?: boolean;
+  maxHeight?: number;
   /** When provided, adds role="region" with this label for accessibility */
-  'aria-label'?: string
+  'aria-label'?: string;
 }
 
 export function Card({
@@ -19,8 +19,8 @@ export function Card({
   'aria-label': ariaLabel,
   ...rest
 }: CardProps) {
-  const cardClassName = [styles.Card, className].filter(Boolean).join(' ')
-  const style = scrollable && maxHeight ? { maxHeight } : undefined
+  const cardClassName = [styles.Card, className].filter(Boolean).join(' ');
+  const style = scrollable && maxHeight ? { maxHeight } : undefined;
 
   return (
     <div
@@ -33,5 +33,5 @@ export function Card({
     >
       {children}
     </div>
-  )
+  );
 }

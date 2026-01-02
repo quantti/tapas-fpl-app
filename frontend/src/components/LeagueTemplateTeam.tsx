@@ -1,46 +1,46 @@
-import { Users } from 'lucide-react'
-import { useMemo } from 'react'
+import { Users } from 'lucide-react';
+import { useMemo } from 'react';
 
 import {
   calculateOwnership,
   buildTemplateTeam,
   type PlayerWithOwnership,
-} from '../utils/templateTeam'
+} from '../utils/templateTeam';
 
-import { Card } from './Card'
-import { CardHeader } from './CardHeader'
-import { PitchLayout, type PitchPlayer as BasePitchPlayer } from './PitchLayout'
-import { PitchPlayer } from './PitchPlayer'
+import { Card } from './Card';
+import { CardHeader } from './CardHeader';
+import { PitchLayout, type PitchPlayer as BasePitchPlayer } from './PitchLayout';
+import { PitchPlayer } from './PitchPlayer';
 
-import type { ManagerGameweekData } from '../services/queries/useFplData'
-import type { Player, Team } from '../types/fpl'
+import type { ManagerGameweekData } from '../services/queries/useFplData';
+import type { Player, Team } from '../types/fpl';
 
 interface Props {
-  managerDetails: ManagerGameweekData[]
-  playersMap: Map<number, Player>
-  teamsMap: Map<number, Team>
+  managerDetails: ManagerGameweekData[];
+  playersMap: Map<number, Player>;
+  teamsMap: Map<number, Team>;
 }
 
 interface TemplatePlayer extends BasePitchPlayer {
-  player: Player
-  team: Team | undefined
-  ownershipPercentage: number
+  player: Player;
+  team: Team | undefined;
+  ownershipPercentage: number;
 }
 
 export function LeagueTemplateTeam({ managerDetails, playersMap, teamsMap }: Props) {
   const templateTeam = useMemo(() => {
-    if (managerDetails.length === 0) return null
+    if (managerDetails.length === 0) return null;
 
-    const ownership = calculateOwnership(managerDetails, playersMap, teamsMap)
-    const selected = buildTemplateTeam(ownership)
+    const ownership = calculateOwnership(managerDetails, playersMap, teamsMap);
+    const selected = buildTemplateTeam(ownership);
 
-    if (selected.length !== 11) return null
+    if (selected.length !== 11) return null;
 
-    return selected
-  }, [managerDetails, playersMap, teamsMap])
+    return selected;
+  }, [managerDetails, playersMap, teamsMap]);
 
   if (!templateTeam || templateTeam.length === 0) {
-    return null
+    return null;
   }
 
   const pitchPlayers: TemplatePlayer[] = templateTeam.map((data: PlayerWithOwnership) => ({
@@ -49,7 +49,7 @@ export function LeagueTemplateTeam({ managerDetails, playersMap, teamsMap }: Pro
     player: data.player,
     team: data.team,
     ownershipPercentage: data.ownershipPercentage,
-  }))
+  }));
 
   const renderPlayer = (data: TemplatePlayer) => (
     <PitchPlayer
@@ -59,12 +59,12 @@ export function LeagueTemplateTeam({ managerDetails, playersMap, teamsMap }: Pro
       teamShortName={data.team?.short_name ?? ''}
       stat={`${Math.round(data.ownershipPercentage)}%`}
     />
-  )
+  );
 
   return (
     <Card data-testid="league-template-team">
       <CardHeader icon={<Users size={16} color="#14B8A6" />}>Tapas and Tackles Template</CardHeader>
       <PitchLayout players={pitchPlayers} renderPlayer={renderPlayer} />
     </Card>
-  )
+  );
 }

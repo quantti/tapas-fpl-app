@@ -1,46 +1,46 @@
-import clsx from 'clsx'
-import { Zap, TrendingDown, Copyright } from 'lucide-react'
-import { useMemo } from 'react'
+import clsx from 'clsx';
+import { Zap, TrendingDown, Copyright } from 'lucide-react';
+import { useMemo } from 'react';
 
-import { formatDate } from '../config/locale'
+import { formatDate } from '../config/locale';
 
-import * as styles from './GameweekDetails.module.css'
+import * as styles from './GameweekDetails.module.css';
 
-import type { ManagerGameweekData } from '../services/queries/useFplData'
-import type { Gameweek, Fixture } from '../types/fpl'
+import type { ManagerGameweekData } from '../services/queries/useFplData';
+import type { Gameweek, Fixture } from '../types/fpl';
 
 interface Props {
-  gameweek: Gameweek
-  managerDetails: ManagerGameweekData[]
-  fixtures: Fixture[]
+  gameweek: Gameweek;
+  managerDetails: ManagerGameweekData[];
+  fixtures: Fixture[];
 }
 
 export function GameweekDetails({ gameweek, managerDetails, fixtures }: Props) {
-  const sortedManagers = [...managerDetails].sort((a, b) => b.gameweekPoints - a.gameweekPoints)
+  const sortedManagers = [...managerDetails].sort((a, b) => b.gameweekPoints - a.gameweekPoints);
 
   const dateRange = useMemo(() => {
-    const gwFixtures = fixtures.filter((f) => f.event === gameweek.id && f.kickoff_time)
-    if (gwFixtures.length === 0) return null
+    const gwFixtures = fixtures.filter((f) => f.event === gameweek.id && f.kickoff_time);
+    if (gwFixtures.length === 0) return null;
 
-    const kickoffs = gwFixtures.map((f) => new Date(f.kickoff_time!).getTime())
-    const firstDate = new Date(Math.min(...kickoffs))
-    const lastDate = new Date(Math.max(...kickoffs))
+    const kickoffs = gwFixtures.map((f) => new Date(f.kickoff_time!).getTime());
+    const firstDate = new Date(Math.min(...kickoffs));
+    const lastDate = new Date(Math.max(...kickoffs));
 
-    const formatOpts = { day: 'numeric', month: 'short' } as const
+    const formatOpts = { day: 'numeric', month: 'short' } as const;
 
     // Same day
     if (firstDate.toDateString() === lastDate.toDateString()) {
-      return formatDate(firstDate.toISOString(), formatOpts)
+      return formatDate(firstDate.toISOString(), formatOpts);
     }
 
     // Same month
     if (firstDate.getMonth() === lastDate.getMonth()) {
-      return `${firstDate.getDate()}-${formatDate(lastDate.toISOString(), formatOpts)}`
+      return `${firstDate.getDate()}-${formatDate(lastDate.toISOString(), formatOpts)}`;
     }
 
     // Different months
-    return `${formatDate(firstDate.toISOString(), formatOpts)} - ${formatDate(lastDate.toISOString(), formatOpts)}`
-  }, [fixtures, gameweek.id])
+    return `${formatDate(firstDate.toISOString(), formatOpts)} - ${formatDate(lastDate.toISOString(), formatOpts)}`;
+  }, [fixtures, gameweek.id]);
 
   return (
     <div className={styles.GameweekDetails}>
@@ -108,7 +108,7 @@ export function GameweekDetails({ gameweek, managerDetails, fixtures }: Props) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function formatChipShort(chip: string): string {
@@ -117,6 +117,6 @@ function formatChipShort(chip: string): string {
     '3xc': 'TC',
     freehit: 'FH',
     wildcard: 'WC',
-  }
-  return chips[chip] || chip.toUpperCase()
+  };
+  return chips[chip] || chip.toUpperCase();
 }

@@ -1,12 +1,12 @@
-import * as CookieConsent from 'vanilla-cookieconsent'
+import * as CookieConsent from 'vanilla-cookieconsent';
 
-export type CookieCategory = 'necessary' | 'preferences' | 'analytics'
+export type CookieCategory = 'necessary' | 'preferences' | 'analytics';
 
 /**
  * Check if user has accepted a specific cookie category
  */
 export function hasConsent(category: CookieCategory): boolean {
-  return CookieConsent.acceptedCategory(category)
+  return CookieConsent.acceptedCategory(category);
 }
 
 /**
@@ -14,7 +14,7 @@ export function hasConsent(category: CookieCategory): boolean {
  * Use this before storing user preferences like league ID, theme, etc.
  */
 export function hasPreferencesConsent(): boolean {
-  return hasConsent('preferences')
+  return hasConsent('preferences');
 }
 
 /**
@@ -22,33 +22,33 @@ export function hasPreferencesConsent(): boolean {
  * Use this before initializing analytics scripts
  */
 export function hasAnalyticsConsent(): boolean {
-  return hasConsent('analytics')
+  return hasConsent('analytics');
 }
 
 /**
  * Open the cookie preferences modal
  */
 export function openCookiePreferences(): void {
-  CookieConsent.showPreferences()
+  CookieConsent.showPreferences();
 }
 
 /**
  * Accept all cookie categories
  */
 export function acceptAllCookies(): void {
-  CookieConsent.acceptCategory('all')
+  CookieConsent.acceptCategory('all');
 }
 
 /**
  * Accept only necessary cookies (reject optional)
  */
 export function acceptNecessaryOnly(): void {
-  CookieConsent.acceptCategory([])
+  CookieConsent.acceptCategory([]);
 }
 
 /**
  * Accept specific categories
  */
 export function acceptCategories(categories: CookieCategory[]): void {
-  CookieConsent.acceptCategory(categories)
+  CookieConsent.acceptCategory(categories);
 }

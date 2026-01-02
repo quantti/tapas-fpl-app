@@ -1,19 +1,19 @@
-import { useQueries } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useQueries } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
-import { fplApi } from '../api'
-import { queryKeys } from '../queryKeys'
+import { fplApi } from '../api';
+import { queryKeys } from '../queryKeys';
 
 interface ManagerFreeTransfers {
-  managerId: number
-  teamName: string
-  freeTransfers: number
+  managerId: number;
+  teamName: string;
+  freeTransfers: number;
 }
 
 interface UseFreeTransfersReturn {
-  freeTransfers: ManagerFreeTransfers[]
-  loading: boolean
-  error: string | null
+  freeTransfers: ManagerFreeTransfers[];
+  loading: boolean;
+  error: string | null;
 }
 
 /**
@@ -44,20 +44,20 @@ export function useFreeTransfers(
       staleTime: 60 * 1000, // Fresh for 1 minute
       enabled: managerIds.length > 0 && currentGameweek > 0,
     })),
-  })
+  });
 
   // Calculate free transfers from history data
   const freeTransfers = useMemo(() => {
     if (managerIds.length === 0 || currentGameweek === 0) {
-      return []
+      return [];
     }
 
     return managerIds.map((manager, index) => {
-      const historyQuery = historyQueries[index]
+      const historyQuery = historyQueries[index];
 
       // Default to 1 FT if no data
       if (!historyQuery.data) {
-        return { managerId: manager.id, teamName: manager.teamName, freeTransfers: 1 }
+        return { managerId: manager.id, teamName: manager.teamName, freeTransfers: 1 };
       }
 
       const ft = calculateFreeTransfers(
@@ -65,20 +65,20 @@ export function useFreeTransfers(
         historyQuery.data.chips,
         currentGameweek,
         deadlinePassed
-      )
+      );
 
       return {
         managerId: manager.id,
         teamName: manager.teamName,
         freeTransfers: ft,
-      }
-    })
-  }, [managerIds, currentGameweek, deadlinePassed, historyQueries])
+      };
+    });
+  }, [managerIds, currentGameweek, deadlinePassed, historyQueries]);
 
-  const loading = historyQueries.some((q) => q.isLoading)
-  const error = historyQueries.find((q) => q.error)?.error?.message ?? null
+  const loading = historyQueries.some((q) => q.isLoading);
+  const error = historyQueries.find((q) => q.error)?.error?.message ?? null;
 
-  return { freeTransfers, loading, error }
+  return { freeTransfers, loading, error };
 }
 
 /**
@@ -101,54 +101,54 @@ export function calculateFreeTransfers(
   deadlinePassed = false
 ): number {
   // Build chip usage maps for O(1) lookup
-  const wildcardGws = new Set(chips.filter((c) => c.name === 'wildcard').map((c) => c.event))
-  const freeHitGws = new Set(chips.filter((c) => c.name === 'freehit').map((c) => c.event))
+  const wildcardGws = new Set(chips.filter((c) => c.name === 'wildcard').map((c) => c.event));
+  const freeHitGws = new Set(chips.filter((c) => c.name === 'freehit').map((c) => c.event));
 
   // Start with 1 FT
-  let ft = 1
+  let ft = 1;
 
   // Sort history by gameweek (ascending)
-  const sortedHistory = [...history].sort((a, b) => a.event - b.event)
+  const sortedHistory = [...history].sort((a, b) => a.event - b.event);
 
   // Max FT that can be banked (5 in 2024/25 season)
-  const maxFt = 5
+  const maxFt = 5;
 
   for (const gw of sortedHistory) {
     // Stop after current GW - we want remaining FT NOW
-    if (gw.event > currentGameweek) break
+    if (gw.event > currentGameweek) break;
 
-    const isCurrentGw = gw.event === currentGameweek
+    const isCurrentGw = gw.event === currentGameweek;
     // Treat current GW as "completed" if deadline has passed (transfers apply to next GW)
-    const gwComplete = !isCurrentGw || deadlinePassed
+    const gwComplete = !isCurrentGw || deadlinePassed;
 
     // Wildcard resets to 1 FT (transfers don't consume FT)
     if (wildcardGws.has(gw.event)) {
-      ft = 1
+      ft = 1;
       // Gain +1 FT after GW completes
       if (gwComplete) {
-        ft = Math.min(maxFt, ft + 1)
+        ft = Math.min(maxFt, ft + 1);
       }
-      continue
+      continue;
     }
 
     // Free Hit - transfers don't consume FT
     if (freeHitGws.has(gw.event)) {
       // Gain +1 FT after GW completes
       if (gwComplete) {
-        ft = Math.min(maxFt, ft + 1)
+        ft = Math.min(maxFt, ft + 1);
       }
-      continue
+      continue;
     }
 
     // Normal gameweek: consume FT for transfers made
-    const transfersMade = gw.event_transfers
-    ft = Math.max(0, ft - transfersMade)
+    const transfersMade = gw.event_transfers;
+    ft = Math.max(0, ft - transfersMade);
 
     // Gain +1 FT after GW completes
     if (gwComplete) {
-      ft = Math.min(maxFt, ft + 1)
+      ft = Math.min(maxFt, ft + 1);
     }
   }
 
-  return ft
+  return ft;
 }

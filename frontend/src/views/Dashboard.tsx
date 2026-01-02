@@ -1,24 +1,24 @@
-import { Circle, ArrowRight, ArrowLeft } from 'lucide-react'
-import { useCallback, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Circle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
-import { FplUpdating } from '../components/FplUpdating'
-import { GameRewards } from '../components/GameRewards'
-import { GameweekCountdown } from '../components/GameweekCountdown'
-import { GameweekDetails } from '../components/GameweekDetails'
-import { LeagueStandings } from '../components/LeagueStandings'
-import { LeagueUpdating } from '../components/LeagueUpdating'
-import { LoadingState } from '../components/LoadingState'
-import { ManagerModal } from '../components/ManagerModal'
-import { ReleaseNotification } from '../components/ReleaseNotification'
-import { useFplData } from '../services/queries/useFplData'
-import { useLiveScoring } from '../services/queries/useLiveScoring'
-import { hasGamesInProgress, allFixturesFinished } from '../utils/liveScoring'
+import { FplUpdating } from '../components/FplUpdating';
+import { GameRewards } from '../components/GameRewards';
+import { GameweekCountdown } from '../components/GameweekCountdown';
+import { GameweekDetails } from '../components/GameweekDetails';
+import { LeagueStandings } from '../components/LeagueStandings';
+import { LeagueUpdating } from '../components/LeagueUpdating';
+import { LoadingState } from '../components/LoadingState';
+import { ManagerModal } from '../components/ManagerModal';
+import { ReleaseNotification } from '../components/ReleaseNotification';
+import { useFplData } from '../services/queries/useFplData';
+import { useLiveScoring } from '../services/queries/useLiveScoring';
+import { hasGamesInProgress, allFixturesFinished } from '../utils/liveScoring';
 
-import * as styles from './Dashboard.module.css'
+import * as styles from './Dashboard.module.css';
 
 export function Dashboard() {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     standings,
     managerDetails,
@@ -30,55 +30,57 @@ export function Dashboard() {
     isApiUnavailable,
     bootstrap,
     playersMap,
-  } = useFplData()
+  } = useFplData();
 
   // Fetch live scoring data when games are in progress
-  const { liveData, fixtures } = useLiveScoring(currentGameweek?.id ?? 0, isLive)
+  const { liveData, fixtures } = useLiveScoring(currentGameweek?.id ?? 0, isLive);
 
   // Check if any games are actually in progress (not just deadline passed)
-  const gamesInProgress = hasGamesInProgress(fixtures)
+  const gamesInProgress = hasGamesInProgress(fixtures);
 
   // Create teams map for GameRewards
   const teamsMap = useMemo(() => {
-    if (!bootstrap?.teams) return new Map()
-    return new Map(bootstrap.teams.map((team) => [team.id, team]))
-  }, [bootstrap])
+    if (!bootstrap?.teams) return new Map();
+    return new Map(bootstrap.teams.map((team) => [team.id, team]));
+  }, [bootstrap]);
 
   // Get next gameweek for countdown (after all current GW games finished)
   const nextGameweek = useMemo(() => {
-    const events = bootstrap?.events
-    if (!events || !currentGameweek) return null
+    const events = bootstrap?.events;
+    if (!events || !currentGameweek) return null;
 
     // Don't show countdown during GW38 (season end)
-    if (currentGameweek.id === 38) return null
+    if (currentGameweek.id === 38) return null;
 
     // Check if all fixtures for current GW are finished
-    if (!allFixturesFinished(fixtures)) return null
+    if (!allFixturesFinished(fixtures)) return null;
 
     // Find the next gameweek
-    return events.find((e) => e.is_next) ?? null
-  }, [bootstrap, currentGameweek, fixtures])
+    return events.find((e) => e.is_next) ?? null;
+  }, [bootstrap, currentGameweek, fixtures]);
 
   // Modal state from URL for shareability
-  const selectedManagerId = searchParams.get('manager') ? Number(searchParams.get('manager')) : null
+  const selectedManagerId = searchParams.get('manager')
+    ? Number(searchParams.get('manager'))
+    : null;
 
   const handleManagerClick = useCallback(
     (managerId: number) => {
-      setSearchParams({ manager: String(managerId) })
+      setSearchParams({ manager: String(managerId) });
     },
     [setSearchParams]
-  )
+  );
 
   const handleCloseModal = useCallback(() => {
-    setSearchParams({})
-  }, [setSearchParams])
+    setSearchParams({});
+  }, [setSearchParams]);
 
   if (isLoading) {
     return (
       <div className={styles.Dashboard}>
         <LoadingState message="Loading league data..." />
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -94,7 +96,7 @@ export function Dashboard() {
           </div>
         )}
       </div>
-    )
+    );
   }
 
   if (!standings || !currentGameweek) {
@@ -105,7 +107,7 @@ export function Dashboard() {
           <p>Could not load league standings.</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -203,5 +205,5 @@ export function Dashboard() {
         fixtures={fixtures}
       />
     </div>
-  )
+  );
 }

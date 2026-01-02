@@ -60,7 +60,7 @@
 }
 
 /* Dark theme */
-[data-theme="dark"] .ReleaseNotification {
+[data-theme='dark'] .ReleaseNotification {
   background-color: rgba(59, 130, 246, 0.15);
   border-color: rgba(59, 130, 246, 0.5);
 

@@ -1,1 +1,1 @@
-export { BenchPoints } from './BenchPoints'
+export { BenchPoints } from './BenchPoints';

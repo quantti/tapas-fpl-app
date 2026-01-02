@@ -1,1 +1,1 @@
-export { FreeTransfers } from './FreeTransfers'
+export { FreeTransfers } from './FreeTransfers';

@@ -37,7 +37,7 @@
 }
 
 /* Dark theme - synced with [data-theme="dark"] */
-[data-theme="dark"] {
+[data-theme='dark'] {
   --cc-bg: var(--gray-800);
   --cc-primary-color: var(--gray-100);
   --cc-secondary-color: var(--gray-300);

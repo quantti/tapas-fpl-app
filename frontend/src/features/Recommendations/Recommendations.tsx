@@ -1,25 +1,25 @@
-import clsx from 'clsx'
-import { Dices, Shield, Info, TrendingDown } from 'lucide-react'
+import clsx from 'clsx';
+import { Dices, Shield, Info, TrendingDown } from 'lucide-react';
 
-import { getPositionLabel, getPositionColor } from 'constants/positions'
+import { getPositionLabel, getPositionColor } from 'constants/positions';
 
-import { useRecommendedPlayers } from 'services/queries/useRecommendedPlayers'
+import { useRecommendedPlayers } from 'services/queries/useRecommendedPlayers';
 
-import * as styles from './Recommendations.module.css'
+import * as styles from './Recommendations.module.css';
 
-import type { ManagerGameweekData } from 'services/queries/useFplData'
-import type { Player, Team } from 'types/fpl'
+import type { ManagerGameweekData } from 'services/queries/useFplData';
+import type { Player, Team } from 'types/fpl';
 
 const PUNTS_INFO =
-  "Low ownership differential picks (<40% in your league) with strong underlying stats and good upcoming fixtures. These players could give you an edge over your rivals. Then again, they might be low ownership because they're rubbish."
+  "Low ownership differential picks (<40% in your league) with strong underlying stats and good upcoming fixtures. These players could give you an edge over your rivals. Then again, they might be low ownership because they're rubbish.";
 
 const DEFENSIVE_INFO =
-  "Popular players (>40% ownership) in good form with favourable fixtures. Consider owning these to protect your rank. Remember: popularity doesn't equal quality - billions of flies love shit."
+  "Popular players (>40% ownership) in good form with favourable fixtures. Consider owning these to protect your rank. Remember: popularity doesn't equal quality - billions of flies love shit.";
 
 const SELL_INFO =
-  "Players with poor recent form and tough upcoming fixtures. If you own them, might be time to move on. Of course, they could also be about to haul - that's FPL for you."
+  "Players with poor recent form and tough upcoming fixtures. If you own them, might be time to move on. Of course, they could also be about to haul - that's FPL for you.";
 
-const DISCLAIMER = 'For entertainment only. Not financial advice. Always do your own research.'
+const DISCLAIMER = 'For entertainment only. Not financial advice. Always do your own research.';
 
 function InfoTooltip({ text, disclaimer }: { text: string; disclaimer: string }) {
   return (
@@ -30,15 +30,15 @@ function InfoTooltip({ text, disclaimer }: { text: string; disclaimer: string })
         <span className={styles.disclaimer}>{disclaimer}</span>
       </span>
     </span>
-  )
+  );
 }
 
 interface Props {
-  players: Player[]
-  managerDetails: ManagerGameweekData[]
-  teamsMap: Map<number, Team>
-  currentGameweek: number
-  onPlayerClick?: (player: Player) => void
+  players: Player[];
+  managerDetails: ManagerGameweekData[];
+  teamsMap: Map<number, Team>;
+  currentGameweek: number;
+  onPlayerClick?: (player: Player) => void;
 }
 
 function PositionBadge({ elementType }: { elementType: number }) {
@@ -49,12 +49,12 @@ function PositionBadge({ elementType }: { elementType: number }) {
     >
       {getPositionLabel(elementType)}
     </span>
-  )
+  );
 }
 
 function ScoreStars({ score }: { score: number }) {
   // Convert 0-1 score to 1-5 stars (higher score = better recommendation)
-  const stars = Math.round(score * 4) + 1
+  const stars = Math.round(score * 4) + 1;
 
   return (
     <span className={styles.stars}>
@@ -64,7 +64,7 @@ function ScoreStars({ score }: { score: number }) {
         </span>
       ))}
     </span>
-  )
+  );
 }
 
 export function Recommendations({
@@ -79,7 +79,7 @@ export function Recommendations({
     managerDetails,
     teamsMap,
     currentGameweek
-  )
+  );
 
   if (loading) {
     return (
@@ -91,7 +91,7 @@ export function Recommendations({
           <div className={styles.loading}>Loading recommendations...</div>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -101,7 +101,7 @@ export function Recommendations({
           <div className={styles.error}>{error}</div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -197,5 +197,5 @@ export function Recommendations({
         </div>
       </div>
     </div>
-  )
+  );
 }

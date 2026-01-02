@@ -1,43 +1,43 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react';
 
-import { calculateTimeRemaining, type TimeRemaining } from '../utils/countdown'
+import { calculateTimeRemaining, type TimeRemaining } from '../utils/countdown';
 
-import * as styles from './GameweekCountdown.module.css'
+import * as styles from './GameweekCountdown.module.css';
 
 interface Props {
-  deadline: string
-  gameweekId: number
+  deadline: string;
+  gameweekId: number;
 }
 
 function pad(num: number): string {
-  return num.toString().padStart(2, '0')
+  return num.toString().padStart(2, '0');
 }
 
 export function GameweekCountdown({ deadline, gameweekId }: Props) {
   const [timeRemaining, setTimeRemaining] = useState<TimeRemaining | null>(() =>
     calculateTimeRemaining(deadline)
-  )
+  );
 
   useEffect(() => {
     // Don't start interval if already expired (initial state handles this)
     if (calculateTimeRemaining(deadline) === null) {
-      return
+      return;
     }
 
     const interval = setInterval(() => {
-      const remaining = calculateTimeRemaining(deadline)
-      setTimeRemaining(remaining)
+      const remaining = calculateTimeRemaining(deadline);
+      setTimeRemaining(remaining);
 
       // Stop interval once countdown expires to prevent memory leak
       if (remaining === null) {
-        clearInterval(interval)
+        clearInterval(interval);
       }
-    }, 1000)
+    }, 1000);
 
-    return () => clearInterval(interval)
-  }, [deadline])
+    return () => clearInterval(interval);
+  }, [deadline]);
 
-  if (!timeRemaining) return null
+  if (!timeRemaining) return null;
 
   return (
     <div className={styles.GameweekCountdown}>
@@ -67,5 +67,5 @@ export function GameweekCountdown({ deadline, gameweekId }: Props) {
         </div>
       </div>
     </div>
-  )
+  );
 }

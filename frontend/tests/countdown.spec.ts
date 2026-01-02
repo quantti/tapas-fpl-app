@@ -1,5 +1,5 @@
-import { mockBootstrapResponse, mockLiveResponse } from './fixtures/mock-data'
-import { test, expect } from './fixtures/test-fixtures'
+import { mockBootstrapResponse, mockLiveResponse } from './fixtures/mock-data';
+import { test, expect } from './fixtures/test-fixtures';
 
 /**
  * Helper to set up countdown-specific mocks that override the default mocks.
@@ -9,7 +9,7 @@ import { test, expect } from './fixtures/test-fixtures'
 test.describe('Gameweek Countdown', () => {
   test('displays countdown when all fixtures are finished', async ({ page }) => {
     // Future deadline for GW19 (always 7 days from now)
-    const futureDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    const futureDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
     // Override bootstrap to make GW18 current and finished, GW19 next with future deadline
     const customBootstrap = {
@@ -22,7 +22,7 @@ test.describe('Gameweek Countdown', () => {
         // Set future deadline for GW19 so countdown displays
         deadline_time: event.id === 19 ? futureDeadline : event.deadline_time,
       })),
-    }
+    };
 
     // Mock fixtures - all finished for current GW
     const finishedFixtures = Array.from({ length: 10 }, (_, i) => ({
@@ -38,7 +38,7 @@ test.describe('Gameweek Countdown', () => {
       kickoff_time: '2025-12-21T15:00:00Z',
       team_h_difficulty: 3,
       team_a_difficulty: 3,
-    }))
+    }));
 
     // Override the default mocks with countdown-specific data
     await page.route('**/api/bootstrap-static', async (route) => {
@@ -46,43 +46,43 @@ test.describe('Gameweek Countdown', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(customBootstrap),
-      })
-    })
+      });
+    });
 
     await page.route('**/api/fixtures**', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(finishedFixtures),
-      })
-    })
+      });
+    });
 
     await page.route('**/api/event/*/live', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(mockLiveResponse),
-      })
-    })
+      });
+    });
 
-    await page.goto('/')
+    await page.goto('/');
 
     // Wait for data to load - look for main grid which is always present
-    await page.waitForSelector('[class*="grid"]', { timeout: 15000 })
+    await page.waitForSelector('[class*="grid"]', { timeout: 15000 });
 
     // Wait for fixtures data to be processed
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(1000);
 
     // Check if countdown is visible - look for next GW reference
-    const countdown = page.locator('text=/Gameweek 19/')
-    const isVisible = await countdown.isVisible().catch(() => false)
+    const countdown = page.locator('text=/Gameweek 19/');
+    const isVisible = await countdown.isVisible().catch(() => false);
 
-    expect(isVisible).toBe(true)
-  })
+    expect(isVisible).toBe(true);
+  });
 
   test('does not display countdown when fixtures are in progress', async ({ page }) => {
     // Future deadline for GW19 (always 7 days from now)
-    const futureDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    const futureDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
     // Override bootstrap - GW18 current and not finished
     const customBootstrap = {
@@ -94,7 +94,7 @@ test.describe('Gameweek Countdown', () => {
         finished: event.id < 18, // GW18 not finished
         deadline_time: event.id === 19 ? futureDeadline : event.deadline_time,
       })),
-    }
+    };
 
     // Mock fixtures - some still in progress
     const inProgressFixtures = [
@@ -126,43 +126,43 @@ test.describe('Gameweek Countdown', () => {
         team_h_difficulty: 3,
         team_a_difficulty: 3,
       })),
-    ]
+    ];
 
     await page.route('**/api/bootstrap-static', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(customBootstrap),
-      })
-    })
+      });
+    });
 
     await page.route('**/api/fixtures**', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(inProgressFixtures),
-      })
-    })
+      });
+    });
 
     await page.route('**/api/event/*/live', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(mockLiveResponse),
-      })
-    })
+      });
+    });
 
-    await page.goto('/')
+    await page.goto('/');
 
-    await page.waitForSelector('[class*="grid"]', { timeout: 15000 })
-    await page.waitForTimeout(1000)
+    await page.waitForSelector('[class*="grid"]', { timeout: 15000 });
+    await page.waitForTimeout(1000);
 
     // Countdown should NOT be visible (fixtures still in progress)
-    const countdown = page.locator('text=/Gameweek 19/')
-    const isVisible = await countdown.isVisible().catch(() => false)
+    const countdown = page.locator('text=/Gameweek 19/');
+    const isVisible = await countdown.isVisible().catch(() => false);
 
-    expect(isVisible).toBe(false)
-  })
+    expect(isVisible).toBe(false);
+  });
 
   test('does not display countdown during GW38', async ({ page }) => {
     // Override bootstrap - GW38 is current (season finale)
@@ -189,7 +189,7 @@ test.describe('Gameweek Countdown', () => {
           most_vice_captained: 2,
         },
       ],
-    }
+    };
 
     const gw38Fixtures = Array.from({ length: 10 }, (_, i) => ({
       id: i + 1,
@@ -204,40 +204,40 @@ test.describe('Gameweek Countdown', () => {
       kickoff_time: '2025-05-25T15:00:00Z',
       team_h_difficulty: 3,
       team_a_difficulty: 3,
-    }))
+    }));
 
     await page.route('**/api/bootstrap-static', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(gw38Bootstrap),
-      })
-    })
+      });
+    });
 
     await page.route('**/api/fixtures**', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(gw38Fixtures),
-      })
-    })
+      });
+    });
 
     await page.route('**/api/event/*/live', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(mockLiveResponse),
-      })
-    })
+      });
+    });
 
-    await page.goto('/')
-    await page.waitForSelector('[class*="grid"]', { timeout: 15000 })
-    await page.waitForTimeout(1000)
+    await page.goto('/');
+    await page.waitForSelector('[class*="grid"]', { timeout: 15000 });
+    await page.waitForTimeout(1000);
 
     // Countdown should NOT be visible during GW38 (no next gameweek)
-    const countdown = page.locator('text=/Gameweek 39|Next Deadline/')
-    const isVisible = await countdown.isVisible().catch(() => false)
+    const countdown = page.locator('text=/Gameweek 39|Next Deadline/');
+    const isVisible = await countdown.isVisible().catch(() => false);
 
-    expect(isVisible).toBe(false)
-  })
-})
+    expect(isVisible).toBe(false);
+  });
+});

@@ -1,5 +1,5 @@
 .PitchLayout {
-  background-image: url("/pitch.svg");
+  background-image: url('/pitch.svg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

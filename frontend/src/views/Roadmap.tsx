@@ -1,10 +1,10 @@
-import clsx from 'clsx'
+import clsx from 'clsx';
 
-import * as styles from './Roadmap.module.css'
+import * as styles from './Roadmap.module.css';
 
 interface Feature {
-  title: string
-  description: string
+  title: string;
+  description: string;
 }
 
 const nowFeatures: Feature[] = [
@@ -13,7 +13,7 @@ const nowFeatures: Feature[] = [
     description:
       'Compare two managers side-by-side: captain choices, transfer history, chip usage, points breakdown.',
   },
-]
+];
 
 const nextFeatures: Feature[] = [
   {
@@ -21,7 +21,7 @@ const nextFeatures: Feature[] = [
     description:
       'Visual timeline of all transfers throughout the season. Track when you brought in players.',
   },
-]
+];
 
 const laterFeatures: Feature[] = [
   {
@@ -29,13 +29,13 @@ const laterFeatures: Feature[] = [
     description:
       "Predictions for each player's expected points based on fixtures, form, and advanced metrics.",
   },
-]
+];
 
 interface ColumnProps {
-  title: string
-  subtitle: string
-  features: Feature[]
-  variant: 'now' | 'next' | 'later'
+  title: string;
+  subtitle: string;
+  features: Feature[];
+  variant: 'now' | 'next' | 'later';
 }
 
 function Column({ title, subtitle, features, variant }: ColumnProps) {
@@ -56,7 +56,7 @@ function Column({ title, subtitle, features, variant }: ColumnProps) {
         {features.length === 0 && <p className={styles.empty}>No features planned</p>}
       </div>
     </div>
-  )
+  );
 }
 
 export function Roadmap() {
@@ -78,5 +78,5 @@ export function Roadmap() {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,9 +1,9 @@
 // App configuration
-export const LEAGUE_ID = 242017
+export const LEAGUE_ID = 242017;
 
 // Refresh intervals (in milliseconds)
-export const LIVE_REFRESH_INTERVAL = 60_000 // 1 minute during live games
-export const IDLE_REFRESH_INTERVAL = 300_000 // 5 minutes when no games
+export const LIVE_REFRESH_INTERVAL = 60_000; // 1 minute during live games
+export const IDLE_REFRESH_INTERVAL = 300_000; // 5 minutes when no games
 
 /**
  * Cache time constants (in milliseconds)
@@ -15,4 +15,4 @@ export const CACHE_TIMES = {
   TEN_MINUTES: 10 * 60_000,
   THIRTY_MINUTES: 30 * 60_000,
   ONE_HOUR: 60 * 60_000,
-} as const
+} as const;

@@ -1,21 +1,21 @@
-import * as styles from './PitchPlayer.module.css'
+import * as styles from './PitchPlayer.module.css';
 
-import type { ReactNode } from 'react'
+import type { ReactNode } from 'react';
 
 interface Props {
-  name: string
-  shirtUrl: string
-  teamShortName: string
-  stat: ReactNode
-  badge?: 'C' | 'V'
-  isBench?: boolean
-  testId?: string
-  onClick?: () => void
+  name: string;
+  shirtUrl: string;
+  teamShortName: string;
+  stat: ReactNode;
+  badge?: 'C' | 'V';
+  isBench?: boolean;
+  testId?: string;
+  onClick?: () => void;
 }
 
 const getShirtUrl = (teamCode: number): string => {
-  return `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}-110.webp`
-}
+  return `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}-110.webp`;
+};
 
 export function PitchPlayer({
   name,
@@ -43,24 +43,24 @@ export function PitchPlayer({
       </div>
       <div className={styles.stat}>{stat}</div>
     </>
-  )
+  );
 
-  const className = `${styles.PitchPlayer}${isBench ? ` ${styles.bench}` : ''}${onClick ? ` ${styles.clickable}` : ''}`
+  const className = `${styles.PitchPlayer}${isBench ? ` ${styles.bench}` : ''}${onClick ? ` ${styles.clickable}` : ''}`;
 
   if (onClick) {
     return (
       <button type="button" className={className} data-testid={testId} onClick={onClick}>
         {content}
       </button>
-    )
+    );
   }
 
   return (
     <div className={className} data-testid={testId}>
       {content}
     </div>
-  )
+  );
 }
 
 // Utility function for consumers
-PitchPlayer.getShirtUrl = getShirtUrl
+PitchPlayer.getShirtUrl = getShirtUrl;

@@ -1,37 +1,37 @@
-import { TrendingDown, TrendingUp, User } from 'lucide-react'
-import { useMemo } from 'react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { TrendingDown, TrendingUp, User } from 'lucide-react';
+import { useMemo } from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
-import { Card } from 'components/Card'
-import { CardHeader } from 'components/CardHeader'
+import { Card } from 'components/Card';
+import { CardHeader } from 'components/CardHeader';
 
-import { POSITION_COLORS } from 'constants/positions'
+import { POSITION_COLORS } from 'constants/positions';
 
-import * as styles from './PersonalStats.module.css'
-import { usePersonalStats } from './usePersonalStats'
-import { usePositionBreakdown } from './usePositionBreakdown'
+import * as styles from './PersonalStats.module.css';
+import { usePersonalStats } from './usePersonalStats';
+import { usePositionBreakdown } from './usePositionBreakdown';
 
-import type { ManagerGameweekData } from 'services/queries/useFplData'
-import type { Gameweek, Player } from 'types/fpl'
+import type { ManagerGameweekData } from 'services/queries/useFplData';
+import type { Gameweek, Player } from 'types/fpl';
 
 interface Props {
-  managerId: number
-  managerDetails: ManagerGameweekData[]
-  gameweeks: Gameweek[]
-  playersMap: Map<number, Player>
+  managerId: number;
+  managerDetails: ManagerGameweekData[];
+  gameweeks: Gameweek[];
+  playersMap: Map<number, Player>;
 }
 
 const COLORS = {
   user: 'var(--color-primary)',
   league: 'var(--color-success)',
   world: 'var(--color-text-muted)',
-}
+};
 
 const AXIS_STYLE = {
   tick: { fontSize: 11, fill: 'var(--color-text-muted)' },
   axisLine: { stroke: 'var(--color-border)' },
   tickLine: { stroke: 'var(--color-border)' },
-}
+};
 
 export function PersonalStats({ managerId, managerDetails, gameweeks, playersMap }: Props) {
   const { data, isLoading, error } = usePersonalStats({
@@ -39,20 +39,20 @@ export function PersonalStats({ managerId, managerDetails, gameweeks, playersMap
     managerDetails,
     gameweeks,
     enabled: true,
-  })
+  });
 
   // Calculate completed gameweeks for position breakdown
   const completedGameweeks = useMemo(
     () => gameweeks.filter((gw) => gw.finished).map((gw) => gw.id),
     [gameweeks]
-  )
+  );
 
   const { data: positionBreakdown, isLoading: positionLoading } = usePositionBreakdown({
     managerId,
     playersMap,
     completedGameweeks,
     enabled: completedGameweeks.length > 0,
-  })
+  });
 
   if (isLoading) {
     return (
@@ -62,7 +62,7 @@ export function PersonalStats({ managerId, managerDetails, gameweeks, playersMap
         </CardHeader>
         <p className={styles.loading}>Loading your stats...</p>
       </Card>
-    )
+    );
   }
 
   if (error || !data) {
@@ -73,7 +73,7 @@ export function PersonalStats({ managerId, managerDetails, gameweeks, playersMap
         </CardHeader>
         <p className={styles.error}>{error || 'Could not load your statistics'}</p>
       </Card>
-    )
+    );
   }
 
   if (data.weeklyData.length === 0) {
@@ -84,7 +84,7 @@ export function PersonalStats({ managerId, managerDetails, gameweeks, playersMap
         </CardHeader>
         <p className={styles.empty}>No completed gameweeks yet</p>
       </Card>
-    )
+    );
   }
 
   return (
@@ -133,7 +133,7 @@ export function PersonalStats({ managerId, managerDetails, gameweeks, playersMap
                 <YAxis {...AXIS_STYLE} />
                 <Tooltip
                   content={({ active, payload, label }) => {
-                    if (!active || !payload?.length) return null
+                    if (!active || !payload?.length) return null;
                     return (
                       <div className={styles.tooltip}>
                         <div className={styles.tooltipTitle}>Gameweek {label}</div>
@@ -148,7 +148,7 @@ export function PersonalStats({ managerId, managerDetails, gameweeks, playersMap
                           </div>
                         ))}
                       </div>
-                    )
+                    );
                   }}
                 />
                 <Legend
@@ -216,5 +216,5 @@ export function PersonalStats({ managerId, managerDetails, gameweeks, playersMap
         </div>
       )}
     </Card>
-  )
+  );
 }

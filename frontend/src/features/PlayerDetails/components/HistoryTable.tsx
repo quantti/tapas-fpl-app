@@ -4,30 +4,30 @@ import {
   getPaginationRowModel,
   flexRender,
   type ColumnDef,
-} from '@tanstack/react-table'
-import clsx from 'clsx'
-import { Footprints, Shield } from 'lucide-react'
-import { useMemo, useState } from 'react'
+} from '@tanstack/react-table';
+import clsx from 'clsx';
+import { Footprints, Shield } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
-import FootballIcon from 'assets/football.svg?react'
+import FootballIcon from 'assets/football.svg?react';
 
-import { POSITION_TYPES } from 'constants/positions'
+import { POSITION_TYPES } from 'constants/positions';
 
-import { metDefConThreshold } from 'utils/defcon'
-import { createTeamsMap } from 'utils/mappers'
-import { parseNumericString } from 'utils/playerStats'
+import { metDefConThreshold } from 'utils/defcon';
+import { createTeamsMap } from 'utils/mappers';
+import { parseNumericString } from 'utils/playerStats';
 
-import * as styles from './HistoryTable.module.css'
+import * as styles from './HistoryTable.module.css';
 
-import type { PlayerHistory, Team } from 'types/fpl'
+import type { PlayerHistory, Team } from 'types/fpl';
 
 interface HistoryTableProps {
-  data: PlayerHistory[]
-  playerPosition: number
-  teams: Team[]
+  data: PlayerHistory[];
+  playerPosition: number;
+  teams: Team[];
 }
 
-const PREVIEW_COUNT = 5
+const PREVIEW_COUNT = 5;
 
 // Type-safe column class lookup (avoids dynamic styles[] indexing)
 const columnClasses: Record<string, string | undefined> = {
@@ -37,17 +37,17 @@ const columnClasses: Record<string, string | undefined> = {
   pts: styles.colPts,
   min: styles.colMin,
   xstats: styles.colXstats,
-}
+};
 
 export function HistoryTable({ data, playerPosition, teams }: HistoryTableProps) {
-  const [showAll, setShowAll] = useState(false)
+  const [showAll, setShowAll] = useState(false);
 
   // Create teams lookup map
-  const teamsMap = useMemo(() => createTeamsMap(teams), [teams])
+  const teamsMap = useMemo(() => createTeamsMap(teams), [teams]);
 
   // Determine if player is defensive (affects xStats column)
   const isDefensive =
-    playerPosition === POSITION_TYPES.GOALKEEPER || playerPosition === POSITION_TYPES.DEFENDER
+    playerPosition === POSITION_TYPES.GOALKEEPER || playerPosition === POSITION_TYPES.DEFENDER;
 
   // Column definitions
   const columns = useMemo<ColumnDef<PlayerHistory, unknown>[]>(
@@ -63,20 +63,20 @@ export function HistoryTable({ data, playerPosition, teams }: HistoryTableProps)
         header: 'Opponent',
         accessorKey: 'opponent_team',
         cell: ({ row }) => {
-          const opponent = teamsMap.get(row.original.opponent_team)
-          const venue = row.original.was_home ? 'H' : 'A'
-          return `${opponent?.short_name ?? '???'} (${venue})`
+          const opponent = teamsMap.get(row.original.opponent_team);
+          const venue = row.original.was_home ? 'H' : 'A';
+          return `${opponent?.short_name ?? '???'} (${venue})`;
         },
       },
       {
         id: 'icons',
         header: '',
         cell: ({ row }) => {
-          const gw = row.original
-          const showCleanSheet = gw.clean_sheets > 0 && playerPosition !== 4
+          const gw = row.original;
+          const showCleanSheet = gw.clean_sheets > 0 && playerPosition !== 4;
           const gotDefCon =
             playerPosition !== 4 &&
-            metDefConThreshold(gw.defensive_contribution ?? 0, playerPosition)
+            metDefConThreshold(gw.defensive_contribution ?? 0, playerPosition);
 
           return (
             <div className={styles.icons}>
@@ -119,7 +119,7 @@ export function HistoryTable({ data, playerPosition, teams }: HistoryTableProps)
                 </span>
               )}
             </div>
-          )
+          );
         },
       },
       {
@@ -145,7 +145,7 @@ export function HistoryTable({ data, playerPosition, teams }: HistoryTableProps)
       },
     ],
     [teamsMap, playerPosition, isDefensive]
-  )
+  );
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -158,17 +158,17 @@ export function HistoryTable({ data, playerPosition, teams }: HistoryTableProps)
         pageSize: showAll ? data.length : PREVIEW_COUNT,
       },
     },
-  })
+  });
 
   // Update page size when showAll changes
   useMemo(() => {
-    table.setPageSize(showAll ? data.length : PREVIEW_COUNT)
-  }, [showAll, data.length, table])
+    table.setPageSize(showAll ? data.length : PREVIEW_COUNT);
+  }, [showAll, data.length, table]);
 
-  const hasMore = data.length > PREVIEW_COUNT
+  const hasMore = data.length > PREVIEW_COUNT;
 
   if (data.length === 0) {
-    return <div className={styles.empty}>No recent history</div>
+    return <div className={styles.empty}>No recent history</div>;
   }
 
   return (
@@ -211,5 +211,5 @@ export function HistoryTable({ data, playerPosition, teams }: HistoryTableProps)
         </button>
       )}
     </div>
-  )
+  );
 }

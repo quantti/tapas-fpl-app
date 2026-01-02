@@ -1,16 +1,16 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
-import './App.css'
-import { CookieConsentBanner } from './components/CookieConsent'
-import { Footer } from './components/Footer'
-import { Header } from './components/Header'
-import { ManagerIdProvider } from './contexts/ManagerIdProvider'
-import { Account } from './views/Account'
-import { Analytics } from './views/Analytics'
-import { Changelog } from './views/Changelog'
-import { Dashboard } from './views/Dashboard'
-import { Roadmap } from './views/Roadmap'
-import { Statistics } from './views/Statistics'
+import './App.css';
+import { CookieConsentBanner } from './components/CookieConsent';
+import { Footer } from './components/Footer';
+import { Header } from './components/Header';
+import { ManagerIdProvider } from './contexts/ManagerIdProvider';
+import { Account } from './views/Account';
+import { Analytics } from './views/Analytics';
+import { Changelog } from './views/Changelog';
+import { Dashboard } from './views/Dashboard';
+import { Roadmap } from './views/Roadmap';
+import { Statistics } from './views/Statistics';
 
 function App() {
   return (
@@ -33,7 +33,7 @@ function App() {
         </div>
       </ManagerIdProvider>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

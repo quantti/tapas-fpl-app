@@ -1,13 +1,13 @@
 export interface ReleaseItem {
-  title: string
-  description: string
-  type: 'feature' | 'fix'
+  title: string;
+  description: string;
+  type: 'feature' | 'fix';
 }
 
 export interface Release {
-  version: string
-  date: string
-  items: ReleaseItem[]
+  version: string;
+  date: string;
+  items: ReleaseItem[];
 }
 
 export const releases: Release[] = [
@@ -245,19 +245,19 @@ export const releases: Release[] = [
       },
     ],
   },
-]
+];
 
 /**
  * Get the latest release (skips "Next Release" placeholder if empty)
  */
 export function getLatestRelease(): Release {
   // Skip placeholder entries with no items
-  return releases.find((r) => r.items.length > 0) ?? releases[0]
+  return releases.find((r) => r.items.length > 0) ?? releases[0];
 }
 
 /**
  * Get the latest version string
  */
 export function getLatestVersion(): string {
-  return getLatestRelease().version
+  return getLatestRelease().version;
 }

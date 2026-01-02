@@ -7,10 +7,10 @@
  * Example: node scripts/update-changelog-version.js 0.13.0
  */
 
-import * as fs from 'fs'
-import * as path from 'path'
+import * as fs from 'fs';
+import * as path from 'path';
 
-const RELEASES_PATH = path.join(process.cwd(), 'src/config/releases.ts')
+const RELEASES_PATH = path.join(process.cwd(), 'src/config/releases.ts');
 
 function formatDate() {
   const months = [
@@ -26,51 +26,51 @@ function formatDate() {
     'October',
     'November',
     'December',
-  ]
-  const now = new Date()
-  const month = months[now.getMonth()]
-  const day = now.getDate()
-  const year = now.getFullYear()
-  return `${month} ${day}, ${year}`
+  ];
+  const now = new Date();
+  const month = months[now.getMonth()];
+  const day = now.getDate();
+  const year = now.getFullYear();
+  return `${month} ${day}, ${year}`;
 }
 
 function main() {
-  const version = process.argv[2]
+  const version = process.argv[2];
 
   if (!version) {
-    console.error('Usage: node scripts/update-changelog-version.js <version>')
-    process.exit(1)
+    console.error('Usage: node scripts/update-changelog-version.js <version>');
+    process.exit(1);
   }
 
   // Remove leading 'v' if present
-  const cleanVersion = version.replace(/^v/, '')
+  const cleanVersion = version.replace(/^v/, '');
 
   // Read current releases file
-  let content
+  let content;
   try {
-    content = fs.readFileSync(RELEASES_PATH, 'utf8')
+    content = fs.readFileSync(RELEASES_PATH, 'utf8');
   } catch {
-    console.log('releases.ts not found, skipping version update')
-    process.exit(0)
+    console.log('releases.ts not found, skipping version update');
+    process.exit(0);
   }
 
   // Check if "Next Release" section exists
   if (!content.includes("version: 'Next Release'")) {
-    console.log('No "Next Release" section found, skipping')
-    process.exit(0)
+    console.log('No "Next Release" section found, skipping');
+    process.exit(0);
   }
 
-  const date = formatDate()
+  const date = formatDate();
 
   // Replace "Next Release" with actual version
   const updatedContent = content
     .replace("version: 'Next Release'", `version: '${cleanVersion}'`)
-    .replace("date: ''", `date: '${date}'`)
+    .replace("date: ''", `date: '${date}'`);
 
   // Write updated content
-  fs.writeFileSync(RELEASES_PATH, updatedContent)
+  fs.writeFileSync(RELEASES_PATH, updatedContent);
 
-  console.log(`Updated releases.ts: Next Release → ${cleanVersion} (${date})`)
+  console.log(`Updated releases.ts: Next Release → ${cleanVersion} (${date})`);
 }
 
-main()
+main();

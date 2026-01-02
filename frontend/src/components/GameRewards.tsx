@@ -1,21 +1,21 @@
-import { Award, Shield, Trophy } from 'lucide-react'
-import { useMemo } from 'react'
+import { Award, Shield, Trophy } from 'lucide-react';
+import { useMemo } from 'react';
 
 import {
   extractAllFixtureRewards,
   type FixtureRewards,
   type PlayerReward,
-} from '../utils/fixtureRewards'
+} from '../utils/fixtureRewards';
 
-import * as styles from './GameRewards.module.css'
+import * as styles from './GameRewards.module.css';
 
-import type { Fixture, Player, Team, LiveGameweek } from '../types/fpl'
+import type { Fixture, Player, Team, LiveGameweek } from '../types/fpl';
 
 interface Props {
-  fixtures: Fixture[]
-  playersMap: Map<number, Player>
-  teamsMap: Map<number, Team>
-  liveData?: LiveGameweek
+  fixtures: Fixture[];
+  playersMap: Map<number, Player>;
+  teamsMap: Map<number, Team>;
+  liveData?: LiveGameweek;
 }
 
 // Medal colors for bonus points tiers
@@ -23,29 +23,29 @@ const MEDAL_COLORS: Record<number, string> = {
   3: '#FFD700', // Gold
   2: '#C0C0C0', // Silver
   1: '#CD7F32', // Bronze
-}
+};
 
 function groupBonusByPoints(bonus: PlayerReward[]): Map<number, PlayerReward[]> {
-  const grouped = new Map<number, PlayerReward[]>()
+  const grouped = new Map<number, PlayerReward[]>();
   for (const reward of bonus) {
-    const existing = grouped.get(reward.points) ?? []
-    existing.push(reward)
-    grouped.set(reward.points, existing)
+    const existing = grouped.get(reward.points) ?? [];
+    existing.push(reward);
+    grouped.set(reward.points, existing);
   }
-  return grouped
+  return grouped;
 }
 
 function formatScore(fixture: Fixture): string {
   if (!fixture.started) {
-    return 'vs'
+    return 'vs';
   }
-  return `${fixture.team_h_score ?? 0}-${fixture.team_a_score ?? 0}`
+  return `${fixture.team_h_score ?? 0}-${fixture.team_a_score ?? 0}`;
 }
 
 function FixtureCard({ rewards }: { rewards: FixtureRewards }) {
-  const bonusGrouped = groupBonusByPoints(rewards.bonus)
-  const hasRewards = rewards.bonus.length > 0 || rewards.defcon.length > 0
-  const showRewards = rewards.status === 'rewards_available'
+  const bonusGrouped = groupBonusByPoints(rewards.bonus);
+  const hasRewards = rewards.bonus.length > 0 || rewards.defcon.length > 0;
+  const showRewards = rewards.status === 'rewards_available';
 
   return (
     <div className={styles.fixtureCard}>
@@ -64,8 +64,8 @@ function FixtureCard({ rewards }: { rewards: FixtureRewards }) {
       {showRewards && hasRewards && (
         <div className={styles.rewardsList}>
           {[3, 2, 1].map((points) => {
-            const players = bonusGrouped.get(points)
-            if (!players || players.length === 0) return null
+            const players = bonusGrouped.get(points);
+            if (!players || players.length === 0) return null;
             return (
               <div key={points} className={styles.bonusRow}>
                 <Award size={16} color={MEDAL_COLORS[points]} />
@@ -74,7 +74,7 @@ function FixtureCard({ rewards }: { rewards: FixtureRewards }) {
                   {players.map((p) => p.webName).join(', ')}
                 </span>
               </div>
-            )
+            );
           })}
 
           {rewards.defcon.length > 0 && (
@@ -89,7 +89,7 @@ function FixtureCard({ rewards }: { rewards: FixtureRewards }) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 export function GameRewards({ fixtures, playersMap, teamsMap, liveData }: Props) {
@@ -106,17 +106,17 @@ export function GameRewards({ fixtures, playersMap, teamsMap, liveData }: Props)
           )
         : new Map(),
     [teamsMap]
-  )
+  );
 
   // Defensive check for undefined or empty maps
   if (!playersMap || !teamsMap || playersMap.size === 0 || teamsMap.size === 0) {
-    return null
+    return null;
   }
 
-  const allRewards = extractAllFixtureRewards(fixtures, playersMap, teamsMapForRewards, liveData)
+  const allRewards = extractAllFixtureRewards(fixtures, playersMap, teamsMapForRewards, liveData);
 
   if (allRewards.length === 0) {
-    return null
+    return null;
   }
 
   return (
@@ -131,5 +131,5 @@ export function GameRewards({ fixtures, playersMap, teamsMap, liveData }: Props)
         ))}
       </div>
     </div>
-  )
+  );
 }

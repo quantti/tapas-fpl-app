@@ -1,19 +1,19 @@
-import { Armchair } from 'lucide-react'
-import { useMemo } from 'react'
+import { Armchair } from 'lucide-react';
+import { useMemo } from 'react';
 
-import { Card } from 'components/Card'
-import { CardHeader } from 'components/CardHeader'
-import { RankedRow } from 'components/RankedRow'
+import { Card } from 'components/Card';
+import { CardHeader } from 'components/CardHeader';
+import { RankedRow } from 'components/RankedRow';
 
-import { useBenchPoints } from 'services/queries/useBenchPoints'
+import { useBenchPoints } from 'services/queries/useBenchPoints';
 
-import * as styles from './BenchPoints.module.css'
+import * as styles from './BenchPoints.module.css';
 
-import type { ManagerGameweekData } from 'services/queries/useFplData'
+import type { ManagerGameweekData } from 'services/queries/useFplData';
 
 interface Props {
-  managerDetails: ManagerGameweekData[]
-  currentGameweek: number
+  managerDetails: ManagerGameweekData[];
+  currentGameweek: number;
 }
 
 export function BenchPoints({ managerDetails, currentGameweek }: Props) {
@@ -21,19 +21,19 @@ export function BenchPoints({ managerDetails, currentGameweek }: Props) {
   const managerIds = useMemo(
     () => managerDetails.map((m) => ({ id: m.managerId, teamName: m.teamName })),
     [managerDetails]
-  )
+  );
 
-  const { benchPoints, loading, error } = useBenchPoints(managerIds, currentGameweek)
+  const { benchPoints, loading, error } = useBenchPoints(managerIds, currentGameweek);
 
   // Sort by most bench points (descending) - these are "wasted" points
   const sortedData = useMemo(
     () => [...benchPoints].sort((a, b) => b.totalBenchPoints - a.totalBenchPoints),
     [benchPoints]
-  )
+  );
 
-  if (managerDetails.length === 0) return null
+  if (managerDetails.length === 0) return null;
 
-  const totalBenchPoints = sortedData.reduce((sum, d) => sum + d.totalBenchPoints, 0)
+  const totalBenchPoints = sortedData.reduce((sum, d) => sum + d.totalBenchPoints, 0);
 
   return (
     <Card>
@@ -59,5 +59,5 @@ export function BenchPoints({ managerDetails, currentGameweek }: Props) {
         </div>
       )}
     </Card>
-  )
+  );
 }

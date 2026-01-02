@@ -1,15 +1,15 @@
-import clsx from 'clsx'
+import clsx from 'clsx';
 
-import * as styles from './LoadingState.module.css'
-import { Spinner } from './Spinner'
+import * as styles from './LoadingState.module.css';
+import { Spinner } from './Spinner';
 
 interface LoadingStateProps {
   /** Message to display below spinner */
-  message?: string
+  message?: string;
   /** Spinner size variant */
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg';
   /** Additional CSS class name for wrapper */
-  className?: string
+  className?: string;
 }
 
 /**
@@ -26,5 +26,5 @@ export function LoadingState({
       <Spinner size={size} />
       {message && <p>{message}</p>}
     </div>
-  )
+  );
 }

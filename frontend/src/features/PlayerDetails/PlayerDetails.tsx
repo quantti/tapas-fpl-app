@@ -1,10 +1,10 @@
-import clsx from 'clsx'
-import { CheckCircle, AlertCircle, XCircle, TrendingUp, TrendingDown } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import clsx from 'clsx';
+import { CheckCircle, AlertCircle, XCircle, TrendingUp, TrendingDown } from 'lucide-react';
+import { useState, useMemo } from 'react';
 
-import { Modal } from 'components/Modal'
+import { Modal } from 'components/Modal';
 
-import { getPositionLabel, getPositionColor, POSITION_TYPES } from 'constants/positions'
+import { getPositionLabel, getPositionColor, POSITION_TYPES } from 'constants/positions';
 
 import {
   usePlayerDetails,
@@ -12,10 +12,10 @@ import {
   getUpcomingFixtures,
   getRecentHistory,
   getPlayerPhotoUrl,
-} from 'services/queries/usePlayerDetails'
+} from 'services/queries/usePlayerDetails';
 
-import { getDefConThreshold, calculatePlayerSeasonDefCon } from 'utils/defcon'
-import { createTeamsMap } from 'utils/mappers'
+import { getDefConThreshold, calculatePlayerSeasonDefCon } from 'utils/defcon';
+import { createTeamsMap } from 'utils/mappers';
 import {
   parseNumericString,
   formatDelta,
@@ -25,36 +25,36 @@ import {
   getGoalsConcededDeltaLegend,
   getGoalInvolvementsDeltaLegend,
   getSeasonSummary,
-} from 'utils/playerStats'
+} from 'utils/playerStats';
 
-import { HistoryTable } from './components/HistoryTable'
-import * as styles from './PlayerDetails.module.css'
+import { HistoryTable } from './components/HistoryTable';
+import * as styles from './PlayerDetails.module.css';
 
-import type { Player, Team, ElementType } from 'types/fpl'
+import type { Player, Team, ElementType } from 'types/fpl';
 
 interface Props {
-  player: Player | null
-  teams: Team[]
-  elementTypes: ElementType[]
-  onClose: () => void
+  player: Player | null;
+  teams: Team[];
+  elementTypes: ElementType[];
+  onClose: () => void;
 }
 
 function StatusBadge({ status, news }: { status: string; news: string }) {
   const getStatusInfo = () => {
     switch (status) {
       case 'a':
-        return { icon: CheckCircle, color: 'var(--color-success)', label: 'Available' }
+        return { icon: CheckCircle, color: 'var(--color-success)', label: 'Available' };
       case 'd':
-        return { icon: AlertCircle, color: 'var(--color-warning)', label: 'Doubtful' }
+        return { icon: AlertCircle, color: 'var(--color-warning)', label: 'Doubtful' };
       case 'i':
       case 'u':
-        return { icon: XCircle, color: 'var(--color-error)', label: 'Unavailable' }
+        return { icon: XCircle, color: 'var(--color-error)', label: 'Unavailable' };
       default:
-        return { icon: AlertCircle, color: 'var(--color-text-muted)', label: 'Unknown' }
+        return { icon: AlertCircle, color: 'var(--color-text-muted)', label: 'Unknown' };
     }
-  }
+  };
 
-  const { icon: Icon, color, label } = getStatusInfo()
+  const { icon: Icon, color, label } = getStatusInfo();
 
   return (
     <div className={styles.status}>
@@ -62,24 +62,24 @@ function StatusBadge({ status, news }: { status: string; news: string }) {
       <span style={{ color }}>{label}</span>
       {news && <span className={styles.news}>{news}</span>}
     </div>
-  )
+  );
 }
 
 function FormIndicator({
   formVsAvg,
   formDiff,
 }: {
-  formVsAvg: 'above' | 'below' | 'same'
-  formDiff: number
+  formVsAvg: 'above' | 'below' | 'same';
+  formDiff: number;
 }) {
   if (formVsAvg === 'same') {
-    return <span className={styles.formSame}>= avg</span>
+    return <span className={styles.formSame}>= avg</span>;
   }
 
-  const isAbove = formVsAvg === 'above'
-  const Icon = isAbove ? TrendingUp : TrendingDown
-  const color = isAbove ? 'var(--color-success)' : 'var(--color-error)'
-  const sign = isAbove ? '+' : ''
+  const isAbove = formVsAvg === 'above';
+  const Icon = isAbove ? TrendingUp : TrendingDown;
+  const color = isAbove ? 'var(--color-success)' : 'var(--color-error)';
+  const sign = isAbove ? '+' : '';
 
   return (
     <span className={styles.formIndicator} style={{ color }}>
@@ -87,7 +87,7 @@ function FormIndicator({
       {sign}
       {formDiff.toFixed(1)}
     </span>
-  )
+  );
 }
 
 function FdrBadge({
@@ -96,12 +96,12 @@ function FdrBadge({
   teamShortName,
   isHome,
 }: {
-  gameweek: number
-  difficulty: number
-  teamShortName: string
-  isHome: boolean
+  gameweek: number;
+  difficulty: number;
+  teamShortName: string;
+  isHome: boolean;
 }) {
-  const fdrClass = getFdrColor(difficulty)
+  const fdrClass = getFdrColor(difficulty);
 
   return (
     <div className={clsx(styles.fdrBadge, styles[fdrClass])}>
@@ -109,17 +109,17 @@ function FdrBadge({
       <span className={styles.fdrTeam}>{teamShortName}</span>
       <span className={styles.fdrVenue}>{isHome ? 'H' : 'A'}</span>
     </div>
-  )
+  );
 }
 
 // --- Sub-components ---
 
 interface PlayerHeaderProps {
-  player: Player
-  team: Team
-  price: string
-  priceChange: number
-  priceChangeFormatted: string
+  player: Player;
+  team: Team;
+  price: string;
+  priceChange: number;
+  priceChangeFormatted: string;
 }
 
 function PlayerHeader({
@@ -137,7 +137,7 @@ function PlayerHeader({
         className={styles.photo}
         onError={(e) => {
           // Fallback to shirt if photo fails
-          e.currentTarget.src = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}-110.webp`
+          e.currentTarget.src = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}-110.webp`;
         }}
       />
       <div className={styles.headerInfo}>
@@ -173,21 +173,21 @@ function PlayerHeader({
         <StatusBadge status={player.status} news={player.news} />
       </div>
     </div>
-  )
+  );
 }
 
 interface PlayerStatsGridProps {
-  player: Player
-  pts90: number
-  formVsAvg: 'above' | 'below' | 'same'
-  formDiff: number
-  xGC90: number
-  xG90: number
-  xA90: number
-  xGI90: number
-  defConTotal: number
-  defConPerGame: number
-  defConThreshold: number | null
+  player: Player;
+  pts90: number;
+  formVsAvg: 'above' | 'below' | 'same';
+  formDiff: number;
+  xGC90: number;
+  xG90: number;
+  xA90: number;
+  xGI90: number;
+  defConTotal: number;
+  defConPerGame: number;
+  defConThreshold: number | null;
 }
 
 function PlayerStatsGrid({
@@ -203,8 +203,8 @@ function PlayerStatsGrid({
   defConPerGame,
   defConThreshold,
 }: PlayerStatsGridProps) {
-  const isGoalkeeper = player.element_type === POSITION_TYPES.GOALKEEPER
-  const isDefender = player.element_type === POSITION_TYPES.DEFENDER
+  const isGoalkeeper = player.element_type === POSITION_TYPES.GOALKEEPER;
+  const isDefender = player.element_type === POSITION_TYPES.DEFENDER;
 
   return (
     <div className={styles.statsGrid}>
@@ -275,15 +275,15 @@ function PlayerStatsGrid({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 interface PerformanceDeltasProps {
-  player: Player
-  xgDelta: number
-  xaDelta: number
-  xgiDelta: number
-  xgcDelta: number
+  player: Player;
+  xgDelta: number;
+  xaDelta: number;
+  xgiDelta: number;
+  xgcDelta: number;
 }
 
 function PerformanceDeltas({
@@ -293,8 +293,8 @@ function PerformanceDeltas({
   xgiDelta,
   xgcDelta,
 }: PerformanceDeltasProps) {
-  const isGoalkeeper = player.element_type === POSITION_TYPES.GOALKEEPER
-  const isDefender = player.element_type === POSITION_TYPES.DEFENDER
+  const isGoalkeeper = player.element_type === POSITION_TYPES.GOALKEEPER;
+  const isDefender = player.element_type === POSITION_TYPES.DEFENDER;
 
   return (
     <div className={styles.deltasRow}>
@@ -357,19 +357,19 @@ function PerformanceDeltas({
         <span className={styles.deltaValue}>{getSeasonSummary(player.element_type, player)}</span>
       </div>
     </div>
-  )
+  );
 }
 
 // --- Tab Content ---
 
-type TabId = 'fixtures' | 'history'
+type TabId = 'fixtures' | 'history';
 
 interface TabContentProps {
-  upcomingFixtures: ReturnType<typeof getUpcomingFixtures>
-  fullHistory: ReturnType<typeof getRecentHistory>
-  isLoadingSummary: boolean
-  teams: Team[]
-  playerPosition: number
+  upcomingFixtures: ReturnType<typeof getUpcomingFixtures>;
+  fullHistory: ReturnType<typeof getRecentHistory>;
+  isLoadingSummary: boolean;
+  teams: Team[];
+  playerPosition: number;
 }
 
 function TabContent({
@@ -379,10 +379,10 @@ function TabContent({
   teams,
   playerPosition,
 }: TabContentProps) {
-  const [activeTab, setActiveTab] = useState<TabId>('fixtures')
+  const [activeTab, setActiveTab] = useState<TabId>('fixtures');
 
   // Create teamsMap for fixtures lookup
-  const teamsMap = useMemo(() => createTeamsMap(teams), [teams])
+  const teamsMap = useMemo(() => createTeamsMap(teams), [teams]);
 
   return (
     <div className={styles.tabSection}>
@@ -413,7 +413,7 @@ function TabContent({
             {!isLoadingSummary && upcomingFixtures.length > 0 && (
               <div className={styles.fixtureList}>
                 {upcomingFixtures.map((fixture) => {
-                  const opponent = teamsMap.get(fixture.is_home ? fixture.team_a : fixture.team_h)
+                  const opponent = teamsMap.get(fixture.is_home ? fixture.team_a : fixture.team_h);
                   return (
                     <FdrBadge
                       key={fixture.id}
@@ -422,7 +422,7 @@ function TabContent({
                       teamShortName={opponent?.short_name ?? '???'}
                       isHome={fixture.is_home}
                     />
-                  )
+                  );
                 })}
               </div>
             )}
@@ -440,7 +440,7 @@ function TabContent({
         )}
       </div>
     </div>
-  )
+  );
 }
 
 export function PlayerDetails({ player, teams, elementTypes, onClose }: Props) {
@@ -449,17 +449,17 @@ export function PlayerDetails({ player, teams, elementTypes, onClose }: Props) {
     teams,
     elementTypes,
     enabled: player !== null,
-  })
+  });
 
-  const isOpen = player !== null
+  const isOpen = player !== null;
 
   if (!isOpen || !player) {
-    return null
+    return null;
   }
 
   const renderContent = () => {
     if (!details) {
-      return <div className={styles.loading}>Loading player details...</div>
+      return <div className={styles.loading}>Loading player details...</div>;
     }
 
     const {
@@ -478,20 +478,20 @@ export function PlayerDetails({ player, teams, elementTypes, onClose }: Props) {
       formDiff,
       summary,
       isLoadingSummary,
-    } = details
-    const upcomingFixtures = getUpcomingFixtures(summary, 10)
-    const fullHistory = getRecentHistory(summary, 100) // Get all history, TabContent handles limiting
+    } = details;
+    const upcomingFixtures = getUpcomingFixtures(summary, 10);
+    const fullHistory = getRecentHistory(summary, 100); // Get all history, TabContent handles limiting
 
     // Pre-compute deltas for use in display and legends
     const xgiDelta =
-      player.goals_scored + player.assists - parseNumericString(player.expected_goal_involvements)
-    const xgcDelta = player.goals_conceded - parseNumericString(player.expected_goals_conceded)
+      player.goals_scored + player.assists - parseNumericString(player.expected_goal_involvements);
+    const xgcDelta = player.goals_conceded - parseNumericString(player.expected_goals_conceded);
 
     // Calculate DefCon points from history using shared utility
-    const defConThreshold = getDefConThreshold(player.element_type)
-    const defConStats = calculatePlayerSeasonDefCon(summary?.history ?? [], player.element_type)
-    const defConTotal = defConStats.total
-    const defConPerGame = defConStats.perGame
+    const defConThreshold = getDefConThreshold(player.element_type);
+    const defConStats = calculatePlayerSeasonDefCon(summary?.history ?? [], player.element_type);
+    const defConTotal = defConStats.total;
+    const defConPerGame = defConStats.perGame;
 
     return (
       <>
@@ -540,8 +540,8 @@ export function PlayerDetails({ player, teams, elementTypes, onClose }: Props) {
           playerPosition={player.element_type}
         />
       </>
-    )
-  }
+    );
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={player.web_name}>
@@ -549,5 +549,5 @@ export function PlayerDetails({ player, teams, elementTypes, onClose }: Props) {
         {renderContent()}
       </div>
     </Modal>
-  )
+  );
 }

@@ -4,7 +4,7 @@
   box-shadow: var(--shadow-md);
   padding: var(--space-16);
 
-  &[data-scrollable="true"] {
+  &[data-scrollable='true'] {
     overflow-y: auto;
   }
 }

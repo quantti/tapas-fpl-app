@@ -1,6 +1,6 @@
-import type { ManagerPick } from '../services/queries/useFplData'
-import type { AutoSubstitution, AutoSubResult, PlayerEligibility } from '../types/autoSubs'
-import type { Fixture, LiveGameweek, LivePlayer, Player, Team } from '../types/fpl'
+import type { ManagerPick } from '../services/queries/useFplData';
+import type { AutoSubstitution, AutoSubResult, PlayerEligibility } from '../types/autoSubs';
+import type { Fixture, LiveGameweek, LivePlayer, Player, Team } from '../types/fpl';
 
 // FPL formation constraints
 export const POSITION_LIMITS = {
@@ -8,21 +8,21 @@ export const POSITION_LIMITS = {
   2: { min: 3, max: 5 }, // DEF: 3-5
   3: { min: 2, max: 5 }, // MID: 2-5
   4: { min: 1, max: 3 }, // FWD: 1-3
-} as const
+} as const;
 
-export const STARTING_XI_MAX_POSITION = 11
-export const BENCH_POSITIONS = [12, 13, 14, 15] as const
+export const STARTING_XI_MAX_POSITION = 11;
+export const BENCH_POSITIONS = [12, 13, 14, 15] as const;
 
 /**
  * Build a map of team ID -> fixture for quick lookup
  */
 export function buildTeamFixtureMap(fixtures: Fixture[]): Map<number, Fixture> {
-  const map = new Map<number, Fixture>()
+  const map = new Map<number, Fixture>();
   for (const fixture of fixtures) {
-    map.set(fixture.team_h, fixture)
-    map.set(fixture.team_a, fixture)
+    map.set(fixture.team_h, fixture);
+    map.set(fixture.team_a, fixture);
   }
-  return map
+  return map;
 }
 
 /**
@@ -32,9 +32,9 @@ export function isPlayerFixtureFinished(
   playerTeamId: number,
   teamFixtureMap: Map<number, Fixture>
 ): boolean {
-  const fixture = teamFixtureMap.get(playerTeamId)
-  if (!fixture) return false
-  return fixture.finished_provisional || fixture.finished
+  const fixture = teamFixtureMap.get(playerTeamId);
+  if (!fixture) return false;
+  return fixture.finished_provisional || fixture.finished;
 }
 
 /**
@@ -42,17 +42,17 @@ export function isPlayerFixtureFinished(
  * Use this to determine whether to display player points or fixture info
  */
 export function hasFixtureStarted(teamId: number, teamFixtureMap: Map<number, Fixture>): boolean {
-  const fixture = teamFixtureMap.get(teamId)
-  if (!fixture) return false
-  return fixture.started || fixture.finished
+  const fixture = teamFixtureMap.get(teamId);
+  if (!fixture) return false;
+  return fixture.started || fixture.finished;
 }
 
 /**
  * Result type for getOpponentInfo
  */
 export interface OpponentInfo {
-  shortName: string
-  isHome: boolean
+  shortName: string;
+  isHome: boolean;
 }
 
 /**
@@ -64,14 +64,14 @@ export function getOpponentInfo(
   teamFixtureMap: Map<number, Fixture>,
   teamsMap: Map<number, Team>
 ): OpponentInfo | null {
-  const fixture = teamFixtureMap.get(teamId)
-  if (!fixture) return null
+  const fixture = teamFixtureMap.get(teamId);
+  if (!fixture) return null;
 
-  const isHome = fixture.team_h === teamId
-  const opponentId = isHome ? fixture.team_a : fixture.team_h
-  const opponent = teamsMap.get(opponentId)
+  const isHome = fixture.team_h === teamId;
+  const opponentId = isHome ? fixture.team_a : fixture.team_h;
+  const opponent = teamsMap.get(opponentId);
 
-  return opponent ? { shortName: opponent.short_name, isHome } : null
+  return opponent ? { shortName: opponent.short_name, isHome } : null;
 }
 
 /**
@@ -92,7 +92,7 @@ export function getOpponentInfo(
 export function hasContribution(livePlayer: LivePlayer): boolean {
   return livePlayer.explain.some((e) =>
     e.stats.some((stat) => stat.points !== 0 || (stat.identifier === 'minutes' && stat.value > 0))
-  )
+  );
 }
 
 /**
@@ -104,14 +104,14 @@ export function getPlayerEligibility(
   playersMap: Map<number, Player>,
   teamFixtureMap: Map<number, Fixture>
 ): PlayerEligibility | null {
-  const player = playersMap.get(pick.playerId)
-  if (!player) return null
+  const player = playersMap.get(pick.playerId);
+  if (!player) return null;
 
-  const livePlayer = liveData.elements.find((e) => e.id === pick.playerId)
-  if (!livePlayer) return null
+  const livePlayer = liveData.elements.find((e) => e.id === pick.playerId);
+  if (!livePlayer) return null;
 
-  const fixtureFinished = isPlayerFixtureFinished(player.team, teamFixtureMap)
-  const contributed = hasContribution(livePlayer)
+  const fixtureFinished = isPlayerFixtureFinished(player.team, teamFixtureMap);
+  const contributed = hasContribution(livePlayer);
 
   return {
     playerId: pick.playerId,
@@ -119,7 +119,7 @@ export function getPlayerEligibility(
     fixtureFinished,
     hasContribution: contributed,
     webName: player.web_name,
-  }
+  };
 }
 
 /**
@@ -129,19 +129,19 @@ export function countFormation(
   picks: ManagerPick[],
   playersMap: Map<number, Player>
 ): Record<number, number> {
-  const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 }
+  const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
 
   for (const pick of picks) {
     if (pick.multiplier > 0) {
       // Only count active players
-      const player = playersMap.get(pick.playerId)
+      const player = playersMap.get(pick.playerId);
       if (player) {
-        counts[player.element_type]++
+        counts[player.element_type]++;
       }
     }
   }
 
-  return counts
+  return counts;
 }
 
 /**
@@ -155,23 +155,23 @@ export function canSubstitute(
   currentFormation: Record<number, number>
 ): boolean {
   // GK rule: GK can only be replaced by another GK
-  if (outPlayerType === 1 && inPlayerType !== 1) return false
-  if (inPlayerType === 1 && outPlayerType !== 1) return false
+  if (outPlayerType === 1 && inPlayerType !== 1) return false;
+  if (inPlayerType === 1 && outPlayerType !== 1) return false;
 
   // Simulate the swap
-  const newFormation = { ...currentFormation }
-  newFormation[outPlayerType]--
-  newFormation[inPlayerType]++
+  const newFormation = { ...currentFormation };
+  newFormation[outPlayerType]--;
+  newFormation[inPlayerType]++;
 
   // Check all position limits
   for (const [posType, count] of Object.entries(newFormation)) {
-    const limits = POSITION_LIMITS[Number(posType) as keyof typeof POSITION_LIMITS]
+    const limits = POSITION_LIMITS[Number(posType) as keyof typeof POSITION_LIMITS];
     if (count < limits.min || count > limits.max) {
-      return false
+      return false;
     }
   }
 
-  return true
+  return true;
 }
 
 /**
@@ -183,14 +183,14 @@ function isBenchPlayerEligible(
   currentFormation: Record<number, number>,
   usedBenchPlayers: Set<number>
 ): boolean {
-  if (!benchEligibility) return false
-  if (usedBenchPlayers.has(benchEligibility.playerId)) return false
-  if (!benchEligibility.fixtureFinished || !benchEligibility.hasContribution) return false
+  if (!benchEligibility) return false;
+  if (usedBenchPlayers.has(benchEligibility.playerId)) return false;
+  if (!benchEligibility.fixtureFinished || !benchEligibility.hasContribution) return false;
   return canSubstitute(
     starterEligibility.elementType,
     benchEligibility.elementType,
     currentFormation
-  )
+  );
 }
 
 /**
@@ -204,7 +204,7 @@ function findEligibleBenchPlayer(
   usedBenchPlayers: Set<number>
 ): { benchPick: ManagerPick; benchEligibility: PlayerEligibility } | null {
   for (const benchPick of bench) {
-    const benchEligibility = eligibilityMap.get(benchPick.playerId)
+    const benchEligibility = eligibilityMap.get(benchPick.playerId);
     if (
       isBenchPlayerEligible(
         benchEligibility,
@@ -213,10 +213,10 @@ function findEligibleBenchPlayer(
         usedBenchPlayers
       )
     ) {
-      return { benchPick, benchEligibility: benchEligibility! }
+      return { benchPick, benchEligibility: benchEligibility! };
     }
   }
-  return null
+  return null;
 }
 
 /**
@@ -227,42 +227,42 @@ function processCaptainPromotion(
   eligibilityMap: Map<number, PlayerEligibility>,
   originalCaptainMultiplier: number
 ): { captainPromoted: boolean; originalCaptainId?: number } {
-  const captainPick = adjustedPicks.find((p) => p.isCaptain)
-  const vcPick = adjustedPicks.find((p) => p.isViceCaptain)
+  const captainPick = adjustedPicks.find((p) => p.isCaptain);
+  const vcPick = adjustedPicks.find((p) => p.isViceCaptain);
 
   if (!captainPick || !vcPick) {
-    return { captainPromoted: false }
+    return { captainPromoted: false };
   }
 
-  const captainEligibility = eligibilityMap.get(captainPick.playerId)
-  const vcEligibility = eligibilityMap.get(vcPick.playerId)
+  const captainEligibility = eligibilityMap.get(captainPick.playerId);
+  const vcEligibility = eligibilityMap.get(vcPick.playerId);
 
   const shouldPromote =
     captainEligibility?.fixtureFinished &&
     !captainEligibility.hasContribution &&
     vcEligibility?.fixtureFinished &&
-    vcEligibility.hasContribution
+    vcEligibility.hasContribution;
 
   if (!shouldPromote) {
-    return { captainPromoted: false }
+    return { captainPromoted: false };
   }
 
-  const captainIndex = adjustedPicks.findIndex((p) => p.isCaptain)
-  const vcIndex = adjustedPicks.findIndex((p) => p.isViceCaptain)
+  const captainIndex = adjustedPicks.findIndex((p) => p.isCaptain);
+  const vcIndex = adjustedPicks.findIndex((p) => p.isViceCaptain);
 
   if (captainIndex === -1 || vcIndex === -1) {
-    return { captainPromoted: false }
+    return { captainPromoted: false };
   }
 
   // VC gets captain's original multiplier (2, or 3 for triple captain)
-  adjustedPicks[vcIndex].multiplier = originalCaptainMultiplier
+  adjustedPicks[vcIndex].multiplier = originalCaptainMultiplier;
 
   // Original captain loses captain bonus (set to 1 if still playing, already 0 if subbed out)
   if (adjustedPicks[captainIndex].multiplier > 1) {
-    adjustedPicks[captainIndex].multiplier = 1
+    adjustedPicks[captainIndex].multiplier = 1;
   }
 
-  return { captainPromoted: true, originalCaptainId: captainPick.playerId }
+  return { captainPromoted: true, originalCaptainId: captainPick.playerId };
 }
 
 /**
@@ -274,14 +274,14 @@ function buildEligibilityMap(
   playersMap: Map<number, Player>,
   teamFixtureMap: Map<number, Fixture>
 ): Map<number, PlayerEligibility> {
-  const eligibilityMap = new Map<number, PlayerEligibility>()
+  const eligibilityMap = new Map<number, PlayerEligibility>();
   for (const pick of picks) {
-    const eligibility = getPlayerEligibility(pick, liveData, playersMap, teamFixtureMap)
+    const eligibility = getPlayerEligibility(pick, liveData, playersMap, teamFixtureMap);
     if (eligibility) {
-      eligibilityMap.set(pick.playerId, eligibility)
+      eligibilityMap.set(pick.playerId, eligibility);
     }
   }
-  return eligibilityMap
+  return eligibilityMap;
 }
 
 /**
@@ -301,51 +301,51 @@ export function calculateAutoSubs(
   playersMap: Map<number, Player>
 ): AutoSubResult {
   if (!liveData || picks.length === 0) {
-    return { adjustedPicks: picks, autoSubs: [], captainPromoted: false }
+    return { adjustedPicks: picks, autoSubs: [], captainPromoted: false };
   }
 
-  const teamFixtureMap = buildTeamFixtureMap(fixtures)
-  const adjustedPicks = picks.map((p) => ({ ...p }))
-  const originalCaptainMultiplier = picks.find((p) => p.isCaptain)?.multiplier ?? 2
-  const eligibilityMap = buildEligibilityMap(picks, liveData, playersMap, teamFixtureMap)
+  const teamFixtureMap = buildTeamFixtureMap(fixtures);
+  const adjustedPicks = picks.map((p) => ({ ...p }));
+  const originalCaptainMultiplier = picks.find((p) => p.isCaptain)?.multiplier ?? 2;
+  const eligibilityMap = buildEligibilityMap(picks, liveData, playersMap, teamFixtureMap);
 
-  const starters = adjustedPicks.filter((p) => p.position <= STARTING_XI_MAX_POSITION)
+  const starters = adjustedPicks.filter((p) => p.position <= STARTING_XI_MAX_POSITION);
   const bench = adjustedPicks
     .filter((p) => p.position > STARTING_XI_MAX_POSITION)
-    .sort((a, b) => a.position - b.position)
+    .sort((a, b) => a.position - b.position);
 
   const startersNeedingSub = starters.filter((pick) => {
-    const eligibility = eligibilityMap.get(pick.playerId)
-    return eligibility?.fixtureFinished && !eligibility.hasContribution
-  })
+    const eligibility = eligibilityMap.get(pick.playerId);
+    return eligibility?.fixtureFinished && !eligibility.hasContribution;
+  });
 
-  const autoSubs: AutoSubstitution[] = []
-  const usedBenchPlayers = new Set<number>()
+  const autoSubs: AutoSubstitution[] = [];
+  const usedBenchPlayers = new Set<number>();
 
   for (const starter of startersNeedingSub) {
-    const starterEligibility = eligibilityMap.get(starter.playerId)
-    if (!starterEligibility) continue
+    const starterEligibility = eligibilityMap.get(starter.playerId);
+    if (!starterEligibility) continue;
 
-    const currentFormation = countFormation(adjustedPicks, playersMap)
+    const currentFormation = countFormation(adjustedPicks, playersMap);
     const match = findEligibleBenchPlayer(
       bench,
       starterEligibility,
       eligibilityMap,
       currentFormation,
       usedBenchPlayers
-    )
+    );
 
-    if (!match) continue
+    if (!match) continue;
 
-    const { benchPick, benchEligibility } = match
-    usedBenchPlayers.add(benchPick.playerId)
+    const { benchPick, benchEligibility } = match;
+    usedBenchPlayers.add(benchPick.playerId);
 
-    const starterIndex = adjustedPicks.findIndex((p) => p.playerId === starter.playerId)
-    const benchIndex = adjustedPicks.findIndex((p) => p.playerId === benchPick.playerId)
+    const starterIndex = adjustedPicks.findIndex((p) => p.playerId === starter.playerId);
+    const benchIndex = adjustedPicks.findIndex((p) => p.playerId === benchPick.playerId);
 
     if (starterIndex !== -1 && benchIndex !== -1) {
-      adjustedPicks[starterIndex].multiplier = 0
-      adjustedPicks[benchIndex].multiplier = 1
+      adjustedPicks[starterIndex].multiplier = 0;
+      adjustedPicks[benchIndex].multiplier = 1;
     }
 
     autoSubs.push({
@@ -361,14 +361,14 @@ export function calculateAutoSubs(
         elementType: benchEligibility.elementType,
         webName: benchEligibility.webName,
       },
-    })
+    });
   }
 
   const { captainPromoted, originalCaptainId } = processCaptainPromotion(
     adjustedPicks,
     eligibilityMap,
     originalCaptainMultiplier
-  )
+  );
 
-  return { adjustedPicks, autoSubs, captainPromoted, originalCaptainId }
+  return { adjustedPicks, autoSubs, captainPromoted, originalCaptainId };
 }

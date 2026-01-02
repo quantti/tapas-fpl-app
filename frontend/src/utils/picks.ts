@@ -3,8 +3,8 @@
  */
 
 interface PickBadgeInput {
-  is_captain: boolean
-  is_vice_captain: boolean
+  is_captain: boolean;
+  is_vice_captain: boolean;
 }
 
 /**
@@ -15,10 +15,10 @@ interface PickBadgeInput {
  */
 export function getCaptainBadge(pick: PickBadgeInput): 'C' | 'V' | undefined {
   if (pick.is_captain) {
-    return 'C'
+    return 'C';
   }
   if (pick.is_vice_captain) {
-    return 'V'
+    return 'V';
   }
-  return undefined
+  return undefined;
 }

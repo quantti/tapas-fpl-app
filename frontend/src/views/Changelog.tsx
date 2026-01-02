@@ -1,12 +1,12 @@
-import { Sparkles, Bug, Clock } from 'lucide-react'
+import { Sparkles, Bug, Clock } from 'lucide-react';
 
-import { releases, type Release } from '../config/releases'
+import { releases, type Release } from '../config/releases';
 
-import * as styles from './Changelog.module.css'
+import * as styles from './Changelog.module.css';
 
 function ReleaseCard({ release }: { release: Release }) {
-  const features = release.items.filter((item) => item.type === 'feature')
-  const fixes = release.items.filter((item) => item.type === 'fix')
+  const features = release.items.filter((item) => item.type === 'feature');
+  const fixes = release.items.filter((item) => item.type === 'fix');
 
   return (
     <div className={styles.release}>
@@ -52,7 +52,7 @@ function ReleaseCard({ release }: { release: Release }) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 export function Changelog() {
@@ -72,5 +72,5 @@ export function Changelog() {
         </div>
       </div>
     </div>
-  )
+  );
 }

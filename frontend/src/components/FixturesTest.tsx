@@ -1,49 +1,49 @@
-import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import clsx from 'clsx';
+import { useEffect, useState } from 'react';
 
-import { formatDateTime } from '../config/locale'
-import { fplApi } from '../services/api'
-import { isFixtureLive } from '../utils/liveScoring'
-import { createTeamsMap } from '../utils/mappers'
+import { formatDateTime } from '../config/locale';
+import { fplApi } from '../services/api';
+import { isFixtureLive } from '../utils/liveScoring';
+import { createTeamsMap } from '../utils/mappers';
 
-import * as styles from './FixturesTest.module.css'
+import * as styles from './FixturesTest.module.css';
 
-import type { Fixture, Team } from '../types/fpl'
+import type { Fixture, Team } from '../types/fpl';
 
 export function FixturesTest() {
-  const [fixtures, setFixtures] = useState<Fixture[]>([])
-  const [teams, setTeams] = useState<Map<number, Team>>(new Map())
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [fixtures, setFixtures] = useState<Fixture[]>([]);
+  const [teams, setTeams] = useState<Map<number, Team>>(new Map());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
       try {
         // Load teams first for team names
-        const bootstrap = await fplApi.getBootstrapStatic()
-        setTeams(createTeamsMap(bootstrap.teams))
+        const bootstrap = await fplApi.getBootstrapStatic();
+        setTeams(createTeamsMap(bootstrap.teams));
 
         // Load fixtures
-        const fixtureData = await fplApi.getFixtures()
+        const fixtureData = await fplApi.getFixtures();
         // Show only upcoming fixtures (not finished, with kickoff time)
-        const upcoming = fixtureData.filter((f) => !f.finished && f.kickoff_time).slice(0, 10)
-        setFixtures(upcoming)
+        const upcoming = fixtureData.filter((f) => !f.finished && f.kickoff_time).slice(0, 10);
+        setFixtures(upcoming);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data')
+        setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
 
-    loadData()
-  }, [])
+    loadData();
+  }, []);
 
   if (loading) {
     return (
       <div className={styles.FixturesTest}>
         <div className={styles.loading}>Loading fixtures...</div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -57,7 +57,7 @@ export function FixturesTest() {
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -77,8 +77,8 @@ export function FixturesTest() {
         </thead>
         <tbody className={styles.tableBody}>
           {fixtures.map((fixture) => {
-            const homeTeam = teams.get(fixture.team_h)
-            const awayTeam = teams.get(fixture.team_a)
+            const homeTeam = teams.get(fixture.team_h);
+            const awayTeam = teams.get(fixture.team_a);
             const kickoff = fixture.kickoff_time
               ? formatDateTime(fixture.kickoff_time, {
                   day: 'numeric',
@@ -86,8 +86,8 @@ export function FixturesTest() {
                   hour: '2-digit',
                   minute: '2-digit',
                 })
-              : 'TBD'
-            const isLive = isFixtureLive(fixture)
+              : 'TBD';
+            const isLive = isFixtureLive(fixture);
 
             return (
               <tr key={fixture.id} className={clsx(styles.row, isLive && styles.live)}>
@@ -102,10 +102,10 @@ export function FixturesTest() {
                 <td className={styles.cell}>{awayTeam?.name || fixture.team_a}</td>
                 <td className={clsx(styles.cell, styles.muted)}>{kickoff}</td>
               </tr>
-            )
+            );
           })}
         </tbody>
       </table>
     </div>
-  )
+  );
 }

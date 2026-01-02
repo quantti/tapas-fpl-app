@@ -1,10 +1,10 @@
-import { createContext } from 'react'
+import { createContext } from 'react';
 
 export interface ManagerIdContextValue {
-  managerId: number | null
-  setManagerId: (id: number | null) => void
-  clearManagerId: () => void
-  isLoggedIn: boolean
+  managerId: number | null;
+  setManagerId: (id: number | null) => void;
+  clearManagerId: () => void;
+  isLoggedIn: boolean;
 }
 
-export const ManagerIdContext = createContext<ManagerIdContextValue | null>(null)
+export const ManagerIdContext = createContext<ManagerIdContextValue | null>(null);

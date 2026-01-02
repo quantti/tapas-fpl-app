@@ -1,12 +1,12 @@
-import clsx from 'clsx'
+import clsx from 'clsx';
 
-import * as styles from './Spinner.module.css'
+import * as styles from './Spinner.module.css';
 
 interface SpinnerProps {
   /** Size variant: sm (24px), md (40px default), lg (56px) */
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg';
   /** Additional CSS class name */
-  className?: string
+  className?: string;
 }
 
 /**
@@ -20,5 +20,5 @@ export function Spinner({ size = 'md', className }: SpinnerProps) {
       aria-label="Loading"
       className={clsx(styles.spinner, size !== 'md' && styles[size], className)}
     />
-  )
+  );
 }

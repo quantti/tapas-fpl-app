@@ -5,25 +5,25 @@ import type {
   Fixture,
   LeagueStandings,
   LiveGameweek,
-} from '../types/fpl'
+} from '../types/fpl';
 
 // API base URL - in development, we'll use the worker locally
 // In production, this will be your deployed Cloudflare Worker URL
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8787'
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8787';
 
 /**
  * Custom error class for FPL API errors.
  * Preserves the HTTP status code for smart error handling (e.g., 503 detection).
  */
 export class FplApiError extends Error {
-  readonly status: number
-  readonly statusText: string
+  readonly status: number;
+  readonly statusText: string;
 
   constructor(status: number, statusText: string) {
-    super(`API error: ${status} ${statusText}`)
-    this.name = 'FplApiError'
-    this.status = status
-    this.statusText = statusText
+    super(`API error: ${status} ${statusText}`);
+    this.name = 'FplApiError';
+    this.status = status;
+    this.statusText = statusText;
   }
 
   /**
@@ -31,18 +31,18 @@ export class FplApiError extends Error {
    * This typically happens for 30-60 minutes between gameweeks.
    */
   get isServiceUnavailable(): boolean {
-    return this.status === 503
+    return this.status === 503;
   }
 }
 
 async function fetchApi<T>(endpoint: string): Promise<T> {
-  const response = await fetch(`${API_BASE}/api${endpoint}`)
+  const response = await fetch(`${API_BASE}/api${endpoint}`);
 
   if (!response.ok) {
-    throw new FplApiError(response.status, response.statusText)
+    throw new FplApiError(response.status, response.statusText);
   }
 
-  return response.json()
+  return response.json();
 }
 
 export const fplApi = {
@@ -57,8 +57,8 @@ export const fplApi = {
    * Optionally filter by gameweek
    */
   getFixtures: (gameweek?: number) => {
-    const endpoint = gameweek !== undefined ? `/fixtures?event=${gameweek}` : '/fixtures'
-    return fetchApi<Fixture[]>(endpoint)
+    const endpoint = gameweek !== undefined ? `/fixtures?event=${gameweek}` : '/fixtures';
+    return fetchApi<Fixture[]>(endpoint);
   },
 
   /**
@@ -72,18 +72,18 @@ export const fplApi = {
   getEntryHistory: (teamId: number) =>
     fetchApi<{
       current: {
-        event: number
-        points: number
-        total_points: number
-        rank: number
-        overall_rank: number
-        event_transfers: number
-        event_transfers_cost: number
-        value: number
-        bank: number
-      }[]
-      past: { season_name: string; total_points: number; rank: number }[]
-      chips: { name: string; time: string; event: number }[]
+        event: number;
+        points: number;
+        total_points: number;
+        rank: number;
+        overall_rank: number;
+        event_transfers: number;
+        event_transfers_cost: number;
+        value: number;
+        bank: number;
+      }[];
+      past: { season_name: string; total_points: number; rank: number }[];
+      chips: { name: string; time: string; event: number }[];
     }>(`/entry/${teamId}/history`),
 
   /**
@@ -91,26 +91,26 @@ export const fplApi = {
    */
   getEntryPicks: (teamId: number, gameweek: number) =>
     fetchApi<{
-      active_chip: string | null
-      automatic_subs: { entry: number; element_in: number; element_out: number; event: number }[]
+      active_chip: string | null;
+      automatic_subs: { entry: number; element_in: number; element_out: number; event: number }[];
       entry_history: {
-        event: number
-        points: number
-        total_points: number
-        rank: number
-        overall_rank: number
-        value: number
-        bank: number
-        event_transfers: number
-        event_transfers_cost: number
-      }
+        event: number;
+        points: number;
+        total_points: number;
+        rank: number;
+        overall_rank: number;
+        value: number;
+        bank: number;
+        event_transfers: number;
+        event_transfers_cost: number;
+      };
       picks: {
-        element: number
-        position: number
-        multiplier: number
-        is_captain: boolean
-        is_vice_captain: boolean
-      }[]
+        element: number;
+        position: number;
+        multiplier: number;
+        is_captain: boolean;
+        is_vice_captain: boolean;
+      }[];
     }>(`/entry/${teamId}/event/${gameweek}/picks`),
 
   /**
@@ -135,13 +135,13 @@ export const fplApi = {
   getEntryTransfers: (teamId: number) =>
     fetchApi<
       {
-        element_in: number
-        element_in_cost: number
-        element_out: number
-        element_out_cost: number
-        entry: number
-        event: number
-        time: string
+        element_in: number;
+        element_in_cost: number;
+        element_out: number;
+        element_out_cost: number;
+        entry: number;
+        event: number;
+        time: string;
       }[]
     >(`/entry/${teamId}/transfers`),
 
@@ -151,7 +151,7 @@ export const fplApi = {
    */
   getEventStatus: () =>
     fetchApi<{
-      status: { bonus_added: boolean; date: string; event: number; points: string }[]
-      leagues: string
+      status: { bonus_added: boolean; date: string; event: number; points: string }[];
+      leagues: string;
     }>('/event-status'),
-}
+};

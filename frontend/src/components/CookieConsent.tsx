@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
-import 'vanilla-cookieconsent/dist/cookieconsent.css'
-import './CookieConsent.css'
-import * as CookieConsent from 'vanilla-cookieconsent'
+import { useEffect } from 'react';
+import 'vanilla-cookieconsent/dist/cookieconsent.css';
+import './CookieConsent.css';
+import * as CookieConsent from 'vanilla-cookieconsent';
 
 export function CookieConsentBanner() {
   useEffect(() => {
@@ -85,8 +85,8 @@ export function CookieConsentBanner() {
           },
         },
       },
-    })
-  }, [])
+    });
+  }, []);
 
-  return null
+  return null;
 }

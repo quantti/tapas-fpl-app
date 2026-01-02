@@ -1,15 +1,15 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import tseslint from 'typescript-eslint'
-import unicorn from 'eslint-plugin-unicorn'
-import sonarjs from 'eslint-plugin-sonarjs'
-import jsxA11y from 'eslint-plugin-jsx-a11y'
-import vitest from '@vitest/eslint-plugin'
-import importPlugin from 'eslint-plugin-import'
-import boundaries from 'eslint-plugin-boundaries'
-import { defineConfig, globalIgnores } from 'eslint/config'
+import js from '@eslint/js';
+import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+import tseslint from 'typescript-eslint';
+import unicorn from 'eslint-plugin-unicorn';
+import sonarjs from 'eslint-plugin-sonarjs';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
+import vitest from '@vitest/eslint-plugin';
+import importPlugin from 'eslint-plugin-import';
+import boundaries from 'eslint-plugin-boundaries';
+import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
   globalIgnores(['dist']),
@@ -178,4 +178,4 @@ export default defineConfig([
       },
     },
   },
-])
+]);

@@ -1,40 +1,40 @@
-import { Swords } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Swords } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { Card } from 'components/Card'
-import { CardHeader } from 'components/CardHeader'
+import { Card } from 'components/Card';
+import { CardHeader } from 'components/CardHeader';
 
-import { FplApiError } from 'services/api'
-import { useHeadToHeadComparison } from 'services/queries/useHeadToHeadComparison'
+import { FplApiError } from 'services/api';
+import { useHeadToHeadComparison } from 'services/queries/useHeadToHeadComparison';
 
-import { formatRank, getComparisonClass } from 'utils/comparison'
+import { formatRank, getComparisonClass } from 'utils/comparison';
 
-import * as styles from './HeadToHead.module.css'
+import * as styles from './HeadToHead.module.css';
 
-import type { ManagerGameweekData } from 'services/queries/useFplData'
+import type { ManagerGameweekData } from 'services/queries/useFplData';
 import type {
   ComparisonStats,
   RosterComparison,
   TemplateOverlap,
-} from 'services/queries/useHeadToHeadComparison'
-import type { Gameweek, Player, Team } from 'types/fpl'
-import type { CompareResult } from 'utils/comparison'
+} from 'services/queries/useHeadToHeadComparison';
+import type { Gameweek, Player, Team } from 'types/fpl';
+import type { CompareResult } from 'utils/comparison';
 
 interface Props {
-  managerDetails: ManagerGameweekData[]
-  currentGameweek: number
-  gameweeks: Gameweek[]
-  playersMap: Map<number, Player>
-  teamsMap: Map<number, Team>
+  managerDetails: ManagerGameweekData[];
+  currentGameweek: number;
+  gameweeks: Gameweek[];
+  playersMap: Map<number, Player>;
+  teamsMap: Map<number, Team>;
 }
 
 /**
  * Get the label for points difference display
  */
 function getLeadLabel(pointsDiff: number, teamAName: string, teamBName: string): string {
-  if (pointsDiff > 0) return `${teamAName} leads by`
-  if (pointsDiff < 0) return `${teamBName} leads by`
-  return 'Tied!'
+  if (pointsDiff > 0) return `${teamAName} leads by`;
+  if (pointsDiff < 0) return `${teamBName} leads by`;
+  return 'Tied!';
 }
 
 /**
@@ -43,31 +43,31 @@ function getLeadLabel(pointsDiff: number, teamAName: string, teamBName: string):
 function getErrorMessage(error: Error): string {
   if (error instanceof FplApiError) {
     if (error.isServiceUnavailable) {
-      return 'FPL is updating data. Please try again in a few minutes.'
+      return 'FPL is updating data. Please try again in a few minutes.';
     }
     if (error.status === 404) {
-      return 'Manager data not found. They may have joined the league recently.'
+      return 'Manager data not found. They may have joined the league recently.';
     }
     if (error.status >= 500) {
-      return 'FPL servers are experiencing issues. Please try again later.'
+      return 'FPL servers are experiencing issues. Please try again later.';
     }
-    return `Failed to load data (${error.status}). Please try again.`
+    return `Failed to load data (${error.status}). Please try again.`;
   }
   if (error.name === 'TypeError' && error.message.includes('fetch')) {
-    return 'Network error. Check your connection and try again.'
+    return 'Network error. Check your connection and try again.';
   }
-  return 'Failed to load comparison data. Please try again.'
+  return 'Failed to load comparison data. Please try again.';
 }
 
 interface ComparisonContentProps {
-  managerAId: number | null
-  managerBId: number | null
-  loading: boolean
-  error: Error | null
-  managerA: ComparisonStats | null
-  managerB: ComparisonStats | null
-  rosterComparison: RosterComparison | null
-  playersMap: Map<number, Player>
+  managerAId: number | null;
+  managerBId: number | null;
+  loading: boolean;
+  error: Error | null;
+  managerA: ComparisonStats | null;
+  managerB: ComparisonStats | null;
+  rosterComparison: RosterComparison | null;
+  playersMap: Map<number, Player>;
 }
 
 /**
@@ -84,7 +84,7 @@ function renderComparisonContent({
   playersMap,
 }: ComparisonContentProps): React.ReactNode {
   if (!managerAId || !managerBId) {
-    return <p className={styles.empty}>Select two managers to compare</p>
+    return <p className={styles.empty}>Select two managers to compare</p>;
   }
   // Show existing data while loading new data (prevents layout shift / scroll jump)
   if (managerA && managerB) {
@@ -97,23 +97,23 @@ function renderComparisonContent({
           playersMap={playersMap}
         />
       </div>
-    )
+    );
   }
   if (loading) {
-    return <p className={styles.loading}>Loading comparison...</p>
+    return <p className={styles.loading}>Loading comparison...</p>;
   }
   if (error) {
-    return <p className={styles.error}>{getErrorMessage(error)}</p>
+    return <p className={styles.error}>{getErrorMessage(error)}</p>;
   }
-  return null
+  return null;
 }
 
 interface StatRowProps {
-  label: string
-  valueA: string | number
-  valueB: string | number
-  compareA: CompareResult
-  compareB: CompareResult
+  label: string;
+  valueA: string | number;
+  valueB: string | number;
+  compareA: CompareResult;
+  compareB: CompareResult;
 }
 
 /**
@@ -126,21 +126,21 @@ function StatRow({ label, valueA, valueB, compareA, compareB }: StatRowProps) {
       <span className={styles.statLabel}>{label}</span>
       <span className={`${styles.statValue} ${styles.right} ${styles[compareB]}`}>{valueB}</span>
     </div>
-  )
+  );
 }
 
 interface TemplateOverlapRowProps {
-  label: string
-  overlapA: TemplateOverlap
-  overlapB: TemplateOverlap
+  label: string;
+  overlapA: TemplateOverlap;
+  overlapB: TemplateOverlap;
 }
 
 /**
  * Template overlap display with progress bars
  */
 function TemplateOverlapRow({ label, overlapA, overlapB }: TemplateOverlapRowProps) {
-  const compareA = getComparisonClass(overlapA.matchCount, overlapB.matchCount)
-  const compareB = getComparisonClass(overlapB.matchCount, overlapA.matchCount)
+  const compareA = getComparisonClass(overlapA.matchCount, overlapB.matchCount);
+  const compareB = getComparisonClass(overlapB.matchCount, overlapA.matchCount);
 
   return (
     <div className={styles.templateOverlapSection}>
@@ -182,33 +182,33 @@ function TemplateOverlapRow({ label, overlapA, overlapB }: TemplateOverlapRowPro
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 interface ComparisonGridProps {
-  managerA: ComparisonStats
-  managerB: ComparisonStats
-  rosterComparison: RosterComparison | null
-  playersMap: Map<number, Player>
+  managerA: ComparisonStats;
+  managerB: ComparisonStats;
+  rosterComparison: RosterComparison | null;
+  playersMap: Map<number, Player>;
 }
 
 function ComparisonGrid({ managerA, managerB, rosterComparison, playersMap }: ComparisonGridProps) {
   // Calculate point difference
-  const pointsDiff = managerA.totalPoints - managerB.totalPoints
+  const pointsDiff = managerA.totalPoints - managerB.totalPoints;
 
   // Helper to get player name from ID
   const getPlayerName = (id: number): string => {
-    const player = playersMap.get(id)
-    return player?.web_name ?? 'Unknown'
-  }
+    const player = playersMap.get(id);
+    return player?.web_name ?? 'Unknown';
+  };
 
   // Helper to get position abbreviation from ID
   const getPlayerPosition = (id: number): string => {
-    const player = playersMap.get(id)
-    if (!player) return ''
-    const positions: Record<number, string> = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' }
-    return positions[player.element_type] ?? ''
-  }
+    const player = playersMap.get(id);
+    if (!player) return '';
+    const positions: Record<number, string> = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' };
+    return positions[player.element_type] ?? '';
+  };
 
   return (
     <div className={styles.comparison}>
@@ -379,14 +379,14 @@ function ComparisonGrid({ managerA, managerB, rosterComparison, playersMap }: Co
             <>
               <div className={styles.sectionSubtitle}>Differentials</div>
               {rosterComparison.managerAOnlyIds.map((idA, index) => {
-                const idB = rosterComparison.managerBOnlyIds[index]
+                const idB = rosterComparison.managerBOnlyIds[index];
                 return (
                   <div key={`diff-${index}`} className={styles.differentialRow}>
                     <span className={styles.differentialName}>{getPlayerName(idA)}</span>
                     <span className={styles.differentialPosition}>{getPlayerPosition(idA)}</span>
                     <span className={styles.differentialName}>{idB ? getPlayerName(idB) : ''}</span>
                   </div>
-                )
+                );
               })}
             </>
           )}
@@ -420,7 +420,7 @@ function ComparisonGrid({ managerA, managerB, rosterComparison, playersMap }: Co
         />
       )}
     </div>
-  )
+  );
 }
 
 export function HeadToHead({
@@ -430,14 +430,14 @@ export function HeadToHead({
   playersMap,
   teamsMap,
 }: Props) {
-  const [managerAId, setManagerAId] = useState<number | null>(null)
-  const [managerBId, setManagerBId] = useState<number | null>(null)
+  const [managerAId, setManagerAId] = useState<number | null>(null);
+  const [managerBId, setManagerBId] = useState<number | null>(null);
 
   // Sort managers by league rank for dropdown
   const sortedManagers = useMemo(
     () => [...managerDetails].sort((a, b) => a.rank - b.rank),
     [managerDetails]
-  )
+  );
 
   const { managerA, managerB, rosterComparison, loading, error } = useHeadToHeadComparison({
     managerAId,
@@ -447,45 +447,45 @@ export function HeadToHead({
     gameweeks,
     playersMap,
     teamsMap,
-  })
+  });
 
   // Scroll to content when data loads for a new manager pair
-  const contentRef = useRef<HTMLDivElement>(null)
-  const lastScrolledPairRef = useRef<string | null>(null)
+  const contentRef = useRef<HTMLDivElement>(null);
+  const lastScrolledPairRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Only scroll when both managers are selected and data is loaded
-    if (!managerAId || !managerBId || !managerA || !managerB || loading) return
+    if (!managerAId || !managerBId || !managerA || !managerB || loading) return;
 
-    const currentPair = `${managerAId}-${managerBId}`
+    const currentPair = `${managerAId}-${managerBId}`;
     // Don't scroll again if we already scrolled for this pair
-    if (lastScrolledPairRef.current === currentPair) return
+    if (lastScrolledPairRef.current === currentPair) return;
 
-    lastScrolledPairRef.current = currentPair
-    contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
-  }, [managerAId, managerBId, managerA, managerB, loading])
+    lastScrolledPairRef.current = currentPair;
+    contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+  }, [managerAId, managerBId, managerA, managerB, loading]);
 
   const handleManagerAChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const scrollY = window.scrollY
-    const value = e.target.value
-    setManagerAId(value ? Number(value) : null)
+    const scrollY = window.scrollY;
+    const value = e.target.value;
+    setManagerAId(value ? Number(value) : null);
     // Firefox scrolls on select blur - restore after browser's internal handling
     requestAnimationFrame(() => {
-      window.scrollTo(0, scrollY)
-    })
-  }
+      window.scrollTo(0, scrollY);
+    });
+  };
 
   const handleManagerBChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const scrollY = window.scrollY
-    const value = e.target.value
-    setManagerBId(value ? Number(value) : null)
+    const scrollY = window.scrollY;
+    const value = e.target.value;
+    setManagerBId(value ? Number(value) : null);
     // Firefox scrolls on select blur - restore after browser's internal handling
     requestAnimationFrame(() => {
-      window.scrollTo(0, scrollY)
-    })
-  }
+      window.scrollTo(0, scrollY);
+    });
+  };
 
-  if (managerDetails.length < 2) return null
+  if (managerDetails.length < 2) return null;
 
   return (
     <Card>
@@ -548,5 +548,5 @@ export function HeadToHead({
         </div>
       </div>
     </Card>
-  )
+  );
 }

@@ -1,23 +1,27 @@
-import { DEFCON_THRESHOLDS, DEFCON_BONUS_POINTS, isOutfieldPosition } from './defcon'
-import { shouldShowProvisionalBonus, calculateProvisionalBonus, type BpsScore } from './liveScoring'
+import { DEFCON_THRESHOLDS, DEFCON_BONUS_POINTS, isOutfieldPosition } from './defcon';
+import {
+  shouldShowProvisionalBonus,
+  calculateProvisionalBonus,
+  type BpsScore,
+} from './liveScoring';
 
-import type { Fixture, Player, LiveGameweek } from '../types/fpl'
+import type { Fixture, Player, LiveGameweek } from '../types/fpl';
 
 export interface PlayerReward {
-  playerId: number
-  webName: string
-  points: number
+  playerId: number;
+  webName: string;
+  points: number;
 }
 
-export type FixtureStatus = 'not_started' | 'in_progress' | 'rewards_available'
+export type FixtureStatus = 'not_started' | 'in_progress' | 'rewards_available';
 
 export interface FixtureRewards {
-  fixture: Fixture
-  homeTeamName: string
-  awayTeamName: string
-  bonus: PlayerReward[] // points: 1, 2, or 3 based on BPS ranking
-  defcon: PlayerReward[] // points: always 2 for meeting threshold
-  status: FixtureStatus
+  fixture: Fixture;
+  homeTeamName: string;
+  awayTeamName: string;
+  bonus: PlayerReward[]; // points: 1, 2, or 3 based on BPS ranking
+  defcon: PlayerReward[]; // points: always 2 for meeting threshold
+  status: FixtureStatus;
   // showRewards removed - derive via: status === 'rewards_available'
 }
 
@@ -29,10 +33,10 @@ function getStatEntries(
   identifier: string
 ): { element: number; value: number }[] {
   // Defensive check for missing stats array (can happen with mock data or partial API responses)
-  if (!fixture.stats || !Array.isArray(fixture.stats)) return []
-  const stat = fixture.stats.find((s) => s.identifier === identifier)
-  if (!stat) return []
-  return [...stat.h, ...stat.a]
+  if (!fixture.stats || !Array.isArray(fixture.stats)) return [];
+  const stat = fixture.stats.find((s) => s.identifier === identifier);
+  if (!stat) return [];
+  return [...stat.h, ...stat.a];
 }
 
 /**
@@ -44,14 +48,14 @@ function mapToPlayerRewards(
 ): PlayerReward[] {
   return entries
     .map((entry) => {
-      const player = playersMap.get(entry.element)
+      const player = playersMap.get(entry.element);
       return {
         playerId: entry.element,
         webName: player?.web_name ?? `#${entry.element}`,
         points: entry.value,
-      }
+      };
     })
-    .sort((a, b) => b.points - a.points) // Sort by points descending
+    .sort((a, b) => b.points - a.points); // Sort by points descending
 }
 
 /**
@@ -64,24 +68,24 @@ function filterAndMapDefconRewards(
 ): PlayerReward[] {
   return entries
     .filter((entry) => {
-      const player = playersMap.get(entry.element)
-      if (!player) return false
+      const player = playersMap.get(entry.element);
+      if (!player) return false;
 
       // Only outfield players (DEF/MID/FWD) can earn DefCon points
-      if (!isOutfieldPosition(player.element_type)) return false
+      if (!isOutfieldPosition(player.element_type)) return false;
 
-      const threshold = DEFCON_THRESHOLDS[player.element_type]
-      return entry.value >= threshold
+      const threshold = DEFCON_THRESHOLDS[player.element_type];
+      return entry.value >= threshold;
     })
     .map((entry) => {
-      const player = playersMap.get(entry.element)
+      const player = playersMap.get(entry.element);
       return {
         playerId: entry.element,
         webName: player?.web_name ?? `#${entry.element}`,
         points: DEFCON_BONUS_POINTS, // Fixed bonus points, not raw CBITR value
-      }
+      };
     })
-    .sort((a, b) => a.webName.localeCompare(b.webName)) // Sort alphabetically
+    .sort((a, b) => a.webName.localeCompare(b.webName)); // Sort alphabetically
 }
 
 /**
@@ -89,12 +93,12 @@ function filterAndMapDefconRewards(
  */
 function getFixtureStatus(fixture: Fixture): FixtureStatus {
   if (!fixture.started) {
-    return 'not_started'
+    return 'not_started';
   }
   if (shouldShowProvisionalBonus(fixture)) {
-    return 'rewards_available'
+    return 'rewards_available';
   }
-  return 'in_progress'
+  return 'in_progress';
 }
 
 /**
@@ -109,33 +113,33 @@ function calculateProvisionalBonusForFixture(
   // Get all players in this fixture by checking their explain array
   const playersInFixture = liveData.elements.filter((p) =>
     p.explain.some((e) => e.fixture === fixture.id)
-  )
+  );
 
-  if (playersInFixture.length === 0) return []
+  if (playersInFixture.length === 0) return [];
 
   // Build BPS scores array
   const bpsScores: BpsScore[] = playersInFixture.map((p) => ({
     playerId: p.id,
     bps: p.stats.bps,
-  }))
+  }));
 
   // Calculate provisional bonus (3/2/1 for top BPS scores)
-  const bonusMap = calculateProvisionalBonus(bpsScores)
+  const bonusMap = calculateProvisionalBonus(bpsScores);
 
   // Convert to PlayerReward array
-  const rewards: PlayerReward[] = []
+  const rewards: PlayerReward[] = [];
   for (const [playerId, bonus] of bonusMap) {
     if (bonus > 0) {
-      const player = playersMap.get(playerId)
+      const player = playersMap.get(playerId);
       rewards.push({
         playerId,
         webName: player?.web_name ?? `#${playerId}`,
         points: bonus,
-      })
+      });
     }
   }
 
-  return rewards.sort((a, b) => b.points - a.points)
+  return rewards.sort((a, b) => b.points - a.points);
 }
 
 /**
@@ -149,25 +153,25 @@ export function extractFixtureRewards(
   teamsMap: Map<number, { name: string; short_name: string }>,
   liveData?: LiveGameweek
 ): FixtureRewards {
-  const homeTeam = teamsMap.get(fixture.team_h)
-  const awayTeam = teamsMap.get(fixture.team_a)
+  const homeTeam = teamsMap.get(fixture.team_h);
+  const awayTeam = teamsMap.get(fixture.team_a);
 
-  const status = getFixtureStatus(fixture)
-  const shouldShowRewards = status === 'rewards_available'
+  const status = getFixtureStatus(fixture);
+  const shouldShowRewards = status === 'rewards_available';
 
   // Only extract rewards if we should show them
-  const defconEntries = shouldShowRewards ? getStatEntries(fixture, 'defensive_contribution') : []
+  const defconEntries = shouldShowRewards ? getStatEntries(fixture, 'defensive_contribution') : [];
 
   // Get bonus: prefer confirmed stats, fallback to provisional from BPS
-  let bonus: PlayerReward[] = []
+  let bonus: PlayerReward[] = [];
   if (shouldShowRewards) {
-    const bonusEntries = getStatEntries(fixture, 'bonus')
+    const bonusEntries = getStatEntries(fixture, 'bonus');
     if (bonusEntries.length > 0) {
       // Confirmed bonus available
-      bonus = mapToPlayerRewards(bonusEntries, playersMap)
+      bonus = mapToPlayerRewards(bonusEntries, playersMap);
     } else if (liveData) {
       // No confirmed bonus - calculate provisional from BPS
-      bonus = calculateProvisionalBonusForFixture(fixture, liveData, playersMap)
+      bonus = calculateProvisionalBonusForFixture(fixture, liveData, playersMap);
     }
   }
 
@@ -178,7 +182,7 @@ export function extractFixtureRewards(
     bonus,
     defcon: filterAndMapDefconRewards(defconEntries, playersMap),
     status,
-  }
+  };
 }
 
 /**
@@ -196,9 +200,9 @@ export function extractAllFixtureRewards(
     .sort((a, b) => {
       // Sort by kickoff time, then by ID
       if (a.kickoff_time && b.kickoff_time) {
-        return new Date(a.kickoff_time).getTime() - new Date(b.kickoff_time).getTime()
+        return new Date(a.kickoff_time).getTime() - new Date(b.kickoff_time).getTime();
       }
-      return a.id - b.id
+      return a.id - b.id;
     })
-    .map((fixture) => extractFixtureRewards(fixture, playersMap, teamsMap, liveData))
+    .map((fixture) => extractFixtureRewards(fixture, playersMap, teamsMap, liveData));
 }

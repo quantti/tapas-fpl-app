@@ -31,7 +31,7 @@ export const queryKeys = {
 
   // Player data
   playerSummary: (playerId: number | undefined) => ['playerSummary', playerId] as const,
-} as const
+} as const;
 
 // Type exports for use in tests or other utilities
-export type QueryKeys = typeof queryKeys
+export type QueryKeys = typeof queryKeys;

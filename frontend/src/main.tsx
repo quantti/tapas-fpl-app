@@ -1,11 +1,11 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
 
-import './index.css'
-import App from './App.tsx'
-import { CACHE_TIMES } from './config'
+import './index.css';
+import App from './App.tsx';
+import { CACHE_TIMES } from './config';
 
 // Configure React Query with sensible defaults
 const queryClient = new QueryClient({
@@ -21,12 +21,12 @@ const queryClient = new QueryClient({
       retry: 1,
     },
   },
-})
+});
 
 // Disable browser scroll restoration to prevent scroll jumps on reload
 // (browser tries to restore scroll before React renders, causing layout shift)
 if ('scrollRestoration' in history) {
-  history.scrollRestoration = 'manual'
+  history.scrollRestoration = 'manual';
 }
 
 createRoot(document.querySelector('#root')!).render(
@@ -36,4 +36,4 @@ createRoot(document.querySelector('#root')!).render(
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   </StrictMode>
-)
+);

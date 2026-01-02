@@ -1,29 +1,29 @@
-import { useQueries } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useQueries } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
-import { CACHE_TIMES } from '../../config'
-import { fplApi } from '../api'
-import { queryKeys } from '../queryKeys'
+import { CACHE_TIMES } from '../../config';
+import { fplApi } from '../api';
+import { queryKeys } from '../queryKeys';
 
 interface ManagerInfo {
-  id: number
-  teamName: string
+  id: number;
+  teamName: string;
 }
 
 interface GameweekPosition {
-  gameweek: number
-  [managerId: string]: number | string // managerId -> position, plus 'gameweek' key
+  gameweek: number;
+  [managerId: string]: number | string; // managerId -> position, plus 'gameweek' key
 }
 
 interface PositionHistoryData {
-  positions: GameweekPosition[]
-  managers: { id: number; teamName: string; color: string }[]
+  positions: GameweekPosition[];
+  managers: { id: number; teamName: string; color: string }[];
 }
 
 interface UseLeaguePositionHistoryReturn {
-  data: PositionHistoryData | null
-  loading: boolean
-  error: string | null
+  data: PositionHistoryData | null;
+  loading: boolean;
+  error: string | null;
 }
 
 // 12 distinct colors for the chart lines
@@ -40,7 +40,7 @@ const CHART_COLORS = [
   '#84cc16', // lime
   '#06b6d4', // cyan
   '#a855f7', // purple
-]
+];
 
 /**
  * Fetches historical data and calculates league position at each gameweek.
@@ -59,39 +59,39 @@ export function useLeaguePositionHistory(
       gcTime: CACHE_TIMES.THIRTY_MINUTES,
       enabled: managers.length > 0 && currentGameweek > 0,
     })),
-  })
+  });
 
-  const loading = historyQueries.some((q) => q.isLoading)
-  const error = historyQueries.find((q) => q.error)?.error
+  const loading = historyQueries.some((q) => q.isLoading);
+  const error = historyQueries.find((q) => q.error)?.error;
 
   // Calculate positions from history data
   const data = useMemo(() => {
-    if (loading || managers.length === 0) return null
+    if (loading || managers.length === 0) return null;
 
     // Build a map of managerId -> gameweek -> total_points
-    const pointsMap = new Map<number, Map<number, number>>()
+    const pointsMap = new Map<number, Map<number, number>>();
 
     for (let i = 0; i < managers.length; i++) {
-      const history = historyQueries[i]?.data
-      if (!history) continue
+      const history = historyQueries[i]?.data;
+      if (!history) continue;
 
-      const managerPoints = new Map<number, number>()
+      const managerPoints = new Map<number, number>();
       for (const gw of history.current) {
-        managerPoints.set(gw.event, gw.total_points)
+        managerPoints.set(gw.event, gw.total_points);
       }
-      pointsMap.set(managers[i].id, managerPoints)
+      pointsMap.set(managers[i].id, managerPoints);
     }
 
     // Find the range of gameweeks we have data for
-    const allGameweeks = new Set<number>()
+    const allGameweeks = new Set<number>();
     for (const managerPoints of pointsMap.values()) {
       for (const gw of managerPoints.keys()) {
-        allGameweeks.add(gw)
+        allGameweeks.add(gw);
       }
     }
 
-    const sortedGameweeks = [...allGameweeks].sort((a, b) => a - b)
-    if (sortedGameweeks.length === 0) return null
+    const sortedGameweeks = [...allGameweeks].sort((a, b) => a - b);
+    if (sortedGameweeks.length === 0) return null;
 
     // For each gameweek, calculate league positions by sorting total_points
     const positions: GameweekPosition[] = sortedGameweeks.map((gw) => {
@@ -101,34 +101,34 @@ export function useLeaguePositionHistory(
           id: m.id,
           points: pointsMap.get(m.id)?.get(gw) ?? 0,
         }))
-        .sort((a, b) => b.points - a.points) // Sort descending by points
+        .sort((a, b) => b.points - a.points); // Sort descending by points
 
       // Assign positions (1-indexed)
-      const positionData: GameweekPosition = { gameweek: gw }
+      const positionData: GameweekPosition = { gameweek: gw };
       for (const [index, m] of managerPointsAtGw.entries()) {
-        positionData[`m${m.id}`] = index + 1
+        positionData[`m${m.id}`] = index + 1;
       }
 
-      return positionData
-    })
+      return positionData;
+    });
 
     // Assign colors to managers
     const managersWithColors = managers.map((m, i) => ({
       ...m,
       color: CHART_COLORS[i % CHART_COLORS.length],
-    }))
+    }));
 
-    return { positions, managers: managersWithColors }
-  }, [managers, historyQueries, loading])
+    return { positions, managers: managersWithColors };
+  }, [managers, historyQueries, loading]);
 
-  let errorMessage: string | null = null
+  let errorMessage: string | null = null;
   if (error) {
-    errorMessage = error instanceof Error ? error.message : String(error)
+    errorMessage = error instanceof Error ? error.message : String(error);
   }
 
   return {
     data,
     loading,
     error: errorMessage,
-  }
+  };
 }
