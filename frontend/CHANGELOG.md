@@ -1,3 +1,17 @@
+# [0.16.0](https://github.com/quantti/tapas-fpl-app/compare/v0.15.1...v0.16.0) (2026-01-02)
+
+
+### Bug Fixes
+
+* **analytics:** improve error handling and add missing tests ([52f5cff](https://github.com/quantti/tapas-fpl-app/commit/52f5cffcc03a2f5a4e617b10ca28354f08800c75))
+* **head-to-head:** prevent scroll jump and auto-scroll to comparison ([ce6267a](https://github.com/quantti/tapas-fpl-app/commit/ce6267ad6ae7110c4541524bca1cf6108075f7dd))
+* **queries:** handle only 404 errors in useHistoricalData ([5b5fc8b](https://github.com/quantti/tapas-fpl-app/commit/5b5fc8b9fad4da46973f97462fe95b052d035a83))
+
+
+### Features
+
+* **analytics:** add head-to-head manager comparison ([5c19591](https://github.com/quantti/tapas-fpl-app/commit/5c195912fd1523ffdeaf8800f37574bb6247a270))
+
 ## [1.1.1](https://github.com/quantti/tapas-fpl-app/compare/v1.1.0...v1.1.1) (2026-01-02)
 
 
