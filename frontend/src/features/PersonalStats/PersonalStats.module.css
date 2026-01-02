@@ -1,0 +1,200 @@
+.card {
+  grid-column: span 2;
+
+  @media (max-width: 640px) {
+    grid-column: span 1;
+  }
+}
+
+.loading,
+.error,
+.empty {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+  padding: var(--space-16) 0;
+  text-align: center;
+}
+
+/* Best/Worst GW Mini Cards */
+.miniCards {
+  display: flex;
+  gap: var(--space-12);
+  margin-bottom: var(--space-16);
+}
+
+.miniCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-md);
+  flex: 1;
+}
+
+.best {
+  background: color-mix(in srgb, var(--color-success) 15%, transparent);
+  color: var(--color-success);
+}
+
+.worst {
+  background: color-mix(in srgb, var(--color-error) 15%, transparent);
+  color: var(--color-error);
+}
+
+.miniCardContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.miniCardLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+.miniCardValue {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+/* Chart Section */
+.chartSection {
+  margin-bottom: var(--space-16);
+}
+
+.chartTitle {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--space-12) 0;
+}
+
+.chartContainer {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.chartInner {
+  min-width: 600px;
+}
+
+/* Custom Tooltip */
+.tooltip {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-8) var(--space-12);
+  box-shadow: var(--shadow-lg);
+}
+
+.tooltipTitle {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: var(--font-size-sm);
+  padding: var(--space-2) 0;
+}
+
+.tooltipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tooltipLabel {
+  color: var(--color-text-muted);
+}
+
+.tooltipValue {
+  font-weight: 600;
+  color: var(--color-text);
+  margin-left: auto;
+}
+
+/* Legend */
+.legendText {
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+}
+
+/* Season Totals */
+.totals {
+  display: flex;
+  justify-content: space-around;
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--color-border);
+}
+
+.totalItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.totalLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.totalValue {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+/* Position Breakdown */
+.positionSection {
+  margin-top: var(--space-16);
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--color-border);
+}
+
+.positionGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-12);
+}
+
+.positionItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-8);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+}
+
+.positionLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.positionPoints {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.positionPercentage {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
