@@ -5,6 +5,9 @@ export const content: string
 export const diffLabel: string
 export const diffRow: string
 export const diffValue: string
+export const differentialName: string
+export const differentialPosition: string
+export const differentialRow: string
 export const dropdown: string
 export const empty: string
 export const error: string

@@ -11,7 +11,7 @@ export const empty: string
 export const expanded: string
 export const headerCell: string
 export const headerRow: string
-export const historyTable: string
+export const HistoryTable: string
 export const icon: string
 export const icons: string
 export const row: string

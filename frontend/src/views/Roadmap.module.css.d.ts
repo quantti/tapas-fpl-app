@@ -14,6 +14,6 @@ export const header: string
 export const later: string
 export const next: string
 export const now: string
-export const roadmap: string
+export const Roadmap: string
 export const statusDot: string
 export const title: string

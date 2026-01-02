@@ -1,5 +1,5 @@
 export const __esModule: true
-export const fplUpdating: string
+export const FplUpdating: string
 export const hint: string
 export const icon: string
 export const message: string

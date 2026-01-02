@@ -1,2 +1,2 @@
 export const __esModule: true
-export const leagueTemplateTeam: string
+export const LeagueTemplateTeam: string

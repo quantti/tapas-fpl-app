@@ -5,5 +5,5 @@ export const closeButton: string
 export const content: string
 export const dialogAppear: string
 export const header: string
-export const modal: string
+export const Modal: string
 export const title: string

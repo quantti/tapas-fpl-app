@@ -26,6 +26,11 @@ export interface TemplateOverlap {
   playstyleLabel: PlaystyleLabel
 }
 
+export interface GameweekExtreme {
+  gw: number
+  points: number
+}
+
 export interface ComparisonStats {
   managerId: number
   teamName: string
@@ -51,6 +56,11 @@ export interface ComparisonStats {
   // Template overlap
   leagueTemplateOverlap: TemplateOverlap
   worldTemplateOverlap: TemplateOverlap
+  // Roster
+  startingXI: number[] // player IDs in starting XI
+  // Gameweek extremes
+  bestGameweek: GameweekExtreme | null
+  worstGameweek: GameweekExtreme | null
 }
 
 export interface UseHeadToHeadComparisonParams {
@@ -63,9 +73,17 @@ export interface UseHeadToHeadComparisonParams {
   teamsMap: Map<number, Team>
 }
 
+export interface RosterComparison {
+  commonCount: number
+  commonPlayerIds: number[]
+  managerAOnlyIds: number[]
+  managerBOnlyIds: number[]
+}
+
 export interface UseHeadToHeadComparisonReturn {
   managerA: ComparisonStats | null
   managerB: ComparisonStats | null
+  rosterComparison: RosterComparison | null
   loading: boolean
   error: Error | null
 }
@@ -263,6 +281,21 @@ export function useHeadToHeadComparison({
         deadlineTime
       )
 
+      // Starting XI player IDs
+      const startingXI = managerData.picks.filter((p) => p.multiplier > 0).map((p) => p.playerId)
+
+      // Best and worst gameweeks
+      let bestGameweek: GameweekExtreme | null = null
+      let worstGameweek: GameweekExtreme | null = null
+
+      if (history.current.length > 0) {
+        const sortedByPoints = [...history.current].sort((a, b) => b.points - a.points)
+        const best = sortedByPoints[0]
+        const worst = sortedByPoints[sortedByPoints.length - 1]
+        bestGameweek = { gw: best.event, points: best.points }
+        worstGameweek = { gw: worst.event, points: worst.points }
+      }
+
       return {
         managerId: managerData.managerId,
         teamName: managerData.teamName,
@@ -288,6 +321,11 @@ export function useHeadToHeadComparison({
         // Template overlap
         leagueTemplateOverlap: calculateTemplateOverlap(managerData, leagueTemplatePlayerIds),
         worldTemplateOverlap: calculateTemplateOverlap(managerData, worldTemplatePlayerIds),
+        // Roster
+        startingXI,
+        // Gameweek extremes
+        bestGameweek,
+        worstGameweek,
       }
     }
   }, [
@@ -306,12 +344,46 @@ export function useHeadToHeadComparison({
 
   const managerB = useMemo(() => buildStats(managerBData, 1), [buildStats, managerBData])
 
+  // Calculate roster comparison (common and unique players)
+  const rosterComparison = useMemo((): RosterComparison | null => {
+    if (!managerA || !managerB) return null
+
+    const setA = new Set(managerA.startingXI)
+    const setB = new Set(managerB.startingXI)
+
+    const commonPlayerIds: number[] = []
+    const managerAOnlyIds: number[] = []
+    const managerBOnlyIds: number[] = []
+
+    for (const id of managerA.startingXI) {
+      if (setB.has(id)) {
+        commonPlayerIds.push(id)
+      } else {
+        managerAOnlyIds.push(id)
+      }
+    }
+
+    for (const id of managerB.startingXI) {
+      if (!setA.has(id)) {
+        managerBOnlyIds.push(id)
+      }
+    }
+
+    return {
+      commonCount: commonPlayerIds.length,
+      commonPlayerIds,
+      managerAOnlyIds,
+      managerBOnlyIds,
+    }
+  }, [managerA, managerB])
+
   const historyLoading = historyQueries.some((q) => q.isLoading)
   const historyError = historyQueries.find((q) => q.error)?.error ?? null
 
   return {
     managerA,
     managerB,
+    rosterComparison,
     loading: historyLoading || historicalLoading,
     error: historyError ?? historicalError ?? null,
   }

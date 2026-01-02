@@ -1,2 +1,2 @@
 export const __esModule: true
-export const loadingState: string
+export const LoadingState: string

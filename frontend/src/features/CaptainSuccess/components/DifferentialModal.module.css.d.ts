@@ -1,5 +1,5 @@
 export const __esModule: true
-export const captainDifferentialModal: string
+export const CaptainDifferentialModal: string
 export const gwCol: string
 export const negative: string
 export const numCol: string

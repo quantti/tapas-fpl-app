@@ -4,7 +4,7 @@ export const center: string
 export const error: string
 export const errorHint: string
 export const errorTitle: string
-export const fixturesTest: string
+export const FixturesTest: string
 export const header: string
 export const headerCell: string
 export const live: string

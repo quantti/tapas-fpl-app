@@ -46,7 +46,7 @@ export const negative: string
 export const news: string
 export const ownership: string
 export const photo: string
-export const playerModal: string
+export const PlayerModal: string
 export const playerName: string
 export const positionBadge: string
 export const positive: string

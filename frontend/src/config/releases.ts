@@ -12,6 +12,18 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: '0.17.0',
+    date: 'January 3, 2026',
+    items: [
+      {
+        title: 'Squad Overlap & Gameweeks in H2H',
+        description:
+          'Compare common players count, see differential players side-by-side, and view best/worst gameweek scores between managers.',
+        type: 'feature',
+      },
+    ],
+  },
+  {
     version: '0.16.3',
     date: 'January 3, 2026',
     items: [

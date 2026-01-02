@@ -12,7 +12,11 @@ import { formatRank, getComparisonClass } from 'utils/comparison'
 import * as styles from './HeadToHead.module.css'
 
 import type { ManagerGameweekData } from 'services/queries/useFplData'
-import type { ComparisonStats, TemplateOverlap } from 'services/queries/useHeadToHeadComparison'
+import type {
+  ComparisonStats,
+  RosterComparison,
+  TemplateOverlap,
+} from 'services/queries/useHeadToHeadComparison'
 import type { Gameweek, Player, Team } from 'types/fpl'
 import type { CompareResult } from 'utils/comparison'
 
@@ -62,6 +66,8 @@ interface ComparisonContentProps {
   error: Error | null
   managerA: ComparisonStats | null
   managerB: ComparisonStats | null
+  rosterComparison: RosterComparison | null
+  playersMap: Map<number, Player>
 }
 
 /**
@@ -74,6 +80,8 @@ function renderComparisonContent({
   error,
   managerA,
   managerB,
+  rosterComparison,
+  playersMap,
 }: ComparisonContentProps): React.ReactNode {
   if (!managerAId || !managerBId) {
     return <p className={styles.empty}>Select two managers to compare</p>
@@ -82,7 +90,12 @@ function renderComparisonContent({
   if (managerA && managerB) {
     return (
       <div className={loading ? styles.loadingOverlay : undefined}>
-        <ComparisonGrid managerA={managerA} managerB={managerB} />
+        <ComparisonGrid
+          managerA={managerA}
+          managerB={managerB}
+          rosterComparison={rosterComparison}
+          playersMap={playersMap}
+        />
       </div>
     )
   }
@@ -175,11 +188,27 @@ function TemplateOverlapRow({ label, overlapA, overlapB }: TemplateOverlapRowPro
 interface ComparisonGridProps {
   managerA: ComparisonStats
   managerB: ComparisonStats
+  rosterComparison: RosterComparison | null
+  playersMap: Map<number, Player>
 }
 
-function ComparisonGrid({ managerA, managerB }: ComparisonGridProps) {
+function ComparisonGrid({ managerA, managerB, rosterComparison, playersMap }: ComparisonGridProps) {
   // Calculate point difference
   const pointsDiff = managerA.totalPoints - managerB.totalPoints
+
+  // Helper to get player name from ID
+  const getPlayerName = (id: number): string => {
+    const player = playersMap.get(id)
+    return player?.web_name ?? 'Unknown'
+  }
+
+  // Helper to get position abbreviation from ID
+  const getPlayerPosition = (id: number): string => {
+    const player = playersMap.get(id)
+    if (!player) return ''
+    const positions: Record<number, string> = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' }
+    return positions[player.element_type] ?? ''
+  }
 
   return (
     <div className={styles.comparison}>
@@ -332,6 +361,64 @@ function ComparisonGrid({ managerA, managerB }: ComparisonGridProps) {
         overlapA={managerA.worldTemplateOverlap}
         overlapB={managerB.worldTemplateOverlap}
       />
+
+      {/* Squad Overlap */}
+      {rosterComparison && (
+        <>
+          <div className={styles.sectionTitle}>Squad</div>
+          <StatRow
+            label="Common Players"
+            valueA={rosterComparison.commonCount}
+            valueB={rosterComparison.commonCount}
+            compareA="neutral"
+            compareB="neutral"
+          />
+
+          {/* Differentials - side by side player names */}
+          {rosterComparison.managerAOnlyIds.length > 0 && (
+            <>
+              <div className={styles.sectionSubtitle}>Differentials</div>
+              {rosterComparison.managerAOnlyIds.map((idA, index) => {
+                const idB = rosterComparison.managerBOnlyIds[index]
+                return (
+                  <div key={`diff-${index}`} className={styles.differentialRow}>
+                    <span className={styles.differentialName}>{getPlayerName(idA)}</span>
+                    <span className={styles.differentialPosition}>{getPlayerPosition(idA)}</span>
+                    <span className={styles.differentialName}>{idB ? getPlayerName(idB) : ''}</span>
+                  </div>
+                )
+              })}
+            </>
+          )}
+        </>
+      )}
+
+      {/* Gameweeks */}
+      <div className={styles.sectionTitle}>Gameweeks</div>
+      {managerA.bestGameweek && managerB.bestGameweek && (
+        <StatRow
+          label="Best GW"
+          valueA={`GW${managerA.bestGameweek.gw} (${managerA.bestGameweek.points})`}
+          valueB={`GW${managerB.bestGameweek.gw} (${managerB.bestGameweek.points})`}
+          compareA={getComparisonClass(managerA.bestGameweek.points, managerB.bestGameweek.points)}
+          compareB={getComparisonClass(managerB.bestGameweek.points, managerA.bestGameweek.points)}
+        />
+      )}
+      {managerA.worstGameweek && managerB.worstGameweek && (
+        <StatRow
+          label="Worst GW"
+          valueA={`GW${managerA.worstGameweek.gw} (${managerA.worstGameweek.points})`}
+          valueB={`GW${managerB.worstGameweek.gw} (${managerB.worstGameweek.points})`}
+          compareA={getComparisonClass(
+            managerA.worstGameweek.points,
+            managerB.worstGameweek.points
+          )}
+          compareB={getComparisonClass(
+            managerB.worstGameweek.points,
+            managerA.worstGameweek.points
+          )}
+        />
+      )}
     </div>
   )
 }
@@ -352,7 +439,7 @@ export function HeadToHead({
     [managerDetails]
   )
 
-  const { managerA, managerB, loading, error } = useHeadToHeadComparison({
+  const { managerA, managerB, rosterComparison, loading, error } = useHeadToHeadComparison({
     managerAId,
     managerBId,
     managerDetails,
@@ -455,6 +542,8 @@ export function HeadToHead({
             error,
             managerA,
             managerB,
+            rosterComparison,
+            playersMap,
           })}
         </div>
       </div>

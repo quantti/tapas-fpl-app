@@ -4,6 +4,6 @@ export const closeButton: string
 export const icon: string
 export const link: string
 export const message: string
-export const releaseNotification: string
+export const ReleaseNotification: string
 export const separator: string
 export const version: string

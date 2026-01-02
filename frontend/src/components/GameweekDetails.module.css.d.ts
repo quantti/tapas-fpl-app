@@ -6,7 +6,7 @@ export const captainsList: string
 export const captainsPanel: string
 export const deadline: string
 export const emptyMessage: string
-export const gameweekDetails: string
+export const GameweekDetails: string
 export const header: string
 export const hitBadge: string
 export const hitTag: string
