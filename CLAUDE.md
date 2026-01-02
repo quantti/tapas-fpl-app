@@ -171,7 +171,10 @@ fly secrets set SUPABASE_KEY="<publishable-key>"
 - Type checking, linting, formatting
 - Unit tests (Vitest)
 - E2E tests (Playwright in Docker)
-- Auto-deploys backend to Fly.io on `main` push
+- Auto-deploys frontend to Vercel on `main` push (after frontend tests pass)
+- Auto-deploys backend to Fly.io on `main` push (after backend tests pass)
+
+**Note:** Frontend and backend deploys are independent — backend deploys don't wait for frontend tests and vice versa.
 
 **Releases** (`.github/workflows/release.yml`):
 - Uses [semantic-release](https://semantic-release.gitbook.io/) for automated versioning

@@ -12,6 +12,18 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: '0.16.3',
+    date: 'January 3, 2026',
+    items: [
+      {
+        title: 'World Template in H2H',
+        description:
+          'Compare your team against both League template (most owned in your league) and World template (most owned globally) in the Head-to-Head comparison.',
+        type: 'feature',
+      },
+    ],
+  },
+  {
     version: '0.16.0',
     date: 'January 2, 2026',
     items: [
