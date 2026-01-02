@@ -1,8 +1,13 @@
 name: Release
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no actual release)'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -13,8 +18,7 @@ jobs:
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
-    # Only run after CI passes (uses same triggers, so CI runs first)
-    if: github.event_name == 'push'
+    # Manual trigger only - run via GitHub Actions UI or gh workflow run
 
     steps:
       - uses: actions/checkout@v4
@@ -37,4 +41,4 @@ jobs:
         working-directory: frontend
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+        run: npx semantic-release ${{ inputs.dry_run && '--dry-run' || '' }}
