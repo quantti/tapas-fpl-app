@@ -17,6 +17,42 @@ export const releases: Release[] = [
     items: [],
   },
   {
+    version: '0.15.0',
+    date: 'January 2, 2026',
+    items: [
+      {
+        title: 'Account Page',
+        description:
+          'Save your manager ID to personalize your experience. Your ID is stored locally and used to show your personal stats in the Statistics page.',
+        type: 'feature',
+      },
+      {
+        title: 'Points by Position',
+        description:
+          'See where your points come from — a breakdown showing total points from goalkeepers, defenders, midfielders, and forwards with percentages.',
+        type: 'feature',
+      },
+      {
+        title: 'Sticky Header',
+        description:
+          'The navigation header now stays visible as you scroll, making it easier to switch between pages.',
+        type: 'feature',
+      },
+      {
+        title: 'Roadmap Page',
+        description:
+          "Check out what's coming next! The roadmap now shows H2H Manager Comparison is in development.",
+        type: 'feature',
+      },
+      {
+        title: 'Squad Value & Bank',
+        description:
+          'Stats cards now show squad value and bank balance in separate columns for clearer visibility.',
+        type: 'feature',
+      },
+    ],
+  },
+  {
     version: '0.14.0',
     date: 'December 31, 2025',
     items: [
