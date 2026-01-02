@@ -117,6 +117,7 @@ function StatRow({ label, valueA, valueB, compareA, compareB }: StatRowProps) {
 }
 
 interface TemplateOverlapRowProps {
+  label: string
   overlapA: TemplateOverlap
   overlapB: TemplateOverlap
 }
@@ -124,7 +125,7 @@ interface TemplateOverlapRowProps {
 /**
  * Template overlap display with progress bars
  */
-function TemplateOverlapRow({ overlapA, overlapB }: TemplateOverlapRowProps) {
+function TemplateOverlapRow({ label, overlapA, overlapB }: TemplateOverlapRowProps) {
   const compareA = getComparisonClass(overlapA.matchCount, overlapB.matchCount)
   const compareB = getComparisonClass(overlapB.matchCount, overlapA.matchCount)
 
@@ -148,7 +149,7 @@ function TemplateOverlapRow({ overlapA, overlapB }: TemplateOverlapRowProps) {
           </div>
         </div>
 
-        <span className={styles.statLabel}>Template</span>
+        <span className={styles.statLabel}>{label}</span>
 
         <div className={`${styles.templateSide} ${styles.right}`}>
           <div className={styles.templateStats}>
@@ -320,7 +321,16 @@ function ComparisonGrid({ managerA, managerB }: ComparisonGridProps) {
 
       {/* Template Overlap */}
       <div className={styles.sectionTitle}>Playstyle</div>
-      <TemplateOverlapRow overlapA={managerA.templateOverlap} overlapB={managerB.templateOverlap} />
+      <TemplateOverlapRow
+        label="League"
+        overlapA={managerA.leagueTemplateOverlap}
+        overlapB={managerB.leagueTemplateOverlap}
+      />
+      <TemplateOverlapRow
+        label="World"
+        overlapA={managerA.worldTemplateOverlap}
+        overlapB={managerB.worldTemplateOverlap}
+      />
     </div>
   )
 }

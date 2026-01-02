@@ -3,6 +3,32 @@ import { POSITION_TYPES } from '../constants/positions'
 import type { ManagerGameweekData } from '../services/queries/useFplData'
 import type { Player, Team } from '../types/fpl'
 
+/**
+ * Build ownership map from global FPL ownership percentages (selected_by_percent)
+ * Used for world template team calculation
+ */
+export function calculateWorldOwnership(
+  players: Player[],
+  teamsMap: Map<number, Team>
+): Map<number, PlayerWithOwnership> {
+  const result = new Map<number, PlayerWithOwnership>()
+
+  for (const player of players) {
+    // Only include available players with meaningful ownership
+    const ownershipPct = Number.parseFloat(player.selected_by_percent) || 0
+    if (ownershipPct > 0) {
+      result.set(player.id, {
+        player,
+        team: teamsMap.get(player.team),
+        ownershipCount: 0, // Not applicable for global ownership
+        ownershipPercentage: ownershipPct,
+      })
+    }
+  }
+
+  return result
+}
+
 export interface PlayerWithOwnership {
   player: Player
   team: Team | undefined

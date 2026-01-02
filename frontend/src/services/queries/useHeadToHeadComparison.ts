@@ -2,7 +2,11 @@ import { useQueries } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
 import { getChipsForCurrentHalf } from '../../utils/chips'
-import { buildTemplateTeam, calculateOwnership } from '../../utils/templateTeam'
+import {
+  buildTemplateTeam,
+  calculateOwnership,
+  calculateWorldOwnership,
+} from '../../utils/templateTeam'
 import { fplApi } from '../api'
 import { queryKeys } from '../queryKeys'
 
@@ -45,7 +49,8 @@ export interface ComparisonStats {
   squadValue: number // in millions (already divided)
   bank: number // in millions
   // Template overlap
-  templateOverlap: TemplateOverlap
+  leagueTemplateOverlap: TemplateOverlap
+  worldTemplateOverlap: TemplateOverlap
 }
 
 export interface UseHeadToHeadComparisonParams {
@@ -104,7 +109,7 @@ export function useHeadToHeadComparison({
     return ids
   }, [managerAData, managerBData])
 
-  // Calculate league template team (most owned starting XI)
+  // Calculate league template team (most owned starting XI in league)
   const leagueTemplatePlayerIds = useMemo(() => {
     if (managerDetails.length === 0 || playersMap.size === 0) return new Set<number>()
 
@@ -113,9 +118,19 @@ export function useHeadToHeadComparison({
     return new Set(templateTeam.map((p) => p.player.id))
   }, [managerDetails, playersMap, teamsMap])
 
-  // Calculate template overlap for a manager
+  // Calculate world template team (most owned starting XI globally)
+  const worldTemplatePlayerIds = useMemo(() => {
+    if (playersMap.size === 0) return new Set<number>()
+
+    const players = Array.from(playersMap.values())
+    const ownership = calculateWorldOwnership(players, teamsMap)
+    const templateTeam = buildTemplateTeam(ownership)
+    return new Set(templateTeam.map((p) => p.player.id))
+  }, [playersMap, teamsMap])
+
+  // Calculate template overlap for a manager against a given template
   const calculateTemplateOverlap = useMemo(() => {
-    return (managerData: ManagerGameweekData): TemplateOverlap => {
+    return (managerData: ManagerGameweekData, templatePlayerIds: Set<number>): TemplateOverlap => {
       // Get manager's starting XI (multiplier > 0)
       const startingXI = managerData.picks.filter((p) => p.multiplier > 0).map((p) => p.playerId)
 
@@ -123,7 +138,7 @@ export function useHeadToHeadComparison({
       const differentialPlayerIds: number[] = []
 
       for (const playerId of startingXI) {
-        if (leagueTemplatePlayerIds.has(playerId)) {
+        if (templatePlayerIds.has(playerId)) {
           matchingPlayerIds.push(playerId)
         } else {
           differentialPlayerIds.push(playerId)
@@ -139,7 +154,7 @@ export function useHeadToHeadComparison({
         playstyleLabel: getPlaystyleLabel(matchCount),
       }
     }
-  }, [leagueTemplatePlayerIds])
+  }, [])
 
   // Fetch entry history for total transfers count
   const historyQueries = useQueries({
@@ -271,13 +286,16 @@ export function useHeadToHeadComparison({
         squadValue: managerData.teamValue,
         bank: managerData.bank,
         // Template overlap
-        templateOverlap: calculateTemplateOverlap(managerData),
+        leagueTemplateOverlap: calculateTemplateOverlap(managerData, leagueTemplatePlayerIds),
+        worldTemplateOverlap: calculateTemplateOverlap(managerData, worldTemplatePlayerIds),
       }
     }
   }, [
     historyQueries,
     calculateCaptainStats,
     calculateTemplateOverlap,
+    leagueTemplatePlayerIds,
+    worldTemplatePlayerIds,
     currentGameweek,
     deadlineTime,
     deadlinePassed,

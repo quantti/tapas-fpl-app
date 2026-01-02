@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 
 import {
   calculateOwnership,
+  calculateWorldOwnership,
   buildTemplateTeam,
   getFormationString,
   type PlayerWithOwnership,
@@ -21,7 +22,7 @@ function createPlayer(overrides: Partial<Player> & { id: number; element_type: n
     team: overrides.team ?? 1,
     total_points: overrides.total_points ?? 50,
     now_cost: 50,
-    selected_by_percent: '10.0',
+    selected_by_percent: overrides.selected_by_percent ?? '10.0',
     form: '5.0',
     points_per_game: '5.0',
     minutes: 900,
@@ -152,6 +153,73 @@ describe('templateTeam utilities', () => {
 
       const result = calculateOwnership(managers, players, teams)
       expect(result.size).toBe(0) // Player not found, excluded
+    })
+  })
+
+  describe('calculateWorldOwnership', () => {
+    it('returns empty map when no players', () => {
+      const result = calculateWorldOwnership([], new Map())
+      expect(result.size).toBe(0)
+    })
+
+    it('uses selected_by_percent as ownership percentage', () => {
+      const players = [
+        createPlayer({ id: 1, element_type: 3, selected_by_percent: '45.5' }),
+        createPlayer({ id: 2, element_type: 3, selected_by_percent: '23.1' }),
+      ]
+      const teams = new Map<number, Team>([[1, createTeam(1)]])
+
+      const result = calculateWorldOwnership(players, teams)
+
+      expect(result.get(1)?.ownershipPercentage).toBe(45.5)
+      expect(result.get(2)?.ownershipPercentage).toBe(23.1)
+    })
+
+    it('excludes players with 0% ownership', () => {
+      const players = [
+        createPlayer({ id: 1, element_type: 3, selected_by_percent: '0.0' }),
+        createPlayer({ id: 2, element_type: 3, selected_by_percent: '10.0' }),
+      ]
+      const teams = new Map<number, Team>([[1, createTeam(1)]])
+
+      const result = calculateWorldOwnership(players, teams)
+
+      expect(result.has(1)).toBe(false) // 0% excluded
+      expect(result.has(2)).toBe(true) // 10% included
+    })
+
+    it('sets ownershipCount to 0 (not applicable for global)', () => {
+      const players = [createPlayer({ id: 1, element_type: 3, selected_by_percent: '50.0' })]
+      const teams = new Map<number, Team>([[1, createTeam(1)]])
+
+      const result = calculateWorldOwnership(players, teams)
+
+      expect(result.get(1)?.ownershipCount).toBe(0)
+    })
+
+    it('includes team information in ownership data', () => {
+      const player = createPlayer({ id: 1, element_type: 3, team: 5, selected_by_percent: '30.0' })
+      const team = createTeam(5)
+      const players = [player]
+      const teams = new Map<number, Team>([[5, team]])
+
+      const result = calculateWorldOwnership(players, teams)
+
+      expect(result.get(1)?.team).toEqual(team)
+      expect(result.get(1)?.player).toEqual(player)
+    })
+
+    it('handles invalid selected_by_percent gracefully', () => {
+      const players = [
+        createPlayer({ id: 1, element_type: 3, selected_by_percent: 'invalid' }),
+        createPlayer({ id: 2, element_type: 3, selected_by_percent: '' }),
+      ]
+      const teams = new Map<number, Team>([[1, createTeam(1)]])
+
+      const result = calculateWorldOwnership(players, teams)
+
+      // Invalid values parsed as NaN, which becomes 0 via || 0, so excluded
+      expect(result.size).toBe(0)
     })
   })
 
