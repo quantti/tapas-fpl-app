@@ -18,11 +18,14 @@ class TestHealthEndpoint:
     """Tests for health check endpoint."""
 
     async def test_health_returns_healthy(self, client: AsyncClient):
-        """Health endpoint should return healthy status."""
+        """Health endpoint should return healthy status with database info."""
         response = await client.get("/health")
 
         assert response.status_code == 200
-        assert response.json() == {"status": "healthy"}
+        data = response.json()
+        assert data["status"] == "healthy"
+        assert "database" in data
+        assert data["database"] in ("connected", "not_configured", "disconnected")
 
 
 class TestDocsEndpoint:
@@ -80,3 +83,45 @@ class TestCORSHeaders:
 
         # FastAPI/Starlette returns 200 for OPTIONS with CORS
         assert response.status_code in (200, 400)
+
+
+class TestPointsAgainstEndpoints:
+    """Tests for Points Against API endpoints."""
+
+    async def test_points_against_returns_503_without_db(self, client: AsyncClient):
+        """Points against should return 503 when database unavailable."""
+        response = await client.get("/api/v1/points-against")
+
+        # Expect 503 since test fixture doesn't initialize DB pool
+        assert response.status_code == 503
+        assert "Database not available" in response.json()["detail"]
+
+    async def test_team_history_validates_team_id_too_high(self, client: AsyncClient):
+        """Team history should reject team_id > 20."""
+        response = await client.get("/api/v1/points-against/21/history")
+
+        assert response.status_code == 400
+        assert "Invalid team_id" in response.json()["detail"]
+
+    async def test_team_history_validates_team_id_too_low(self, client: AsyncClient):
+        """Team history should reject team_id < 1."""
+        response = await client.get("/api/v1/points-against/0/history")
+
+        assert response.status_code == 400
+        assert "Invalid team_id" in response.json()["detail"]
+
+    async def test_team_history_returns_503_without_db(self, client: AsyncClient):
+        """Team history should return 503 when database unavailable."""
+        response = await client.get("/api/v1/points-against/1/history")
+
+        # Expect 503 since test fixture doesn't initialize DB pool
+        assert response.status_code == 503
+        assert "Database not available" in response.json()["detail"]
+
+    async def test_status_returns_503_without_db(self, client: AsyncClient):
+        """Status endpoint should return 503 when database unavailable."""
+        response = await client.get("/api/v1/points-against/status")
+
+        # Expect 503 since test fixture doesn't initialize DB pool
+        assert response.status_code == 503
+        assert "Database not available" in response.json()["detail"]

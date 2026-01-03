@@ -20,6 +20,27 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
 
+    # Database (Supabase PostgreSQL)
+    supabase_url: str = ""
+    supabase_key: str = ""
+    database_url: str = ""
+
+    @property
+    def db_connection_string(self) -> str:
+        """Get database connection string (prefer DATABASE_URL if set)."""
+        if self.database_url:
+            return self.database_url
+        # Construct from Supabase URL if available
+        if self.supabase_url:
+            # Extract project ref from URL: https://<project>.supabase.co
+            import re
+
+            match = re.search(r"https://([^.]+)\.supabase\.co", self.supabase_url)
+            if match:
+                project_ref = match.group(1)
+                return f"postgresql://postgres.{project_ref}:@db.{project_ref}.supabase.co:5432/postgres"
+        return ""
+
     @property
     def cors_origins_list(self) -> list[str]:
         """Parse CORS origins from comma-separated string."""

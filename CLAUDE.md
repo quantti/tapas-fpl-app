@@ -15,7 +15,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - **Charts**: Recharts for data visualization
 - **Icons**: Lucide React
 - **API Proxy**: Cloudflare Workers (edge caching, <50ms cold starts)
-- **Backend**: Python FastAPI on Fly.io (future analytics only)
+- **Backend**: Python FastAPI on Fly.io (Points Against API, future analytics)
 - **Database**: Supabase (PostgreSQL 17)
 - **Hosting**: Vercel (frontend), Cloudflare (worker), Fly.io (backend)
 - **Testing**: Vitest + React Testing Library + Playwright (E2E)
@@ -30,12 +30,12 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 │   Vercel        │     │  tiered caching) │     │                 │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
         │
-        │ (future analytics)
+        │ (Points Against API)
         ▼
 ┌──────────────────┐     ┌─────────────────┐
 │  Python FastAPI  │────▶│   Supabase      │
 │  (Fly.io)        │     │   PostgreSQL 17 │
-│  analytics only  │     │   (EU West)     │
+│  Points Against  │     │   (EU West)     │
 └──────────────────┘     └─────────────────┘
 ```
 
@@ -66,6 +66,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - [x] Cookie consent banner (GDPR-compliant)
 - [x] Release notification banner
 - [x] Head-to-Head manager comparison with template overlap score
+- [x] Points Against API (backend) - tracks FPL points conceded by each team
 
 ## Project Structure
 
