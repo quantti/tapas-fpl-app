@@ -1,3 +1,10 @@
+## [0.18.1](https://github.com/quantti/tapas-fpl-app/compare/v0.18.0...v0.18.1) (2026-01-03)
+
+
+### Bug Fixes
+
+* use relative import for config module ([14c0d54](https://github.com/quantti/tapas-fpl-app/commit/14c0d5419a11caffda1f9be8a5a358df23039c67))
+
 # [0.18.0](https://github.com/quantti/tapas-fpl-app/compare/v0.17.0...v0.18.0) (2026-01-03)
 
 
