@@ -940,6 +940,24 @@ Add to `.vscode/tasks.json`:
 - [ ] Add data freshness monitoring
 - [ ] Set up failure alerts (optional)
 
+### Phase 2.5: Technical Debt (Pre-Frontend Integration)
+
+Code review findings from commit `3be6dbc` to address before Phase 4:
+
+**Must Fix:**
+- [ ] **Test coverage gaps** - Add happy path tests, service unit tests, FPL client tests
+  - `backend/tests/test_points_against_service.py` (new)
+  - `backend/tests/test_fpl_client.py` (new) - use `respx` or `pytest-httpx`
+- [ ] **HTTP client inefficiency** - Reuse `httpx.AsyncClient` in `fpl_client.py:103`
+  - Create client once in `__init__`, add `close()` method
+- [ ] **Deprecated FastAPI patterns** - Migrate to `lifespan` context manager in `main.py:66,82`
+
+**Low Priority (Nice to Have):**
+- [ ] Add `asyncio.Lock` to `init_pool()` for race condition protection
+- [ ] Add LRU eviction to `_cache` dict in routes.py
+- [ ] Catch specific `asyncpg` errors instead of bare `Exception`
+- [ ] Fix empty password in fallback Supabase URL construction
+
 ---
 
 ## Edge Cases & Error Handling

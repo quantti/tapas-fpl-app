@@ -19,6 +19,9 @@ React 18 + TypeScript + Vite application for the Tapas FPL companion app.
 ## Project Structure
 
 ```
+api/                    # Vercel Serverless Functions
+├── fpl/
+│   └── [...path].ts        # FPL API proxy (catch-all route)
 src/
 ├── views/              # Page components (Dashboard, Statistics, Analytics)
 ├── features/           # Domain features with co-located code
@@ -62,9 +65,26 @@ import { BenchPoints } from 'features/BenchPoints'
 
 **Configuration files:** `tsconfig.app.json`, `vite.config.ts`, `vitest.config.ts`, `eslint.config.js`
 
+## FPL API Proxy
+
+The app uses **Vercel Serverless Functions** to proxy FPL API requests:
+
+```
+Frontend → /api/fpl/* → Vercel Function → fantasy.premierleague.com/api/*
+```
+
+**Implementation:** `api/fpl/[...path].ts` - Catch-all route with tiered caching:
+- Bootstrap static: 5 min
+- Fixtures: 15 min
+- Live gameweek: 2 min
+- Historical picks: 1 hour
+- Event status: 1 min
+
+**Why a proxy?** FPL API has no CORS headers, requiring server-side requests.
+
 ## FPL API Reference
 
-Base URL: `https://fantasy.premierleague.com/api/`
+Base URL (via proxy): `/api/fpl/`
 
 ### Key Endpoints
 
@@ -82,9 +102,10 @@ Base URL: `https://fantasy.premierleague.com/api/`
 ### Notes
 
 - No official documentation — API is unofficial
-- No CORS headers — requires backend proxy
-- Rate limiting exists but is undocumented — implement caching
+- No CORS headers — proxied via Vercel Serverless Functions
+- Rate limiting exists — proxy implements tiered caching to reduce load
 - Data updates a few times per day during active gameweeks
+- FPL API requires trailing slashes on all endpoints
 
 ### API Gotchas
 

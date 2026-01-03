@@ -7,9 +7,9 @@ import type {
   LiveGameweek,
 } from 'types/fpl';
 
-// API base URL - in development, we'll use the worker locally
-// In production, this will be your deployed Cloudflare Worker URL
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+// API base URL - uses Vercel serverless functions (same origin in production)
+// In development, can use local backend or direct to production
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 /**
  * Custom error class for FPL API errors.
@@ -36,7 +36,9 @@ export class FplApiError extends Error {
 }
 
 async function fetchApi<T>(endpoint: string): Promise<T> {
-  const response = await fetch(`${API_BASE}/api${endpoint}`);
+  // Remove leading slash for path construction
+  const path = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const response = await fetch(`${API_BASE}/api/fpl/${path}`);
 
   if (!response.ok) {
     throw new FplApiError(response.status, response.statusText);

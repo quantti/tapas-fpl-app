@@ -5,7 +5,6 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 > **Note**: This file contains high-level architecture. See subdirectory docs for detailed documentation:
 > - `frontend/FRONTEND.md` - React components, hooks, testing, CSS modules
 > - `backend/BACKEND.md` - Python FastAPI, database schema, Supabase
-> - `worker/WORKER.md` - Cloudflare Workers, cache TTLs
 
 ## Tech Stack
 
@@ -14,21 +13,23 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - **State Management**: TanStack Query (React Query) for server state
 - **Charts**: Recharts for data visualization
 - **Icons**: Lucide React
-- **API Proxy**: Cloudflare Workers (edge caching, <50ms cold starts)
+- **API Proxy**: Vercel Serverless Functions (same-origin, tiered caching)
 - **Backend**: Python FastAPI on Fly.io (Points Against API, future analytics)
 - **Database**: Supabase (PostgreSQL 17)
-- **Hosting**: Vercel (frontend), Cloudflare (worker), Fly.io (backend)
+- **Hosting**: Vercel (frontend + API proxy), Fly.io (backend)
 - **Testing**: Vitest + React Testing Library + Playwright (E2E)
 
 ## Architecture
 
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   Vite + React  │────▶│ Cloudflare       │────▶│    FPL API      │
-│   TypeScript    │     │ Workers          │     │                 │
-│                 │     │ (Edge proxy +    │     │                 │
-│   Vercel        │     │  tiered caching) │     │                 │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
+┌─────────────────────────────────────────┐
+│              Vercel                      │
+│  ┌─────────────────┐  ┌──────────────┐  │     ┌─────────────────┐
+│  │   Vite + React  │  │  Serverless  │──┼────▶│    FPL API      │
+│  │   TypeScript    │  │  Functions   │  │     │                 │
+│  │   (frontend)    │  │  (API proxy) │  │     └─────────────────┘
+│  └─────────────────┘  └──────────────┘  │
+└─────────────────────────────────────────┘
         │
         │ (Points Against API)
         ▼
@@ -40,7 +41,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 ```
 
 **Why this architecture?**
-- Cloudflare Workers: <50ms cold starts (V8 isolates), perfect for API proxy
+- Vercel Serverless Functions: Same-origin API proxy (avoids CORS), tiered caching
 - Fly.io: Full Python environment for future ML/analytics (has 2-3s cold starts)
 
 ## Features
@@ -75,6 +76,7 @@ tapas-fpl-app/
 ├── CLAUDE.md              # This file - high-level architecture
 ├── frontend/              # Vite + React app
 │   ├── FRONTEND.md       # Frontend documentation
+│   ├── api/              # Vercel Serverless Functions (FPL proxy)
 │   ├── src/
 │   │   ├── App.tsx       # Router setup
 │   │   ├── views/        # Page components (Dashboard, Statistics, Analytics)
@@ -94,10 +96,6 @@ tapas-fpl-app/
 │   ├── tests/            # pytest tests
 │   ├── DB.md             # Database schema documentation
 │   └── fly.toml          # Fly.io deployment config
-└── worker/                # Cloudflare Workers
-    ├── WORKER.md         # Worker documentation
-    ├── src/index.ts      # Worker entry point
-    └── wrangler.toml     # Cloudflare config
 ```
 
 ## Development Commands
@@ -124,13 +122,6 @@ uvicorn app.main:app --reload  # Start dev server
 python -m pytest               # Run tests
 ```
 
-### Worker
-```bash
-cd worker
-npm run dev       # Start local dev server
-npm run deploy    # Deploy to Cloudflare
-```
-
 ## Design Principles
 
 - Keep it simple — avoid over-engineering
@@ -142,21 +133,21 @@ npm run deploy    # Deploy to Cloudflare
 
 | Service | Platform | URL |
 |---------|----------|-----|
-| Frontend | Vercel | https://tapas-and-tackles.live |
-| API Proxy | Cloudflare Workers | https://tapas-fpl-proxy.vankari.workers.dev |
+| Frontend + API Proxy | Vercel | https://tapas-and-tackles.live |
 | Backend | Fly.io | https://tapas-fpl-backend.fly.dev |
 | Database | Supabase | https://itmykooxrbrdbgqwsesb.supabase.co |
 
 **Deploy process:**
-- Frontend: Push to `main` → GitHub Actions → Vercel auto-deploys
-- Worker: `cd worker && npx wrangler deploy`
+- Frontend + API: Push to `main` → GitHub Actions → Vercel auto-deploys
 - Backend: `cd backend && fly deploy`
 
 ## Environment Variables
 
 ### Frontend (.env)
 ```
-VITE_API_URL=https://tapas-fpl-backend.fly.dev
+# FPL API proxy - leave empty to use Vercel serverless functions (same origin)
+# For local dev, you can point to production: VITE_API_URL=https://tapas-and-tackles.live
+VITE_API_URL=
 ```
 
 ### Backend (Fly.io secrets)
