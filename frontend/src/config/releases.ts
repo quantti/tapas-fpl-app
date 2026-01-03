@@ -12,6 +12,18 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: '0.19.0',
+    date: 'January 4, 2026',
+    items: [
+      {
+        title: 'Points Against',
+        description:
+          'New card showing FPL points conceded by each Premier League team, helping identify favorable fixtures for your players.',
+        type: 'feature',
+      },
+    ],
+  },
+  {
     version: '0.18.0',
     date: 'January 3, 2026',
     items: [
