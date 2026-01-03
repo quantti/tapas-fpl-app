@@ -9,11 +9,11 @@ interface Props {
 
 /**
  * Friendly message displayed when FPL API returns 503 (Service Unavailable).
- * This typically happens for 30-60 minutes between gameweeks while FPL updates their data.
+ * This happens right after the gameweek deadline while FPL processes team selections.
  */
 export function FplUpdating({
   title = 'FPL is updating',
-  message = 'Fantasy Premier League is updating gameweek data. This usually takes 30-60 minutes after the last match finishes.',
+  message = 'Fantasy Premier League is updating gameweek data. This usually takes 30-60 minutes after the deadline.',
 }: Props) {
   return (
     <div className={styles.FplUpdating} data-testid="fpl-updating">

@@ -12,6 +12,18 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: '0.17.1',
+    date: 'January 3, 2026',
+    items: [
+      {
+        title: 'FPL Updating Message',
+        description:
+          'Corrected timing reference to say "after the deadline" instead of "after the last match finishes".',
+        type: 'fix',
+      },
+    ],
+  },
+  {
     version: '0.17.0',
     date: 'January 3, 2026',
     items: [
