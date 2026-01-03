@@ -1,7 +1,11 @@
 """Main FastAPI application entry point."""
 
+import asyncio
 import logging
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
+import asyncpg
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -18,6 +22,30 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Manage application lifecycle - startup and shutdown."""
+    # Startup
+    logger.info("Starting Tapas FPL Backend")
+    logger.info(f"CORS origins: {settings.cors_origins_list}")
+
+    # Initialize database pool if configured
+    if settings.db_connection_string:
+        try:
+            await init_pool()
+            logger.info("Database pool initialized")
+        except (OSError, asyncio.TimeoutError, asyncpg.PostgresError) as e:
+            logger.warning("Database pool initialization failed: %s", e)
+            logger.warning("Continuing without database - some features may be unavailable")
+
+    yield  # Application runs here
+
+    # Shutdown
+    logger.info("Shutting down Tapas FPL Backend")
+    await close_pool()
+
+
 # Create FastAPI app
 app = FastAPI(
     title="Tapas FPL Backend",
@@ -25,6 +53,7 @@ app = FastAPI(
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # CORS middleware
@@ -63,24 +92,3 @@ async def health_check() -> dict:
     }
 
 
-@app.on_event("startup")
-async def startup_event() -> None:
-    """Initialize resources on startup."""
-    logger.info("Starting Tapas FPL Backend")
-    logger.info(f"CORS origins: {settings.cors_origins_list}")
-
-    # Initialize database pool if configured
-    if settings.db_connection_string:
-        try:
-            await init_pool()
-            logger.info("Database pool initialized")
-        except Exception as e:
-            logger.warning(f"Database pool initialization failed: {e}")
-            logger.warning("Continuing without database - some features may be unavailable")
-
-
-@app.on_event("shutdown")
-async def shutdown_event() -> None:
-    """Cleanup on shutdown."""
-    logger.info("Shutting down Tapas FPL Backend")
-    await close_pool()

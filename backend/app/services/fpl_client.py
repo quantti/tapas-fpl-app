@@ -79,6 +79,30 @@ class FplApiClient:
         self.semaphore = asyncio.Semaphore(max_concurrent)
         self._last_request_time = 0.0
         self._lock = asyncio.Lock()
+        self._client: httpx.AsyncClient | None = None
+
+    async def _get_client(self) -> httpx.AsyncClient:
+        """Get or create the HTTP client (lazy initialization, coroutine-safe)."""
+        if self._client is None:
+            async with self._lock:
+                if self._client is None:  # Double-check after acquiring lock
+                    self._client = httpx.AsyncClient(timeout=30.0)
+        return self._client
+
+    async def close(self) -> None:
+        """Close the HTTP client and release resources (coroutine-safe)."""
+        async with self._lock:
+            if self._client is not None:
+                await self._client.aclose()
+                self._client = None
+
+    async def __aenter__(self) -> "FplApiClient":
+        """Enter async context manager."""
+        return self
+
+    async def __aexit__(self, *args: object) -> None:
+        """Exit async context manager and close client."""
+        await self.close()
 
     async def _rate_limit(self) -> None:
         """Apply rate limiting between requests."""
@@ -100,10 +124,10 @@ class FplApiClient:
         async with self.semaphore:
             await self._rate_limit()
 
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(url)
-                response.raise_for_status()
-                return response.json()
+            client = await self._get_client()
+            response = await client.get(url)
+            response.raise_for_status()
+            return response.json()
 
     async def get_bootstrap(self) -> BootstrapData:
         """

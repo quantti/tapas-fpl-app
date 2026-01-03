@@ -305,8 +305,8 @@ async def reset_data(conn: asyncpg.Connection, season_id: int) -> None:
     await pa_service.clear_season_data(season_id)
 
     # Re-run collection
-    fpl_client = FplApiClient(requests_per_second=1.0, max_concurrent=3)
-    await collect_points_against(conn, fpl_client, season_id)
+    async with FplApiClient(requests_per_second=1.0, max_concurrent=3) as fpl_client:
+        await collect_points_against(conn, fpl_client, season_id)
 
 
 async def main() -> None:
@@ -331,8 +331,8 @@ async def main() -> None:
         elif args.reset:
             await reset_data(conn, season_id)
         else:
-            fpl_client = FplApiClient(requests_per_second=1.0, max_concurrent=3)
-            await collect_points_against(conn, fpl_client, season_id)
+            async with FplApiClient(requests_per_second=1.0, max_concurrent=3) as fpl_client:
+                await collect_points_against(conn, fpl_client, season_id)
     finally:
         await conn.close()
 
