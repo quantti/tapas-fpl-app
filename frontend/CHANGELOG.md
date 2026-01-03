@@ -1,3 +1,18 @@
+# [0.19.0](https://github.com/quantti/tapas-fpl-app/compare/v0.18.1...v0.19.0) (2026-01-03)
+
+
+### Bug Fixes
+
+* **useFplData:** subtract bank from squad value ([c855b25](https://github.com/quantti/tapas-fpl-app/commit/c855b2505839f076902ae4e07d670bf0b2820c45))
+
+
+### Features
+
+* **backend:** add Points Against API with data collection ([7889439](https://github.com/quantti/tapas-fpl-app/commit/7889439641255d50563b6fd4dbcf342e80d67793))
+* **dev:** add local development script with backend + frontend ([3a7d44e](https://github.com/quantti/tapas-fpl-app/commit/3a7d44edcfd3d325ddef1dcaf86c6dfca5f77e13))
+* **dev:** add start:prod script and document local development ([cddbc30](https://github.com/quantti/tapas-fpl-app/commit/cddbc3022dcac902000b737b13dc52ee225f9206))
+* **frontend:** add Points Against card to Analytics view ([ebd3bd6](https://github.com/quantti/tapas-fpl-app/commit/ebd3bd6cdc963662d523bca4833a0bb1e2f4ca33))
+
 ## [0.18.1](https://github.com/quantti/tapas-fpl-app/compare/v0.18.0...v0.18.1) (2026-01-03)
 
 
