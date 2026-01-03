@@ -78,6 +78,43 @@ import { BenchPoints } from 'features/BenchPoints'
 
 **Configuration files:** `tsconfig.app.json`, `vite.config.ts`, `vitest.config.ts`, `eslint.config.js`
 
+## Local Development
+
+### Full Stack (Frontend + Backend)
+
+```bash
+npm run start:dev    # Starts PostgreSQL, runs migrations, backend API, and frontend
+```
+
+This script (`scripts/start-dev.sh`) does:
+1. Starts PostgreSQL via Docker Compose
+2. Runs database migrations
+3. Seeds test data
+4. Starts backend API on `http://localhost:8000`
+5. Starts Vercel dev server on `http://localhost:3000`
+
+**Requirements:**
+- Docker running (for PostgreSQL)
+- Backend virtualenv set up (`../backend/.venv`)
+- Node.js 20+ (Node 22 has SIGSEGV issues with Vercel dev)
+
+### Frontend Only (Production Backend)
+
+```bash
+npm run start:prod   # Frontend with production backend (Fly.io)
+```
+
+Use this when:
+- Backend is down or you don't want to run it locally
+- Testing against production data
+- Data collection is running in production
+
+### Frontend Only (Basic)
+
+```bash
+npm run dev          # Vite dev server only (no API proxy)
+```
+
 ## FPL API Proxy
 
 The app uses **Vercel Serverless Functions** to proxy FPL API requests:

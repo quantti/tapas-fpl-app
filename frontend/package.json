@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "start:dev": "sh scripts/start-dev.sh",
+    "start:prod": "VITE_BACKEND_URL=https://tapas-fpl-backend.fly.dev npx vercel dev",
     "build": "npm run css:types && tsc -b && vite build",
     "lint": "eslint .",
     "format": "biome ci --formatter-enabled=true --linter-enabled=false --assist-enabled=false .",

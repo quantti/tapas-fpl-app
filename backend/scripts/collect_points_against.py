@@ -73,12 +73,12 @@ async def sync_teams(
     for team in teams:
         await conn.execute(
             """
-            INSERT INTO team (id, season_id, name, short_name, fpl_code, strength)
+            INSERT INTO team (id, season_id, name, short_name, code, strength)
             VALUES ($1, $2, $3, $4, $5, $6)
             ON CONFLICT (id, season_id) DO UPDATE SET
                 name = EXCLUDED.name,
                 short_name = EXCLUDED.short_name,
-                fpl_code = EXCLUDED.fpl_code,
+                code = EXCLUDED.code,
                 strength = EXCLUDED.strength
             """,
             team["id"],
