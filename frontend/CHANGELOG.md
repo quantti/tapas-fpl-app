@@ -1,3 +1,15 @@
+# [0.18.0](https://github.com/quantti/tapas-fpl-app/compare/v0.17.0...v0.18.0) (2026-01-03)
+
+
+### Bug Fixes
+
+* **FplUpdating:** correct message timing reference ([959ecd7](https://github.com/quantti/tapas-fpl-app/commit/959ecd7bbb36ee607a4dc075deb2e6ce0d0a62ef))
+
+
+### Features
+
+* **backend:** add local dev setup for points against feature ([f3f3bf2](https://github.com/quantti/tapas-fpl-app/commit/f3f3bf263e4c7d758cb93f81c7799187b7d00569))
+
 # [0.17.0](https://github.com/quantti/tapas-fpl-app/compare/v0.16.3...v0.17.0) (2026-01-02)
 
 
