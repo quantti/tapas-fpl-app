@@ -1,6 +1,23 @@
-version: "3.8"
-
 services:
+  # Local PostgreSQL database for development
+  postgres:
+    image: postgres:17-alpine
+    container_name: tapas-fpl-db
+    environment:
+      POSTGRES_USER: tapas
+      POSTGRES_PASSWORD: localdev
+      POSTGRES_DB: tapas_fpl
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tapas -d tapas_fpl"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # API service (optional - can also run directly with uvicorn)
   api:
     build:
       context: .
@@ -11,28 +28,20 @@ services:
       - FPL_API_BASE_URL=https://fantasy.premierleague.com/api
       - CORS_ORIGINS=http://localhost:5173,http://localhost:3000
       - LOG_LEVEL=INFO
+      - DATABASE_URL=postgresql://tapas:localdev@postgres:5432/tapas_fpl
     volumes:
       # Mount app code for hot reload during development
       - ./app:/app/app:ro
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-# Future: Add database if needed
-#   db:
-#     image: postgres:16-alpine
-#     environment:
-#       POSTGRES_USER: fpl
-#       POSTGRES_PASSWORD: ${DB_PASSWORD}
-#       POSTGRES_DB: fpl_app
-#     volumes:
-#       - postgres_data:/var/lib/postgresql/data
-#     ports:
-#       - "5432:5432"
-
-# volumes:
-#   postgres_data:
+volumes:
+  postgres_data:
