@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-import { calculateTimeRemaining, type TimeRemaining } from '../utils/countdown';
+import { calculateTimeRemaining, type TimeRemaining } from 'utils/countdown';
 
 import * as styles from './GameweekCountdown.module.css';
 

@@ -1,4 +1,4 @@
-import type { PlayerHistory } from '../types/fpl';
+import type { PlayerHistory } from 'types/fpl';
 
 // FPL position element_types: 1=GK, 2=DEF, 3=MID, 4=FWD
 export type OutfieldPosition = 2 | 3 | 4;

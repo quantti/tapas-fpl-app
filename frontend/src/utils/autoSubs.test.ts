@@ -12,8 +12,8 @@ import {
   POSITION_LIMITS,
 } from './autoSubs';
 
-import type { ManagerPick } from '../services/queries/useFplData';
-import type { Fixture, LiveGameweek, LivePlayer, Player, Team } from '../types/fpl';
+import type { ManagerPick } from 'services/queries/useFplData';
+import type { Fixture, LiveGameweek, LivePlayer, Player, Team } from 'types/fpl';
 
 // Helper to create a minimal LivePlayer
 function createLivePlayer(

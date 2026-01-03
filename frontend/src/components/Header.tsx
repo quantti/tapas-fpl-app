@@ -3,8 +3,8 @@ import { Menu, X, Sun, Moon, User, LogOut } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-import { useManagerId } from '../hooks/useManagerId';
-import { useTheme } from '../hooks/useTheme';
+import { useManagerId } from 'hooks/useManagerId';
+import { useTheme } from 'hooks/useTheme';
 
 import * as styles from './Header.module.css';
 

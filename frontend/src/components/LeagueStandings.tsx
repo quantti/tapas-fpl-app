@@ -6,18 +6,18 @@ import {
   calculateLiveManagerPoints,
   hasGamesInProgress,
   hasAnyFixtureStarted,
-} from '../utils/liveScoring';
+} from 'utils/liveScoring';
 
 import * as styles from './LeagueStandings.module.css';
 
-import type { ManagerGameweekData } from '../services/queries/useFplData';
-import type { AutoSubResult } from '../types/autoSubs';
+import type { ManagerGameweekData } from 'services/queries/useFplData';
+import type { AutoSubResult } from 'types/autoSubs';
 import type {
   LeagueStandings as LeagueStandingsType,
   LiveGameweek,
   Fixture,
   Player,
-} from '../types/fpl';
+} from 'types/fpl';
 
 interface Props {
   standings: LeagueStandingsType;

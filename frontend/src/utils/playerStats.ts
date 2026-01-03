@@ -1,4 +1,4 @@
-import { POSITION_TYPES } from '../constants/positions';
+import { POSITION_TYPES } from 'constants/positions';
 
 /**
  * Parse FPL numeric string to number.

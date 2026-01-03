@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { parseNumericString } from 'utils/playerStats';
+
 import { CACHE_TIMES } from '../../config';
-import { parseNumericString } from '../../utils/playerStats';
 import { fplApi } from '../api';
 import { queryKeys } from '../queryKeys';
 
-import type { ElementSummary, Player, Team } from '../../types/fpl';
+import type { ElementSummary, Player, Team } from 'types/fpl';
 
 /**
  * Processed player details with computed fields for display

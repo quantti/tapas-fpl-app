@@ -9,7 +9,7 @@ import {
   calculatePlayerSeasonDefCon,
 } from './defcon';
 
-import type { PlayerHistory } from '../types/fpl';
+import type { PlayerHistory } from 'types/fpl';
 
 // Helper to create mock PlayerHistory entry
 function createMockHistory(overrides: Partial<PlayerHistory> = {}): PlayerHistory {

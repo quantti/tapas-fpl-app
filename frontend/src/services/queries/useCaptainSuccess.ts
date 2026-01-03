@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 
 import { useHistoricalData } from './useHistoricalData';
 
-import type { Gameweek } from '../../types/fpl';
+import type { Gameweek } from 'types/fpl';
 
 export interface DifferentialPick {
   gameweek: number;

@@ -1,12 +1,13 @@
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
+import { createPlayersMap, createTeamsMap } from 'utils/mappers';
+
 import { CACHE_TIMES, LEAGUE_ID, LIVE_REFRESH_INTERVAL, IDLE_REFRESH_INTERVAL } from '../../config';
-import { createPlayersMap, createTeamsMap } from '../../utils/mappers';
 import { fplApi, FplApiError } from '../api';
 import { queryKeys } from '../queryKeys';
 
-import type { Player, Team } from '../../types/fpl';
+import type { Player, Team } from 'types/fpl';
 
 export interface ManagerPick {
   playerId: number;

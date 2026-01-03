@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, type ReactNode } from 'react';
 
-import { hasPreferencesConsent } from '../hooks/useCookieConsent';
+import { hasPreferencesConsent } from 'hooks/useCookieConsent';
 
 import { ManagerIdContext } from './ManagerIdContext';
 

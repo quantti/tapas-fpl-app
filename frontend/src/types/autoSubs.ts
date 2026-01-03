@@ -1,4 +1,4 @@
-import type { ManagerPick } from '../services/queries/useFplData';
+import type { ManagerPick } from 'services/queries/useFplData';
 
 /**
  * Represents a single auto-substitution that occurred or would occur

@@ -1,12 +1,9 @@
 import { useQueries } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { getChipsForCurrentHalf } from '../../utils/chips';
-import {
-  buildTemplateTeam,
-  calculateOwnership,
-  calculateWorldOwnership,
-} from '../../utils/templateTeam';
+import { getChipsForCurrentHalf } from 'utils/chips';
+import { buildTemplateTeam, calculateOwnership, calculateWorldOwnership } from 'utils/templateTeam';
+
 import { fplApi } from '../api';
 import { queryKeys } from '../queryKeys';
 
@@ -14,7 +11,7 @@ import { calculateFreeTransfers } from './useFreeTransfers';
 import { useHistoricalData } from './useHistoricalData';
 
 import type { ManagerGameweekData } from './useFplData';
-import type { Gameweek, Player, Team } from '../../types/fpl';
+import type { Gameweek, Player, Team } from 'types/fpl';
 
 export type PlaystyleLabel = 'Template' | 'Balanced' | 'Differential' | 'Maverick';
 

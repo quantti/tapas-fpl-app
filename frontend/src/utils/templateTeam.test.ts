@@ -8,8 +8,8 @@ import {
   type PlayerWithOwnership,
 } from './templateTeam';
 
-import type { ManagerGameweekData } from '../services/queries/useFplData';
-import type { Player, Team } from '../types/fpl';
+import type { ManagerGameweekData } from 'services/queries/useFplData';
+import type { Player, Team } from 'types/fpl';
 
 // Helper to create mock player
 function createPlayer(overrides: Partial<Player> & { id: number; element_type: number }): Player {

@@ -1,7 +1,7 @@
-import { POSITION_TYPES } from '../constants/positions';
+import { POSITION_TYPES } from 'constants/positions';
 
-import type { ManagerGameweekData } from '../services/queries/useFplData';
-import type { Player, Team } from '../types/fpl';
+import type { ManagerGameweekData } from 'services/queries/useFplData';
+import type { Player, Team } from 'types/fpl';
 
 /**
  * Build ownership map from global FPL ownership percentages (selected_by_percent)

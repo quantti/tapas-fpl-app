@@ -1,9 +1,9 @@
 import { calculateAutoSubs } from './autoSubs';
 import { createLivePlayersMap } from './mappers';
 
-import type { ManagerPick } from '../services/queries/useFplData';
-import type { AutoSubResult } from '../types/autoSubs';
-import type { Fixture, LivePlayer, LiveGameweek, Player } from '../types/fpl';
+import type { ManagerPick } from 'services/queries/useFplData';
+import type { AutoSubResult } from 'types/autoSubs';
+import type { Fixture, LivePlayer, LiveGameweek, Player } from 'types/fpl';
 
 export interface BpsScore {
   playerId: number;

@@ -1,7 +1,7 @@
 import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { calculateTimeRemaining } from '../utils/countdown';
+import { calculateTimeRemaining } from 'utils/countdown';
 
 import { GameweekCountdown } from './GameweekCountdown';
 

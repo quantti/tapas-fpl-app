@@ -5,15 +5,15 @@ import {
   calculateOwnership,
   buildTemplateTeam,
   type PlayerWithOwnership,
-} from '../utils/templateTeam';
+} from 'utils/templateTeam';
 
 import { Card } from './Card';
 import { CardHeader } from './CardHeader';
 import { PitchLayout, type PitchPlayer as BasePitchPlayer } from './PitchLayout';
 import { PitchPlayer } from './PitchPlayer';
 
-import type { ManagerGameweekData } from '../services/queries/useFplData';
-import type { Player, Team } from '../types/fpl';
+import type { ManagerGameweekData } from 'services/queries/useFplData';
+import type { Player, Team } from 'types/fpl';
 
 interface Props {
   managerDetails: ManagerGameweekData[];

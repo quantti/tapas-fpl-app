@@ -7,7 +7,7 @@ import { fplApi } from '../api';
 
 import { useLiveScoring } from './useLiveScoring';
 
-import type { LiveGameweek, Fixture } from '../../types/fpl';
+import type { LiveGameweek, Fixture } from 'types/fpl';
 
 // Create a wrapper with QueryClientProvider for testing hooks that use TanStack Query
 function createWrapper() {

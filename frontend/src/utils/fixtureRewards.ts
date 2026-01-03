@@ -5,7 +5,7 @@ import {
   type BpsScore,
 } from './liveScoring';
 
-import type { Fixture, Player, LiveGameweek } from '../types/fpl';
+import type { Fixture, Player, LiveGameweek } from 'types/fpl';
 
 export interface PlayerReward {
   playerId: number;

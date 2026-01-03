@@ -1,8 +1,8 @@
 import { User, LogOut, Info } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 
-import { hasPreferencesConsent } from '../hooks/useCookieConsent';
-import { useManagerId } from '../hooks/useManagerId';
+import { hasPreferencesConsent } from 'hooks/useCookieConsent';
+import { useManagerId } from 'hooks/useManagerId';
 
 import * as styles from './Account.module.css';
 

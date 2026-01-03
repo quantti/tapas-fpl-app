@@ -1,16 +1,19 @@
 import { useMemo, useState } from 'react';
 
-import { FplUpdating } from '../components/FplUpdating';
-import { LoadingState } from '../components/LoadingState';
-import { HeadToHead } from '../features/HeadToHead';
-import { PlayerDetails } from '../features/PlayerDetails';
-import { Recommendations } from '../features/Recommendations';
-import { useFplData } from '../services/queries/useFplData';
-import { createPlayersMap } from '../utils/mappers';
+import { FplUpdating } from 'components/FplUpdating';
+import { LoadingState } from 'components/LoadingState';
+
+import { HeadToHead } from 'features/HeadToHead';
+import { PlayerDetails } from 'features/PlayerDetails';
+import { Recommendations } from 'features/Recommendations';
+
+import { useFplData } from 'services/queries/useFplData';
+
+import { createPlayersMap } from 'utils/mappers';
 
 import * as styles from './Analytics.module.css';
 
-import type { Player } from '../types/fpl';
+import type { Player } from 'types/fpl';
 
 export function Analytics() {
   const {

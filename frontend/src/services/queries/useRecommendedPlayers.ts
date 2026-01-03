@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { CACHE_TIMES } from '../../config';
-import { POSITION_TYPES } from '../../constants/positions';
+import { POSITION_TYPES } from 'constants/positions';
+
 import {
   isEligibleOutfieldPlayer,
   calculatePlayerStats,
@@ -15,13 +15,15 @@ import {
   DEFENSIVE_WEIGHTS,
   SELL_WEIGHTS,
   type PercentilesData,
-} from '../../utils/playerScoring';
-import { parseNumericString } from '../../utils/playerStats';
+} from 'utils/playerScoring';
+import { parseNumericString } from 'utils/playerStats';
+
+import { CACHE_TIMES } from '../../config';
 import { fplApi } from '../api';
 import { queryKeys } from '../queryKeys';
 
 import type { ManagerGameweekData } from './useFplData';
-import type { Player, Team } from '../../types/fpl';
+import type { Player, Team } from 'types/fpl';
 
 export interface RecommendedPlayer {
   player: Player;

@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
-import { calculateProvisionalBonus, shouldShowProvisionalBonus } from '../../utils/liveScoring';
+import { calculateProvisionalBonus, shouldShowProvisionalBonus } from 'utils/liveScoring';
+
 import { fplApi } from '../api';
 import { queryKeys } from '../queryKeys';
 
-import type { LiveGameweek, Fixture } from '../../types/fpl';
+import type { LiveGameweek, Fixture } from 'types/fpl';
 
 interface UseLiveScoringReturn {
   liveData: LiveGameweek | null;

@@ -5,7 +5,7 @@ import type {
   Fixture,
   LeagueStandings,
   LiveGameweek,
-} from '../types/fpl';
+} from 'types/fpl';
 
 // API base URL - in development, we'll use the worker locally
 // In production, this will be your deployed Cloudflare Worker URL

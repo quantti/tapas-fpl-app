@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { STARTING_XI_MAX_POSITION } from '../../constants/positions';
+import { STARTING_XI_MAX_POSITION } from 'constants/positions';
 
 import { useHistoricalData } from './useHistoricalData';
 

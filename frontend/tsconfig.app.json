@@ -26,8 +26,7 @@
       "utils/*": ["src/utils/*"],
       "types/*": ["src/types/*"],
       "constants/*": ["src/constants/*"],
-      "assets/*": ["src/assets/*"],
-      "config": ["src/config.ts"]
+      "assets/*": ["src/assets/*"]
     },
 
     /* Linting */

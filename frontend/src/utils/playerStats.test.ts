@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { POSITION_TYPES } from '../constants/positions';
+import { POSITION_TYPES } from 'constants/positions';
 
 import {
   parseNumericString,

@@ -4,7 +4,7 @@ import { CACHE_TIMES } from '../../config';
 import { FplApiError, fplApi } from '../api';
 import { queryKeys } from '../queryKeys';
 
-import type { LiveGameweek } from '../../types/fpl';
+import type { LiveGameweek } from 'types/fpl';
 
 export interface ManagerPicks {
   managerId: number;

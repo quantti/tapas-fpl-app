@@ -5,11 +5,11 @@
  * Extracted from useRecommendedPlayers.ts for better testability and reuse.
  */
 
-import { POSITION_TYPES } from '../constants/positions';
+import { POSITION_TYPES } from 'constants/positions';
 
 import { parseNumericString } from './playerStats';
 
-import type { Player, Fixture } from '../types/fpl';
+import type { Player, Fixture } from 'types/fpl';
 
 // ============================================================================
 // Types

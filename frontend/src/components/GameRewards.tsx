@@ -5,11 +5,11 @@ import {
   extractAllFixtureRewards,
   type FixtureRewards,
   type PlayerReward,
-} from '../utils/fixtureRewards';
+} from 'utils/fixtureRewards';
 
 import * as styles from './GameRewards.module.css';
 
-import type { Fixture, Player, Team, LiveGameweek } from '../types/fpl';
+import type { Fixture, Player, Team, LiveGameweek } from 'types/fpl';
 
 interface Props {
   fixtures: Fixture[];

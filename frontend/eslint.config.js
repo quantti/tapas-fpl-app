@@ -112,6 +112,47 @@ export default defineConfig([
         },
       ],
 
+      // Enforce path aliases over relative imports
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../**/components/**', '../components/**'],
+              message: 'Use path alias "components/..." instead of relative imports',
+            },
+            {
+              group: ['../**/features/**', '../features/**'],
+              message: 'Use path alias "features/..." instead of relative imports',
+            },
+            {
+              group: ['../**/hooks/**', '../hooks/**'],
+              message: 'Use path alias "hooks/..." instead of relative imports',
+            },
+            {
+              group: ['../**/services/**', '../services/**'],
+              message: 'Use path alias "services/..." instead of relative imports',
+            },
+            {
+              group: ['../**/utils/**', '../utils/**'],
+              message: 'Use path alias "utils/..." instead of relative imports',
+            },
+            {
+              group: ['../**/types/**', '../types/**'],
+              message: 'Use path alias "types/..." instead of relative imports',
+            },
+            {
+              group: ['../**/constants/**', '../constants/**'],
+              message: 'Use path alias "constants/..." instead of relative imports',
+            },
+            {
+              group: ['../**/assets/**', '../assets/**'],
+              message: 'Use path alias "assets/..." instead of relative imports',
+            },
+          ],
+        },
+      ],
+
       // Import sorting
       'import/order': [
         'warn',
@@ -120,7 +161,6 @@ export default defineConfig([
           pathGroups: [
             { pattern: 'assets/**', group: 'internal', position: 'before' },
             { pattern: 'components/**', group: 'internal', position: 'before' },
-            { pattern: 'config', group: 'internal', position: 'before' },
             { pattern: 'constants/**', group: 'internal', position: 'before' },
             { pattern: 'features/**', group: 'internal', position: 'before' },
             { pattern: 'hooks/**', group: 'internal', position: 'before' },

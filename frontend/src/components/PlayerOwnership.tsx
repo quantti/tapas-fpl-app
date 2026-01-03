@@ -7,8 +7,8 @@ import { ListRowButton } from './ListRowButton';
 import * as styles from './PlayerOwnership.module.css';
 import { PlayerOwnershipModal } from './PlayerOwnershipModal';
 
-import type { ManagerGameweekData } from '../services/queries/useFplData';
-import type { Player, Team } from '../types/fpl';
+import type { ManagerGameweekData } from 'services/queries/useFplData';
+import type { Player, Team } from 'types/fpl';
 
 interface Props {
   managerDetails: ManagerGameweekData[];

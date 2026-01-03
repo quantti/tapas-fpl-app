@@ -1,6 +1,6 @@
-import type { ManagerPick } from '../services/queries/useFplData';
-import type { AutoSubstitution, AutoSubResult, PlayerEligibility } from '../types/autoSubs';
-import type { Fixture, LiveGameweek, LivePlayer, Player, Team } from '../types/fpl';
+import type { ManagerPick } from 'services/queries/useFplData';
+import type { AutoSubstitution, AutoSubResult, PlayerEligibility } from 'types/autoSubs';
+import type { Fixture, LiveGameweek, LivePlayer, Player, Team } from 'types/fpl';
 
 // FPL formation constraints
 export const POSITION_LIMITS = {

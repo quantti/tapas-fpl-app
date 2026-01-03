@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getPlaystyleLabel } from '../services/queries/useHeadToHeadComparison';
+import { getPlaystyleLabel } from 'services/queries/useHeadToHeadComparison';
 
 import { formatRank, getComparisonClass } from './comparison';
 

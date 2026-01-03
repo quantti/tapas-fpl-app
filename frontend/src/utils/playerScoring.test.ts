@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { POSITION_TYPES } from '../constants/positions';
+import { POSITION_TYPES } from 'constants/positions';
 
 import {
   isEligibleOutfieldPlayer,
@@ -20,7 +20,7 @@ import {
   type PercentilesData,
 } from './playerScoring';
 
-import type { Player, Fixture } from '../types/fpl';
+import type { Player, Fixture } from 'types/fpl';
 
 // ============================================================================
 // Test Helpers

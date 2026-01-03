@@ -2,18 +2,20 @@ import { Circle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { FplUpdating } from '../components/FplUpdating';
-import { GameRewards } from '../components/GameRewards';
-import { GameweekCountdown } from '../components/GameweekCountdown';
-import { GameweekDetails } from '../components/GameweekDetails';
-import { LeagueStandings } from '../components/LeagueStandings';
-import { LeagueUpdating } from '../components/LeagueUpdating';
-import { LoadingState } from '../components/LoadingState';
-import { ManagerModal } from '../components/ManagerModal';
-import { ReleaseNotification } from '../components/ReleaseNotification';
-import { useFplData } from '../services/queries/useFplData';
-import { useLiveScoring } from '../services/queries/useLiveScoring';
-import { hasGamesInProgress, allFixturesFinished } from '../utils/liveScoring';
+import { FplUpdating } from 'components/FplUpdating';
+import { GameRewards } from 'components/GameRewards';
+import { GameweekCountdown } from 'components/GameweekCountdown';
+import { GameweekDetails } from 'components/GameweekDetails';
+import { LeagueStandings } from 'components/LeagueStandings';
+import { LeagueUpdating } from 'components/LeagueUpdating';
+import { LoadingState } from 'components/LoadingState';
+import { ManagerModal } from 'components/ManagerModal';
+import { ReleaseNotification } from 'components/ReleaseNotification';
+
+import { useFplData } from 'services/queries/useFplData';
+import { useLiveScoring } from 'services/queries/useLiveScoring';
+
+import { hasGamesInProgress, allFixturesFinished } from 'utils/liveScoring';
 
 import * as styles from './Dashboard.module.css';
 

@@ -5,7 +5,7 @@ import { CardHeader } from './CardHeader';
 import { RankedRow } from './RankedRow';
 import * as styles from './StatsCards.module.css';
 
-import type { ManagerGameweekData } from '../services/queries/useFplData';
+import type { ManagerGameweekData } from 'services/queries/useFplData';
 
 interface Props {
   managerDetails: ManagerGameweekData[];

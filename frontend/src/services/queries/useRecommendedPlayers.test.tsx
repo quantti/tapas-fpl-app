@@ -2,14 +2,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { POSITION_TYPES } from '../../constants/positions';
+import { POSITION_TYPES } from 'constants/positions';
+
 import { fplApi } from '../api';
 
 import { useRecommendedPlayers } from './useRecommendedPlayers';
 
 import type { ManagerGameweekData } from './useFplData';
-import type { Player, Fixture, Team } from '../../types/fpl';
 import type { ReactNode } from 'react';
+import type { Player, Fixture, Team } from 'types/fpl';
 
 // Note: Pure function tests (getPercentile, calculateFixtureScore, calculateLeagueOwnership)
 // are in src/utils/playerScoring.test.ts with comprehensive coverage (51 tests)

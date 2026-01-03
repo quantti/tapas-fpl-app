@@ -1,18 +1,21 @@
 import { useEffect, useState } from 'react';
 
-import { STARTING_XI_MAX_POSITION } from '../constants/positions';
-import { PlayerDetails } from '../features/PlayerDetails';
-import { fplApi } from '../services/api';
-import { buildTeamFixtureMap, hasFixtureStarted, getOpponentInfo } from '../utils/autoSubs';
-import { createPlayersMap, createTeamsMap, createLivePlayersMap } from '../utils/mappers';
-import { getCaptainBadge } from '../utils/picks';
+import { STARTING_XI_MAX_POSITION } from 'constants/positions';
+
+import { PlayerDetails } from 'features/PlayerDetails';
+
+import { fplApi } from 'services/api';
+
+import { buildTeamFixtureMap, hasFixtureStarted, getOpponentInfo } from 'utils/autoSubs';
+import { createPlayersMap, createTeamsMap, createLivePlayersMap } from 'utils/mappers';
+import { getCaptainBadge } from 'utils/picks';
 
 import * as styles from './ManagerModal.module.css';
 import { Modal } from './Modal';
 import { PitchLayout, type PitchPlayer as BasePitchPlayer } from './PitchLayout';
 import { PitchPlayer } from './PitchPlayer';
 
-import type { Player, BootstrapStatic, LiveGameweek, Fixture } from '../types/fpl';
+import type { Player, BootstrapStatic, LiveGameweek, Fixture } from 'types/fpl';
 
 interface Pick {
   element: number;

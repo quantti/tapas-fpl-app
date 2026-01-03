@@ -1,4 +1,4 @@
-import type { LivePlayer, Player, Team } from '../types/fpl';
+import type { LivePlayer, Player, Team } from 'types/fpl';
 
 /**
  * Creates a Map from player ID to Player object for O(1) lookups

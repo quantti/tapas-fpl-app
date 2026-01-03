@@ -1,13 +1,13 @@
 import { Zap } from 'lucide-react';
 import { useMemo } from 'react';
 
-import { CHIP_LABELS, getRemainingChips } from '../utils/chips';
+import { CHIP_LABELS, getRemainingChips } from 'utils/chips';
 
 import { Card } from './Card';
 import { CardHeader } from './CardHeader';
 import * as styles from './ChipsRemaining.module.css';
 
-import type { ManagerGameweekData } from '../services/queries/useFplData';
+import type { ManagerGameweekData } from 'services/queries/useFplData';
 
 interface Props {
   managerDetails: ManagerGameweekData[];

@@ -1,4 +1,4 @@
-import type { Player } from '../types/fpl';
+import type { Player } from 'types/fpl';
 
 /**
  * Gets the display name for a player.

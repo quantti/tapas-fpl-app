@@ -10,7 +10,7 @@ import {
   shouldShowProvisionalBonus,
 } from './liveScoring';
 
-import type { Fixture, LivePlayer } from '../types/fpl';
+import type { Fixture, LivePlayer } from 'types/fpl';
 
 describe('calculateProvisionalBonus', () => {
   it('should award 3, 2, 1 bonus to top 3 BPS scores', () => {
