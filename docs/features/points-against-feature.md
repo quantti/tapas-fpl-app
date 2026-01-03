@@ -921,13 +921,13 @@ Add to `.vscode/tasks.json`:
 - [ ] Verify data accuracy (spot-check against reference)
 - [ ] Document collection time and any issues
 
-### Phase 4: Frontend Component
-- [ ] Create `usePointsAgainst` hook
-- [ ] Create `PointsAgainstCard` component
-- [ ] Add team badges
-- [ ] Add sortable columns
-- [ ] Add to Analytics view
-- [ ] Style to match reference image
+### Phase 4: Frontend Component ✅
+- [x] Create `usePointsAgainst` hook (`frontend/src/services/queries/usePointsAgainst.ts`)
+- [x] Create `PointsAgainstCard` component (`frontend/src/components/PointsAgainstCard.tsx`)
+- [x] Add sortable columns (total, home, away, avg)
+- [x] Add to Analytics view ("Defensive Weakness" section)
+- [x] Color-coded rows by defensive strength
+- [ ] Add team badges (optional enhancement)
 
 ### Phase 5: Automation
 - [ ] Set up GitHub Actions workflow
@@ -940,17 +940,17 @@ Add to `.vscode/tasks.json`:
 - [ ] Add data freshness monitoring
 - [ ] Set up failure alerts (optional)
 
-### Phase 2.5: Technical Debt (Pre-Frontend Integration)
+### Phase 2.5: Technical Debt (Pre-Frontend Integration) ✅
 
 Code review findings from commit `3be6dbc` to address before Phase 4:
 
 **Must Fix:**
-- [ ] **Test coverage gaps** - Add happy path tests, service unit tests, FPL client tests
+- [x] **Test coverage gaps** - Add happy path tests, service unit tests, FPL client tests
   - `backend/tests/test_points_against_service.py` (new)
-  - `backend/tests/test_fpl_client.py` (new) - use `respx` or `pytest-httpx`
-- [ ] **HTTP client inefficiency** - Reuse `httpx.AsyncClient` in `fpl_client.py:103`
-  - Create client once in `__init__`, add `close()` method
-- [ ] **Deprecated FastAPI patterns** - Migrate to `lifespan` context manager in `main.py:66,82`
+  - `backend/tests/test_fpl_client.py` (new) - uses `respx` for HTTP mocking
+- [x] **HTTP client inefficiency** - Reuse `httpx.AsyncClient` in `fpl_client.py`
+  - Client created lazily, reused across requests, `close()` method added
+- [x] **Deprecated FastAPI patterns** - Migrated to `lifespan` context manager in `main.py`
 
 **Low Priority (Nice to Have):**
 - [ ] Add `asyncio.Lock` to `init_pool()` for race condition protection

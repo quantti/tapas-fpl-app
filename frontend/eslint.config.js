@@ -118,6 +118,10 @@ export default defineConfig([
         {
           patterns: [
             {
+              regex: '^(\\.\\.\\/)+config$|^\\.\\/config$',
+              message: 'Import config as "src/config" instead of relative path',
+            },
+            {
               group: ['../**/components/**', '../components/**'],
               message: 'Use path alias "components/..." instead of relative imports',
             },
@@ -159,6 +163,7 @@ export default defineConfig([
         {
           groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'type'],
           pathGroups: [
+            { pattern: 'src/**', group: 'internal', position: 'before' },
             { pattern: 'assets/**', group: 'internal', position: 'before' },
             { pattern: 'components/**', group: 'internal', position: 'before' },
             { pattern: 'constants/**', group: 'internal', position: 'before' },

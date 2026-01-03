@@ -31,6 +31,12 @@ export const queryKeys = {
 
   // Player data
   playerSummary: (playerId: number | undefined) => ['playerSummary', playerId] as const,
+
+  // Analytics (from backend API)
+  pointsAgainst: (seasonId: number) => ['pointsAgainst', seasonId] as const,
+  pointsAgainstTeamHistory: (teamId: number, seasonId: number) =>
+    ['pointsAgainstTeamHistory', teamId, seasonId] as const,
+  pointsAgainstStatus: ['pointsAgainstStatus'] as const,
 } as const;
 
 // Type exports for use in tests or other utilities

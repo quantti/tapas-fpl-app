@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { CACHE_TIMES } from 'src/config';
+
 import { parseNumericString } from 'utils/playerStats';
 
-import { CACHE_TIMES } from '../../config';
 import { fplApi } from '../api';
 import { queryKeys } from '../queryKeys';
 

@@ -1,0 +1,160 @@
+.PointsAgainstCard {
+  .tableWrapper {
+    overflow-x: auto;
+    margin: 0 calc(-1 * var(--space-16));
+    padding: 0 var(--space-16);
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+
+    th,
+    td {
+      padding: var(--space-8) var(--space-4);
+      text-align: right;
+    }
+
+    th:first-child,
+    td:first-child {
+      text-align: left;
+    }
+  }
+
+  .teamHeader {
+    font-weight: 600;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .sortableHeader {
+    padding: 0 !important;
+
+    &[data-active] {
+      color: var(--color-primary-text);
+    }
+  }
+
+  .sortButton {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-8) var(--space-4);
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-weight: 600;
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: color 0.15s ease;
+    width: 100%;
+    justify-content: flex-end;
+
+    &:hover {
+      color: var(--color-primary-text);
+    }
+  }
+
+  [data-active] .sortButton {
+    color: var(--color-primary-text);
+  }
+
+  .sortIndicator {
+    font-size: 8px;
+    opacity: 0.7;
+  }
+
+  .row {
+    border-bottom: 1px solid var(--color-border-light);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    /* Color coding for defensive strength */
+    &[data-intensity='high'] {
+      background-color: rgb(239 68 68 / 10%);
+    }
+
+    &[data-intensity='medium'] {
+      background-color: rgb(245 158 11 / 8%);
+    }
+
+    &[data-intensity='low'] {
+      background-color: rgb(234 179 8 / 5%);
+    }
+
+    &[data-intensity='none'] {
+      background-color: transparent;
+    }
+  }
+
+  /* Dark mode adjustments */
+  :global([data-theme='dark']) .row[data-intensity='high'] {
+    background-color: rgb(239 68 68 / 15%);
+  }
+
+  :global([data-theme='dark']) .row[data-intensity='medium'] {
+    background-color: rgb(245 158 11 / 12%);
+  }
+
+  :global([data-theme='dark']) .row[data-intensity='low'] {
+    background-color: rgb(234 179 8 / 8%);
+  }
+
+  .teamCell {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  .rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-background-alt);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--color-text-muted);
+  }
+
+  .teamName {
+    font-weight: 500;
+  }
+
+  .valueCell {
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text);
+  }
+
+  /* States */
+  .unavailable,
+  .error,
+  .empty {
+    padding: var(--space-16);
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+
+    p {
+      margin: 0;
+    }
+  }
+
+  .hint {
+    margin-top: var(--space-8) !important;
+    font-size: var(--font-size-xs);
+    opacity: 0.7;
+  }
+}

@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
+import { CACHE_TIMES } from 'src/config';
+
 import { POSITION_TYPES } from 'constants/positions';
 
 import {
@@ -18,7 +20,6 @@ import {
 } from 'utils/playerScoring';
 import { parseNumericString } from 'utils/playerStats';
 
-import { CACHE_TIMES } from '../../config';
 import { fplApi } from '../api';
 import { queryKeys } from '../queryKeys';
 

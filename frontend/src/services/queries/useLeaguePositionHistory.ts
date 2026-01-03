@@ -1,7 +1,8 @@
 import { useQueries } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { CACHE_TIMES } from '../../config';
+import { CACHE_TIMES } from 'src/config';
+
 import { fplApi } from '../api';
 import { queryKeys } from '../queryKeys';
 

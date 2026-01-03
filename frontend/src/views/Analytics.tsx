@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 
 import { FplUpdating } from 'components/FplUpdating';
 import { LoadingState } from 'components/LoadingState';
+import { PointsAgainstCard } from 'components/PointsAgainstCard';
 
 import { HeadToHead } from 'features/HeadToHead';
 import { PlayerDetails } from 'features/PlayerDetails';
@@ -91,6 +92,11 @@ export function Analytics() {
           playersMap={playersMap}
           teamsMap={teamsMap}
         />
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Defensive Weakness</h2>
+        <PointsAgainstCard />
       </section>
 
       <PlayerDetails

@@ -3,9 +3,10 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import './index.css';
+import { CACHE_TIMES } from 'src/config';
+
 import App from './App.tsx';
-import { CACHE_TIMES } from './config';
+import './index.css';
 
 // Configure React Query with sensible defaults
 const queryClient = new QueryClient({

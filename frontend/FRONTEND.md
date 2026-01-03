@@ -58,10 +58,23 @@ Cleaner imports using absolute paths instead of `../../`:
 import { Card } from 'components/Card'
 import { useFplData } from 'services/queries/useFplData'
 import { formatDelta } from 'utils/playerStats'
-import { CACHE_TIMES } from 'config'
+import { CACHE_TIMES } from 'src/config'    // Root-level files use src/ prefix
 import type { Player } from 'types/fpl'
 import { BenchPoints } from 'features/BenchPoints'
 ```
+
+**Available aliases:**
+- `components/*` → `src/components/*`
+- `features/*` → `src/features/*`
+- `services/*` → `src/services/*`
+- `hooks/*` → `src/hooks/*`
+- `utils/*` → `src/utils/*`
+- `types/*` → `src/types/*`
+- `constants/*` → `src/constants/*`
+- `assets/*` → `src/assets/*`
+- `src/*` → `src/*` (for root-level files like `config.ts`)
+
+**ESLint enforcement:** The `no-restricted-imports` rule enforces `src/config` instead of relative paths (`../config`, `./config`).
 
 **Configuration files:** `tsconfig.app.json`, `vite.config.ts`, `vitest.config.ts`, `eslint.config.js`
 
@@ -225,7 +238,7 @@ queryKey: queryKeys.eventStatus                         // Event status
 Cache durations are defined in `src/config.ts`:
 
 ```typescript
-import { CACHE_TIMES } from '../config'
+import { CACHE_TIMES } from 'src/config'
 
 staleTime: CACHE_TIMES.FIVE_MINUTES    // Bootstrap data
 staleTime: CACHE_TIMES.TEN_MINUTES     // Fixtures

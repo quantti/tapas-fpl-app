@@ -67,7 +67,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - [x] Cookie consent banner (GDPR-compliant)
 - [x] Release notification banner
 - [x] Head-to-Head manager comparison with template overlap score
-- [x] Points Against API (backend) - tracks FPL points conceded by each team
+- [x] Points Against - tracks FPL points conceded by each team (backend API + frontend card)
 
 ## Project Structure
 
