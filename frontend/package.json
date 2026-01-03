@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "start:dev": "sh scripts/start-dev.sh",
     "build": "npm run css:types && tsc -b && vite build",
     "lint": "eslint .",
     "format": "biome ci --formatter-enabled=true --linter-enabled=false --assist-enabled=false .",
