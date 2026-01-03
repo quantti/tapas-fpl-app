@@ -187,7 +187,8 @@ export function useFplData() {
             transfersOut,
             transfersCost,
             totalHitsCost,
-            teamValue: (picks.entry_history.value || 0) / 10,
+            // FPL API's `value` includes bank, so subtract to get actual squad value
+            teamValue: ((picks.entry_history.value || 0) - (picks.entry_history.bank || 0)) / 10,
             bank: (picks.entry_history.bank || 0) / 10,
             chipsUsed: history.chips.map((c) => ({ name: c.name, event: c.event })),
           };
