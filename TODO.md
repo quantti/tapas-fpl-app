@@ -16,6 +16,9 @@
 - [x] H2H manager comparison view - Phase 1 complete, see [docs/h2h-plan.md](docs/h2h-plan.md)
 - [x] Points breakdown by position (PersonalStats position breakdown)
 - [ ] Transfer history timeline
+- [ ] Bench Points card enhancements (Statistics page):
+  - [ ] Add table showing highest gameweek by bench points per manager
+  - [ ] Show highest individual player benched during the season (player name + points)
 
 ### Player Modal Improvements
 - [ ] Per-game expected stats table in History tab:

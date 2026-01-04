@@ -59,11 +59,13 @@ async def get_or_create_season(conn: asyncpg.Connection) -> int:
     if row:
         return row["id"]
 
-    # Create a new season (2024-25)
+    # Create a new season (2025-26)
+    # Note: This app supports multi-season data. If you need to add a new season,
+    # consider creating a proper migration or updating this default.
     row = await conn.fetchrow(
         """
         INSERT INTO season (code, start_year, is_active)
-        VALUES ('2024-25', 2024, true)
+        VALUES ('2025-26', 2025, true)
         RETURNING id
         """
     )

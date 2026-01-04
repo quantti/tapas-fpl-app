@@ -108,7 +108,7 @@ The database uses **composite primary keys** `(id, season_id)` for FPL entities 
 ### Table Overview (23 tables)
 
 **Core FPL Entities:**
-- `season` - FPL seasons (2024-25, etc.)
+- `season` - FPL seasons (current: 2025-26)
 - `team` - Premier League teams (composite PK: id, season_id)
 - `player` - FPL players with stats, prices, ICT index
 - `gameweek` - GW metadata, deadlines, most captained

@@ -851,7 +851,7 @@ Shows remaining free transfers for each manager in the league.
 - `src/services/queries/useFreeTransfers.ts` - Core calculation logic
 - `src/features/FreeTransfers/FreeTransfers.tsx` - Display component with deadline awareness
 
-**FPL Free Transfer Rules (2024/25 season):**
+**FPL Free Transfer Rules (introduced 2024/25, continues in 2025/26):**
 - Start with 1 FT at beginning of season
 - Gain +1 FT per gameweek (max **5** can be banked)
 - Wildcard resets FT to 1

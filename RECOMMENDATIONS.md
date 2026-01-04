@@ -946,6 +946,119 @@ Benefits over Cloudflare Workers:
 4. **Include price in scoring?** → Not yet, future enhancement
 5. **Minimum minutes threshold?** → 450 minutes (~5 full games)
 
+---
+
+## Schema Gaps for Future Implementation
+
+The following database schema additions are needed to fully support the planned recommendation engine phases. These are documented here for future migration planning.
+
+### Phase 1: Form Snapshots Table
+
+Currently `get_player_form()` calculates form on-demand. For caching pre-computed form values:
+
+```sql
+-- TODO: Migration 00X
+CREATE TABLE player_form_snapshot (
+    player_id INTEGER NOT NULL,
+    season_id INTEGER NOT NULL REFERENCES season(id),
+    gameweek SMALLINT NOT NULL,
+    form_1gw DECIMAL(4,1),
+    form_3gw DECIMAL(4,1),
+    form_5gw DECIMAL(4,1),
+    form_10gw DECIMAL(4,1),
+    minutes_1gw INTEGER,
+    minutes_3gw INTEGER,
+    minutes_5gw INTEGER,
+    minutes_10gw INTEGER,
+    calculated_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (player_id, season_id, gameweek)
+);
+```
+
+**Use case:** Pre-compute form after each GW completes, reducing query time from ~100ms to <5ms.
+
+### Phase 1.3: League Ownership Tracking
+
+For ownership-adjusted differential value calculations:
+
+```sql
+-- TODO: Migration 00X
+CREATE TABLE league_player_ownership (
+    league_id INTEGER NOT NULL,
+    player_id INTEGER NOT NULL,
+    season_id INTEGER NOT NULL REFERENCES season(id),
+    gameweek SMALLINT NOT NULL,
+    ownership_count INTEGER NOT NULL,     -- How many managers own this player
+    ownership_percent DECIMAL(5,2),       -- Percentage of league
+    effective_ownership DECIMAL(5,4),     -- league% × global% for differential calc
+    PRIMARY KEY (league_id, player_id, season_id, gameweek)
+);
+```
+
+**Use case:** Track which players are differentials vs template within specific leagues.
+
+### Phase 2: Recommendation Cache Table
+
+For storing pre-computed recommendation scores:
+
+```sql
+-- TODO: Migration 00X
+CREATE TABLE player_recommendations (
+    player_id INTEGER NOT NULL,
+    season_id INTEGER NOT NULL REFERENCES season(id),
+    gameweek SMALLINT NOT NULL,
+    category TEXT NOT NULL,               -- 'punt', 'defensive', 'sell'
+    score DECIMAL(5,3) NOT NULL,
+    rank INTEGER,
+    fixture_score DECIMAL(5,3),
+    form_score DECIMAL(5,3),
+    delta_score DECIMAL(5,3),             -- Over/under performance
+    calculated_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (player_id, season_id, gameweek, category)
+);
+
+CREATE INDEX idx_recommendations_category
+    ON player_recommendations(season_id, gameweek, category, score DESC);
+```
+
+**Use case:** Backend pre-computes recommendations after each GW, frontend queries cached results.
+
+### Phase 2.2: Fixture Difficulty Persistence
+
+Store fixture difficulty ratings for historical analysis:
+
+```sql
+-- TODO: Migration 00X
+CREATE TABLE fixture_difficulty_snapshot (
+    team_id INTEGER NOT NULL,
+    season_id INTEGER NOT NULL REFERENCES season(id),
+    gameweek SMALLINT NOT NULL,
+    home_difficulty SMALLINT,             -- FPL's 1-5 rating when at home
+    away_difficulty SMALLINT,             -- FPL's 1-5 rating when away
+    rolling_5gw_score DECIMAL(4,2),       -- Our calculated weighted score
+    snapshot_date TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (team_id, season_id, gameweek)
+);
+```
+
+**Use case:** FPL changes difficulty ratings mid-season; track historical values for analysis.
+
+### Notes on Existing Views
+
+The `player_vs_team_stats` and `player_season_deltas` views work correctly but note:
+
+1. **Cross-season queries**: Always filter by `season_id` to avoid mixing data
+2. **View vs materialized view**: Current views recalculate on each query. For production scale, consider materialized views refreshed after each GW:
+   ```sql
+   CREATE MATERIALIZED VIEW player_season_deltas_mv AS
+   SELECT ... FROM player_season_deltas;
+
+   -- Refresh after each GW
+   REFRESH MATERIALIZED VIEW CONCURRENTLY player_season_deltas_mv;
+   ```
+
+---
+
 ## References
 
 - FPL API types: `src/types/fpl.ts`

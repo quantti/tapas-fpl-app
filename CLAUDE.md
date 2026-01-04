@@ -2,6 +2,8 @@
 
 A Fantasy Premier League companion app for tracking league standings, player stats, and live gameweek data.
 
+**Current Season:** 2025/26 (FPL season ID will be assigned when season starts)
+
 > **Note**: This file contains high-level architecture. See subdirectory docs for detailed documentation:
 > - `frontend/FRONTEND.md` - React components, hooks, testing, CSS modules
 > - `backend/BACKEND.md` - Python FastAPI, database schema, Supabase
@@ -126,8 +128,30 @@ python -m pytest               # Run tests
 
 - Keep it simple — avoid over-engineering
 - Cache aggressively — FPL data doesn't change frequently
-- Multi-season support — composite keys `(id, season_id)` for FPL entities
 - Mobile-friendly — friends will likely view on phones
+
+### Multi-Season Architecture
+
+**IMPORTANT:** This app is designed for multi-season support. Every feature must consider season context.
+
+**Database design:**
+- All FPL entities use composite primary keys: `(id, season_id)`
+- FPL reuses IDs each season (player 427 = Salah in 2024/25 AND 2025/26)
+- Foreign keys include `season_id` to prevent cross-season data mixing
+- Example: `FOREIGN KEY (team_id, season_id) REFERENCES team(id, season_id)`
+
+**When implementing features:**
+1. Always include `season_id` in queries and API endpoints
+2. Default to current season but allow historical queries
+3. Views and functions must filter by `season_id`
+4. Test with multi-season data to catch cross-season bugs
+5. Consider season transitions (archived data, new season bootstrap)
+
+**Season transition checklist:**
+- [ ] Create new season record in `season` table
+- [ ] Run data collection for new season
+- [ ] Update `is_current` flag on season table
+- [ ] Verify frontend defaults to new season
 
 ## Deployment
 
