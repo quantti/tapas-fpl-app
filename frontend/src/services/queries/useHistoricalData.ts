@@ -26,7 +26,7 @@ interface UseHistoricalDataParams {
   enabled?: boolean;
 }
 
-interface UseHistoricalDataReturn {
+export interface UseHistoricalDataReturn {
   liveDataByGw: Map<number, LiveGameweek>;
   picksByManagerAndGw: Map<string, ManagerPicks>; // key: `${managerId}-${gw}`
   completedGameweeks: number[];

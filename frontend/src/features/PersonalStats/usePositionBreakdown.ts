@@ -30,9 +30,12 @@ export function usePositionBreakdown({
   enabled,
 }: UsePositionBreakdownProps) {
   // Fetch picks for each completed gameweek
+  // Note: Uses 'positionBreakdown' prefix to avoid query key collision with useHistoricalData
+  // which transforms the response into ManagerPicks shape. Same key + different queryFn
+  // shapes causes React Query deduplication issues.
   const picksQueries = useQueries({
     queries: completedGameweeks.map((gw) => ({
-      queryKey: queryKeys.entryPicks(managerId ?? 0, gw),
+      queryKey: ['positionBreakdown', 'entryPicks', managerId ?? 0, gw] as const,
       queryFn: () => fplApi.getEntryPicks(managerId!, gw),
       staleTime: Infinity, // Past picks never change
       gcTime: CACHE_TIMES.ONE_HOUR,
