@@ -179,34 +179,5 @@
       flex-direction: column;
       gap: var(--space-4);
     }
-
-    .captainRow {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 28px;
-      border-bottom: 1px solid var(--color-border-light);
-      font-size: var(--font-size-sm);
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      .teamName {
-        flex: 1;
-        min-width: 0;
-        font-weight: 600;
-        color: var(--color-text);
-        font-size: var(--font-size-sm);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .captainName {
-        flex-shrink: 0;
-        color: var(--color-text-muted);
-      }
-    }
   }
 }

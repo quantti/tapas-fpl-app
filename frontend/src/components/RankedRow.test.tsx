@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, it, expect, vi } from 'vitest';
 
 import { RankedRow } from './RankedRow';
 
@@ -49,5 +50,31 @@ describe('RankedRow', () => {
   it('renders long names', () => {
     render(<RankedRow rank={1} name="Very Long Manager Name That Should Truncate" value="100" />);
     expect(screen.getByText('Very Long Manager Name That Should Truncate')).toBeInTheDocument();
+  });
+
+  it('renders as button when onClick is provided', () => {
+    render(<RankedRow rank={1} name="Test" value="100" onClick={() => {}} />);
+    expect(screen.getByRole('button')).toBeInTheDocument();
+  });
+
+  it('calls onClick when clicked', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(<RankedRow rank={1} name="Test" value="100" onClick={handleClick} />);
+
+    await user.click(screen.getByRole('button'));
+    expect(handleClick).toHaveBeenCalledOnce();
+  });
+
+  it('renders chevron when clickable', () => {
+    const { container } = render(<RankedRow rank={1} name="Test" value="100" onClick={() => {}} />);
+    const svg = container.querySelector('svg');
+    expect(svg).toBeInTheDocument();
+  });
+
+  it('does not render chevron when not clickable', () => {
+    const { container } = render(<RankedRow rank={1} name="Test" value="100" />);
+    const svg = container.querySelector('svg');
+    expect(svg).not.toBeInTheDocument();
   });
 });

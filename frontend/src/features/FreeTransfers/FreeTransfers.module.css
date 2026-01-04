@@ -2,41 +2,7 @@
   .list {
     display: flex;
     flex-direction: column;
-    gap: var(--space-8);
-  }
-
-  .row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--space-8) 0;
-    border-bottom: 1px solid var(--color-border-light);
-
-    &:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-    }
-  }
-
-  .teamName {
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-    color: var(--color-text);
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .ftCount {
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--color-text-muted);
-    flex-shrink: 0;
-
-    &.maxFt {
-      color: var(--color-success);
-    }
+    gap: var(--space-4);
   }
 
   .loading {

@@ -34,6 +34,7 @@
   --color-warning: #a16207; /* yellow-700: 5.89:1 */
   --color-error: #b91c1c; /* red-700: 5.83:1 */
   --color-info: #1d4ed8; /* blue-700: 6.07:1 */
+  --color-gold: #d4a400; /* gold: 4.55:1 - adjusted for WCAG AA */
 
   /* Spacing */
   --space-2: 2px;

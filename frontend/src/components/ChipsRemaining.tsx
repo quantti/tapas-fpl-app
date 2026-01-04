@@ -5,6 +5,7 @@ import { CHIP_LABELS, getRemainingChips } from 'utils/chips';
 
 import { Card } from './Card';
 import { CardHeader } from './CardHeader';
+import { CardRow } from './CardRow';
 import * as styles from './ChipsRemaining.module.css';
 
 import type { ManagerGameweekData } from 'services/queries/useFplData';
@@ -46,8 +47,7 @@ export function ChipsRemaining({ managerDetails, currentGameweek, deadlineTime }
       </CardHeader>
       <div className={styles.list}>
         {managersWithChips.map((manager) => (
-          <div key={manager.managerId} className={styles.row}>
-            <span className={styles.teamName}>{manager.teamName}</span>
+          <CardRow key={manager.managerId} label={manager.teamName}>
             <div className={styles.chips}>
               {manager.remainingChips.map((chip, index) => (
                 <span key={`${chip}-${index}`} className={styles.chip}>
@@ -55,7 +55,7 @@ export function ChipsRemaining({ managerDetails, currentGameweek, deadlineTime }
                 </span>
               ))}
             </div>
-          </div>
+          </CardRow>
         ))}
       </div>
     </Card>

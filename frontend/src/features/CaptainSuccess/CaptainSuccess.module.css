@@ -4,28 +4,12 @@
   gap: var(--space-4);
 }
 
-.rank {
-  width: 20px;
-  color: var(--color-text-muted);
-  font-weight: 500;
-}
-
-.name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--color-text);
-}
-
 .stats {
   display: flex;
   align-items: center;
   gap: var(--space-8);
   font-weight: 500;
   flex-shrink: 0;
-  order: 1; /* Move after chevron */
 }
 
 .picks {

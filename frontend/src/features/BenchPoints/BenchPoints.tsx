@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 
 import { Card } from 'components/Card';
 import { CardHeader } from 'components/CardHeader';
-import { RankedRow } from 'components/RankedRow';
+import { CardRow } from 'components/CardRow';
 
 import { useBenchPoints } from 'services/queries/useBenchPoints';
 
@@ -48,10 +48,10 @@ export function BenchPoints({ managerDetails, currentGameweek }: Props) {
       {!loading && !error && (
         <div className={styles.list}>
           {sortedData.map((data, index) => (
-            <RankedRow
+            <CardRow
               key={data.managerId}
               rank={index + 1}
-              name={data.teamName}
+              label={data.teamName}
               value={data.totalBenchPoints}
               valueColor="warning"
             />

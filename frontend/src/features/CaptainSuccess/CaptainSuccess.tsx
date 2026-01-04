@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 
 import { Card } from 'components/Card';
 import { CardHeader } from 'components/CardHeader';
-import { ListRowButton } from 'components/ListRowButton';
+import { CardRow } from 'components/CardRow';
 
 import { useCaptainDifferential } from 'services/queries/useCaptainSuccess';
 
@@ -73,8 +73,10 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
           {sortedData
             .filter((d) => d.differentialPicks > 0)
             .map((data, index) => (
-              <ListRowButton
+              <CardRow
                 key={data.managerId}
+                rank={index + 1}
+                label={data.teamName}
                 onClick={() =>
                   setModal({
                     isOpen: true,
@@ -84,8 +86,6 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
                   })
                 }
               >
-                <span className={styles.rank}>{index + 1}</span>
-                <span className={styles.name}>{data.teamName}</span>
                 <span className={styles.stats}>
                   <span className={styles.picks}>{data.differentialPicks}×</span>
                   <span
@@ -98,7 +98,7 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
                     {data.differentialGain}
                   </span>
                 </span>
-              </ListRowButton>
+              </CardRow>
             ))}
         </div>
       )}

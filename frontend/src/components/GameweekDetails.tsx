@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 
 import { formatDate } from '../config/locale';
 
+import { CardRow } from './CardRow';
 import * as styles from './GameweekDetails.module.css';
 
 import type { ManagerGameweekData } from 'services/queries/useFplData';
@@ -100,10 +101,12 @@ export function GameweekDetails({ gameweek, managerDetails, fixtures }: Props) {
         </h3>
         <div className={styles.captainsList}>
           {sortedManagers.map((m) => (
-            <div key={m.managerId} className={styles.captainRow}>
-              <span className={styles.teamName}>{m.teamName}</span>
-              <span className={styles.captainName}>{m.captain?.web_name || '—'}</span>
-            </div>
+            <CardRow
+              key={m.managerId}
+              label={m.teamName}
+              value={m.captain?.web_name || '—'}
+              valueColor="muted"
+            />
           ))}
         </div>
       </div>

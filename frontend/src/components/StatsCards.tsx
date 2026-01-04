@@ -2,7 +2,7 @@ import { Coins, TrendingDown } from 'lucide-react';
 
 import { Card } from './Card';
 import { CardHeader } from './CardHeader';
-import { RankedRow } from './RankedRow';
+import { CardRow } from './CardRow';
 import * as styles from './StatsCards.module.css';
 
 import type { ManagerGameweekData } from 'services/queries/useFplData';
@@ -47,10 +47,10 @@ export function StatsCards({ managerDetails }: Props) {
         </CardHeader>
         <div className={styles.list}>
           {sortedByHits.map((m, index) => (
-            <RankedRow
+            <CardRow
               key={m.managerId}
               rank={index + 1}
-              name={m.teamName}
+              label={m.teamName}
               value={`-${m.totalHitsCost}`}
               valueColor="error"
             />

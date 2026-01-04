@@ -1,7 +1,5 @@
 export const __esModule: true;
 export const arrow: string;
-export const captainName: string;
-export const captainRow: string;
 export const captainsList: string;
 export const captainsPanel: string;
 export const deadline: string;
@@ -19,7 +17,6 @@ export const tag: string;
 export const tagBadge: string;
 export const tagList: string;
 export const tagName: string;
-export const teamName: string;
 export const title: string;
 export const topRow: string;
 export const transferIcon: string;
