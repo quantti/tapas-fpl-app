@@ -113,6 +113,109 @@ Would require:
 - Player ID mapping (FPL ID ↔ Understat ID)
 - Caching layer
 
+---
+
+## Backend Data Collection ✅ NEW
+
+The backend now collects and stores comprehensive per-player per-fixture stats, enabling Phase 1-4 features.
+
+### Data Now Collected
+
+The collection script (`scripts/collect_points_against.py`) fetches **all 35+ fields** from the FPL API `element-summary/{id}/` endpoint for every player:
+
+| Category | Fields Stored |
+|----------|--------------|
+| **Core** | fixture_id, player_id, season_id, gameweek, player_team_id, opponent_team_id, was_home, kickoff_time |
+| **Points** | minutes, total_points, bonus, bps |
+| **Attacking** | goals_scored, assists, expected_goals, expected_assists, expected_goal_involvements |
+| **Defensive** | clean_sheets, goals_conceded, own_goals, penalties_saved, penalties_missed, saves, expected_goals_conceded |
+| **Cards** | yellow_cards, red_cards |
+| **ICT Index** | influence, creativity, threat, ict_index |
+| **Ownership** | value, selected, transfers_in, transfers_out |
+| **Status** | starts (1 if started, 0 if sub) |
+
+### Database Schema
+
+```sql
+-- player_fixture_stats table (migration 005)
+PRIMARY KEY (fixture_id, player_id)
+
+-- Useful indexes
+idx_pfs_player_season      -- Player performance over season
+idx_pfs_opponent           -- Points Against by player position
+idx_pfs_player_gw          -- Multi-horizon form (recent GWs)
+idx_pfs_season_gw          -- Gameweek analysis
+idx_pfs_xg_delta           -- Over/underperformers
+```
+
+### Pre-Built Views and Functions
+
+```sql
+-- Player vs team performance (aggregated)
+SELECT * FROM player_vs_team_stats
+WHERE player_id = 123 AND opponent_team_id = 7;
+
+-- Multi-horizon form calculation
+SELECT * FROM get_player_form(player_id, season_id, current_gw);
+-- Returns: form_1gw, form_3gw, form_5gw, form_10gw, minutes_*
+
+-- Over/underperformance tracking
+SELECT * FROM player_season_deltas
+WHERE season_id = 1
+ORDER BY goals_delta DESC;  -- Players outperforming xG
+```
+
+### How This Enables The Roadmap
+
+| Phase | Feature | Status |
+|-------|---------|--------|
+| **Phase 1** | Delta Tracking (actual vs xG/xA) | ✅ **Data ready** - `goals_scored - expected_goals` per fixture |
+| **Phase 1** | Multi-Horizon Form | ✅ **Data ready** - `get_player_form()` function |
+| **Phase 2** | Expected Points Engine | ✅ **Data ready** - BPS history, minutes, all stats |
+| **Phase 2** | Expected Minutes | ✅ **Data ready** - Historical minutes, starts flag |
+| **Phase 3** | MILP Optimization | ✅ **Data ready** - Full historical performance data |
+| **Phase 4** | ML Pipeline | ✅ **Data ready** - Rich feature set for training |
+
+### Running Data Collection
+
+```bash
+# From Fly.io (required - Supabase uses IPv6)
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_points_against"
+
+# Check status
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_points_against --status"
+```
+
+Collection takes ~15 minutes (800 players × 1 req/sec rate limit).
+
+### Example Queries
+
+**Delta tracking - find overperformers:**
+```sql
+SELECT player_id, actual_goals, expected_goals, goals_delta
+FROM player_season_deltas
+WHERE goals_delta > 3  -- 3+ goals over xG
+ORDER BY goals_delta DESC;
+```
+
+**Multi-horizon form for a player:**
+```sql
+SELECT * FROM get_player_form(427, 1, 20);  -- Salah, season 1, GW20
+-- Returns: form_1gw=12.0, form_3gw=8.5, form_5gw=7.2, form_10gw=6.8
+```
+
+**Points Against by player position:**
+```sql
+SELECT opponent_team_id,
+       SUM(total_points) as points_conceded,
+       COUNT(*) as appearances
+FROM player_fixture_stats
+WHERE player_team_id = 14  -- Liverpool players
+  AND season_id = 1
+GROUP BY opponent_team_id
+ORDER BY points_conceded DESC;
+```
+
 ## Algorithm Design
 
 ### Per-90 Calculations

@@ -47,7 +47,8 @@ INSERT INTO _migrations (name) VALUES
     ('001_core_tables.sql'),
     ('002_historical.sql'),
     ('003_analytics.sql'),
-    ('004_points_against.sql')
+    ('004_points_against.sql'),
+    ('005_player_fixture_stats.sql')
 ON CONFLICT (name) DO NOTHING;
 ```
 
@@ -67,7 +68,8 @@ backend/
 │   ├── 001_core_tables.sql
 │   ├── 002_historical.sql
 │   ├── 003_analytics.sql
-│   └── 004_points_against.sql
+│   ├── 004_points_against.sql
+│   └── 005_player_fixture_stats.sql
 ├── scripts/
 │   ├── migrate.py               # Database migration runner
 │   ├── collect_points_against.py # Points Against data collector
@@ -100,8 +102,10 @@ The database uses **composite primary keys** `(id, season_id)` for FPL entities 
 | `002_historical.sql` | manager_gw_snapshot, manager_pick, transfer, chip_usage, player_gw_stats, price_change |
 | `003_analytics.sql` | expected_points_cache, performance_delta, player_form, recommendation_score, league_ownership |
 | `004_points_against.sql` | points_against_by_fixture, points_against_collection_status, points_against_season_totals view |
+| `005_player_fixture_stats.sql` | player_fixture_stats (35+ fields), player_vs_team_stats view, player_season_deltas view, get_player_form() function |
+| `006_player_fixture_stats_improvements.sql` | updated_at column + trigger, check constraint, improved view and function |
 
-### Table Overview (22 tables)
+### Table Overview (23 tables)
 
 **Core FPL Entities:**
 - `season` - FPL seasons (2024-25, etc.)
@@ -132,6 +136,11 @@ The database uses **composite primary keys** `(id, season_id)` for FPL entities 
 - `player_form` - Multi-horizon form calculations
 - `recommendation_score` - Punt/defensive/sell scores
 - `league_ownership` - League-specific ownership stats
+
+**Points Against & Player Stats:**
+- `points_against_by_fixture` - FPL points conceded per team per fixture
+- `points_against_collection_status` - Data collection state tracking
+- `player_fixture_stats` - Detailed per-player per-fixture stats (35+ fields)
 
 ### Key Design Patterns
 
@@ -203,8 +212,13 @@ python -m scripts.collect_points_against --reset
 **Collection Details:**
 - Fetches ~800 players from FPL API with rate limiting (1 req/sec)
 - Aggregates points scored against each opponent per fixture
+- Saves detailed player fixture stats (35+ fields per player per fixture)
 - Fails if >10% of requests fail (prevents partial data)
 - Takes ~15 minutes for full collection
+
+**Data Saved:**
+1. `points_against_by_fixture` - Aggregated points conceded per team per fixture
+2. `player_fixture_stats` - Individual player stats (xG, xA, BPS, ICT index, etc.)
 
 ### FPL API Client
 
@@ -230,7 +244,38 @@ history = await client.get_player_history(player_id)  # Per-GW stats
 - **URL**: https://tapas-fpl-backend.fly.dev
 - **Deploy**: `fly deploy` from this directory
 
+### Quick Reference: Common Operations
+
+```bash
+# Fly CLI location (if not in PATH)
+export PATH="$HOME/.fly/bin:$PATH"
+
+# Check app status
+fly status --app tapas-fpl-backend
+
+# View logs
+fly logs --app tapas-fpl-backend
+
+# Deploy new version
+cd backend && fly deploy
+
+# Run data collection (MUST run from Fly.io due to IPv6)
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_points_against"
+
+# Check collection status
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_points_against --status"
+
+# Run migrations
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.migrate"
+
+# Interactive shell
+fly ssh console --app tapas-fpl-backend
+```
+
 ### Secrets
+
+Secrets are stored in Fly.io and injected as environment variables at runtime.
+
 ```bash
 fly secrets list                   # View current secrets
 
@@ -241,21 +286,117 @@ fly secrets set DATABASE_URL="postgresql://postgres:<PASSWORD>@db.itmykooxrbrdbg
 fly secrets set CORS_ORIGINS="https://tapas-and-tackles.live,https://www.tapas-and-tackles.live,http://localhost:5173,http://localhost:3000"
 ```
 
-**Where to find the password:**
+**Where to find the database password:**
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard/project/itmykooxrbrdbgqwsesb/settings/database)
 2. Project Settings → Database → Connection string → URI
 3. Copy the password from the connection string
 
 **CORS Note:** Include both `www` and non-www origins if your domain uses redirects.
 
-### Local Development with Supabase
-```bash
-# Set SUPABASE_PW in your shell session (get password from Supabase Dashboard)
-export SUPABASE_PW="<password-from-dashboard>"
+## Connecting to Supabase
 
-# Run migrations against Supabase
-DATABASE_URL="postgresql://postgres:$SUPABASE_PW@db.itmykooxrbrdbgqwsesb.supabase.co:5432/postgres" python -m scripts.migrate
+### Decision Table: How to Connect
+
+| Task | Where to Run | Connection Method |
+|------|--------------|-------------------|
+| Run data collection scripts | Fly.io SSH | Direct (IPv6) - auto via `DATABASE_URL` secret |
+| Run migrations | Fly.io SSH | Direct (IPv6) - auto via `DATABASE_URL` secret |
+| Deploy backend | Local terminal | `fly deploy` (no DB needed) |
+| Quick DB query | Fly.io SSH | Direct (IPv6) - auto via `DATABASE_URL` secret |
+| Local script testing (rare) | Local terminal | Session Pooler (IPv4) + `$SUPABASE_PW` |
+
+**TL;DR: For anything that touches the database, use `fly ssh console --app tapas-fpl-backend`**
+
+### ⚠️ CRITICAL: IPv6-Only Connection
+
+**Supabase direct connection uses IPv6.** This means:
+- ✅ **Fly.io can connect** — Fly.io supports IPv6 natively
+- ❌ **Local machines usually cannot** — Most home/office networks are IPv4-only
+- ❌ **GitHub Actions cannot** — GitHub runners don't support IPv6
+
+### Running Scripts
+
+**All data collection scripts MUST run from Fly.io**, not locally:
+
+```bash
+# 1. Check if Fly.io machine is running
+fly status --app tapas-fpl-backend
+
+# 2. If no machines running, start one
+fly machine list --app tapas-fpl-backend
+fly machine start <machine_id> --app tapas-fpl-backend
+
+# 3. Run scripts via SSH (DATABASE_URL is already set as a secret)
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_points_against"
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_points_against --status"
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.test_collection"
+
+# 4. Interactive shell for debugging
+fly ssh console --app tapas-fpl-backend
 ```
+
+### Local Development (Limited)
+
+Local development works for:
+- Running the FastAPI server (without database)
+- Running tests (mocked database)
+- Editing code
+
+Local development does NOT work for:
+- Running data collection scripts against Supabase
+- Testing database connectivity
+- Running migrations against production
+
+If you need to test database queries locally, use the Fly.io SSH console:
+
+```bash
+# Quick database query from Fly.io
+fly ssh console --app tapas-fpl-backend -C "python -c \"
+import asyncio
+import asyncpg
+import os
+
+async def test():
+    conn = await asyncpg.connect(os.environ['DATABASE_URL'])
+    row = await conn.fetchrow('SELECT COUNT(*) as cnt FROM points_against_by_fixture')
+    print(f'Rows: {row[\"cnt\"]}')
+    await conn.close()
+
+asyncio.run(test())
+\""
+```
+
+### Alternative: Supabase Connection Pooler (IPv4)
+
+If you need local database access, use the **Session Pooler** connection (IPv4-compatible):
+
+```bash
+# Session pooler URL (IPv4, port 5432)
+postgresql://postgres.itmykooxrbrdbgqwsesb:<PASSWORD>@aws-0-eu-west-2.pooler.supabase.com:5432/postgres
+
+# Transaction pooler URL (IPv4, port 6543) - for short-lived connections
+postgresql://postgres.itmykooxrbrdbgqwsesb:<PASSWORD>@aws-0-eu-west-2.pooler.supabase.com:6543/postgres
+```
+
+**Note:** Pooler URLs have different format: `postgres.<project-ref>` instead of just `postgres`.
+
+### Local Environment Setup
+
+The database password is stored in `backend/.env`:
+
+```bash
+# backend/.env contains:
+SUPABASE_PW=<password>
+
+# Load it into shell
+source backend/.env
+echo $SUPABASE_PW  # Verify it's set
+
+# Run local script with pooler URL (IPv4)
+DATABASE_URL="postgresql://postgres.itmykooxrbrdbgqwsesb:$SUPABASE_PW@aws-0-eu-west-2.pooler.supabase.com:6543/postgres" python -m scripts.migrate --status
+```
+
+**Password location:** `backend/.env` file (gitignored). The scripts also auto-load from `.env.local` and `.env` via `python-dotenv`.
 
 ## Testing
 
@@ -298,3 +439,57 @@ python -m pytest tests/test_api.py  # Run specific file
 **Retry Logic (FPL API Client):**
 - 3 attempts with exponential backoff (2s → 4s → 8s, max 30s)
 - Retries on: HTTP 429/500/502/503/504, timeouts, network errors
+
+## Troubleshooting
+
+### Fly.io Connection Issues
+
+**"No machines running"**
+```bash
+fly machine list --app tapas-fpl-backend
+fly machine start <machine_id> --app tapas-fpl-backend
+```
+
+**"fly: command not found"**
+```bash
+export PATH="$HOME/.fly/bin:$PATH"
+# Or use full path: ~/.fly/bin/flyctl
+```
+
+**"Error: not logged in"**
+```bash
+fly auth login
+fly auth whoami  # Verify logged in
+```
+
+### Database Connection Issues
+
+**"could not translate host name" (IPv6 issue)**
+- Direct Supabase connection requires IPv6
+- Use Fly.io SSH for scripts: `fly ssh console --app tapas-fpl-backend`
+- Or use Session Pooler URL for local access (see "Alternative: Supabase Connection Pooler")
+
+**"password authentication failed"**
+```bash
+# Check if password is set (load from .env first)
+source backend/.env
+echo $SUPABASE_PW
+
+# Verify DATABASE_URL format (pooler vs direct)
+# Pooler: postgres.itmykooxrbrdbgqwsesb (note the dot)
+# Direct: postgres (no project ref prefix)
+```
+
+**"connection refused" or "timeout"**
+- Check if Fly.io machine is running: `fly status --app tapas-fpl-backend`
+- Check Supabase status: https://status.supabase.com/
+
+### Data Collection Issues
+
+**"Collection failed: >10% failures"**
+- FPL API may be rate limiting or down
+- Wait and retry later
+- Check FPL API status: https://fantasy.premierleague.com/
+
+**"Table does not exist"**
+- Run migrations first: `fly ssh console --app tapas-fpl-backend -C "python -m scripts.migrate"`

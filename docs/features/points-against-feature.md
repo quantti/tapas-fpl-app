@@ -16,14 +16,57 @@ As an FPL manager, I want to see which teams concede the most FPL points, so I c
 
 ### Source: FPL API `element-summary/{playerId}`
 
-Each player's history contains:
+Each player's history contains **35+ fields**. We now collect ALL of them:
+
 ```typescript
 interface PlayerHistory {
+  // Core identification
   fixture: number;          // Fixture ID (unique per match)
   opponent_team: number;    // Team they played against
-  total_points: number;     // FPL points scored in that match
-  was_home: boolean;        // Home or away fixture
   round: number;            // Gameweek number
+  was_home: boolean;        // Home or away fixture
+  kickoff_time: string;
+
+  // Points breakdown
+  minutes: number;
+  total_points: number;
+  bonus: number;
+  bps: number;              // Bonus Points System raw score
+
+  // Attacking stats
+  goals_scored: number;
+  assists: number;
+  expected_goals: number;   // xG
+  expected_assists: number; // xA
+  expected_goal_involvements: number;
+
+  // Defensive stats
+  clean_sheets: number;
+  goals_conceded: number;
+  own_goals: number;
+  penalties_saved: number;
+  penalties_missed: number;
+  saves: number;
+  expected_goals_conceded: number;
+
+  // Cards
+  yellow_cards: number;
+  red_cards: number;
+
+  // ICT Index
+  influence: number;
+  creativity: number;
+  threat: number;
+  ict_index: number;
+
+  // Value and ownership at time of match
+  value: number;
+  selected: number;
+  transfers_in: number;
+  transfers_out: number;
+
+  // Playing status
+  starts: number;           // 1 if started, 0 if sub
 }
 ```
 
@@ -33,6 +76,14 @@ interface PlayerHistory {
 Points Against Team X = SUM of all players' total_points
                         WHERE opponent_team = X
 ```
+
+### Enhanced Data Storage
+
+The collection script now saves **both**:
+1. **Aggregated Points Against** → `points_against_by_fixture` (team totals per fixture)
+2. **Individual Player Stats** → `player_fixture_stats` (full player data per fixture)
+
+This enables position-based breakdowns, form analysis, and recommendations integration.
 
 ### Breakdown Options
 - **Total**: All points against (home + away)
@@ -976,8 +1027,45 @@ Code review findings from commit `3be6dbc` to address before Phase 4:
 
 ## Future Enhancements
 
+### Now Possible with `player_fixture_stats` Data ✅
+
+The following features are now enabled by the comprehensive player data collection:
+
 1. **Position breakdown**: Points conceded to GKP/DEF/MID/FWD separately
-2. **Fixture difficulty**: Custom FDR based on PA data
-3. **Trend chart**: Points against over time visualization
-4. **Captain suggestions**: "Captain against Wolves, they concede 49.5 pts/match"
-5. **Transfer targets**: Players with upcoming fixtures vs high-PA teams
+   ```sql
+   -- Query player_fixture_stats with player position from bootstrap
+   SELECT position, SUM(total_points) as points_conceded
+   FROM player_fixture_stats pfs
+   JOIN player p ON pfs.player_id = p.id
+   WHERE pfs.opponent_team_id = 20  -- vs Wolves
+   GROUP BY position;
+   ```
+
+2. **xG-based weakness detection**: Teams that concede high xG (not just points)
+   ```sql
+   SELECT opponent_team_id, SUM(expected_goals) as total_xg_against
+   FROM player_fixture_stats
+   GROUP BY opponent_team_id
+   ORDER BY total_xg_against DESC;
+   ```
+
+3. **Form-adjusted recommendations**: Integration with RECOMMENDATIONS.md roadmap
+   - Multi-horizon form using `get_player_form()` function
+   - Delta tracking (overperformers vs xG)
+
+### Planned Features
+
+4. **Fixture difficulty**: Custom FDR based on PA data
+5. **Trend chart**: Points against over time visualization
+6. **Captain suggestions**: "Captain against Wolves, they concede 49.5 pts/match"
+7. **Transfer targets**: Players with upcoming fixtures vs high-PA teams
+
+### Data Collection Status
+
+| Table | Status | Purpose |
+|-------|--------|---------|
+| `points_against_by_fixture` | ✅ Live | Team-level PA totals |
+| `player_fixture_stats` | ✅ Live | Player-level stats (35+ fields) |
+| `player_vs_team_stats` | ✅ View | Player performance vs each opponent |
+| `player_season_deltas` | ✅ View | Over/underperformance tracking |
+| `get_player_form()` | ✅ Function | Multi-horizon form calculation |

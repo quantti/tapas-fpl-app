@@ -23,6 +23,26 @@ FPL_BASE_URL = "https://fantasy.premierleague.com/api"
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
+def _safe_int(val: Any, default: int = 0) -> int:
+    """Safely convert API value to int, handling None and empty strings."""
+    if val is None or val == "":
+        return default
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return default
+
+
+def _safe_float(val: Any, default: float = 0.0) -> float:
+    """Safely convert API value to float, handling None and empty strings."""
+    if val is None or val == "":
+        return default
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return default
+
+
 def _is_retryable_error(exception: BaseException) -> bool:
     """Check if an error should trigger a retry."""
     if isinstance(exception, (httpx.TimeoutException, httpx.NetworkError)):
@@ -32,15 +52,57 @@ def _is_retryable_error(exception: BaseException) -> bool:
     return False
 
 
-@dataclass
+@dataclass(slots=True)
 class PlayerHistory:
-    """Player's gameweek history entry."""
+    """Player's gameweek history entry from element-summary endpoint."""
 
+    # Core identification
     fixture_id: int
     opponent_team: int
     gameweek: int
-    total_points: int
     was_home: bool
+    kickoff_time: str | None
+
+    # Points breakdown
+    minutes: int
+    total_points: int
+    bonus: int
+    bps: int  # Bonus Points System raw score
+
+    # Attacking stats
+    goals_scored: int
+    assists: int
+    expected_goals: float
+    expected_assists: float
+    expected_goal_involvements: float
+
+    # Defensive stats
+    clean_sheets: int
+    goals_conceded: int
+    own_goals: int
+    penalties_saved: int
+    penalties_missed: int
+    saves: int
+    expected_goals_conceded: float
+
+    # Cards
+    yellow_cards: int
+    red_cards: int
+
+    # ICT Index
+    influence: float
+    creativity: float
+    threat: float
+    ict_index: float
+
+    # Value and ownership at time of match
+    value: int  # Price * 10
+    selected: int
+    transfers_in: int
+    transfers_out: int
+
+    # Playing status
+    starts: int  # 1 if started, 0 if sub
 
 
 @dataclass
@@ -154,6 +216,13 @@ class FplApiClient:
         """
         Fetch a player's gameweek history (element-summary endpoint).
         This is the heavy endpoint - one request per player.
+
+        Returns all stats from the API for recommendations engine:
+        - Points breakdown (minutes, bonus, bps)
+        - Attacking stats (goals, assists, xG, xA)
+        - Defensive stats (clean sheets, goals conceded, saves)
+        - ICT Index components
+        - Value and ownership at time of match
         """
         data = await self._get(f"{FPL_BASE_URL}/element-summary/{player_id}/")
 
@@ -161,11 +230,50 @@ class FplApiClient:
         for h in data.get("history", []):
             history.append(
                 PlayerHistory(
+                    # Core identification
                     fixture_id=h["fixture"],
                     opponent_team=h["opponent_team"],
                     gameweek=h["round"],
-                    total_points=h["total_points"],
                     was_home=h["was_home"],
+                    kickoff_time=h.get("kickoff_time"),
+                    # Points breakdown
+                    minutes=_safe_int(h.get("minutes")),
+                    total_points=_safe_int(h.get("total_points")),
+                    bonus=_safe_int(h.get("bonus")),
+                    bps=_safe_int(h.get("bps")),
+                    # Attacking stats
+                    goals_scored=_safe_int(h.get("goals_scored")),
+                    assists=_safe_int(h.get("assists")),
+                    expected_goals=_safe_float(h.get("expected_goals")),
+                    expected_assists=_safe_float(h.get("expected_assists")),
+                    expected_goal_involvements=_safe_float(
+                        h.get("expected_goal_involvements")
+                    ),
+                    # Defensive stats
+                    clean_sheets=_safe_int(h.get("clean_sheets")),
+                    goals_conceded=_safe_int(h.get("goals_conceded")),
+                    own_goals=_safe_int(h.get("own_goals")),
+                    penalties_saved=_safe_int(h.get("penalties_saved")),
+                    penalties_missed=_safe_int(h.get("penalties_missed")),
+                    saves=_safe_int(h.get("saves")),
+                    expected_goals_conceded=_safe_float(
+                        h.get("expected_goals_conceded")
+                    ),
+                    # Cards
+                    yellow_cards=_safe_int(h.get("yellow_cards")),
+                    red_cards=_safe_int(h.get("red_cards")),
+                    # ICT Index
+                    influence=_safe_float(h.get("influence")),
+                    creativity=_safe_float(h.get("creativity")),
+                    threat=_safe_float(h.get("threat")),
+                    ict_index=_safe_float(h.get("ict_index")),
+                    # Value and ownership
+                    value=_safe_int(h.get("value")),
+                    selected=_safe_int(h.get("selected")),
+                    transfers_in=_safe_int(h.get("transfers_in")),
+                    transfers_out=_safe_int(h.get("transfers_out")),
+                    # Playing status
+                    starts=_safe_int(h.get("starts")),
                 )
             )
 

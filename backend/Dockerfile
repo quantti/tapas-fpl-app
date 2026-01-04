@@ -24,6 +24,9 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Copy application code
 COPY app/ ./app/
 
+# Copy scripts for data collection (run via fly ssh console)
+COPY scripts/ ./scripts/
+
 # Create non-root user for security
 RUN useradd --create-home appuser && chown -R appuser:appuser /app
 USER appuser

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 """
-Collect Points Against data from FPL API.
+Collect Points Against data and Player Fixture Stats from FPL API.
 
-This script fetches player history for all players and aggregates
-the points scored against each team per fixture.
+This script fetches player history for all players and:
+1. Aggregates points scored against each team per fixture (Points Against)
+2. Saves detailed per-player per-fixture stats (Player Fixture Stats)
 
 Usage:
     python -m scripts.collect_points_against           # Run collection
@@ -25,8 +26,11 @@ from dotenv import load_dotenv
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.services.fpl_client import FplApiClient
+from app.services.fpl_client import FplApiClient, PlayerHistory
 from app.services.points_against import PointsAgainstService
+
+# Configuration constants
+MAX_FAILURE_RATE = 0.10  # Abort collection if >10% of requests fail
 
 # Load environment
 load_dotenv(".env.local")
@@ -91,6 +95,125 @@ async def sync_teams(
     logger.info(f"Synced {len(teams)} teams")
 
 
+async def save_player_fixture_stats(
+    conn: asyncpg.Connection,
+    player_id: int,
+    player_team_id: int,
+    season_id: int,
+    history: list[PlayerHistory],
+) -> int:
+    """
+    Save a player's fixture stats to database using batch insert.
+
+    Returns the number of records saved.
+    """
+    if not history:
+        return 0
+
+    # Build parameter tuples for batch insert
+    params = [
+        (
+            h.fixture_id,
+            player_id,
+            season_id,
+            h.gameweek,
+            player_team_id,
+            h.opponent_team,
+            h.was_home,
+            h.kickoff_time,
+            h.minutes,
+            h.total_points,
+            h.bonus,
+            h.bps,
+            h.goals_scored,
+            h.assists,
+            h.expected_goals,
+            h.expected_assists,
+            h.expected_goal_involvements,
+            h.clean_sheets,
+            h.goals_conceded,
+            h.own_goals,
+            h.penalties_saved,
+            h.penalties_missed,
+            h.saves,
+            h.expected_goals_conceded,
+            h.yellow_cards,
+            h.red_cards,
+            h.influence,
+            h.creativity,
+            h.threat,
+            h.ict_index,
+            h.value,
+            h.selected,
+            h.transfers_in,
+            h.transfers_out,
+            h.starts,
+        )
+        for h in history
+    ]
+
+    await conn.executemany(
+        """
+        INSERT INTO player_fixture_stats (
+            fixture_id, player_id, season_id, gameweek,
+            player_team_id, opponent_team_id, was_home, kickoff_time,
+            minutes, total_points, bonus, bps,
+            goals_scored, assists, expected_goals, expected_assists,
+            expected_goal_involvements,
+            clean_sheets, goals_conceded, own_goals, penalties_saved,
+            penalties_missed, saves, expected_goals_conceded,
+            yellow_cards, red_cards,
+            influence, creativity, threat, ict_index,
+            value, selected, transfers_in, transfers_out,
+            starts
+        ) VALUES (
+            $1, $2, $3, $4,
+            $5, $6, $7, $8,
+            $9, $10, $11, $12,
+            $13, $14, $15, $16,
+            $17,
+            $18, $19, $20, $21,
+            $22, $23, $24,
+            $25, $26,
+            $27, $28, $29, $30,
+            $31, $32, $33, $34,
+            $35
+        )
+        ON CONFLICT (fixture_id, player_id, season_id) DO UPDATE SET
+            minutes = EXCLUDED.minutes,
+            total_points = EXCLUDED.total_points,
+            bonus = EXCLUDED.bonus,
+            bps = EXCLUDED.bps,
+            goals_scored = EXCLUDED.goals_scored,
+            assists = EXCLUDED.assists,
+            expected_goals = EXCLUDED.expected_goals,
+            expected_assists = EXCLUDED.expected_assists,
+            expected_goal_involvements = EXCLUDED.expected_goal_involvements,
+            clean_sheets = EXCLUDED.clean_sheets,
+            goals_conceded = EXCLUDED.goals_conceded,
+            own_goals = EXCLUDED.own_goals,
+            penalties_saved = EXCLUDED.penalties_saved,
+            penalties_missed = EXCLUDED.penalties_missed,
+            saves = EXCLUDED.saves,
+            expected_goals_conceded = EXCLUDED.expected_goals_conceded,
+            yellow_cards = EXCLUDED.yellow_cards,
+            red_cards = EXCLUDED.red_cards,
+            influence = EXCLUDED.influence,
+            creativity = EXCLUDED.creativity,
+            threat = EXCLUDED.threat,
+            ict_index = EXCLUDED.ict_index,
+            value = EXCLUDED.value,
+            selected = EXCLUDED.selected,
+            transfers_in = EXCLUDED.transfers_in,
+            transfers_out = EXCLUDED.transfers_out,
+            starts = EXCLUDED.starts
+        """,
+        params,
+    )
+
+    return len(history)
+
+
 async def collect_points_against(
     conn: asyncpg.Connection,
     fpl_client: FplApiClient,
@@ -140,6 +263,7 @@ async def collect_points_against(
 
         # Process players in batches
         total_processed = 0
+        player_stats_saved = 0
         errors = 0
 
         for i, player in enumerate(players):
@@ -149,6 +273,7 @@ async def collect_points_against(
             try:
                 history = await fpl_client.get_player_history(player_id)
 
+                # Aggregate for Points Against
                 for h in history:
                     # Points are scored AGAINST the opponent
                     key = (h.fixture_id, h.opponent_team)
@@ -162,6 +287,12 @@ async def collect_points_against(
                     fixture_points[key]["opponent_id"] = team_id
                     fixture_points[key]["gameweek"] = h.gameweek
                     fixture_points[key]["is_home"] = not h.was_home  # Opponent was away
+
+                # Save individual player fixture stats
+                stats_count = await save_player_fixture_stats(
+                    conn, player_id, team_id, season_id, history
+                )
+                player_stats_saved += stats_count
 
                 total_processed += 1
 
@@ -184,7 +315,7 @@ async def collect_points_against(
         # Check failure threshold for fetch phase
         if players:
             fetch_failure_rate = errors / len(players)
-            if fetch_failure_rate > 0.10:  # More than 10% failures
+            if fetch_failure_rate > MAX_FAILURE_RATE:
                 error_msg = f"Fetch aborted: {errors}/{len(players)} players failed ({fetch_failure_rate:.1%})"
                 logger.error(error_msg)
                 await pa_service.update_collection_status(
@@ -194,13 +325,12 @@ async def collect_points_against(
 
         logger.info(f"Collected data for {len(fixture_points)} fixture-team combinations")
 
-        # Save all fixture data
+        # Save all fixture data in a single transaction for atomicity
         logger.info("Saving to database...")
         saved = 0
 
-        save_errors = 0
-        for (fixture_id, team_id), data in fixture_points.items():
-            try:
+        async with conn.transaction():
+            for (fixture_id, team_id), data in fixture_points.items():
                 await pa_service.save_fixture_points(
                     conn,
                     fixture_id=fixture_id,
@@ -213,22 +343,8 @@ async def collect_points_against(
                     opponent_id=data["opponent_id"],
                 )
                 saved += 1
-            except Exception as e:
-                save_errors += 1
-                logger.warning(f"Failed to save fixture {fixture_id}: {e}")
 
         logger.info(f"Saved {saved} fixture records")
-
-        # Check failure threshold for save phase
-        if fixture_points:
-            save_failure_rate = save_errors / len(fixture_points)
-            if save_failure_rate > 0.10:  # More than 10% failures
-                error_msg = f"Save aborted: {save_errors}/{len(fixture_points)} fixtures failed ({save_failure_rate:.1%})"
-                logger.error(error_msg)
-                await pa_service.update_collection_status(
-                    conn, season_id, current_gw, total_processed, "failed", error_msg, False
-                )
-                raise RuntimeError(error_msg)
 
         # Update status to idle on success
         elapsed_total = time.monotonic() - start_time
@@ -244,7 +360,8 @@ async def collect_points_against(
 
         logger.info(
             f"Collection complete in {elapsed_total:.1f}s! "
-            f"Processed {total_processed} players, {errors} errors, {saved} fixtures saved"
+            f"Processed {total_processed} players, {errors} errors, "
+            f"{saved} fixtures saved, {player_stats_saved} player stats saved"
         )
 
     except Exception as e:
