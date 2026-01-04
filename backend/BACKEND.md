@@ -233,17 +233,29 @@ history = await client.get_player_history(player_id)  # Per-GW stats
 ### Secrets
 ```bash
 fly secrets list                   # View current secrets
-fly secrets set CORS_ORIGINS="https://tapas-and-tackles.live,https://www.tapas-and-tackles.live,http://localhost:5173"
-fly secrets set SUPABASE_URL="https://itmykooxrbrdbgqwsesb.supabase.co"
-fly secrets set SUPABASE_KEY="<publishable-key>"
+
+# Required: Database connection
+fly secrets set DATABASE_URL="postgresql://postgres:<PASSWORD>@db.itmykooxrbrdbgqwsesb.supabase.co:5432/postgres"
+
+# Required: CORS origins
+fly secrets set CORS_ORIGINS="https://tapas-and-tackles.live,https://www.tapas-and-tackles.live,http://localhost:5173,http://localhost:3000"
 ```
+
+**Where to find the password:**
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard/project/itmykooxrbrdbgqwsesb/settings/database)
+2. Project Settings → Database → Connection string → URI
+3. Copy the password from the connection string
 
 **CORS Note:** Include both `www` and non-www origins if your domain uses redirects.
 
-### Supabase Keys
-- **Publishable key** (`sb_publishable_...`): Safe for server-side use, respects RLS
-- **Secret key**: Admin access, bypasses RLS — use only for migrations/admin tasks
-- Keys available in Supabase Dashboard → Project Settings → API
+### Local Development with Supabase
+```bash
+# Set SUPABASE_PW in your shell session (get password from Supabase Dashboard)
+export SUPABASE_PW="<password-from-dashboard>"
+
+# Run migrations against Supabase
+DATABASE_URL="postgresql://postgres:$SUPABASE_PW@db.itmykooxrbrdbgqwsesb.supabase.co:5432/postgres" python -m scripts.migrate
+```
 
 ## Testing
 
