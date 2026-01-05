@@ -1,3 +1,26 @@
+# [0.20.0](https://github.com/quantti/tapas-fpl-app/compare/v0.19.0...v0.20.0) (2026-01-05)
+
+
+### Bug Fixes
+
+* **queries:** resolve query key collision between usePositionBreakdown and useHistoricalData
+
+
+### Refactor
+
+* **components:** create unified CardRow component with CSS Grid
+  - Consistent row styling across 6 cards (BenchPoints, CaptainSuccess, StatsCards, ChipsRemaining, FreeTransfers, GameweekDetails)
+  - Add color gradient for Free Transfers (1 FT gray → 5 FT gold)
+  - Add WCAG AA compliant `--color-gold` CSS variable
+  - Add chevron hover animation for clickable rows
+  - Remove deprecated RankedRow component
+
+
+### Chore
+
+* **analytics:** temporarily hide Points Against card (no data yet)
+
+
 # [0.19.0](https://github.com/quantti/tapas-fpl-app/compare/v0.18.1...v0.19.0) (2026-01-03)
 
 

@@ -12,6 +12,24 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: '0.20.0',
+    date: 'January 5, 2026',
+    items: [
+      {
+        title: 'Free Transfers Color Coding',
+        description:
+          'Free Transfers now show a color gradient from gray (1 FT) to gold (5 FT) to quickly identify who has banked transfers.',
+        type: 'feature',
+      },
+      {
+        title: 'Query Key Collision Fix',
+        description:
+          'Resolved query key collision between usePositionBreakdown and useHistoricalData.',
+        type: 'fix',
+      },
+    ],
+  },
+  {
     version: '0.19.0',
     date: 'January 4, 2026',
     items: [
