@@ -105,6 +105,14 @@ class PlayerHistory:
     starts: int  # 1 if started, 0 if sub
 
 
+@dataclass(slots=True)
+class ChipUsage:
+    """A chip used by a manager in a season."""
+
+    name: str  # "wildcard", "bboost", "3xc", "freehit"
+    event: int  # Gameweek number when used
+
+
 @dataclass
 class BootstrapData:
     """Core bootstrap data from FPL API."""
@@ -282,3 +290,29 @@ class FplApiClient:
     async def get_fixtures(self) -> list[dict[str, Any]]:
         """Fetch all fixtures for the current season."""
         return await self._get(f"{FPL_BASE_URL}/fixtures/")
+
+    async def get_entry_history(self, manager_id: int) -> list[ChipUsage]:
+        """
+        Fetch a manager's season history including chip usage.
+
+        The /entry/{id}/history endpoint returns:
+        - current: gameweek entries for current season
+        - past: summary of past seasons
+        - chips: list of chips used (name, time, event)
+
+        Args:
+            manager_id: FPL manager ID
+
+        Returns:
+            List of chips used this season
+        """
+        data = await self._get(f"{FPL_BASE_URL}/entry/{manager_id}/history/")
+
+        chips = []
+        for chip in data.get("chips", []):
+            name = chip.get("name", "")
+            event = _safe_int(chip.get("event"))
+            if name and event > 0:
+                chips.append(ChipUsage(name=name, event=event))
+
+        return chips

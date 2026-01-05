@@ -5,9 +5,14 @@ FPL 2025-26 Rules:
 - Chips: wildcard, bboost (bench boost), 3xc (triple captain), freehit
 """
 
+import asyncio
+import logging
 from dataclasses import dataclass, field
 
 from app.db import get_connection
+from app.services.fpl_client import FplApiClient
+
+logger = logging.getLogger(__name__)
 
 # =============================================================================
 # Constants
@@ -268,6 +273,103 @@ class ChipsService:
                 gameweek,
                 points_gained,
             )
+
+    async def sync_manager_chips(
+        self,
+        manager_id: int,
+        season_id: int,
+        fpl_client: FplApiClient,
+    ) -> int:
+        """Fetch chip usage from FPL API and save to database.
+
+        This is the on-demand sync method. It fetches the manager's chip history
+        from the FPL API and upserts into the database.
+
+        Args:
+            manager_id: FPL manager ID
+            season_id: Season ID (1 for 2024-25)
+            fpl_client: FPL API client instance (for rate limiting control)
+
+        Returns:
+            Number of chips synced
+        """
+        chips = await fpl_client.get_entry_history(manager_id)
+
+        synced_count = 0
+        for chip in chips:
+            # Normalize chip names (FPL API uses different casing sometimes)
+            chip_type = chip.name.lower()
+            if chip_type not in ALL_CHIPS:
+                logger.warning(
+                    f"Unknown chip type '{chip.name}' for manager {manager_id} "
+                    f"in gameweek {chip.event}. Skipping."
+                )
+                continue
+
+            await self.save_chip_usage(
+                manager_id=manager_id,
+                season_id=season_id,
+                gameweek=chip.event,
+                chip_type=chip_type,
+                points_gained=None,  # No points calculation per user request
+            )
+            synced_count += 1
+
+        return synced_count
+
+    async def sync_league_chips(
+        self,
+        league_id: int,
+        season_id: int,
+        fpl_client: FplApiClient,
+    ) -> int:
+        """Sync chip usage for all managers in a league.
+
+        Uses asyncio.gather for concurrent requests (FplApiClient handles rate limiting).
+        Continues syncing other managers if individual manager sync fails.
+
+        Args:
+            league_id: FPL league ID
+            season_id: Season ID
+            fpl_client: FPL API client instance
+
+        Returns:
+            Total number of chips synced across all managers
+        """
+        async with get_connection() as conn:
+            members = await conn.fetch(
+                """
+                SELECT manager_id FROM league_members
+                WHERE league_id = $1 AND season_id = $2
+                """,
+                league_id,
+                season_id,
+            )
+
+        if not members:
+            return 0
+
+        async def sync_one(manager_id: int) -> int:
+            """Sync single manager, return 0 on failure."""
+            try:
+                return await self.sync_manager_chips(manager_id, season_id, fpl_client)
+            except Exception as e:
+                logger.error(f"Failed to sync chips for manager {manager_id}: {e}")
+                return 0
+
+        # Concurrent sync (FplApiClient semaphore handles rate limiting)
+        tasks = [sync_one(m["manager_id"]) for m in members]
+        results = await asyncio.gather(*tasks)
+
+        total = sum(results)
+        failed_count = results.count(0)
+        if failed_count > 0:
+            logger.warning(
+                f"League {league_id} sync completed with {failed_count}/{len(members)} "
+                f"manager failures"
+            )
+
+        return total
 
     def _build_manager_chips(self, manager_id: int, rows: list) -> ManagerChips:
         """Build ManagerChips from database rows.

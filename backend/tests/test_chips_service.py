@@ -2,7 +2,6 @@
 
 from collections.abc import Callable
 from typing import TYPE_CHECKING, TypedDict
-from unittest.mock import patch
 
 import pytest
 
@@ -650,32 +649,252 @@ class TestChipsServiceSaveChipUsage:
 
 
 # =============================================================================
-# ChipsService.collect_manager_chips Tests
+# ChipsService.sync_manager_chips Tests
 # =============================================================================
 
 
-class TestChipsServiceCollectManagerChips:
-    """Tests for ChipsService.collect_manager_chips method (lazy collection)."""
+class TestChipsServiceSyncManagerChips:
+    """Tests for ChipsService.sync_manager_chips method (on-demand sync)."""
 
-    @pytest.mark.skip(reason="Collection requires FplApiClient.get_manager_history() - Phase 4")
-    async def test_fetches_from_fpl_api_and_saves(
+    async def test_syncs_chips_from_fpl_api(
         self, chips_service: "ChipsService", mock_db: MockDB
     ):
-        """Should fetch chips from FPL API and save to database."""
-        mock_fpl_response = {
-            "chips": [
-                {"name": "wildcard", "event": 5},
-                {"name": "bboost", "event": 15},
-            ]
-        }
+        """Should fetch chips from FPL API and save each to database."""
+        from unittest.mock import AsyncMock
 
-        with (
-            mock_db,
-            patch("app.services.chips.FPLClient") as mock_fpl_client,
-        ):
-            mock_fpl_client.return_value.get_manager_history.return_value = (
-                mock_fpl_response
+        from app.services.fpl_client import ChipUsage
+
+        mock_fpl_client = AsyncMock()
+        mock_fpl_client.get_entry_history.return_value = [
+            ChipUsage(name="wildcard", event=5),
+            ChipUsage(name="bboost", event=15),
+        ]
+
+        with mock_db:
+            count = await chips_service.sync_manager_chips(
+                manager_id=12345, season_id=1, fpl_client=mock_fpl_client
             )
-            await chips_service.collect_manager_chips(manager_id=12345, season_id=1)
 
+        assert count == 2
+        mock_fpl_client.get_entry_history.assert_called_once_with(12345)
+        # Should call execute twice, once for each chip
         assert mock_db.conn.execute.call_count == 2
+
+    async def test_returns_zero_when_no_chips_used(
+        self, chips_service: "ChipsService", mock_db: MockDB
+    ):
+        """Should return 0 when manager has not used any chips."""
+        from unittest.mock import AsyncMock
+
+        mock_fpl_client = AsyncMock()
+        mock_fpl_client.get_entry_history.return_value = []
+
+        with mock_db:
+            count = await chips_service.sync_manager_chips(
+                manager_id=12345, season_id=1, fpl_client=mock_fpl_client
+            )
+
+        assert count == 0
+        mock_db.conn.execute.assert_not_called()
+
+    async def test_normalizes_chip_names_to_lowercase(
+        self, chips_service: "ChipsService", mock_db: MockDB
+    ):
+        """Should normalize chip names to lowercase before saving."""
+        from unittest.mock import AsyncMock
+
+        from app.services.fpl_client import ChipUsage
+
+        mock_fpl_client = AsyncMock()
+        # FPL API sometimes returns mixed case
+        mock_fpl_client.get_entry_history.return_value = [
+            ChipUsage(name="Wildcard", event=5),
+        ]
+
+        with mock_db:
+            count = await chips_service.sync_manager_chips(
+                manager_id=12345, season_id=1, fpl_client=mock_fpl_client
+            )
+
+        assert count == 1
+        # Verify lowercase chip_type was saved
+        call_args = mock_db.conn.execute.call_args[0]
+        params = call_args[1:]
+        assert "wildcard" in params
+
+    async def test_skips_unknown_chip_types(
+        self, chips_service: "ChipsService", mock_db: MockDB
+    ):
+        """Should skip chips with unknown types (FPL API may add new chips)."""
+        from unittest.mock import AsyncMock
+
+        from app.services.fpl_client import ChipUsage
+
+        mock_fpl_client = AsyncMock()
+        mock_fpl_client.get_entry_history.return_value = [
+            ChipUsage(name="wildcard", event=5),
+            ChipUsage(name="unknown_new_chip", event=10),  # Unknown chip type
+        ]
+
+        with mock_db:
+            count = await chips_service.sync_manager_chips(
+                manager_id=12345, season_id=1, fpl_client=mock_fpl_client
+            )
+
+        # Returns count of chips actually saved (not total from API)
+        assert count == 1
+        # Only one execute call for the valid wildcard chip
+        assert mock_db.conn.execute.call_count == 1
+
+
+# =============================================================================
+# ChipsService.sync_league_chips Tests
+# =============================================================================
+
+
+class TestChipsServiceSyncLeagueChips:
+    """Tests for ChipsService.sync_league_chips method."""
+
+    async def test_syncs_chips_for_all_league_members(
+        self, chips_service: "ChipsService", mock_db: MockDB
+    ):
+        """Should sync chips for each manager in the league."""
+        from unittest.mock import AsyncMock
+
+        from app.services.fpl_client import ChipUsage
+
+        mock_league_members: list[LeagueMemberRow] = [
+            {"manager_id": 123, "player_name": "John"},
+            {"manager_id": 456, "player_name": "Jane"},
+        ]
+
+        mock_fpl_client = AsyncMock()
+        mock_fpl_client.get_entry_history.side_effect = [
+            [ChipUsage(name="wildcard", event=5)],  # John's chips
+            [ChipUsage(name="bboost", event=8)],  # Jane's chips
+        ]
+
+        # First call returns members, subsequent calls for chip saves
+        mock_db.conn.fetch.return_value = mock_league_members
+
+        with mock_db:
+            total = await chips_service.sync_league_chips(
+                league_id=98765, season_id=1, fpl_client=mock_fpl_client
+            )
+
+        assert total == 2  # 1 chip per manager
+        assert mock_fpl_client.get_entry_history.call_count == 2
+        # Verify both managers were queried
+        mock_fpl_client.get_entry_history.assert_any_call(123)
+        mock_fpl_client.get_entry_history.assert_any_call(456)
+
+    async def test_returns_zero_for_empty_league(
+        self, chips_service: "ChipsService", mock_db: MockDB
+    ):
+        """Should return 0 when league has no members."""
+        from unittest.mock import AsyncMock
+
+        mock_fpl_client = AsyncMock()
+        mock_db.conn.fetch.return_value = []  # No league members
+
+        with mock_db:
+            total = await chips_service.sync_league_chips(
+                league_id=98765, season_id=1, fpl_client=mock_fpl_client
+            )
+
+        assert total == 0
+        mock_fpl_client.get_entry_history.assert_not_called()
+
+    async def test_continues_sync_when_one_manager_fails(
+        self, chips_service: "ChipsService", mock_db: MockDB
+    ):
+        """Should continue syncing other managers when one fails."""
+        from unittest.mock import AsyncMock
+
+        from app.services.fpl_client import ChipUsage
+
+        mock_league_members: list[LeagueMemberRow] = [
+            {"manager_id": 123, "player_name": "John"},
+            {"manager_id": 456, "player_name": "Jane"},
+            {"manager_id": 789, "player_name": "Bob"},
+        ]
+
+        mock_fpl_client = AsyncMock()
+        mock_fpl_client.get_entry_history.side_effect = [
+            [ChipUsage(name="wildcard", event=5)],  # John - success
+            Exception("FPL API error"),  # Jane - fails
+            [ChipUsage(name="bboost", event=8)],  # Bob - success
+        ]
+
+        mock_db.conn.fetch.return_value = mock_league_members
+
+        with mock_db:
+            total = await chips_service.sync_league_chips(
+                league_id=98765, season_id=1, fpl_client=mock_fpl_client
+            )
+
+        # Should still sync 2 chips (John + Bob), skipping Jane's failure
+        assert total == 2
+        assert mock_fpl_client.get_entry_history.call_count == 3
+
+
+# =============================================================================
+# Error Propagation Tests for sync methods
+# =============================================================================
+
+
+class TestChipsServiceSyncErrorPropagation:
+    """Tests for error handling in sync methods."""
+
+    async def test_sync_manager_propagates_fpl_api_error(
+        self, chips_service: "ChipsService", mock_db: MockDB
+    ):
+        """Should propagate FPL API errors to caller."""
+        from unittest.mock import AsyncMock
+
+        import pytest
+
+        mock_fpl_client = AsyncMock()
+        mock_fpl_client.get_entry_history.side_effect = Exception("FPL API timeout")
+
+        with mock_db, pytest.raises(Exception, match="FPL API timeout"):
+            await chips_service.sync_manager_chips(
+                manager_id=12345, season_id=1, fpl_client=mock_fpl_client
+            )
+
+    async def test_sync_manager_propagates_database_error(
+        self, chips_service: "ChipsService", mock_db: MockDB
+    ):
+        """Should propagate database errors during chip save."""
+        from unittest.mock import AsyncMock
+
+        import pytest
+
+        from app.services.fpl_client import ChipUsage
+
+        mock_fpl_client = AsyncMock()
+        mock_fpl_client.get_entry_history.return_value = [
+            ChipUsage(name="wildcard", event=5)
+        ]
+        mock_db.conn.execute.side_effect = Exception("Database connection lost")
+
+        with mock_db, pytest.raises(Exception, match="Database connection lost"):
+            await chips_service.sync_manager_chips(
+                manager_id=12345, season_id=1, fpl_client=mock_fpl_client
+            )
+
+    async def test_sync_league_propagates_db_fetch_error(
+        self, chips_service: "ChipsService", mock_db: MockDB
+    ):
+        """Should propagate database error when fetching league members."""
+        from unittest.mock import AsyncMock
+
+        import pytest
+
+        mock_fpl_client = AsyncMock()
+        mock_db.conn.fetch.side_effect = Exception("Connection timeout")
+
+        with mock_db, pytest.raises(Exception, match="Connection timeout"):
+            await chips_service.sync_league_chips(
+                league_id=98765, season_id=1, fpl_client=mock_fpl_client
+            )

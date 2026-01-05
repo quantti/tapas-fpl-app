@@ -5,10 +5,12 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+import httpx
 from fastapi import APIRouter, HTTPException, Query
 
 from app.db import get_pool
 from app.services.chips import ChipsService
+from app.services.fpl_client import FplApiClient
 from app.services.points_against import PointsAgainstService
 
 logger = logging.getLogger(__name__)
@@ -260,12 +262,17 @@ async def get_league_chips(
     season_id: int = Query(
         default=1, ge=1, le=100, description="Season ID (default: 1 for 2024-25)"
     ),
+    sync: bool = Query(
+        default=False, description="Sync chip data from FPL API before returning"
+    ),
 ) -> dict:
     """
     Get chip usage for all managers in a league.
 
     Shows which chips have been used and which are remaining for each half of the season.
     Chips reset at GW20 for the second half.
+
+    Set sync=true to fetch latest chip data from FPL API (slower but fresh data).
     """
     # Validate league_id (must be positive)
     if league_id < 1:
@@ -275,6 +282,27 @@ async def get_league_chips(
 
     try:
         service = ChipsService()
+
+        # On-demand sync: fetch from FPL API if requested
+        if sync:
+            try:
+                async with FplApiClient() as fpl_client:
+                    await service.sync_league_chips(league_id, season_id, fpl_client)
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 429:
+                    raise HTTPException(
+                        status_code=429, detail="FPL API rate limited. Please try again later."
+                    ) from e
+                if e.response.status_code >= 500:
+                    raise HTTPException(
+                        status_code=502, detail="FPL API is currently unavailable."
+                    ) from e
+                raise
+            except httpx.TimeoutException as e:
+                raise HTTPException(
+                    status_code=504, detail="FPL API request timed out. Please try again."
+                ) from e
+
         result = await service.get_league_chips(league_id, season_id, current_gameweek)
 
         return {
@@ -314,6 +342,8 @@ async def get_league_chips(
         }
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
+    except HTTPException:
+        raise  # Re-raise HTTPExceptions (from FPL error handling above)
     except Exception as e:
         logger.exception(f"Failed to get league chips: {e}")
         raise HTTPException(
@@ -327,12 +357,17 @@ async def get_manager_chips(
     season_id: int = Query(
         default=1, ge=1, le=100, description="Season ID (default: 1 for 2024-25)"
     ),
+    sync: bool = Query(
+        default=False, description="Sync chip data from FPL API before returning"
+    ),
 ) -> dict:
     """
     Get chip usage for a single manager.
 
     Shows which chips have been used and which are remaining for each half of the season.
     Chips reset at GW20 for the second half.
+
+    Set sync=true to fetch latest chip data from FPL API (slower but fresh data).
     """
     # Validate manager_id (must be positive)
     if manager_id < 1:
@@ -342,6 +377,27 @@ async def get_manager_chips(
 
     try:
         service = ChipsService()
+
+        # On-demand sync: fetch from FPL API if requested
+        if sync:
+            try:
+                async with FplApiClient() as fpl_client:
+                    await service.sync_manager_chips(manager_id, season_id, fpl_client)
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 429:
+                    raise HTTPException(
+                        status_code=429, detail="FPL API rate limited. Please try again later."
+                    ) from e
+                if e.response.status_code >= 500:
+                    raise HTTPException(
+                        status_code=502, detail="FPL API is currently unavailable."
+                    ) from e
+                raise
+            except httpx.TimeoutException as e:
+                raise HTTPException(
+                    status_code=504, detail="FPL API request timed out. Please try again."
+                ) from e
+
         result = await service.get_manager_chips(manager_id, season_id)
 
         return {
@@ -370,6 +426,8 @@ async def get_manager_chips(
                 "chips_remaining": result.second_half.chips_remaining,
             },
         }
+    except HTTPException:
+        raise  # Re-raise HTTPExceptions (from FPL error handling above)
     except Exception as e:
         logger.exception(f"Failed to get manager chips: {e}")
         raise HTTPException(

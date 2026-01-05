@@ -8,6 +8,7 @@ from tenacity import RetryError
 
 from app.services.fpl_client import (
     BootstrapData,
+    ChipUsage,
     FplApiClient,
     PlayerHistory,
 )
@@ -159,6 +160,130 @@ class TestFplClientFixtures:
 
         assert len(result) == 2
         assert result[0]["id"] == 1
+
+
+class TestFplClientEntryHistory:
+    """Tests for entry history endpoint (manager chip usage)."""
+
+    @respx.mock
+    async def test_get_entry_history_returns_chips(self, fpl_client: FplApiClient):
+        """Should parse chip usage from manager history."""
+        respx.get("https://fantasy.premierleague.com/api/entry/12345/history/").mock(
+            return_value=Response(
+                200,
+                json={
+                    "current": [],  # Gameweek history - not used
+                    "past": [],  # Past seasons - not used
+                    "chips": [
+                        {"name": "wildcard", "time": "2024-09-15T12:00:00Z", "event": 5},
+                        {"name": "bboost", "time": "2024-10-20T15:00:00Z", "event": 8},
+                    ],
+                },
+            )
+        )
+
+        result = await fpl_client.get_entry_history(12345)
+        await fpl_client.close()
+
+        assert len(result) == 2
+        assert isinstance(result[0], ChipUsage)
+        assert result[0].name == "wildcard"
+        assert result[0].event == 5
+        assert result[1].name == "bboost"
+        assert result[1].event == 8
+
+    @respx.mock
+    async def test_get_entry_history_empty_chips(self, fpl_client: FplApiClient):
+        """Should return empty list when no chips used."""
+        respx.get("https://fantasy.premierleague.com/api/entry/12345/history/").mock(
+            return_value=Response(
+                200,
+                json={
+                    "current": [],
+                    "past": [],
+                    "chips": [],
+                },
+            )
+        )
+
+        result = await fpl_client.get_entry_history(12345)
+        await fpl_client.close()
+
+        assert result == []
+
+    @respx.mock
+    async def test_get_entry_history_filters_invalid_chips(
+        self, fpl_client: FplApiClient
+    ):
+        """Should filter out chips with missing name or event."""
+        respx.get("https://fantasy.premierleague.com/api/entry/12345/history/").mock(
+            return_value=Response(
+                200,
+                json={
+                    "current": [],
+                    "past": [],
+                    "chips": [
+                        {"name": "wildcard", "time": "2024-09-15T12:00:00Z", "event": 5},
+                        {"name": "", "time": "2024-10-20T15:00:00Z", "event": 8},  # Empty
+                        {"name": "bboost", "time": "2024-10-25T15:00:00Z", "event": 0},  # Bad
+                        {"time": "2024-11-01T15:00:00Z", "event": 10},  # No name
+                    ],
+                },
+            )
+        )
+
+        result = await fpl_client.get_entry_history(12345)
+        await fpl_client.close()
+
+        # Only the valid wildcard chip should be returned
+        assert len(result) == 1
+        assert result[0].name == "wildcard"
+
+    @respx.mock
+    async def test_get_entry_history_retries_on_503(self, fpl_client: FplApiClient):
+        """Should retry on 503 Service Unavailable."""
+        route = respx.get("https://fantasy.premierleague.com/api/entry/12345/history/")
+        route.side_effect = [
+            Response(503),
+            Response(
+                200,
+                json={"current": [], "past": [], "chips": [{"name": "wildcard", "event": 5}]},
+            ),
+        ]
+
+        result = await fpl_client.get_entry_history(12345)
+        await fpl_client.close()
+
+        assert route.call_count == 2
+        assert len(result) == 1
+
+    @respx.mock
+    async def test_get_entry_history_does_not_retry_on_404(self, fpl_client: FplApiClient):
+        """Should NOT retry on 404 Not Found (manager doesn't exist)."""
+        route = respx.get("https://fantasy.premierleague.com/api/entry/99999999/history/")
+        route.mock(return_value=Response(404))
+
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            await fpl_client.get_entry_history(99999999)
+
+        await fpl_client.close()
+        assert route.call_count == 1  # No retries
+        assert exc_info.value.response.status_code == 404
+
+    @respx.mock
+    async def test_get_entry_history_handles_missing_chips_key(self, fpl_client: FplApiClient):
+        """Should return empty list when chips key missing from response."""
+        respx.get("https://fantasy.premierleague.com/api/entry/12345/history/").mock(
+            return_value=Response(
+                200,
+                json={"current": [], "past": []},  # No chips key
+            )
+        )
+
+        result = await fpl_client.get_entry_history(12345)
+        await fpl_client.close()
+
+        assert result == []
 
 
 class TestFplClientRetry:

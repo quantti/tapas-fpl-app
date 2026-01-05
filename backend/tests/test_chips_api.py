@@ -78,6 +78,24 @@ class TestChipsLeagueEndpoint:
         # Will return 503 (no DB), but validates the param is accepted
         assert response.status_code == 503
 
+    async def test_league_chips_accepts_sync_param(self, async_client: AsyncClient):
+        """League chips should accept optional sync parameter."""
+        response = await async_client.get(
+            "/api/v1/chips/league/12345?current_gameweek=15&sync=true"
+        )
+
+        # Will return 503 (no DB), but validates the param is accepted
+        assert response.status_code == 503
+
+    async def test_league_chips_sync_default_is_false(self, async_client: AsyncClient):
+        """Sync parameter should default to false (no sync by default)."""
+        response = await async_client.get(
+            "/api/v1/chips/league/12345?current_gameweek=15"
+        )
+
+        # Will return 503 (no DB), validates endpoint works without sync param
+        assert response.status_code == 503
+
     @pytest.mark.parametrize(
         "invalid_season_id",
         [0, -1, -100],
@@ -150,6 +168,13 @@ class TestChipsManagerEndpoint:
     async def test_manager_chips_accepts_season_id_param(self, async_client: AsyncClient):
         """Manager chips should accept optional season_id parameter."""
         response = await async_client.get("/api/v1/chips/manager/12345?season_id=1")
+
+        # Will return 503 (no DB), but validates the param is accepted
+        assert response.status_code == 503
+
+    async def test_manager_chips_accepts_sync_param(self, async_client: AsyncClient):
+        """Manager chips should accept optional sync parameter."""
+        response = await async_client.get("/api/v1/chips/manager/12345?sync=true")
 
         # Will return 503 (no DB), but validates the param is accepted
         assert response.status_code == 503
