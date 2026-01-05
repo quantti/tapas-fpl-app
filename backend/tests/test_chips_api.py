@@ -9,7 +9,7 @@ class TestChipsLeagueEndpoint:
 
     async def test_league_chips_returns_503_without_db(self, async_client: AsyncClient):
         """League chips should return 503 when database unavailable."""
-        response = await async_client.get("/api/v1/chips/league/12345")
+        response = await async_client.get("/api/v1/chips/league/12345?current_gameweek=15")
 
         # Expect 503 since test fixture doesn't initialize DB pool
         assert response.status_code == 503
@@ -24,7 +24,9 @@ class TestChipsLeagueEndpoint:
         self, async_client: AsyncClient, invalid_league_id: int
     ):
         """League chips should reject invalid league_id values."""
-        response = await async_client.get(f"/api/v1/chips/league/{invalid_league_id}")
+        response = await async_client.get(
+            f"/api/v1/chips/league/{invalid_league_id}?current_gameweek=15"
+        )
 
         assert response.status_code == 422  # FastAPI validation error
 
@@ -32,13 +34,46 @@ class TestChipsLeagueEndpoint:
         self, async_client: AsyncClient
     ):
         """League chips should return 422 for non-integer league_id."""
-        response = await async_client.get("/api/v1/chips/league/abc")
+        response = await async_client.get("/api/v1/chips/league/abc?current_gameweek=15")
 
         assert response.status_code == 422  # FastAPI validation error
 
+    @pytest.mark.parametrize(
+        "invalid_gw",
+        [0, -1, 39, 100],
+        ids=["zero", "negative", "gw39", "gw100"],
+    )
+    async def test_league_chips_validates_invalid_current_gameweek(
+        self, async_client: AsyncClient, invalid_gw: int
+    ):
+        """League chips should reject invalid current_gameweek values."""
+        response = await async_client.get(
+            f"/api/v1/chips/league/12345?current_gameweek={invalid_gw}"
+        )
+
+        assert response.status_code == 422  # FastAPI validation error
+
+    async def test_league_chips_validates_non_integer_current_gameweek(
+        self, async_client: AsyncClient
+    ):
+        """League chips should return 422 for non-integer current_gameweek."""
+        response = await async_client.get("/api/v1/chips/league/12345?current_gameweek=abc")
+
+        assert response.status_code == 422  # FastAPI validation error
+
+    async def test_league_chips_validates_missing_current_gameweek(
+        self, async_client: AsyncClient
+    ):
+        """League chips should return 422 when current_gameweek is missing."""
+        response = await async_client.get("/api/v1/chips/league/12345")
+
+        assert response.status_code == 422  # Required parameter missing
+
     async def test_league_chips_accepts_season_id_param(self, async_client: AsyncClient):
         """League chips should accept optional season_id parameter."""
-        response = await async_client.get("/api/v1/chips/league/12345?season_id=1")
+        response = await async_client.get(
+            "/api/v1/chips/league/12345?current_gameweek=15&season_id=1"
+        )
 
         # Will return 503 (no DB), but validates the param is accepted
         assert response.status_code == 503
@@ -53,7 +88,7 @@ class TestChipsLeagueEndpoint:
     ):
         """League chips should reject invalid season_id values."""
         response = await async_client.get(
-            f"/api/v1/chips/league/12345?season_id={invalid_season_id}"
+            f"/api/v1/chips/league/12345?current_gameweek=15&season_id={invalid_season_id}"
         )
 
         assert response.status_code == 422  # FastAPI validation error
@@ -62,7 +97,9 @@ class TestChipsLeagueEndpoint:
         self, async_client: AsyncClient
     ):
         """League chips should return 422 for non-integer season_id query param."""
-        response = await async_client.get("/api/v1/chips/league/12345?season_id=abc")
+        response = await async_client.get(
+            "/api/v1/chips/league/12345?current_gameweek=15&season_id=abc"
+        )
 
         assert response.status_code == 422  # FastAPI validation error
 
@@ -71,7 +108,9 @@ class TestChipsLeagueEndpoint:
     ):
         """Should handle very large league_id without crashing (overflow protection)."""
         # FPL league IDs are typically 32-bit integers
-        response = await async_client.get("/api/v1/chips/league/9999999999999")
+        response = await async_client.get(
+            "/api/v1/chips/league/9999999999999?current_gameweek=15"
+        )
 
         # Either 422 (if validation catches it) or 503 (DB unavailable)
         assert response.status_code in [422, 503]
@@ -191,10 +230,9 @@ class TestChipsResponseFormat:
         assert response.status_code == 200
         data = response.json()
 
-        # Top-level fields
+        # Top-level fields (note: no current_half - manager endpoint doesn't take current_gameweek)
         assert "manager_id" in data
         assert "season_id" in data
-        assert "current_half" in data
         assert "first_half" in data
         assert "second_half" in data
 

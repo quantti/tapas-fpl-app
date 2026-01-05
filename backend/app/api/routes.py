@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 
 from app.db import get_pool
+from app.services.chips import ChipsService
 from app.services.points_against import PointsAgainstService
 
 logger = logging.getLogger(__name__)
@@ -90,7 +91,9 @@ def _check_db_available() -> None:
 
 @router.get("/api/v1/points-against")
 async def get_points_against(
-    season_id: int = Query(default=1, ge=1, le=100, description="Season ID (default: 1 for 2024-25)")
+    season_id: int = Query(
+        default=1, ge=1, le=100, description="Season ID (default: 1 for 2024-25)"
+    ),
 ) -> dict:
     """
     Get points conceded by all teams for the season.
@@ -143,7 +146,9 @@ async def get_points_against(
 @router.get("/api/v1/points-against/{team_id}/history")
 async def get_team_points_against_history(
     team_id: int,
-    season_id: int = Query(default=1, ge=1, le=100, description="Season ID (default: 1 for 2024-25)"),
+    season_id: int = Query(
+        default=1, ge=1, le=100, description="Season ID (default: 1 for 2024-25)"
+    ),
 ) -> dict:
     """
     Get fixture-by-fixture points conceded by a specific team.
@@ -238,4 +243,135 @@ async def get_points_against_status() -> dict:
         logger.exception(f"Failed to get collection status: {e}")
         raise HTTPException(
             status_code=500, detail="Internal server error while fetching collection status"
+        ) from e
+
+
+# =============================================================================
+# Chips Remaining Endpoints
+# =============================================================================
+
+
+@router.get("/api/v1/chips/league/{league_id}")
+async def get_league_chips(
+    league_id: int,
+    current_gameweek: int = Query(
+        ..., ge=1, le=38, description="Current gameweek (1-38)"
+    ),
+    season_id: int = Query(
+        default=1, ge=1, le=100, description="Season ID (default: 1 for 2024-25)"
+    ),
+) -> dict:
+    """
+    Get chip usage for all managers in a league.
+
+    Shows which chips have been used and which are remaining for each half of the season.
+    Chips reset at GW20 for the second half.
+    """
+    # Validate league_id (must be positive)
+    if league_id < 1:
+        raise HTTPException(status_code=422, detail="league_id must be >= 1")
+
+    _check_db_available()
+
+    try:
+        service = ChipsService()
+        result = await service.get_league_chips(league_id, season_id, current_gameweek)
+
+        return {
+            "league_id": result.league_id,
+            "season_id": result.season_id,
+            "current_gameweek": result.current_gameweek,
+            "current_half": result.current_half,
+            "managers": [
+                {
+                    "manager_id": m.manager_id,
+                    "name": m.name,
+                    "first_half": {
+                        "chips_used": [
+                            {
+                                "chip_type": c.chip_type,
+                                "gameweek": c.gameweek,
+                                "points_gained": c.points_gained,
+                            }
+                            for c in m.first_half.chips_used
+                        ],
+                        "chips_remaining": m.first_half.chips_remaining,
+                    },
+                    "second_half": {
+                        "chips_used": [
+                            {
+                                "chip_type": c.chip_type,
+                                "gameweek": c.gameweek,
+                                "points_gained": c.points_gained,
+                            }
+                            for c in m.second_half.chips_used
+                        ],
+                        "chips_remaining": m.second_half.chips_remaining,
+                    },
+                }
+                for m in result.managers
+            ],
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except Exception as e:
+        logger.exception(f"Failed to get league chips: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error while fetching league chips"
+        ) from e
+
+
+@router.get("/api/v1/chips/manager/{manager_id}")
+async def get_manager_chips(
+    manager_id: int,
+    season_id: int = Query(
+        default=1, ge=1, le=100, description="Season ID (default: 1 for 2024-25)"
+    ),
+) -> dict:
+    """
+    Get chip usage for a single manager.
+
+    Shows which chips have been used and which are remaining for each half of the season.
+    Chips reset at GW20 for the second half.
+    """
+    # Validate manager_id (must be positive)
+    if manager_id < 1:
+        raise HTTPException(status_code=422, detail="manager_id must be >= 1")
+
+    _check_db_available()
+
+    try:
+        service = ChipsService()
+        result = await service.get_manager_chips(manager_id, season_id)
+
+        return {
+            "manager_id": result.manager_id,
+            "season_id": season_id,
+            "first_half": {
+                "chips_used": [
+                    {
+                        "chip_type": c.chip_type,
+                        "gameweek": c.gameweek,
+                        "points_gained": c.points_gained,
+                    }
+                    for c in result.first_half.chips_used
+                ],
+                "chips_remaining": result.first_half.chips_remaining,
+            },
+            "second_half": {
+                "chips_used": [
+                    {
+                        "chip_type": c.chip_type,
+                        "gameweek": c.gameweek,
+                        "points_gained": c.points_gained,
+                    }
+                    for c in result.second_half.chips_used
+                ],
+                "chips_remaining": result.second_half.chips_remaining,
+            },
+        }
+    except Exception as e:
+        logger.exception(f"Failed to get manager chips: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error while fetching manager chips"
         ) from e
