@@ -1,3 +1,17 @@
+# [0.21.0](https://github.com/quantti/tapas-fpl-app/compare/v0.20.0...v0.21.0) (2026-01-05)
+
+
+### Bug Fixes
+
+* **backend:** update chip_usage migration to replace old table ([de57db2](https://github.com/quantti/tapas-fpl-app/commit/de57db26cd60cead0a798579dfc15c741821eefd))
+
+
+### Features
+
+* **backend:** add chip_usage schema for Chips Remaining feature ([4ea368e](https://github.com/quantti/tapas-fpl-app/commit/4ea368e326be1b9b988a281e6241ba7288a6c397))
+* **backend:** add on-demand chip sync from FPL API ([5febb86](https://github.com/quantti/tapas-fpl-app/commit/5febb864e9e3af888a224271f396380d1266759e))
+* **backend:** implement chips remaining service and API endpoints ([4c25117](https://github.com/quantti/tapas-fpl-app/commit/4c2511766fc9740c3bbf658b80b8fd264f21396d))
+
 # [0.20.0](https://github.com/quantti/tapas-fpl-app/compare/v0.19.0...v0.20.0) (2026-01-05)
 
 
