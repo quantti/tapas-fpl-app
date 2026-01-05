@@ -27,6 +27,9 @@ COPY app/ ./app/
 # Copy scripts for data collection (run via fly ssh console)
 COPY scripts/ ./scripts/
 
+# Copy migrations for database migrations
+COPY migrations/ ./migrations/
+
 # Create non-root user for security
 RUN useradd --create-home appuser && chown -R appuser:appuser /app
 USER appuser

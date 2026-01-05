@@ -159,12 +159,12 @@ This enables position-based breakdowns, form analysis, and recommendations integ
 **Key design decision**: Use `fixture_id` as primary key to correctly handle Double Gameweeks (DGWs) where a team plays twice in one gameweek.
 
 ```sql
--- Migration: 003_points_against.sql
+-- Migration: 004_points_against.sql
 
 CREATE TABLE points_against_by_fixture (
   fixture_id INTEGER PRIMARY KEY,           -- FPL fixture ID (unique per match)
   team_id INTEGER NOT NULL,                 -- Team being scored against
-  season_id TEXT NOT NULL,                  -- e.g., "2024-25"
+  season_id INTEGER NOT NULL REFERENCES season(id),  -- FK to season table
   gameweek INTEGER NOT NULL,
   home_points INTEGER NOT NULL DEFAULT 0,   -- Points conceded at home
   away_points INTEGER NOT NULL DEFAULT 0,   -- Points conceded away
@@ -183,29 +183,38 @@ CREATE INDEX idx_pa_team_gw
   ON points_against_by_fixture(team_id, season_id, gameweek);
 ```
 
-### Table: `teams`
+### Table: `team` (exists in 001_core_tables.sql)
 
-Reference table for team names (avoids fetching bootstrap-static on every request).
+Reference table for team names - **already exists**, no need to create.
 
 ```sql
-CREATE TABLE teams (
-  id INTEGER PRIMARY KEY,                   -- FPL team ID (1-20)
-  season_id TEXT NOT NULL,
-  name TEXT NOT NULL,                       -- "Arsenal"
-  short_name TEXT NOT NULL,                 -- "ARS"
-  badge_url TEXT,
-  UNIQUE(id, season_id)
+-- From 001_core_tables.sql (DO NOT recreate)
+CREATE TABLE team (
+  id INTEGER NOT NULL,                      -- FPL team ID (1-20)
+  season_id INTEGER NOT NULL REFERENCES season(id),
+  code INTEGER NOT NULL,                    -- FPL team code
+  name VARCHAR(100) NOT NULL,
+  short_name VARCHAR(3) NOT NULL,           -- 'ARS', 'CHE', etc.
+  strength INTEGER,
+  strength_overall_home INTEGER,
+  strength_overall_away INTEGER,
+  strength_attack_home INTEGER,
+  strength_attack_away INTEGER,
+  strength_defence_home INTEGER,
+  strength_defence_away INTEGER,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (id, season_id)
 );
 ```
 
-### Table: `collection_status`
+### Table: `points_against_collection_status`
 
 Track collection progress and last update time.
 
 ```sql
-CREATE TABLE collection_status (
+CREATE TABLE points_against_collection_status (
   id TEXT PRIMARY KEY DEFAULT 'points_against',
-  season_id TEXT NOT NULL,
+  season_id INTEGER NOT NULL REFERENCES season(id),
   latest_gameweek INTEGER NOT NULL,
   total_players_processed INTEGER NOT NULL,
   last_full_collection TIMESTAMPTZ,
@@ -224,26 +233,35 @@ Storing per-fixture (not per-gameweek) correctly handles:
 
 Query examples:
 ```sql
--- Season totals
-SELECT team_id, SUM(home_points + away_points) as total
-FROM points_against_by_fixture
-WHERE season_id = '2024-25'
-GROUP BY team_id
+-- Season totals (using the pre-built view)
+SELECT * FROM points_against_season_totals
+WHERE season_code = '2025-26'
+ORDER BY total_points DESC;
+
+-- Or with direct query (season_id is an INTEGER FK)
+SELECT paf.team_id, SUM(paf.home_points + paf.away_points) as total
+FROM points_against_by_fixture paf
+JOIN season s ON s.id = paf.season_id
+WHERE s.code = '2025-26'
+GROUP BY paf.team_id
 ORDER BY total DESC;
 
 -- Home vs Away split
-SELECT team_id,
-       SUM(CASE WHEN is_home THEN home_points + away_points ELSE 0 END) as home_pa,
-       SUM(CASE WHEN NOT is_home THEN home_points + away_points ELSE 0 END) as away_pa
-FROM points_against_by_fixture
-WHERE season_id = '2024-25'
-GROUP BY team_id;
+SELECT paf.team_id,
+       SUM(CASE WHEN paf.is_home THEN paf.home_points + paf.away_points ELSE 0 END) as home_pa,
+       SUM(CASE WHEN NOT paf.is_home THEN paf.home_points + paf.away_points ELSE 0 END) as away_pa
+FROM points_against_by_fixture paf
+JOIN season s ON s.id = paf.season_id
+WHERE s.code = '2025-26'
+GROUP BY paf.team_id;
 
 -- Last 5 gameweeks form
-SELECT team_id, SUM(home_points + away_points) as recent_pa
-FROM points_against_by_fixture
-WHERE season_id = '2024-25' AND gameweek >= (SELECT MAX(gameweek) - 4 FROM points_against_by_fixture)
-GROUP BY team_id;
+SELECT paf.team_id, SUM(paf.home_points + paf.away_points) as recent_pa
+FROM points_against_by_fixture paf
+JOIN season s ON s.id = paf.season_id
+WHERE s.code = '2025-26'
+  AND paf.gameweek >= (SELECT MAX(gameweek) - 4 FROM points_against_by_fixture)
+GROUP BY paf.team_id;
 ```
 
 ---
@@ -259,7 +277,7 @@ GROUP BY team_id;
 **Response:**
 ```json
 {
-  "season_id": "2024-25",
+  "season_id": "2025-26",
   "as_of_gameweek": 20,
   "updated_at": "2025-01-03T10:00:00Z",
   "teams": [
@@ -301,7 +319,7 @@ Per-gameweek breakdown for a specific team (for charts/trends).
 {
   "team_id": 20,
   "team_name": "Wolverhampton Wanderers",
-  "season_id": "2024-25",
+  "season_id": "2025-26",
   "history": [
     { "gameweek": 1, "opponent": "Arsenal", "is_home": false, "points": 45 },
     { "gameweek": 2, "opponent": "Chelsea", "is_home": true, "points": 52 },
@@ -330,7 +348,7 @@ Monitor data collection status.
 
 ```
 POST /admin/points-against/collect
-  Body: { "mode": "full" | "incremental", "season_id": "2024-25" }
+  Body: { "mode": "full" | "incremental", "season_id": "2025-26" }
 
 POST /admin/points-against/refresh
   Body: { "gameweek": 15 }  # Re-process specific GW
@@ -392,13 +410,17 @@ async def collect_points_against(db, season_id: str, mode: str = "full"):
     current_gw = next(e["id"] for e in bootstrap["events"] if e["is_current"])
 
     # Store team names
+    # Get season ID from the season table
+    season_row = await db.fetchrow("SELECT id FROM season WHERE code = $1", season_id)
+    season_db_id = season_row["id"]
+
     for team in bootstrap["teams"]:
         await db.execute("""
-            INSERT INTO teams (id, season_id, name, short_name)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO team (id, season_id, code, name, short_name)
+            VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (id, season_id) DO UPDATE SET
                 name = EXCLUDED.name, short_name = EXCLUDED.short_name
-        """, team["id"], season_id, team["name"], team["short_name"])
+        """, team["id"], season_db_id, team["code"], team["name"], team["short_name"])
 
     # 2. Get player list
     if mode == "full":
@@ -514,7 +536,7 @@ jobs:
           curl -X POST "${{ secrets.BACKEND_URL }}/admin/points-against/collect" \
             -H "Authorization: Bearer ${{ secrets.ADMIN_API_KEY }}" \
             -H "Content-Type: application/json" \
-            -d '{"mode": "${{ inputs.mode || 'incremental' }}", "season_id": "2024-25"}'
+            -d '{"mode": "${{ inputs.mode || 'incremental' }}", "season_id": "2025-26"}'
 
       - name: Notify on failure
         if: failure()
@@ -786,15 +808,24 @@ TEAMS = [
 async def seed():
     db_url = os.getenv("DATABASE_URL", "postgresql://tapas:localdev@localhost:5432/tapas_fpl")
     conn = await asyncpg.connect(db_url)
-    season_id = "2024-25"
+    season_id = "2025-26"
+
+    # Get or create season
+    season_row = await conn.fetchrow("SELECT id FROM season WHERE code = $1", season_id)
+    if not season_row:
+        season_row = await conn.fetchrow("""
+            INSERT INTO season (code, name, start_date, is_current)
+            VALUES ($1, $2, '2025-08-15', true) RETURNING id
+        """, season_id, f"Season {season_id}")
+    season_db_id = season_row["id"]
 
     # Seed teams
     for team_id, name, short_name in TEAMS:
         await conn.execute("""
-            INSERT INTO teams (id, season_id, name, short_name)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO team (id, season_id, code, name, short_name)
+            VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (id, season_id) DO NOTHING
-        """, team_id, season_id, name, short_name)
+        """, team_id, season_db_id, team_id, name, short_name)
 
     # Seed points_against_by_fixture (20 GWs of fake data)
     fixture_id = 1
@@ -952,7 +983,7 @@ Add to `.vscode/tasks.json`:
 - [ ] Add `asyncpg` and `python-dotenv` to `requirements.txt`
 
 ### Phase 1: Database Setup
-- [ ] Create migration `003_points_against.sql`
+- [x] Create migration `004_points_against.sql`
 - [ ] Test migration locally first
 - [ ] Run migration on Supabase (production)
 - [ ] Verify tables and indexes created

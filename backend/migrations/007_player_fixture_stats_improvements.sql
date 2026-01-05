@@ -1,6 +1,6 @@
--- Migration 006: Player Fixture Stats Improvements
+-- Migration 007: Player Fixture Stats Improvements
 -- Description: Schema improvements based on code review
--- Depends on: 005_player_fixture_stats.sql
+-- Depends on: 006_player_fixture_stats.sql
 
 -- ============================================================================
 -- TABLE IMPROVEMENTS

@@ -1,4 +1,4 @@
--- Migration 005: Player Fixture Stats
+-- Migration 006: Player Fixture Stats
 -- Description: Per-player per-fixture stats for recommendations engine
 -- Depends on: 001_core_tables.sql, 004_points_against.sql
 -- Purpose: Store detailed player performance data for:
