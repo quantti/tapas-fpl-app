@@ -614,6 +614,42 @@ import { PitchPlayer } from '../components/PitchPlayer'
 
 **Static method:** `PitchPlayer.getShirtUrl(teamCode)` - Returns FPL shirt image URL
 
+### CardRow (`components/CardRow.tsx`)
+Unified row component for ranked lists and stat cards. Uses CSS Grid for consistent column alignment.
+
+```tsx
+import { CardRow } from '../components/CardRow'
+
+// Basic usage
+<CardRow label="Manager Name" value="100 pts" />
+
+// With rank
+<CardRow rank={1} label="Manager Name" value="100 pts" />
+
+// Clickable row
+<CardRow label="Manager Name" value="100 pts" onClick={handleClick} />
+
+// Value colors (default, success, warning, error, muted, gold)
+<CardRow label="Free Transfers" value="5 FT" valueColor="gold" />
+
+// Custom children instead of value
+<CardRow rank={1} label="Manager Name">
+  <ChipBadges chips={chips} />
+</CardRow>
+```
+
+**Props:** `label`, `value?`, `rank?`, `valueColor?`, `onClick?`, `children?`
+
+**CSS Grid layouts:**
+| Scenario | Columns |
+|----------|---------|
+| Basic | `1fr auto` |
+| With rank | `20px 1fr auto` |
+| Clickable | `1fr auto auto` |
+| Clickable + rank | `20px 1fr auto auto` |
+
+**Used by:** FreeTransfers, ChipsRemaining, CaptainSuccess, PlayerOwnership, StatsCards, LeaguePositionChart
+
 ### HistoryTable (`features/PlayerDetails/components/HistoryTable.tsx`)
 TanStack Table for player gameweek history with icons and pagination.
 
@@ -752,6 +788,15 @@ import * as styles from './ComponentName.module.css';
 Global CSS variables are defined in `src/styles/variables.css` and imported in `index.css`.
 Use variables for colors, spacing, typography, and other design tokens.
 
+**Key color variables:**
+| Variable | Purpose | Value |
+|----------|---------|-------|
+| `--color-success` | Positive values, gains | Green |
+| `--color-warning` | Caution states | Yellow/amber |
+| `--color-error` | Negative values, losses | Red |
+| `--color-gold` | Premium/max states (5 FT) | `#d4a400` (WCAG AA) |
+| `--color-text-muted` | Secondary text, low values | Gray |
+
 ### Dark Theme
 Dark theme is implemented using CSS custom properties with a `[data-theme="dark"]` selector.
 
@@ -845,11 +890,19 @@ Shows the most owned starting XI across all managers in the league.
 4. Determine formation string (e.g., "3-5-2") from selected players
 
 ### Free Transfers Tracker
-Shows remaining free transfers for each manager in the league.
+Shows remaining free transfers for each manager in the league with color-coded values.
 
 **Key files:**
 - `src/services/queries/useFreeTransfers.ts` - Core calculation logic
 - `src/features/FreeTransfers/FreeTransfers.tsx` - Display component with deadline awareness
+
+**Color gradient:** Values are color-coded to quickly identify banked transfers:
+| FT Count | Color |
+|----------|-------|
+| 1 | Gray (muted) |
+| 2 | Yellow (warning) |
+| 3-4 | Green (success) |
+| 5 | Gold |
 
 **FPL Free Transfer Rules (introduced 2024/25, continues in 2025/26):**
 - Start with 1 FT at beginning of season
