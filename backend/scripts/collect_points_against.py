@@ -19,6 +19,7 @@ import os
 import sys
 import time
 from collections import defaultdict
+from datetime import datetime
 
 import asyncpg
 from dotenv import load_dotenv
@@ -31,6 +32,18 @@ from app.services.points_against import PointsAgainstService
 
 # Configuration constants
 MAX_FAILURE_RATE = 0.10  # Abort collection if >10% of requests fail
+
+
+def parse_kickoff_time(kickoff_str: str | None) -> datetime | None:
+    """Parse kickoff time string to datetime.
+
+    FPL API returns kickoff_time as ISO8601 string like "2025-08-17T15:30:00Z".
+    """
+    if not kickoff_str:
+        return None
+    # Format: 2025-08-17T15:30:00Z
+    return datetime.fromisoformat(kickoff_str.replace("Z", "+00:00"))
+
 
 # Load environment
 load_dotenv(".env.local")
@@ -122,7 +135,7 @@ async def save_player_fixture_stats(
             player_team_id,
             h.opponent_team,
             h.was_home,
-            h.kickoff_time,
+            parse_kickoff_time(h.kickoff_time),  # Convert string to datetime
             h.minutes,
             h.total_points,
             h.bonus,
@@ -318,7 +331,10 @@ async def collect_points_against(
         if players:
             fetch_failure_rate = errors / len(players)
             if fetch_failure_rate > MAX_FAILURE_RATE:
-                error_msg = f"Fetch aborted: {errors}/{len(players)} players failed ({fetch_failure_rate:.1%})"
+                error_msg = (
+                    f"Fetch aborted: {errors}/{len(players)} players failed "
+                    f"({fetch_failure_rate:.1%})"
+                )
                 logger.error(error_msg)
                 await pa_service.update_collection_status(
                     conn, season_id, current_gw, total_processed, "failed", error_msg, False
@@ -382,9 +398,26 @@ async def collect_points_against(
 
 
 async def show_status(conn: asyncpg.Connection) -> None:
-    """Show current collection status."""
-    pa_service = PointsAgainstService()
-    status = await pa_service.get_collection_status()
+    """Show current collection status.
+
+    Uses the provided connection directly instead of the service's get_collection_status()
+    which would try to use the app's connection pool (not initialized in script context).
+    """
+    # Query status directly using our connection
+    status = await conn.fetchrow(
+        """
+        SELECT
+            season_id,
+            latest_gameweek,
+            total_players_processed,
+            last_full_collection,
+            last_incremental_update,
+            status,
+            error_message
+        FROM points_against_collection_status
+        WHERE id = 'points_against'
+        """
+    )
 
     if not status:
         print("No collection status found (collection never run)")
@@ -392,36 +425,81 @@ async def show_status(conn: asyncpg.Connection) -> None:
 
     print("\nPoints Against Collection Status")
     print("-" * 40)
-    print(f"Season ID:           {status.season_id}")
-    print(f"Latest Gameweek:     {status.latest_gameweek}")
-    print(f"Players Processed:   {status.total_players_processed}")
-    print(f"Status:              {status.status}")
-    print(f"Last Full Run:       {status.last_full_collection or 'Never'}")
-    print(f"Last Incremental:    {status.last_incremental_update or 'Never'}")
-    if status.error_message:
-        print(f"Error:               {status.error_message}")
+    print(f"Season ID:           {status['season_id']}")
+    print(f"Latest Gameweek:     {status['latest_gameweek']}")
+    print(f"Players Processed:   {status['total_players_processed']}")
+    print(f"Status:              {status['status']}")
+    print(f"Last Full Run:       {status['last_full_collection'] or 'Never'}")
+    print(f"Last Incremental:    {status['last_incremental_update'] or 'Never'}")
+    if status["error_message"]:
+        print(f"Error:               {status['error_message']}")
     print("-" * 40)
 
-    # Show team totals
-    totals = await pa_service.get_season_totals(status.season_id)
+    # Query team totals directly using our connection
+    totals = await conn.fetch(
+        """
+        SELECT
+            team_id,
+            team_name,
+            short_name,
+            matches_played,
+            total_points,
+            home_points,
+            away_points,
+            avg_per_match
+        FROM points_against_season_totals
+        WHERE season_id = $1
+        ORDER BY total_points DESC
+        """,
+        status["season_id"],
+    )
+
     if totals:
         print(f"\nTeam Points Against ({len(totals)} teams):")
         print(f"{'Team':<20} {'Matches':>8} {'Total':>8} {'Avg':>8}")
         print("-" * 46)
         for t in totals[:10]:  # Top 10
-            print(f"{t.team_name:<20} {t.matches_played:>8} {t.total_points:>8} {t.avg_per_match:>8.1f}")
+            avg = float(t["avg_per_match"] or 0)
+            print(
+                f"{t['team_name']:<20} {t['matches_played']:>8} "
+                f"{t['total_points']:>8} {avg:>8.1f}"
+            )
 
 
 async def reset_data(conn: asyncpg.Connection, season_id: int) -> None:
-    """Clear all data and re-run collection."""
+    """Clear all data and re-run collection.
+
+    Uses direct queries instead of the service's clear_season_data() which would
+    try to use the app's connection pool (not initialized in script context).
+    """
     print("WARNING: This will delete all Points Against data!")
     confirm = input("Type 'yes' to confirm: ")
     if confirm.lower() != "yes":
         print("Aborted.")
         return
 
-    pa_service = PointsAgainstService()
-    await pa_service.clear_season_data(season_id)
+    # Clear data directly using our connection
+    result = await conn.execute(
+        """
+        DELETE FROM points_against_by_fixture
+        WHERE season_id = $1
+        """,
+        season_id,
+    )
+    # Parse "DELETE X" to get count
+    count = int(result.split()[-1]) if result else 0
+    logger.info(f"Cleared {count} rows for season {season_id}")
+
+    # Also clear player_fixture_stats for the season
+    result = await conn.execute(
+        """
+        DELETE FROM player_fixture_stats
+        WHERE season_id = $1
+        """,
+        season_id,
+    )
+    pfs_count = int(result.split()[-1]) if result else 0
+    logger.info(f"Cleared {pfs_count} player_fixture_stats rows for season {season_id}")
 
     # Re-run collection
     # 0.2 req/s = 12 req/min (5x slower than default to avoid rate limits)

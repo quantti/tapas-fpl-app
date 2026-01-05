@@ -48,7 +48,9 @@ INSERT INTO _migrations (name) VALUES
     ('002_historical.sql'),
     ('003_analytics.sql'),
     ('004_points_against.sql'),
-    ('005_player_fixture_stats.sql')
+    ('005_season_2025_26.sql'),
+    ('006_player_fixture_stats.sql'),
+    ('007_player_fixture_stats_improvements.sql')
 ON CONFLICT (name) DO NOTHING;
 ```
 
@@ -69,10 +71,13 @@ backend/
 │   ├── 002_historical.sql
 │   ├── 003_analytics.sql
 │   ├── 004_points_against.sql
-│   └── 005_player_fixture_stats.sql
+│   ├── 005_season_2025_26.sql
+│   ├── 006_player_fixture_stats.sql
+│   └── 007_player_fixture_stats_improvements.sql
 ├── scripts/
 │   ├── migrate.py               # Database migration runner
-│   ├── collect_points_against.py # Points Against data collector
+│   ├── collect_points_against.py # Full Points Against data collector (~66 min)
+│   ├── test_small_collection.py # Test collection with 5 players (~2 min)
 │   └── seed_test_data.py        # Test data seeder
 ├── tests/
 │   ├── conftest.py       # Test fixtures
@@ -102,8 +107,9 @@ The database uses **composite primary keys** `(id, season_id)` for FPL entities 
 | `002_historical.sql` | manager_gw_snapshot, manager_pick, transfer, chip_usage, player_gw_stats, price_change |
 | `003_analytics.sql` | expected_points_cache, performance_delta, player_form, recommendation_score, league_ownership |
 | `004_points_against.sql` | points_against_by_fixture, points_against_collection_status, points_against_season_totals view |
-| `005_player_fixture_stats.sql` | player_fixture_stats (35+ fields), player_vs_team_stats view, player_season_deltas view, get_player_form() function |
-| `006_player_fixture_stats_improvements.sql` | updated_at column + trigger, check constraint, improved view and function |
+| `005_season_2025_26.sql` | Add 2025-26 season, clean test data from points_against tables |
+| `006_player_fixture_stats.sql` | player_fixture_stats (35+ fields), player_vs_team_stats view, player_season_deltas view, get_player_form() function |
+| `007_player_fixture_stats_improvements.sql` | updated_at column + trigger, check constraint, improved view and function |
 
 ### Table Overview (23 tables)
 
@@ -196,25 +202,43 @@ Tracks FPL points conceded by each Premier League team per fixture. Useful for i
 **Data Collection:**
 
 ```bash
-cd backend
-source .venv/bin/activate
+# IMPORTANT: Collection MUST run on Fly.io (needs IPv6 for Supabase direct connection)
 
-# Run collection (fetches all player histories from FPL API)
-python -m scripts.collect_points_against
+# Quick collection (run interactively - blocks terminal)
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_points_against"
+
+# Background collection (recommended - keeps running if SSH disconnects)
+fly ssh console --app tapas-fpl-backend -C "nohup python -m scripts.collect_points_against > /tmp/collection.log 2>&1 &"
+
+# Monitor background collection
+fly ssh console --app tapas-fpl-backend -C "tail -20 /tmp/collection.log"
 
 # Show collection status
-python -m scripts.collect_points_against --status
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_points_against --status"
 
-# Reset and re-collect
+# Reset and re-collect (interactive - requires confirmation)
+fly ssh console --app tapas-fpl-backend
+# Then inside the shell:
 python -m scripts.collect_points_against --reset
 ```
 
 **Collection Details:**
-- Fetches ~800 players from FPL API with rate limiting (1 req/sec)
+- Fetches ~790 players from FPL API
+- Rate limited to **0.2 req/sec** (1 request every 5 seconds) to avoid FPL API rate limits
+- Each player requires 1 API call to `/api/element-summary/{player_id}/`
+- **Total time: ~66 minutes** (790 players × 5 seconds)
 - Aggregates points scored against each opponent per fixture
 - Saves detailed player fixture stats (35+ fields per player per fixture)
 - Fails if >10% of requests fail (prevents partial data)
-- Takes ~15 minutes for full collection
+
+**Rate Limiting:**
+- Default: 0.2 requests/second, max 1 concurrent
+- Configurable in script: `FplApiClient(requests_per_second=0.2, max_concurrent=1)`
+- More aggressive rate (1 req/sec) may trigger FPL API rate limits
+
+**Data Saving Behavior:**
+- `player_fixture_stats` - Saved **incrementally** after each player (survives crash)
+- `points_against_by_fixture` - Saved **at the end** in single transaction (all or nothing)
 
 **Data Saved:**
 1. `points_against_by_fixture` - Aggregated points conceded per team per fixture
@@ -238,18 +262,155 @@ bootstrap = await client.get_bootstrap()  # Players, teams, gameweeks
 history = await client.get_player_history(player_id)  # Per-GW stats
 ```
 
+## Scripts
+
+All scripts must be run from Fly.io SSH due to IPv6 requirement for Supabase connection.
+
+### collect_points_against.py
+
+Full data collection script that fetches all player histories from FPL API.
+
+```bash
+# Full collection (background - recommended)
+fly ssh console --app tapas-fpl-backend -C "nohup python -m scripts.collect_points_against > /tmp/collection.log 2>&1 &"
+
+# Check status
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_points_against --status"
+
+# Reset and re-collect (interactive)
+fly ssh console --app tapas-fpl-backend
+python -m scripts.collect_points_against --reset
+```
+
+**Options:**
+- `--status` - Show collection status and team totals
+- `--reset` - Clear all data and re-run (requires confirmation)
+
+**Output:**
+- Progress updates every 50 players
+- ETA calculation
+- Final summary: players processed, errors, fixtures saved
+
+### test_small_collection.py
+
+Test script for verifying collection logic with a small sample (5 players).
+
+```bash
+fly ssh console --app tapas-fpl-backend -C "python scripts/test_small_collection.py"
+```
+
+**Purpose:**
+- Verify database schema matches collection script
+- Test in ~2 minutes instead of ~66 minutes
+- Verify `player_fixture_stats` and `points_against_by_fixture` inserts work
+- Verify `points_against_collection_status` tracking
+
+### migrate.py
+
+Database migration runner with tracking.
+
+```bash
+# Run pending migrations
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.migrate"
+
+# Show migration status
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.migrate --status"
+
+# Reset database (DANGEROUS)
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.migrate --reset"
+```
+
+### seed_test_data.py
+
+Seed test data for development.
+
+```bash
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.seed_test_data"
+```
+
 ## Deployment (Fly.io)
 
 - **App name**: tapas-fpl-backend
 - **URL**: https://tapas-fpl-backend.fly.dev
 - **Deploy**: `fly deploy` from this directory
 
+### Fly CLI Setup
+
+```bash
+# Add to PATH (required if not already set)
+export PATH="$HOME/.fly/bin:$PATH"
+
+# Verify installation
+fly version
+
+# Login (if needed)
+fly auth login
+fly auth whoami
+```
+
+### Deployment
+
+```bash
+cd backend
+
+# Standard deploy (uses Fly.io's Depot builder - can be slow)
+fly deploy
+
+# Local Docker build (faster, use when Depot is slow)
+fly deploy --local-only
+
+# Deploy with verbose output
+fly deploy --verbose
+
+# Check deployment status
+fly status --app tapas-fpl-backend
+```
+
+### Machine Management
+
+```bash
+# List machines
+fly machine list --app tapas-fpl-backend
+
+# Check app status (shows running machines)
+fly status --app tapas-fpl-backend
+
+# Start a machine (if stopped)
+fly machine start <machine_id> --app tapas-fpl-backend
+
+# Restart the app
+fly apps restart tapas-fpl-backend
+```
+
+### Logs
+
+```bash
+# Stream live logs
+fly logs --app tapas-fpl-backend
+
+# View recent logs
+fly logs --app tapas-fpl-backend --no-tail
+
+# View logs from a specific instance
+fly logs --app tapas-fpl-backend -i <instance_id>
+```
+
+### SSH Access
+
+```bash
+# Interactive shell
+fly ssh console --app tapas-fpl-backend
+
+# Run single command
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.migrate --status"
+
+# Check a file
+fly ssh console --app tapas-fpl-backend -C "tail -20 /tmp/collection.log"
+```
+
 ### Quick Reference: Common Operations
 
 ```bash
-# Fly CLI location (if not in PATH)
-export PATH="$HOME/.fly/bin:$PATH"
-
 # Check app status
 fly status --app tapas-fpl-backend
 
@@ -493,3 +654,47 @@ echo $SUPABASE_PW
 
 **"Table does not exist"**
 - Run migrations first: `fly ssh console --app tapas-fpl-backend -C "python -m scripts.migrate"`
+
+**Collection seems stuck**
+```bash
+# Check if process is running
+fly ssh console --app tapas-fpl-backend -C "ps aux | grep python"
+
+# Check log output
+fly ssh console --app tapas-fpl-backend -C "tail -20 /tmp/collection.log"
+
+# Note: Rate limit is 0.2 req/sec = 5 seconds per player
+# 790 players × 5 sec = ~66 minutes total
+```
+
+**Background collection stopped/crashed**
+- Check log for errors: `fly ssh console --app tapas-fpl-backend -C "cat /tmp/collection.log"`
+- `player_fixture_stats` are saved incrementally (already saved data is preserved)
+- `points_against_by_fixture` is only saved at the end (will need re-run)
+- Re-run collection: `fly ssh console --app tapas-fpl-backend -C "nohup python -m scripts.collect_points_against > /tmp/collection.log 2>&1 &"`
+
+**"ON CONFLICT" errors**
+- Check migration was applied: `python -m scripts.migrate --status`
+- `points_against_by_fixture` PK is just `fixture_id` (not composite)
+- `player_fixture_stats` PK is `(fixture_id, player_id, season_id)`
+
+**SSH pipe command not working**
+```bash
+# WRONG: Pipe runs locally, not on server
+fly ssh console --app tapas-fpl-backend -C "cat /tmp/collection.log | tail -20"
+
+# CORRECT: Use commands that don't need pipes
+fly ssh console --app tapas-fpl-backend -C "tail -20 /tmp/collection.log"
+```
+
+### Deployment Issues
+
+**"Waiting for depot builder..." (slow deploy)**
+```bash
+# Use local Docker build instead
+fly deploy --local-only
+```
+
+**Deploy fails with "docker not running"**
+- Start Docker: `sudo systemctl start docker`
+- Or use standard deploy: `fly deploy` (uses Depot, may be slower)
