@@ -4,8 +4,17 @@
 -- FPL 2025-26 Rules: ALL chips reset at GW20
 -- Each half-season (GW1-19, GW20-38) has: wildcard, bboost, 3xc, freehit
 -- Total: 8 chips per manager per season
+--
+-- Note: This replaces the chip_usage table from 002_historical.sql with an
+-- updated schema that supports the 2025-26 chip reset rules via season_half column.
 
-CREATE TABLE IF NOT EXISTS chip_usage (
+-- Drop old table and indexes from 002_historical.sql
+DROP VIEW IF EXISTS manager_chips_remaining;
+DROP INDEX IF EXISTS idx_chip_manager;
+DROP INDEX IF EXISTS idx_chip_type;
+DROP TABLE IF EXISTS chip_usage;
+
+CREATE TABLE chip_usage (
     id BIGSERIAL PRIMARY KEY,
     manager_id BIGINT NOT NULL,
     season_id INTEGER NOT NULL REFERENCES season(id),
