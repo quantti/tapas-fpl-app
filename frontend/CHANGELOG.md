@@ -3,6 +3,18 @@
 
 ### Bug Fixes
 
+* **queries:** resolve query key collision between usePositionBreakdown and useHistoricalData ([59c6a94](https://github.com/quantti/tapas-fpl-app/commit/59c6a94769a60de80eaccb84f148ce8a3a032120))
+
+
+### Features
+
+* **backend:** store player fixture stats during data collection ([146dbf5](https://github.com/quantti/tapas-fpl-app/commit/146dbf512ca752656d1dd1632b39639a52bc2599))
+
+# [0.20.0](https://github.com/quantti/tapas-fpl-app/compare/v0.19.0...v0.20.0) (2026-01-05)
+
+
+### Bug Fixes
+
 * **queries:** resolve query key collision between usePositionBreakdown and useHistoricalData
 
 
