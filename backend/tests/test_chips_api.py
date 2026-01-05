@@ -15,12 +15,24 @@ class TestChipsLeagueEndpoint:
         assert response.status_code == 503
         assert "Database not available" in response.json()["detail"]
 
-    @pytest.mark.parametrize("invalid_league_id", [0, -1, -100])
+    @pytest.mark.parametrize(
+        "invalid_league_id",
+        [0, -1, -100],
+        ids=["zero", "negative", "large_negative"],
+    )
     async def test_league_chips_validates_invalid_league_id(
         self, async_client: AsyncClient, invalid_league_id: int
     ):
         """League chips should reject invalid league_id values."""
         response = await async_client.get(f"/api/v1/chips/league/{invalid_league_id}")
+
+        assert response.status_code == 422  # FastAPI validation error
+
+    async def test_league_chips_validates_non_integer_league_id(
+        self, async_client: AsyncClient
+    ):
+        """League chips should return 422 for non-integer league_id."""
+        response = await async_client.get("/api/v1/chips/league/abc")
 
         assert response.status_code == 422  # FastAPI validation error
 
@@ -31,7 +43,11 @@ class TestChipsLeagueEndpoint:
         # Will return 503 (no DB), but validates the param is accepted
         assert response.status_code == 503
 
-    @pytest.mark.parametrize("invalid_season_id", [0, -1, -100])
+    @pytest.mark.parametrize(
+        "invalid_season_id",
+        [0, -1, -100],
+        ids=["zero", "negative", "large_negative"],
+    )
     async def test_league_chips_validates_invalid_season_id(
         self, async_client: AsyncClient, invalid_season_id: int
     ):
@@ -41,6 +57,24 @@ class TestChipsLeagueEndpoint:
         )
 
         assert response.status_code == 422  # FastAPI validation error
+
+    async def test_league_chips_validates_non_integer_season_id(
+        self, async_client: AsyncClient
+    ):
+        """League chips should return 422 for non-integer season_id query param."""
+        response = await async_client.get("/api/v1/chips/league/12345?season_id=abc")
+
+        assert response.status_code == 422  # FastAPI validation error
+
+    async def test_league_chips_handles_very_large_league_id(
+        self, async_client: AsyncClient
+    ):
+        """Should handle very large league_id without crashing (overflow protection)."""
+        # FPL league IDs are typically 32-bit integers
+        response = await async_client.get("/api/v1/chips/league/9999999999999")
+
+        # Either 422 (if validation catches it) or 503 (DB unavailable)
+        assert response.status_code in [422, 503]
 
 
 class TestChipsManagerEndpoint:
@@ -53,12 +87,24 @@ class TestChipsManagerEndpoint:
         assert response.status_code == 503
         assert "Database not available" in response.json()["detail"]
 
-    @pytest.mark.parametrize("invalid_manager_id", [0, -1, -100])
+    @pytest.mark.parametrize(
+        "invalid_manager_id",
+        [0, -1, -100],
+        ids=["zero", "negative", "large_negative"],
+    )
     async def test_manager_chips_validates_invalid_manager_id(
         self, async_client: AsyncClient, invalid_manager_id: int
     ):
         """Manager chips should reject invalid manager_id values."""
         response = await async_client.get(f"/api/v1/chips/manager/{invalid_manager_id}")
+
+        assert response.status_code == 422  # FastAPI validation error
+
+    async def test_manager_chips_validates_non_integer_manager_id(
+        self, async_client: AsyncClient
+    ):
+        """Manager chips should return 422 for non-integer manager_id."""
+        response = await async_client.get("/api/v1/chips/manager/abc")
 
         assert response.status_code == 422  # FastAPI validation error
 
@@ -69,7 +115,11 @@ class TestChipsManagerEndpoint:
         # Will return 503 (no DB), but validates the param is accepted
         assert response.status_code == 503
 
-    @pytest.mark.parametrize("invalid_season_id", [0, -1, -100])
+    @pytest.mark.parametrize(
+        "invalid_season_id",
+        [0, -1, -100],
+        ids=["zero", "negative", "large_negative"],
+    )
     async def test_manager_chips_validates_invalid_season_id(
         self, async_client: AsyncClient, invalid_season_id: int
     ):
@@ -79,6 +129,24 @@ class TestChipsManagerEndpoint:
         )
 
         assert response.status_code == 422  # FastAPI validation error
+
+    async def test_manager_chips_validates_non_integer_season_id(
+        self, async_client: AsyncClient
+    ):
+        """Manager chips should return 422 for non-integer season_id query param."""
+        response = await async_client.get("/api/v1/chips/manager/12345?season_id=abc")
+
+        assert response.status_code == 422  # FastAPI validation error
+
+    async def test_manager_chips_handles_very_large_manager_id(
+        self, async_client: AsyncClient
+    ):
+        """Should handle very large manager_id without crashing (overflow protection)."""
+        # FPL manager IDs are typically 32-bit integers
+        response = await async_client.get("/api/v1/chips/manager/9999999999999")
+
+        # Either 422 (if validation catches it) or 503 (DB unavailable)
+        assert response.status_code in [422, 503]
 
 
 class TestChipsResponseFormat:

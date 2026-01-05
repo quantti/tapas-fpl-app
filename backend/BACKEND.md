@@ -569,9 +569,391 @@ source .venv/bin/activate
 python -m pytest              # Run all tests
 python -m pytest -v           # Verbose output
 python -m pytest tests/test_api.py  # Run specific file
+ruff check tests/             # Lint tests
 ```
 
-**Test Coverage (18 tests):**
+### Test Organization
+
+```
+tests/
+├── conftest.py           # Shared fixtures (async_client, mock_db)
+├── test_api.py           # Existing API endpoint tests
+├── test_config.py        # Settings tests
+├── test_chips_api.py     # Chips API endpoint tests (TDD)
+└── test_chips_service.py # Chips service unit tests (TDD)
+```
+
+**File naming:** `test_<module_name>.py`
+**Class naming:** `TestClassName` - group related tests
+**Function naming:** `test_<unit>_<scenario>_<expected>`
+
+### Best Practices
+
+#### 1. Use TypedDicts for Mock Data
+
+Type-safe mock data catches typos and provides IDE autocomplete:
+
+```python
+from typing import TypedDict
+
+class ChipUsageRow(TypedDict):
+    """Database row structure for chip_usage table."""
+    manager_id: int
+    season_id: int
+    chip_type: str
+
+# Usage in tests
+mock_rows: list[ChipUsageRow] = [
+    {"manager_id": 123, "season_id": 1, "chip_type": "wildcard"},
+]
+```
+
+#### 2. Extract Constants for Magic Numbers
+
+Replace magic numbers with named constants for self-documenting tests:
+
+```python
+# Constants at top of test file
+FIRST_HALF_END = 19
+SECOND_HALF_START = 20
+SEASON_END = 38
+
+# In parametrize
+@pytest.mark.parametrize(
+    ("gameweek", "expected_half"),
+    [
+        (1, 1),
+        (FIRST_HALF_END, 1),      # More readable than (19, 1)
+        (SECOND_HALF_START, 2),   # Clear intent: chip reset boundary
+        (SEASON_END, 2),
+    ],
+)
+```
+
+#### 3. Use Parametrize with IDs
+
+Always add `ids` for readable test output - makes CI failures easy to diagnose:
+
+```python
+# BAD - output shows: test_...[0-1-100]
+@pytest.mark.parametrize("value", [0, -1, -100])
+
+# GOOD - output shows: test_...[zero], test_...[negative]
+@pytest.mark.parametrize(
+    "value",
+    [0, -1, -100],
+    ids=["zero", "negative", "large_negative"],
+)
+```
+
+#### 4. Extract Fixtures for Database Mocking
+
+Use a fixture with context manager for consistent DB mocking. Define reusable
+fixtures in `conftest.py` for use across multiple test files:
+
+```python
+# conftest.py - shared fixtures
+from typing import Any
+from unittest.mock import AsyncMock, patch
+
+class MockDB:
+    """Mock database connection with context manager pattern.
+
+    IMPORTANT: module_path is REQUIRED - always patch where the function
+    is USED, not where it's defined. This prevents cross-service pollution.
+    """
+    conn: AsyncMock
+    patch: Any
+
+    def __init__(self, module_path: str) -> None:  # No default - explicit is better
+        self.conn = AsyncMock()
+        self.patch = patch(module_path)
+        self._mock_get_conn = None
+
+    def __enter__(self) -> "MockDB":
+        self._mock_get_conn = self.patch.__enter__()
+        self._mock_get_conn.return_value.__aenter__.return_value = self.conn
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        self.patch.__exit__(*args)
+
+# Service-specific fixtures - create one per service being tested
+@pytest.fixture
+def mock_db() -> MockDB:
+    """Mock database for chips service tests."""
+    return MockDB("app.services.chips.get_connection")
+
+@pytest.fixture
+def mock_points_db() -> MockDB:
+    """Mock database for points_against service tests."""
+    return MockDB("app.services.points_against.get_connection")
+
+# Usage - combine with pytest.raises using comma (avoid nested with)
+async def test_db_error(mock_db: MockDB):
+    mock_db.conn.fetch.side_effect = Exception("timeout")
+    with mock_db, pytest.raises(Exception, match="timeout"):
+        await service.fetch_data()
+```
+
+#### 5. Test Both Valid and Invalid Inputs
+
+For every validation, test both acceptance and rejection:
+
+```python
+# Test valid inputs are ACCEPTED
+@pytest.mark.parametrize("valid_chip", ["wildcard", "bboost", "3xc", "freehit"])
+async def test_accepts_valid_chip_types(valid_chip):
+    await service.save(chip_type=valid_chip)  # Should not raise
+
+# Test invalid inputs are REJECTED
+@pytest.mark.parametrize(
+    "invalid_chip",
+    ["unknown", "WILDCARD", "", "   "],
+    ids=["unknown", "uppercase", "empty", "whitespace"],
+)
+async def test_rejects_invalid_chip_types(invalid_chip):
+    with pytest.raises(ValueError, match="Invalid chip type"):
+        await service.save(chip_type=invalid_chip)
+```
+
+#### 6. Test Boundary Conditions
+
+Always test at boundaries, not just arbitrary values:
+
+```python
+@pytest.mark.parametrize(
+    ("gameweek", "expected"),
+    [
+        (FIRST_HALF_END, 1),      # Last GW of first half (boundary)
+        (SECOND_HALF_START, 2),   # First GW of second half (boundary)
+    ],
+    ids=["gw19_boundary", "gw20_reset"],
+)
+async def test_boundary_gameweeks(gameweek, expected):
+    assert get_season_half(gameweek) == expected
+```
+
+#### 7. Test Non-Integer Path Parameters
+
+FastAPI handles type coercion - test that invalid types return 422:
+
+```python
+async def test_validates_non_integer_id(async_client):
+    response = await async_client.get("/api/v1/chips/league/abc")
+    assert response.status_code == 422  # FastAPI validation error
+```
+
+#### 8. TDD: Use Helper Functions for Deferred Imports
+
+When writing tests before implementation, defer imports to fail fast:
+
+```python
+from typing import Callable
+
+def _import_service() -> type:
+    """Import service - will fail until implementation exists."""
+    from app.services.chips import ChipsService
+    return ChipsService
+
+def _import_get_season_half() -> Callable[[int], int]:
+    """Import function with type hint for IDE support."""
+    from app.services.chips import get_season_half
+    return get_season_half
+
+def test_service_method():
+    ChipsService = _import_service()  # Fails with clear ImportError
+    service = ChipsService()
+    # ...
+```
+
+#### 9. Test Database Errors for ALL Operations
+
+Test error propagation for EVERY database operation (read AND write):
+
+```python
+# Test READ errors
+async def test_propagates_database_error_on_fetch(mock_db: MockDB):
+    mock_db.conn.fetch.side_effect = Exception("Connection timeout")
+    with mock_db, pytest.raises(Exception, match="Connection timeout"):
+        await service.get_data()
+
+# Test WRITE errors - often forgotten!
+async def test_propagates_database_error_on_save(mock_db: MockDB):
+    mock_db.conn.execute.side_effect = Exception("Disk full")
+    with mock_db, pytest.raises(Exception, match="Disk full"):
+        await service.save_data(data)
+```
+
+#### 10. Test Multi-Query Partial Failures
+
+When a service makes multiple queries, test what happens if later queries fail:
+
+```python
+async def test_handles_second_query_failure(mock_db: MockDB):
+    """Should propagate error when second query fails after first succeeds."""
+    mock_db.conn.fetch.side_effect = [
+        [{"id": 1, "name": "First"}],  # First query succeeds
+        Exception("Query timeout"),     # Second query fails
+    ]
+    with mock_db, pytest.raises(Exception, match="Query timeout"):
+        await service.get_combined_data()  # Makes 2 queries internally
+```
+
+#### 11. Test Non-Integer Query Parameters
+
+Test type validation for BOTH path and query parameters:
+
+```python
+# Path parameter (documented in #7)
+async def test_validates_non_integer_path_param(async_client):
+    response = await async_client.get("/api/v1/chips/league/abc")
+    assert response.status_code == 422
+
+# Query parameter - often forgotten!
+async def test_validates_non_integer_query_param(async_client):
+    response = await async_client.get("/api/v1/chips/league/12345?season_id=abc")
+    assert response.status_code == 422
+```
+
+#### 12. Test Very Large Integers
+
+Test for integer overflow or database type mismatches:
+
+```python
+async def test_handles_very_large_id(async_client):
+    """Should handle very large IDs without crashing."""
+    # FPL IDs are typically 32-bit integers
+    response = await async_client.get("/api/v1/chips/league/9999999999999")
+    assert response.status_code in [422, 503]  # Validation or DB unavailable
+```
+
+#### 13. Test Malformed Data from Database
+
+Test handling of unexpected values returned from the database:
+
+```python
+async def test_handles_malformed_data_from_database(mock_db: MockDB):
+    """Should gracefully handle malformed data from DB."""
+    mock_rows = [
+        {"chip_type": "", "gameweek": 5},      # Empty string
+        {"chip_type": None, "gameweek": 5},    # Null value
+    ]
+    mock_db.conn.fetch.return_value = mock_rows
+    with mock_db:
+        result = await service.get_chips()
+
+    # Verify malformed data is filtered/handled, not crash
+    assert len(result.chips_remaining) == 4  # All chips still available
+```
+
+#### 14. Verify Nullable Fields Explicitly
+
+Test that nullable fields (like `points_gained`) don't cause serialization issues:
+
+```python
+async def test_handles_null_points_gained(mock_db: MockDB):
+    """Should include chips with null points_gained in response."""
+    mock_rows = [{
+        "chip_type": "wildcard",
+        "gameweek": 5,
+        "points_gained": None,  # Wildcard has no points calculation
+    }]
+    mock_db.conn.fetch.return_value = mock_rows
+    with mock_db:
+        result = await service.get_chips()
+
+    assert result.chips_used[0].points_gained is None  # Not crash
+```
+
+#### 15. Use pytest.param for Complex Parametrize
+
+For tests with many parameters, `pytest.param` combines value and ID:
+
+```python
+# Standard approach (separate IDs list)
+@pytest.mark.parametrize(
+    ("gameweek", "expected"),
+    [(1, 1), (19, 1), (20, 2), (38, 2)],
+    ids=["gw1", "gw19_boundary", "gw20_reset", "gw38_end"],
+)
+
+# pytest.param approach (inline IDs)
+@pytest.mark.parametrize(
+    ("gameweek", "expected"),
+    [
+        pytest.param(1, 1, id="gw1"),
+        pytest.param(FIRST_HALF_END, 1, id="gw19_boundary"),
+        pytest.param(SECOND_HALF_START, 2, id="gw20_reset"),
+        pytest.param(SEASON_END, 2, id="gw38_end"),
+    ],
+)
+```
+
+### Async Testing
+
+**Configuration (pyproject.toml):**
+```toml
+[tool.pytest.ini_options]
+asyncio_mode = "auto"  # Auto-detect async tests
+asyncio_default_fixture_loop_scope = "function"
+```
+
+**Async fixtures:**
+```python
+import pytest_asyncio
+
+@pytest_asyncio.fixture
+async def async_client():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client
+```
+
+**Mocking async code:**
+```python
+from unittest.mock import AsyncMock, patch
+
+# Mock async function
+mock_fetch = AsyncMock(return_value={"data": "test"})
+
+# Mock async context manager
+mock_conn = AsyncMock()
+mock_conn.__aenter__.return_value = mock_conn
+mock_conn.__aexit__.return_value = None
+```
+
+### Test Categories
+
+| Category | Location | Description |
+|----------|----------|-------------|
+| API | `test_*_api.py` | HTTP endpoint validation, status codes, response format |
+| Service | `test_*_service.py` | Business logic, database interactions |
+| Config | `test_config.py` | Settings parsing, defaults |
+
+### Common Pitfalls (Learned from PR Reviews)
+
+| Pitfall | Fix |
+|---------|-----|
+| Nested `with mock_db:` + `with pytest.raises():` | Combine: `with mock_db, pytest.raises():` |
+| Parametrize without IDs | Always add `ids=["name1", "name2"]` |
+| Testing only happy path | Add tests for both valid AND invalid inputs |
+| Magic numbers in tests | Extract to named constants |
+| Repeated imports in test methods | Use fixtures or module-level imports |
+| Missing boundary tests | Test at exact boundaries (GW19/20), not just arbitrary values |
+| Missing non-integer path param tests | FastAPI path params need 422 tests for "abc" |
+| Missing non-integer query param tests | Query params also need 422 tests for "?param=abc" |
+| Only testing read errors | Test BOTH fetch and execute errors |
+| Missing partial failure tests | Multi-query operations need second-query-fails tests |
+| MockDB with default path | Always specify explicit module_path per service |
+| MockDB in test file only | Move to `conftest.py` for reuse across test files |
+| Fixtures without type hints | Add `-> MockDB` return type for IDE support |
+| `_import_*` helpers without types | Add `-> Callable[[int], int]` for IDE support |
+| Missing very large ID tests | Test with `9999999999999` for overflow protection |
+| Missing malformed data tests | Test empty strings, nulls from database |
+| Missing nullable field tests | Verify `None` values don't crash serialization |
+
+### Test Coverage
 
 | Test Class | Tests | Description |
 |------------|-------|-------------|
@@ -582,11 +964,18 @@ python -m pytest tests/test_api.py  # Run specific file
 | `TestPointsAgainstEndpoints` | 5 | Points Against API validation and 503 handling |
 | `TestSettings` | 5 | Configuration parsing |
 | `TestGetSettings` | 2 | Settings caching |
+| `TestChipsLeagueEndpoint` | 6 | League chips API validation |
+| `TestChipsManagerEndpoint` | 6 | Manager chips API validation |
+| `TestGetSeasonHalf` | 2 | Season half calculation (pure function) |
+| `TestGetRemainingChips` | 7 | Remaining chips calculation (pure function) |
+| `TestChipsServiceGetManagerChips` | 3 | Manager chips service |
+| `TestChipsServiceGetLeagueChips` | 6 | League chips service |
+| `TestChipsServiceSaveChipUsage` | 7 | Chip save with validation |
 
 **Testing Without Database:**
 - Tests run without database connection
-- Points Against endpoints return 503 (Service Unavailable) when DB unavailable
-- Input validation (team_id range) runs before DB check
+- API endpoints return 503 (Service Unavailable) when DB unavailable
+- Input validation runs before DB check
 
 ## Error Handling
 

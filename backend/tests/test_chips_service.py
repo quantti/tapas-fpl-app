@@ -1,12 +1,25 @@
 """Tests for Chips service with mocked database (TDD - written before implementation)."""
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING, TypedDict
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 
+from tests.conftest import MockDB
+
 if TYPE_CHECKING:
     from app.services.chips import ChipsService
+
+# =============================================================================
+# Constants
+# =============================================================================
+
+# Gameweek boundaries for season half determination
+FIRST_HALF_END = 19  # Last GW of first half
+SECOND_HALF_START = 20  # First GW of second half (chip reset)
+SEASON_END = 38  # Last GW of season
+
 
 # =============================================================================
 # TypedDicts for Mock Data
@@ -44,32 +57,7 @@ def chips_service() -> "ChipsService":
     return ChipsService()
 
 
-@pytest.fixture
-def mock_db():
-    """Create a mock database connection with patch context.
-
-    Usage:
-        async def test_example(self, chips_service, mock_db):
-            mock_db.conn.fetch.return_value = [...]
-            with mock_db.patch:
-                result = await chips_service.some_method()
-    """
-
-    class MockDB:
-        def __init__(self):
-            self.conn = AsyncMock()
-            self.patch = patch("app.services.chips.get_connection")
-            self._mock_get_conn = None
-
-        def __enter__(self):
-            self._mock_get_conn = self.patch.__enter__()
-            self._mock_get_conn.return_value.__aenter__.return_value = self.conn
-            return self
-
-        def __exit__(self, *args):
-            self.patch.__exit__(*args)
-
-    return MockDB()
+# mock_db fixture is inherited from conftest.py
 
 
 # =============================================================================
@@ -77,14 +65,14 @@ def mock_db():
 # =============================================================================
 
 
-def _import_get_season_half():
+def _import_get_season_half() -> Callable[[int], int]:
     """Import get_season_half - will fail until implementation exists."""
     from app.services.chips import get_season_half
 
     return get_season_half
 
 
-def _import_get_remaining_chips():
+def _import_get_remaining_chips() -> Callable[[list[str]], list[str]]:
     """Import get_remaining_chips - will fail until implementation exists."""
     from app.services.chips import get_remaining_chips
 
@@ -103,17 +91,22 @@ class TestGetSeasonHalf:
         ("gameweek", "expected_half"),
         [
             (1, 1),  # First GW of first half
-            (19, 1),  # Last GW of first half
-            (20, 2),  # First GW of second half (chip reset)
-            (38, 2),  # Last GW of second half
+            (FIRST_HALF_END, 1),  # Last GW of first half
+            (SECOND_HALF_START, 2),  # First GW of second half (chip reset)
+            (SEASON_END, 2),  # Last GW of second half
         ],
+        ids=["gw1", "gw19_boundary", "gw20_reset", "gw38_end"],
     )
     def test_valid_gameweek_returns_correct_half(self, gameweek: int, expected_half: int):
         """Valid gameweeks should return correct season half."""
         get_season_half = _import_get_season_half()
         assert get_season_half(gameweek) == expected_half
 
-    @pytest.mark.parametrize("invalid_gw", [0, -1, -100, 39, 100])
+    @pytest.mark.parametrize(
+        "invalid_gw",
+        [0, -1, -100, SEASON_END + 1, 100],
+        ids=["zero", "negative", "large_negative", "gw39", "gw100"],
+    )
     def test_invalid_gameweek_raises_value_error(self, invalid_gw: int):
         """Invalid gameweeks should raise ValueError."""
         get_season_half = _import_get_season_half()
@@ -185,7 +178,7 @@ class TestChipsServiceGetManagerChips:
     """Tests for ChipsService.get_manager_chips method."""
 
     async def test_returns_manager_chips_data(
-        self, chips_service: "ChipsService", mock_db
+        self, chips_service: "ChipsService", mock_db: MockDB
     ):
         """Should return ManagerChips with both halves."""
         mock_rows: list[ChipUsageRow] = [
@@ -227,7 +220,7 @@ class TestChipsServiceGetManagerChips:
         assert len(result.second_half.chips_remaining) == 3
 
     async def test_returns_all_chips_remaining_when_none_used(
-        self, chips_service: "ChipsService", mock_db
+        self, chips_service: "ChipsService", mock_db: MockDB
     ):
         """Should return all 4 chips for each half when none used."""
         mock_db.conn.fetch.return_value = []
@@ -238,12 +231,56 @@ class TestChipsServiceGetManagerChips:
         assert len(result.second_half.chips_remaining) == 4
 
     async def test_propagates_database_error(
-        self, chips_service: "ChipsService", mock_db
+        self, chips_service: "ChipsService", mock_db: MockDB
     ):
         """Should propagate database errors to caller."""
         mock_db.conn.fetch.side_effect = Exception("Connection timeout")
         with mock_db, pytest.raises(Exception, match="Connection timeout"):
             await chips_service.get_manager_chips(manager_id=12345, season_id=1)
+
+    async def test_handles_malformed_chip_type_from_database(
+        self, chips_service: "ChipsService", mock_db: MockDB
+    ):
+        """Should gracefully handle malformed chip_type values from database."""
+        mock_rows: list[ChipUsageRow] = [
+            {
+                "manager_id": 12345,
+                "season_id": 1,
+                "season_half": 1,
+                "chip_type": "",  # Empty string - malformed data
+                "gameweek": 5,
+                "points_gained": None,
+            },
+        ]
+        mock_db.conn.fetch.return_value = mock_rows
+        with mock_db:
+            result = await chips_service.get_manager_chips(manager_id=12345, season_id=1)
+
+        # Empty chip_type should be ignored, all 4 chips still remaining
+        assert len(result.first_half.chips_remaining) == 4
+
+    async def test_handles_null_points_gained_in_response(
+        self, chips_service: "ChipsService", mock_db: MockDB
+    ):
+        """Should correctly include chips with null points_gained in response."""
+        mock_rows: list[ChipUsageRow] = [
+            {
+                "manager_id": 12345,
+                "season_id": 1,
+                "season_half": 1,
+                "chip_type": "wildcard",
+                "gameweek": 5,
+                "points_gained": None,  # Wildcard has no points calculation
+            },
+        ]
+        mock_db.conn.fetch.return_value = mock_rows
+        with mock_db:
+            result = await chips_service.get_manager_chips(manager_id=12345, season_id=1)
+
+        # Should have chip with None points_gained without crashing
+        assert len(result.first_half.chips_used) == 1
+        chip_used = result.first_half.chips_used[0]
+        assert chip_used.points_gained is None
 
 
 # =============================================================================
@@ -255,7 +292,7 @@ class TestChipsServiceGetLeagueChips:
     """Tests for ChipsService.get_league_chips method."""
 
     async def test_returns_chips_for_all_managers(
-        self, chips_service: "ChipsService", mock_db
+        self, chips_service: "ChipsService", mock_db: MockDB
     ):
         """Should return chip data for all managers in league."""
         mock_league_members: list[LeagueMemberRow] = [
@@ -293,13 +330,14 @@ class TestChipsServiceGetLeagueChips:
         ("gameweek", "expected_half"),
         [
             (15, 1),
-            (19, 1),
-            (20, 2),  # Chip reset boundary
+            (FIRST_HALF_END, 1),  # Last GW before reset
+            (SECOND_HALF_START, 2),  # Chip reset boundary
             (22, 2),
         ],
+        ids=["gw15", "gw19_boundary", "gw20_reset", "gw22"],
     )
     async def test_returns_correct_current_half(
-        self, chips_service: "ChipsService", mock_db, gameweek: int, expected_half: int
+        self, chips_service: "ChipsService", mock_db: MockDB, gameweek: int, expected_half: int
     ):
         """Should return correct current_half based on gameweek."""
         mock_db.conn.fetch.side_effect = [[], []]
@@ -312,7 +350,7 @@ class TestChipsServiceGetLeagueChips:
         assert result.current_gameweek == gameweek
 
     async def test_returns_empty_managers_for_empty_league(
-        self, chips_service: "ChipsService", mock_db
+        self, chips_service: "ChipsService", mock_db: MockDB
     ):
         """Should return empty managers list when league has no members."""
         mock_db.conn.fetch.side_effect = [[], []]
@@ -325,7 +363,7 @@ class TestChipsServiceGetLeagueChips:
         assert result.league_id == 12345
 
     async def test_handles_multiple_managers_using_same_chip(
-        self, chips_service: "ChipsService", mock_db
+        self, chips_service: "ChipsService", mock_db: MockDB
     ):
         """Should correctly track when multiple managers use the same chip."""
         mock_league_members: list[LeagueMemberRow] = [
@@ -374,7 +412,7 @@ class TestChipsServiceGetLeagueChips:
             assert sorted(manager.first_half.chips_remaining) == ["3xc", "bboost", "freehit"]
 
     async def test_ignores_chip_usage_for_non_league_managers(
-        self, chips_service: "ChipsService", mock_db
+        self, chips_service: "ChipsService", mock_db: MockDB
     ):
         """Should not include chip data for managers not in the league (orphan data)."""
         mock_league_members: list[LeagueMemberRow] = [
@@ -411,15 +449,36 @@ class TestChipsServiceGetLeagueChips:
         assert len(result.managers) == 1
         assert result.managers[0].manager_id == 123
 
-    @pytest.mark.parametrize("invalid_gw", [0, -1, 39, 100])
+    @pytest.mark.parametrize(
+        "invalid_gw",
+        [0, -1, SEASON_END + 1, 100],
+        ids=["zero", "negative", "gw39", "gw100"],
+    )
     async def test_raises_error_for_invalid_gameweek(
-        self, chips_service: "ChipsService", mock_db, invalid_gw: int
+        self, chips_service: "ChipsService", mock_db: MockDB, invalid_gw: int
     ):
         """Should raise ValueError when current_gameweek is out of range."""
         mock_db.conn.fetch.side_effect = [[], []]
         with mock_db, pytest.raises(ValueError, match="Gameweek must be between 1 and 38"):
             await chips_service.get_league_chips(
                 league_id=98765, season_id=1, current_gameweek=invalid_gw
+            )
+
+    async def test_propagates_error_when_second_query_fails(
+        self, chips_service: "ChipsService", mock_db: MockDB
+    ):
+        """Should propagate error when chip usage query fails after league members succeeds."""
+        mock_league_members: list[LeagueMemberRow] = [
+            {"manager_id": 123, "player_name": "John Doe"},
+        ]
+        # First query succeeds, second fails
+        mock_db.conn.fetch.side_effect = [
+            mock_league_members,
+            Exception("Query timeout"),
+        ]
+        with mock_db, pytest.raises(Exception, match="Query timeout"):
+            await chips_service.get_league_chips(
+                league_id=98765, season_id=1, current_gameweek=10
             )
 
 
@@ -432,7 +491,7 @@ class TestChipsServiceSaveChipUsage:
     """Tests for ChipsService.save_chip_usage method."""
 
     async def test_saves_chip_with_season_half_1_for_gw5(
-        self, chips_service: "ChipsService", mock_db
+        self, chips_service: "ChipsService", mock_db: MockDB
     ):
         """Should calculate and save season_half=1 for GW5."""
         with mock_db:
@@ -457,7 +516,7 @@ class TestChipsServiceSaveChipUsage:
         assert 1 in params, "season_half=1 for GW5 should be in query params"
 
     async def test_saves_chip_with_season_half_2_for_gw21(
-        self, chips_service: "ChipsService", mock_db
+        self, chips_service: "ChipsService", mock_db: MockDB
     ):
         """Should save season_half=2 for GW21."""
         with mock_db:
@@ -475,8 +534,54 @@ class TestChipsServiceSaveChipUsage:
         assert 2 in params, "season_half=2 for GW21 should be in query params"
         assert 32 in params, "points_gained should be in query params"
 
+    @pytest.mark.parametrize(
+        ("gameweek", "expected_half"),
+        [
+            (FIRST_HALF_END, 1),  # GW19 - last of first half
+            (SECOND_HALF_START, 2),  # GW20 - first of second half (chip reset)
+        ],
+        ids=["gw19_boundary", "gw20_reset"],
+    )
+    async def test_saves_correct_half_at_boundary_gameweeks(
+        self, chips_service: "ChipsService", mock_db: MockDB, gameweek: int, expected_half: int
+    ):
+        """Should calculate correct season_half at GW19/GW20 boundary."""
+        with mock_db:
+            await chips_service.save_chip_usage(
+                manager_id=12345,
+                season_id=1,
+                gameweek=gameweek,
+                chip_type="wildcard",
+                points_gained=None,
+            )
+
+        call_args = mock_db.conn.execute.call_args
+        params = call_args[0][1:]
+        assert gameweek in params, f"gameweek {gameweek} should be in query params"
+        assert expected_half in params, f"season_half={expected_half} should be in query params"
+
+    @pytest.mark.parametrize(
+        "valid_chip",
+        ["wildcard", "bboost", "3xc", "freehit"],
+        ids=["wildcard", "bench_boost", "triple_captain", "free_hit"],
+    )
+    async def test_accepts_all_valid_chip_types(
+        self, chips_service: "ChipsService", mock_db: MockDB, valid_chip: str
+    ):
+        """Should accept all valid chip types without raising."""
+        with mock_db:
+            await chips_service.save_chip_usage(
+                manager_id=12345,
+                season_id=1,
+                gameweek=5,
+                chip_type=valid_chip,
+                points_gained=None,
+            )
+
+        mock_db.conn.execute.assert_called_once()
+
     async def test_uses_upsert_for_duplicate_chip_usage(
-        self, chips_service: "ChipsService", mock_db
+        self, chips_service: "ChipsService", mock_db: MockDB
     ):
         """Should use ON CONFLICT DO UPDATE for idempotent saves."""
         with mock_db:
@@ -511,7 +616,11 @@ class TestChipsServiceSaveChipUsage:
                 points_gained=None,
             )
 
-    @pytest.mark.parametrize("invalid_gw", [0, -1, 39, 100])
+    @pytest.mark.parametrize(
+        "invalid_gw",
+        [0, -1, SEASON_END + 1, 100],
+        ids=["zero", "negative", "gw39", "gw100"],
+    )
     async def test_rejects_invalid_gameweek(
         self, chips_service: "ChipsService", invalid_gw: int
     ):
@@ -521,6 +630,20 @@ class TestChipsServiceSaveChipUsage:
                 manager_id=12345,
                 season_id=1,
                 gameweek=invalid_gw,
+                chip_type="wildcard",
+                points_gained=None,
+            )
+
+    async def test_propagates_database_error_on_save(
+        self, chips_service: "ChipsService", mock_db: MockDB
+    ):
+        """Should propagate database errors during save operation."""
+        mock_db.conn.execute.side_effect = Exception("Disk full")
+        with mock_db, pytest.raises(Exception, match="Disk full"):
+            await chips_service.save_chip_usage(
+                manager_id=12345,
+                season_id=1,
+                gameweek=5,
                 chip_type="wildcard",
                 points_gained=None,
             )
@@ -536,7 +659,7 @@ class TestChipsServiceCollectManagerChips:
 
     @pytest.mark.skip(reason="Collection requires FplApiClient.get_manager_history() - Phase 4")
     async def test_fetches_from_fpl_api_and_saves(
-        self, chips_service: "ChipsService", mock_db
+        self, chips_service: "ChipsService", mock_db: MockDB
     ):
         """Should fetch chips from FPL API and save to database."""
         mock_fpl_response = {
