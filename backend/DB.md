@@ -565,6 +565,65 @@ CREATE INDEX idx_chip_manager ON chip_usage(manager_id);
 CREATE INDEX idx_chip_type ON chip_usage(chip_type);
 ```
 
+### Chip Usage (Event-based) - 2025-26 Rules
+
+From 2025-26, **ALL chips reset at GW20** - each half-season has: wildcard, bboost, 3xc, freehit (8 chips total per manager per season).
+
+```sql
+-- Migration: 008_chip_usage.sql
+CREATE TABLE chip_usage (
+    id BIGSERIAL PRIMARY KEY,
+    manager_id BIGINT NOT NULL,
+    season_id INTEGER NOT NULL REFERENCES season(id),
+    gameweek INTEGER NOT NULL CHECK (gameweek >= 1 AND gameweek <= 38),
+    chip_type VARCHAR(20) NOT NULL CHECK (chip_type IN ('wildcard', 'bboost', '3xc', 'freehit')),
+
+    -- Which half of the season (1 = GW1-19, 2 = GW20-38)
+    season_half SMALLINT NOT NULL CHECK (season_half IN (1, 2)),
+
+    -- Analytics metadata
+    points_gained INTEGER,              -- bench pts for BB, extra captain pts for 3xc
+    team_value_at_use INTEGER,          -- in 0.1m units
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    UNIQUE(manager_id, season_id, season_half, chip_type)
+);
+
+CREATE INDEX idx_chip_usage_manager_season ON chip_usage(manager_id, season_id);
+CREATE INDEX idx_chip_usage_season_half ON chip_usage(season_id, season_half);
+```
+
+**Query chips used in first half:**
+```sql
+SELECT chip_type, gameweek, points_gained
+FROM chip_usage
+WHERE manager_id = 123 AND season_id = 1 AND season_half = 1;
+```
+
+**Query remaining chips for second half:**
+```sql
+-- Returns chip types NOT yet used in second half
+SELECT chip_type FROM (VALUES ('wildcard'), ('bboost'), ('3xc'), ('freehit')) AS all_chips(chip_type)
+WHERE chip_type NOT IN (
+    SELECT chip_type FROM chip_usage
+    WHERE manager_id = 123 AND season_id = 1 AND season_half = 2
+);
+```
+
+**Compare bench boost success in a league:**
+```sql
+SELECT
+    m.name AS manager_name,
+    cu.gameweek,
+    cu.points_gained AS bb_points
+FROM chip_usage cu
+JOIN manager m ON cu.manager_id = m.id
+WHERE cu.chip_type = 'bboost'
+  AND cu.manager_id IN (SELECT manager_id FROM league_manager WHERE league_id = 456)
+ORDER BY cu.points_gained DESC;
+```
+
 ### Player Gameweek Stats
 
 ```sql

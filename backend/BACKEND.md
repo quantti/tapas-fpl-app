@@ -50,7 +50,8 @@ INSERT INTO _migrations (name) VALUES
     ('004_points_against.sql'),
     ('005_season_2025_26.sql'),
     ('006_player_fixture_stats.sql'),
-    ('007_player_fixture_stats_improvements.sql')
+    ('007_player_fixture_stats_improvements.sql'),
+    ('008_chip_usage.sql')
 ON CONFLICT (name) DO NOTHING;
 ```
 
@@ -73,7 +74,8 @@ backend/
 │   ├── 004_points_against.sql
 │   ├── 005_season_2025_26.sql
 │   ├── 006_player_fixture_stats.sql
-│   └── 007_player_fixture_stats_improvements.sql
+│   ├── 007_player_fixture_stats_improvements.sql
+│   └── 008_chip_usage.sql
 ├── scripts/
 │   ├── migrate.py               # Database migration runner
 │   ├── collect_points_against.py # Full Points Against data collector (~66 min)
