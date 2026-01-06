@@ -1,3 +1,10 @@
+## [0.23.3](https://github.com/quantti/tapas-fpl-app/compare/v0.23.2...v0.23.3) (2026-01-06)
+
+
+### Bug Fixes
+
+* enable TanStack Query retries for manager data fetching ([987152c](https://github.com/quantti/tapas-fpl-app/commit/987152c7b3160c254302cbc7b12d3dd2d39abfef))
+
 ## [0.23.2](https://github.com/quantti/tapas-fpl-app/compare/v0.23.1...v0.23.2) (2026-01-06)
 
 
