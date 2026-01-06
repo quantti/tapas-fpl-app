@@ -1,3 +1,10 @@
+## [0.23.1](https://github.com/quantti/tapas-fpl-app/compare/v0.23.0...v0.23.1) (2026-01-06)
+
+
+### Bug Fixes
+
+* **tests:** correct API route patterns in E2E test fixtures ([aa02995](https://github.com/quantti/tapas-fpl-app/commit/aa02995420d9a1a2b69244e9f29da038834ba6f6))
+
 # [0.23.0](https://github.com/quantti/tapas-fpl-app/compare/v0.22.0...v0.23.0) (2026-01-06)
 
 
