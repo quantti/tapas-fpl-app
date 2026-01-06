@@ -162,25 +162,24 @@ async def seed_points_against(
                     (fixture_id, team_id, season_id, gameweek,
                      home_points, away_points, is_home, opponent_id)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                ON CONFLICT (fixture_id) DO NOTHING
+                ON CONFLICT (fixture_id, team_id) DO NOTHING
             """, fixture_id, home_team_id, season_id, gw,
                 home_points_conceded, 0, True, away_team_id)
-            fixture_id += 1
 
-            # Record from away team's perspective
+            # Record from away team's perspective (same fixture_id)
             await conn.execute("""
                 INSERT INTO points_against_by_fixture
                     (fixture_id, team_id, season_id, gameweek,
                      home_points, away_points, is_home, opponent_id)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                ON CONFLICT (fixture_id) DO NOTHING
+                ON CONFLICT (fixture_id, team_id) DO NOTHING
             """, fixture_id, away_team_id, season_id, gw,
                 0, away_points_conceded, False, home_team_id)
-            fixture_id += 1
+            fixture_id += 1  # Increment once per match, not per team
 
-    total_fixtures = fixture_id - 1
-    print(f"  \u2713 Seeded {total_fixtures} fixture records")
-    return total_fixtures
+    total_matches = fixture_id - 1
+    print(f"  \u2713 Seeded {total_matches * 2} fixture records ({total_matches} matches)")
+    return total_matches * 2
 
 
 async def seed_collection_status(

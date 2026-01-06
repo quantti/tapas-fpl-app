@@ -151,7 +151,7 @@ class PointsAgainstService:
                 home_points, away_points, is_home, opponent_id, updated_at
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-            ON CONFLICT (fixture_id) DO UPDATE SET
+            ON CONFLICT (fixture_id, team_id) DO UPDATE SET
                 home_points = EXCLUDED.home_points,
                 away_points = EXCLUDED.away_points,
                 updated_at = NOW()

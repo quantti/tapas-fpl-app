@@ -47,7 +47,7 @@ async def test_small_sample():
         VALUES ($1, $2, 0, 0, $3)
         ON CONFLICT (id) DO UPDATE SET status = $3
     """,
-        "main",
+        "points_against",
         season_id,
         "running",
     )
@@ -136,7 +136,7 @@ async def test_small_sample():
                     INSERT INTO points_against_by_fixture
                         (fixture_id, team_id, season_id, gameweek, home_points, away_points, is_home, opponent_id)
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                    ON CONFLICT (fixture_id) DO UPDATE SET
+                    ON CONFLICT (fixture_id, team_id) DO UPDATE SET
                         home_points = points_against_by_fixture.home_points + EXCLUDED.home_points,
                         away_points = points_against_by_fixture.away_points + EXCLUDED.away_points,
                         updated_at = NOW()
@@ -164,7 +164,7 @@ async def test_small_sample():
         "idle",
         current_gw,
         len(players),
-        "main",
+        "points_against",
     )
 
     print()
@@ -173,7 +173,7 @@ async def test_small_sample():
     pa_count = await conn.fetchval("SELECT COUNT(*) FROM points_against_by_fixture")
     status = await conn.fetchrow(
         "SELECT status, latest_gameweek, total_players_processed FROM points_against_collection_status WHERE id = $1",
-        "main",
+        "points_against",
     )
 
     print(f"player_fixture_stats rows: {pfs_count}")

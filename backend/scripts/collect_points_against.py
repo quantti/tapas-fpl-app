@@ -22,6 +22,7 @@ from collections import defaultdict
 from datetime import datetime
 
 import asyncpg
+import httpx
 from dotenv import load_dotenv
 
 # Add parent directory to path for imports
@@ -77,8 +78,8 @@ async def get_or_create_season(conn: asyncpg.Connection) -> int:
     # consider creating a proper migration or updating this default.
     row = await conn.fetchrow(
         """
-        INSERT INTO season (code, start_year, is_active)
-        VALUES ('2025-26', 2025, true)
+        INSERT INTO season (code, name, start_date, is_current)
+        VALUES ('2025-26', 'Season 2025/26', '2025-08-15', true)
         RETURNING id
         """
     )
@@ -285,47 +286,51 @@ async def collect_points_against(
             player_id = player["id"]
             team_id = player["team"]
 
+            # Fetch player history from FPL API
             try:
                 history = await fpl_client.get_player_history(player_id)
+            except httpx.HTTPError as e:
+                errors += 1
+                logger.warning(f"Failed to fetch player {player_id}: {e}")
+                continue
 
-                # Aggregate for Points Against
-                for h in history:
-                    # Points are scored AGAINST the opponent
-                    key = (h.fixture_id, h.opponent_team)
+            # Aggregate for Points Against
+            for h in history:
+                # Points are scored AGAINST the opponent
+                key = (h.fixture_id, h.opponent_team)
 
-                    if h.was_home:
-                        fixture_points[key]["home_points"] += h.total_points
-                    else:
-                        fixture_points[key]["away_points"] += h.total_points
+                if h.was_home:
+                    fixture_points[key]["home_points"] += h.total_points
+                else:
+                    fixture_points[key]["away_points"] += h.total_points
 
-                    # Set metadata (same for all players in this fixture)
-                    fixture_points[key]["opponent_id"] = team_id
-                    fixture_points[key]["gameweek"] = h.gameweek
-                    fixture_points[key]["is_home"] = not h.was_home  # Opponent was away
+                # Set metadata (same for all players in this fixture)
+                fixture_points[key]["opponent_id"] = team_id
+                fixture_points[key]["gameweek"] = h.gameweek
+                fixture_points[key]["is_home"] = not h.was_home  # Opponent was away
 
-                # Save individual player fixture stats
+            # Save individual player fixture stats
+            try:
                 stats_count = await save_player_fixture_stats(
                     conn, player_id, team_id, season_id, history
                 )
                 player_stats_saved += stats_count
+            except asyncpg.PostgresError as e:
+                logger.error(f"Database error saving stats for player {player_id}: {e}")
+                raise  # DB errors are critical, don't silently continue
 
-                total_processed += 1
+            total_processed += 1
 
-                # Log progress with estimated time remaining
-                if (i + 1) % batch_size == 0:
-                    elapsed = time.monotonic() - start_time
-                    rate = (i + 1) / elapsed
-                    remaining = (len(players) - i - 1) / rate if rate > 0 else 0
-                    logger.info(
-                        f"Progress: {i + 1}/{len(players)} players "
-                        f"({total_processed} success, {errors} errors) "
-                        f"- ETA: {remaining:.0f}s"
-                    )
-
-            except Exception as e:
-                errors += 1
-                logger.warning(f"Failed to fetch player {player_id}: {e}")
-                continue
+            # Log progress with estimated time remaining
+            if (i + 1) % batch_size == 0:
+                elapsed = time.monotonic() - start_time
+                rate = (i + 1) / elapsed
+                remaining = (len(players) - i - 1) / rate if rate > 0 else 0
+                logger.info(
+                    f"Progress: {i + 1}/{len(players)} players "
+                    f"({total_processed} success, {errors} errors) "
+                    f"- ETA: {remaining:.0f}s"
+                )
 
         # Check failure threshold for fetch phase
         if players:
@@ -366,15 +371,19 @@ async def collect_points_against(
 
         # Update status to idle on success
         elapsed_total = time.monotonic() - start_time
-        await pa_service.update_collection_status(
-            conn,
-            season_id,
-            current_gw,
-            total_processed,
-            "idle",
-            None,
-            is_full_collection=True,
-        )
+        try:
+            await pa_service.update_collection_status(
+                conn,
+                season_id,
+                current_gw,
+                total_processed,
+                "idle",
+                None,
+                is_full_collection=True,
+            )
+        except asyncpg.PostgresError as e:
+            logger.error(f"Failed to update collection status to idle: {e}")
+            # Don't raise - collection data was saved successfully
 
         logger.info(
             f"Collection complete in {elapsed_total:.1f}s! "

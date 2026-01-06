@@ -66,7 +66,8 @@ backend/
 │   ├── api/routes.py     # API endpoints
 │   └── services/
 │       ├── fpl_client.py     # FPL API client with rate limiting
-│       └── points_against.py # Points Against service
+│       ├── points_against.py # Points Against service
+│       └── chips.py          # Chips Remaining service
 ├── migrations/           # SQL migrations for Supabase
 │   ├── 001_core_tables.sql
 │   ├── 002_historical.sql
@@ -82,9 +83,12 @@ backend/
 │   ├── test_small_collection.py # Test collection with 5 players (~2 min)
 │   └── seed_test_data.py        # Test data seeder
 ├── tests/
-│   ├── conftest.py       # Test fixtures
-│   ├── test_config.py    # Settings tests
-│   └── test_api.py       # API endpoint tests (18 tests)
+│   ├── conftest.py           # Test fixtures (MockDB, async_client)
+│   ├── test_api.py           # API endpoint tests
+│   ├── test_config.py        # Settings tests
+│   ├── test_chips_api.py     # Chips API endpoint tests
+│   ├── test_chips_service.py # Chips service unit tests
+│   └── test_fpl_client.py    # FPL API client tests
 ├── fly.toml              # Fly.io deployment config
 ├── DB.md                 # Database schema documentation
 └── requirements.txt
@@ -245,6 +249,51 @@ python -m scripts.collect_points_against --reset
 **Data Saved:**
 1. `points_against_by_fixture` - Aggregated points conceded per team per fixture
 2. `player_fixture_stats` - Individual player stats (xG, xA, BPS, ICT index, etc.)
+
+### Chips Remaining API
+
+Tracks chip usage per manager with season-half support (FPL 2025-26: all chips reset at GW20).
+
+**Endpoints:**
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/chips/league/{league_id}` | Chip usage for all managers in a league |
+| `GET /api/v1/chips/manager/{manager_id}` | Chip usage for a single manager |
+
+**Query Parameters:**
+- `season_id` (default: 1) - Season ID
+- `current_gameweek` (required for league endpoint) - Current gameweek (1-38)
+- `sync` (default: false) - Fetch fresh data from FPL API before returning
+
+**Response Format:**
+```json
+{
+  "manager_id": 91555,
+  "season_id": 1,
+  "first_half": {
+    "chips_used": [
+      {"chip_type": "wildcard", "gameweek": 6, "points_gained": null}
+    ],
+    "chips_remaining": ["3xc", "bboost", "freehit"]
+  },
+  "second_half": {
+    "chips_used": [],
+    "chips_remaining": ["3xc", "bboost", "freehit", "wildcard"]
+  }
+}
+```
+
+**On-Demand Sync:**
+- Set `sync=true` to fetch latest chip data from FPL API
+- Uses `asyncio.gather()` for concurrent requests (rate-limited)
+- Partial failures are logged but don't fail the entire sync
+
+**Error Handling:**
+- `429` - FPL API rate limited
+- `502` - FPL API unavailable
+- `504` - FPL API timeout
+- `503` - Database unavailable
 
 ### FPL API Client
 
@@ -971,6 +1020,17 @@ mock_conn.__aexit__.return_value = None
 | `TestChipsServiceGetManagerChips` | 3 | Manager chips service |
 | `TestChipsServiceGetLeagueChips` | 6 | League chips service |
 | `TestChipsServiceSaveChipUsage` | 7 | Chip save with validation |
+| `TestChipsServiceSync` | 5 | FPL API sync with partial failures |
+| `TestChipsServiceSyncErrorPropagation` | 3 | Error propagation tests |
+| `TestFplClientBootstrap` | 2 | Bootstrap endpoint parsing |
+| `TestFplClientPlayerHistory` | 2 | Player history endpoint |
+| `TestFplClientFixtures` | 1 | Fixtures endpoint |
+| `TestFplClientEntryHistory` | 6 | Manager chip history with retry/404 |
+| `TestFplClientRetry` | 7 | Retry behavior on transient errors |
+| `TestFplClientResourceManagement` | 3 | HTTP client lifecycle |
+| `TestFplClientRetryExhaustion` | 4 | Retry exhaustion and non-retryable errors |
+
+**Total: 149 tests** (142 pass, 7 skipped)
 
 **Testing Without Database:**
 - Tests run without database connection
@@ -1064,9 +1124,29 @@ fly ssh console --app tapas-fpl-backend -C "tail -20 /tmp/collection.log"
 - `points_against_by_fixture` is only saved at the end (will need re-run)
 - Re-run collection: `fly ssh console --app tapas-fpl-backend -C "nohup python -m scripts.collect_points_against > /tmp/collection.log 2>&1 &"`
 
+**Machine stopped during long-running collection (~66 min)**
+
+Fly.io auto-stops machines when there's no HTTP traffic. Disable auto-stop before running long collections:
+
+```bash
+# 1. Get machine ID
+fly machine list --app tapas-fpl-backend
+
+# 2. Disable auto-stop on running machine (runtime change, no deploy needed)
+fly machine update <machine_id> --autostop=off --app tapas-fpl-backend
+
+# 3. Run collection
+fly ssh console --app tapas-fpl-backend -C "nohup python -m scripts.collect_points_against > /tmp/collection.log 2>&1 &"
+
+# 4. Re-enable auto-stop after collection completes (to save costs)
+fly machine update <machine_id> --autostop=stop --app tapas-fpl-backend
+```
+
+Alternative: Set `auto_stop_machines = 'off'` in `fly.toml` and redeploy (permanent change).
+
 **"ON CONFLICT" errors**
 - Check migration was applied: `python -m scripts.migrate --status`
-- `points_against_by_fixture` PK is just `fixture_id` (not composite)
+- `points_against_by_fixture` PK is `(fixture_id, team_id)` - each fixture has 2 rows (one per team)
 - `player_fixture_stats` PK is `(fixture_id, player_id, season_id)`
 
 **SSH pipe command not working**
