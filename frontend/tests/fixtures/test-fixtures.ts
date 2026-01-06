@@ -24,10 +24,11 @@ import {
 /**
  * Setup API mocking for a page.
  * Intercepts all FPL API calls and returns mock data.
+ * Note: Frontend uses /api/fpl/* routes (via Vercel serverless functions)
  */
 export async function setupApiMocking(page: Page) {
   // Mock bootstrap-static
-  await page.route('**/api/bootstrap-static', async (route) => {
+  await page.route('**/api/fpl/bootstrap-static', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -36,7 +37,7 @@ export async function setupApiMocking(page: Page) {
   });
 
   // Mock fixtures - handle both with and without event parameter
-  await page.route('**/api/fixtures**', async (route) => {
+  await page.route('**/api/fpl/fixtures**', async (route) => {
     const url = new URL(route.request().url());
     const event = url.searchParams.get('event');
 
@@ -54,7 +55,7 @@ export async function setupApiMocking(page: Page) {
   });
 
   // Mock league standings
-  await page.route('**/api/leagues-classic/*/standings**', async (route) => {
+  await page.route('**/api/fpl/leagues-classic/*/standings**', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -63,11 +64,11 @@ export async function setupApiMocking(page: Page) {
   });
 
   // Mock entry (manager) details - use ** to match multiple path segments
-  // Matches /api/entry/12345, /api/entry/12345/event/18/picks, /api/entry/12345/history, etc.
-  await page.route('**/api/entry/**', async (route) => {
+  // Matches /api/fpl/entry/12345, /api/fpl/entry/12345/event/18/picks, etc.
+  await page.route('**/api/fpl/entry/**', async (route) => {
     const url = route.request().url();
     // Extract entry ID from URL, handling various patterns
-    const match = url.match(/\/api\/entry\/(\d+)(?:\/|$|\?)/);
+    const match = url.match(/\/api\/fpl\/entry\/(\d+)(?:\/|$|\?)/);
     const entryId = match ? Number.parseInt(match[1]) : MOCK_MANAGER_IDS.manager1;
 
     // Check if this is a sub-route (history, picks, transfers)
@@ -101,7 +102,7 @@ export async function setupApiMocking(page: Page) {
   });
 
   // Mock live gameweek data
-  await page.route('**/api/event/*/live', async (route) => {
+  await page.route('**/api/fpl/event/*/live', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -110,7 +111,7 @@ export async function setupApiMocking(page: Page) {
   });
 
   // Mock element summary (player details)
-  await page.route('**/api/element-summary/*', async (route) => {
+  await page.route('**/api/fpl/element-summary/*', async (route) => {
     const match = route
       .request()
       .url()
@@ -124,11 +125,28 @@ export async function setupApiMocking(page: Page) {
   });
 
   // Mock event status
-  await page.route('**/api/event-status', async (route) => {
+  await page.route('**/api/fpl/event-status', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(mockEventStatusResponse),
+    });
+  });
+
+  // Mock backend API (Points Against, Chips) - return empty/unavailable to avoid test failures
+  await page.route('**/points-against**', async (route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ detail: 'Service temporarily unavailable' }),
+    });
+  });
+
+  await page.route('**/chips**', async (route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ detail: 'Service temporarily unavailable' }),
     });
   });
 }

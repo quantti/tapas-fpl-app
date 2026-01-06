@@ -12,6 +12,23 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: '0.22.0',
+    date: 'January 6, 2026',
+    items: [
+      {
+        title: 'Points Against',
+        description:
+          'See which Premier League teams concede the most FPL points. Use this to identify favorable fixtures for your attacking and defensive players.',
+        type: 'feature',
+      },
+      {
+        title: 'Chips Remaining',
+        description: 'Improved reliability and performance.',
+        type: 'fix',
+      },
+    ],
+  },
+  {
     version: '0.20.0',
     date: 'January 5, 2026',
     items: [
