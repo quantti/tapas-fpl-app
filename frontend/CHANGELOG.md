@@ -10,6 +10,18 @@
 
 * **chips:** integrate frontend with backend chips API ([d157c6d](https://github.com/quantti/tapas-fpl-app/commit/d157c6debca431df198e5979577628449a488478))
 
+# [0.22.0](https://github.com/quantti/tapas-fpl-app/compare/v0.21.0...v0.22.0) (2026-01-06)
+
+
+### Bug Fixes
+
+* **points-against:** correct database PK and collection bugs ([496a9d5](https://github.com/quantti/tapas-fpl-app/commit/496a9d5b15e406f7ede8331761c41b6027e379b9))
+
+
+### Features
+
+* **chips:** integrate frontend with backend chips API ([d157c6d](https://github.com/quantti/tapas-fpl-app/commit/d157c6debca431df198e5979577628449a488478))
+
 # [0.21.0](https://github.com/quantti/tapas-fpl-app/compare/v0.20.0...v0.21.0) (2026-01-05)
 
 
