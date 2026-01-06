@@ -16,7 +16,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - **Charts**: Recharts for data visualization
 - **Icons**: Lucide React
 - **API Proxy**: Vercel Serverless Functions (same-origin, tiered caching)
-- **Backend**: Python FastAPI on Fly.io (Points Against API, future analytics)
+- **Backend**: Python FastAPI on Fly.io (Points Against, Chips Remaining APIs)
 - **Database**: Supabase (PostgreSQL 17)
 - **Hosting**: Vercel (frontend + API proxy), Fly.io (backend)
 - **Testing**: Vitest + React Testing Library + Playwright (E2E)
@@ -33,12 +33,13 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 │  └─────────────────┘  └──────────────┘  │
 └─────────────────────────────────────────┘
         │
-        │ (Points Against API)
+        │ (Analytics APIs)
         ▼
 ┌──────────────────┐     ┌─────────────────┐
 │  Python FastAPI  │────▶│   Supabase      │
 │  (Fly.io)        │     │   PostgreSQL 17 │
 │  Points Against  │     │   (EU West)     │
+│  Chips Remaining │     │                 │
 └──────────────────┘     └─────────────────┘
 ```
 
@@ -55,7 +56,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - [x] Bench points tracking (cumulative wasted points)
 - [x] Captain differential tracker
 - [x] League position history chart (bump chart)
-- [x] Chips remaining tracker
+- [x] Chips remaining tracker (backend API ready, frontend needs integration to fix API spam)
 - [x] Transfers display (in/out per manager)
 - [x] Team value and hit stats
 - [x] Gameweek countdown banner

@@ -1,5 +1,25 @@
 # TODO
 
+## Immediate Tasks
+
+### 1. Frontend: Integrate Chips Backend API
+- [ ] Update `ChipsRemaining` component to call backend API instead of direct FPL calls
+- [ ] Use `GET /api/v1/chips/league/{league_id}?current_gameweek=N&sync=true`
+- [ ] Remove direct FPL API calls (fixes "chips spam" issue)
+- [ ] Test locally before deploying
+
+### 2. Frontend: Activate Points Against Feature
+- [ ] Unhide Points Against card on Statistics page
+- [ ] Connect to backend API `GET /api/v1/points-against`
+- [ ] Test locally before deploying
+
+### 3. Fix Flaky E2E Tests
+- [ ] Investigate why 47 tests fail intermittently (element not found errors)
+- [ ] Increase timeouts or add better wait conditions
+- [ ] Consider mocking FPL API responses for stability
+
+---
+
 ## Frontend
 
 ### Multi-League Support (Required for Public Release)
@@ -93,6 +113,18 @@
 ### Nice to Have
 - [ ] PWA support (offline access, install prompt)
 - [ ] Push notifications ("Match starting soon", "Your captain scored")
+
+---
+
+## Recently Completed
+
+### Backend: Chips Remaining API (Jan 2026)
+- [x] Database schema (`chip_usage` table with season half support)
+- [x] ChipsService with sync from FPL API
+- [x] API endpoints (`/api/v1/chips/league/{id}`, `/api/v1/chips/manager/{id}`)
+- [x] Concurrent sync with `asyncio.gather()` and rate limiting
+- [x] Error handling (429, 502, 504)
+- [x] Deployed to Fly.io
 
 ---
 
