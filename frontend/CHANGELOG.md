@@ -1,3 +1,10 @@
+# [0.23.0](https://github.com/quantti/tapas-fpl-app/compare/v0.22.0...v0.23.0) (2026-01-06)
+
+
+### Features
+
+* **chips:** integrate frontend with backend chips API ([938911b](https://github.com/quantti/tapas-fpl-app/commit/938911bb243c3ef34e18ef802311e32f30abdadc))
+
 # [0.22.0](https://github.com/quantti/tapas-fpl-app/compare/v0.21.0...v0.22.0) (2026-01-06)
 
 
