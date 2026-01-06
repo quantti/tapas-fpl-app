@@ -95,16 +95,16 @@
     }
   }
 
-  /* Dark mode adjustments */
-  :global([data-theme='dark']) .row[data-intensity='high'] {
+  /* Dark mode adjustments - outside .table nesting */
+  [data-theme='dark'] .row[data-intensity='high'] {
     background-color: rgb(239 68 68 / 15%);
   }
 
-  :global([data-theme='dark']) .row[data-intensity='medium'] {
+  [data-theme='dark'] .row[data-intensity='medium'] {
     background-color: rgb(245 158 11 / 12%);
   }
 
-  :global([data-theme='dark']) .row[data-intensity='low'] {
+  [data-theme='dark'] .row[data-intensity='low'] {
     background-color: rgb(234 179 8 / 8%);
   }
 

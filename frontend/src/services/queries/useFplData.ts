@@ -127,76 +127,74 @@ export function useFplData() {
       queryFn: async (): Promise<ManagerGameweekData | null> => {
         if (!currentGameweek) return null;
 
-        try {
-          const [picks, history, transfers] = await Promise.all([
-            fplApi.getEntryPicks(manager.entry, currentGameweek.id),
-            fplApi.getEntryHistory(manager.entry),
-            fplApi.getEntryTransfers(manager.entry),
-          ]);
+        // Fetch all manager data in parallel
+        // Note: Don't catch errors here - let TanStack Query handle retries
+        // (default: 3 retries with exponential backoff)
+        const [picks, history, transfers] = await Promise.all([
+          fplApi.getEntryPicks(manager.entry, currentGameweek.id),
+          fplApi.getEntryHistory(manager.entry),
+          fplApi.getEntryTransfers(manager.entry),
+        ]);
 
-          // Find captain and vice captain
-          const captainPick = picks.picks.find((p) => p.is_captain);
-          const viceCaptainPick = picks.picks.find((p) => p.is_vice_captain);
+        // Find captain and vice captain
+        const captainPick = picks.picks.find((p) => p.is_captain);
+        const viceCaptainPick = picks.picks.find((p) => p.is_vice_captain);
 
-          // Map picks to our format for live scoring
-          const managerPicks: ManagerPick[] = picks.picks.map((p) => ({
-            playerId: p.element,
-            position: p.position,
-            multiplier: p.multiplier,
-            isCaptain: p.is_captain,
-            isViceCaptain: p.is_vice_captain,
-          }));
+        // Map picks to our format for live scoring
+        const managerPicks: ManagerPick[] = picks.picks.map((p) => ({
+          playerId: p.element,
+          position: p.position,
+          multiplier: p.multiplier,
+          isCaptain: p.is_captain,
+          isViceCaptain: p.is_vice_captain,
+        }));
 
-          // Get current and previous week's history for overall rank comparison
-          const currentHistory = history.current.find((h) => h.event === currentGameweek.id);
-          const previousHistory = history.current.find((h) => h.event === currentGameweek.id - 1);
+        // Get current and previous week's history for overall rank comparison
+        const currentHistory = history.current.find((h) => h.event === currentGameweek.id);
+        const previousHistory = history.current.find((h) => h.event === currentGameweek.id - 1);
 
-          // Filter transfers to current gameweek
-          const gwTransfers = transfers.filter((t) => t.event === currentGameweek.id);
+        // Filter transfers to current gameweek
+        const gwTransfers = transfers.filter((t) => t.event === currentGameweek.id);
 
-          // Map transfer player IDs to Player objects
-          const transfersIn = gwTransfers
-            .map((t) => playersMap.get(t.element_in))
-            .filter((p): p is Player => p !== undefined);
-          const transfersOut = gwTransfers
-            .map((t) => playersMap.get(t.element_out))
-            .filter((p): p is Player => p !== undefined);
+        // Map transfer player IDs to Player objects
+        const transfersIn = gwTransfers
+          .map((t) => playersMap.get(t.element_in))
+          .filter((p): p is Player => p !== undefined);
+        const transfersOut = gwTransfers
+          .map((t) => playersMap.get(t.element_out))
+          .filter((p): p is Player => p !== undefined);
 
-          const transfersCost = currentHistory?.event_transfers_cost || 0;
+        const transfersCost = currentHistory?.event_transfers_cost || 0;
 
-          // Calculate total hits cost across all gameweeks
-          const totalHitsCost = history.current.reduce(
-            (sum, gw) => sum + (gw.event_transfers_cost || 0),
-            0
-          );
+        // Calculate total hits cost across all gameweeks
+        const totalHitsCost = history.current.reduce(
+          (sum, gw) => sum + (gw.event_transfers_cost || 0),
+          0
+        );
 
-          return {
-            managerId: manager.entry,
-            managerName: manager.player_name,
-            teamName: manager.entry_name,
-            rank: manager.rank,
-            lastRank: manager.last_rank,
-            gameweekPoints: manager.event_total,
-            totalPoints: manager.total,
-            overallRank: currentHistory?.overall_rank ?? 0,
-            lastOverallRank: previousHistory?.overall_rank ?? 0,
-            picks: managerPicks,
-            captain: captainPick ? playersMap.get(captainPick.element) || null : null,
-            viceCaptain: viceCaptainPick ? playersMap.get(viceCaptainPick.element) || null : null,
-            activeChip: picks.active_chip,
-            transfersIn,
-            transfersOut,
-            transfersCost,
-            totalHitsCost,
-            // FPL API's `value` includes bank, so subtract to get actual squad value
-            teamValue: ((picks.entry_history.value || 0) - (picks.entry_history.bank || 0)) / 10,
-            bank: (picks.entry_history.bank || 0) / 10,
-            chipsUsed: history.chips.map((c) => ({ name: c.name, event: c.event })),
-          };
-        } catch (err) {
-          console.warn(`Failed to fetch data for manager ${manager.entry}:`, err);
-          return null;
-        }
+        return {
+          managerId: manager.entry,
+          managerName: manager.player_name,
+          teamName: manager.entry_name,
+          rank: manager.rank,
+          lastRank: manager.last_rank,
+          gameweekPoints: manager.event_total,
+          totalPoints: manager.total,
+          overallRank: currentHistory?.overall_rank ?? 0,
+          lastOverallRank: previousHistory?.overall_rank ?? 0,
+          picks: managerPicks,
+          captain: captainPick ? playersMap.get(captainPick.element) || null : null,
+          viceCaptain: viceCaptainPick ? playersMap.get(viceCaptainPick.element) || null : null,
+          activeChip: picks.active_chip,
+          transfersIn,
+          transfersOut,
+          transfersCost,
+          totalHitsCost,
+          // FPL API's `value` includes bank, so subtract to get actual squad value
+          teamValue: ((picks.entry_history.value || 0) - (picks.entry_history.bank || 0)) / 10,
+          bank: (picks.entry_history.bank || 0) / 10,
+          chipsUsed: history.chips.map((c) => ({ name: c.name, event: c.event })),
+        };
       },
       staleTime: isLive ? 30 * 1000 : 60 * 1000,
       refetchInterval: isLive ? LIVE_REFRESH_INTERVAL : IDLE_REFRESH_INTERVAL,

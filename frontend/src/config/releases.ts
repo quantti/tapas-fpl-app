@@ -12,6 +12,30 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: '0.23.3',
+    date: 'January 6, 2026',
+    items: [
+      {
+        title: 'Captain Display Fix',
+        description:
+          'Fixed intermittent missing captain and transfer data for some managers by enabling automatic API request retries.',
+        type: 'fix',
+      },
+    ],
+  },
+  {
+    version: '0.23.0',
+    date: 'January 6, 2026',
+    items: [
+      {
+        title: 'Chips Backend Integration',
+        description:
+          'Chips Remaining data now loads from the backend API for improved reliability and faster updates.',
+        type: 'feature',
+      },
+    ],
+  },
+  {
     version: '0.22.0',
     date: 'January 6, 2026',
     items: [
