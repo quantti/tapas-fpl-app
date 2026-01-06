@@ -41,7 +41,7 @@ test.describe('Gameweek Countdown', () => {
     }));
 
     // Override the default mocks with countdown-specific data
-    await page.route('**/api/bootstrap-static', async (route) => {
+    await page.route('**/api/fpl/bootstrap-static', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -49,7 +49,7 @@ test.describe('Gameweek Countdown', () => {
       });
     });
 
-    await page.route('**/api/fixtures**', async (route) => {
+    await page.route('**/api/fpl/fixtures**', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -57,7 +57,7 @@ test.describe('Gameweek Countdown', () => {
       });
     });
 
-    await page.route('**/api/event/*/live', async (route) => {
+    await page.route('**/api/fpl/event/*/live', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -128,7 +128,7 @@ test.describe('Gameweek Countdown', () => {
       })),
     ];
 
-    await page.route('**/api/bootstrap-static', async (route) => {
+    await page.route('**/api/fpl/bootstrap-static', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -144,7 +144,7 @@ test.describe('Gameweek Countdown', () => {
       });
     });
 
-    await page.route('**/api/event/*/live', async (route) => {
+    await page.route('**/api/fpl/event/*/live', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -206,7 +206,7 @@ test.describe('Gameweek Countdown', () => {
       team_a_difficulty: 3,
     }));
 
-    await page.route('**/api/bootstrap-static', async (route) => {
+    await page.route('**/api/fpl/bootstrap-static', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -222,7 +222,7 @@ test.describe('Gameweek Countdown', () => {
       });
     });
 
-    await page.route('**/api/event/*/live', async (route) => {
+    await page.route('**/api/fpl/event/*/live', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

@@ -134,7 +134,8 @@ export async function setupApiMocking(page: Page) {
   });
 
   // Mock backend API (Points Against, Chips) - return empty/unavailable to avoid test failures
-  await page.route('**/points-against**', async (route) => {
+  // Use specific /api/v1/ prefix to avoid matching source files like /src/utils/chips.ts
+  await page.route('**/api/v1/points-against**', async (route) => {
     await route.fulfill({
       status: 503,
       contentType: 'application/json',
@@ -142,7 +143,7 @@ export async function setupApiMocking(page: Page) {
     });
   });
 
-  await page.route('**/chips**', async (route) => {
+  await page.route('**/api/v1/chips/**', async (route) => {
     await route.fulfill({
       status: 503,
       contentType: 'application/json',
