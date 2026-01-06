@@ -9,8 +9,10 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 
+import asyncpg
+
 from app.db import get_connection
-from app.services.fpl_client import FplApiClient
+from app.services.fpl_client import FplApiClient, LeagueMember, LeagueStandings
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +26,16 @@ SEASON_END = 38  # Last GW of season
 
 # All available chips (lowercase, matching FPL API)
 ALL_CHIPS = frozenset({"wildcard", "bboost", "3xc", "freehit"})
+
+# SQL query to fetch league members with player names (used in multiple places)
+_LEAGUE_MEMBERS_SQL = """
+    SELECT lm.manager_id,
+           COALESCE(m.player_first_name, '') || ' ' ||
+           COALESCE(m.player_last_name, '') as player_name
+    FROM league_manager lm
+    JOIN manager m ON m.id = lm.manager_id AND m.season_id = lm.season_id
+    WHERE lm.league_id = $1 AND lm.season_id = $2
+"""
 
 
 # =============================================================================
@@ -124,6 +136,131 @@ class LeagueChips:
 class ChipsService:
     """Service for managing chip usage data."""
 
+    async def _ensure_league_members(
+        self,
+        conn: asyncpg.Connection,
+        league_id: int,
+        season_id: int,
+        fpl_client: FplApiClient,
+    ) -> list[LeagueMember]:
+        """
+        Ensure league members are stored in the database.
+
+        If the league doesn't exist in the database, fetches from FPL API
+        and populates league, manager, and league_manager tables.
+
+        Uses advisory lock to prevent race conditions when multiple requests
+        try to populate the same league concurrently.
+
+        Args:
+            conn: Database connection
+            league_id: FPL league ID
+            season_id: Season ID
+            fpl_client: FPL API client
+
+        Returns:
+            List of league members
+        """
+        # Check if we already have this league's members
+        existing = await conn.fetch(_LEAGUE_MEMBERS_SQL, league_id, season_id)
+
+        if existing:
+            return [
+                LeagueMember(
+                    manager_id=row["manager_id"],
+                    player_name=row["player_name"].strip(),
+                    team_name="",  # Not needed for chips
+                    rank=0,
+                    total_points=0,
+                )
+                for row in existing
+            ]
+
+        # Use advisory lock to prevent concurrent sync attempts for same league
+        # Lock key combines league_id and season_id to be unique
+        lock_key = league_id * 1000 + season_id
+        try:
+            await conn.execute("SELECT pg_advisory_lock($1)", lock_key)
+
+            # Double-check after acquiring lock (another request may have populated)
+            existing = await conn.fetch(_LEAGUE_MEMBERS_SQL, league_id, season_id)
+            if existing:
+                return [
+                    LeagueMember(
+                        manager_id=row["manager_id"],
+                        player_name=row["player_name"].strip(),
+                        team_name="",
+                        rank=0,
+                        total_points=0,
+                    )
+                    for row in existing
+                ]
+
+            # Fetch from FPL API
+            logger.info(f"Fetching league {league_id} members from FPL API")
+            standings = await fpl_client.get_league_standings(league_id)
+
+            if not standings.members:
+                return []
+
+            # Use transaction for atomicity
+            async with conn.transaction():
+                # Insert league with actual name from API
+                await conn.execute(
+                    """
+                    INSERT INTO league (id, season_id, name)
+                    VALUES ($1, $2, $3)
+                    ON CONFLICT (id, season_id) DO UPDATE SET name = EXCLUDED.name
+                    """,
+                    league_id,
+                    season_id,
+                    standings.league_name,
+                )
+
+                # Batch insert managers
+                manager_data = []
+                for member in standings.members:
+                    name_parts = member.player_name.split(" ", 1)
+                    first_name = name_parts[0] if name_parts else ""
+                    last_name = name_parts[1] if len(name_parts) > 1 else ""
+                    manager_data.append(
+                        (member.manager_id, season_id, first_name, last_name, member.team_name)
+                    )
+
+                await conn.executemany(
+                    """
+                    INSERT INTO manager (id, season_id, player_first_name, player_last_name, name)
+                    VALUES ($1, $2, $3, $4, $5)
+                    ON CONFLICT (id, season_id) DO UPDATE SET
+                        player_first_name = EXCLUDED.player_first_name,
+                        player_last_name = EXCLUDED.player_last_name,
+                        name = EXCLUDED.name
+                    """,
+                    manager_data,
+                )
+
+                # Batch insert league_manager relationships
+                league_manager_data = [
+                    (league_id, member.manager_id, season_id)
+                    for member in standings.members
+                ]
+
+                await conn.executemany(
+                    """
+                    INSERT INTO league_manager (league_id, manager_id, season_id)
+                    VALUES ($1, $2, $3)
+                    ON CONFLICT DO NOTHING
+                    """,
+                    league_manager_data,
+                )
+
+            logger.info(f"Stored {len(standings.members)} members for league {league_id}")
+            return standings.members
+
+        finally:
+            # Always release the advisory lock
+            await conn.execute("SELECT pg_advisory_unlock($1)", lock_key)
+
     async def get_manager_chips(self, manager_id: int, season_id: int) -> ManagerChips:
         """Get chip usage for a single manager.
 
@@ -167,16 +304,8 @@ class ChipsService:
         current_half = get_season_half(current_gameweek)  # Validates gameweek
 
         async with get_connection() as conn:
-            # Get league members
-            members = await conn.fetch(
-                """
-                SELECT manager_id, player_name
-                FROM league_members
-                WHERE league_id = $1 AND season_id = $2
-                """,
-                league_id,
-                season_id,
-            )
+            # Get league members (join with manager table for player name)
+            members = await conn.fetch(_LEAGUE_MEMBERS_SQL, league_id, season_id)
 
             if not members:
                 return LeagueChips(
@@ -215,7 +344,7 @@ class ChipsService:
             manager_chips_list.append(
                 ManagerChipsWithName(
                     manager_id=mid,
-                    name=member["player_name"],
+                    name=member["player_name"].strip(),
                     first_half=manager_chips.first_half,
                     second_half=manager_chips.second_half,
                 )
@@ -328,6 +457,9 @@ class ChipsService:
         Uses asyncio.gather for concurrent requests (FplApiClient handles rate limiting).
         Continues syncing other managers if individual manager sync fails.
 
+        If the league members aren't in the database yet, fetches them from the
+        FPL API and stores them first.
+
         Args:
             league_id: FPL league ID
             season_id: Season ID
@@ -336,14 +468,10 @@ class ChipsService:
         Returns:
             Total number of chips synced across all managers
         """
+        # Ensure league members exist in DB (fetches from FPL API if needed)
         async with get_connection() as conn:
-            members = await conn.fetch(
-                """
-                SELECT manager_id FROM league_members
-                WHERE league_id = $1 AND season_id = $2
-                """,
-                league_id,
-                season_id,
+            members = await self._ensure_league_members(
+                conn, league_id, season_id, fpl_client
             )
 
         if not members:
@@ -358,7 +486,7 @@ class ChipsService:
                 return 0
 
         # Concurrent sync (FplApiClient semaphore handles rate limiting)
-        tasks = [sync_one(m["manager_id"]) for m in members]
+        tasks = [sync_one(m.manager_id) for m in members]
         results = await asyncio.gather(*tasks)
 
         total = sum(results)

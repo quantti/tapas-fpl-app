@@ -1,3 +1,5 @@
+import { LEAGUE_ID } from 'src/config';
+
 import { ChipsRemaining } from 'components/ChipsRemaining';
 import { FplUpdating } from 'components/FplUpdating';
 import { LeagueTemplateTeam } from 'components/LeagueTemplateTeam';
@@ -88,11 +90,7 @@ export function Statistics() {
           gameweeks={bootstrap?.events ?? []}
           playersMap={playersMap}
         />
-        <ChipsRemaining
-          managerDetails={managerDetails}
-          currentGameweek={currentGameweek.id}
-          deadlineTime={currentGameweek.deadline_time}
-        />
+        <ChipsRemaining leagueId={LEAGUE_ID} currentGameweek={currentGameweek.id} />
         <FreeTransfers
           managerDetails={managerDetails}
           currentGameweek={currentGameweek.id}

@@ -71,6 +71,33 @@ export interface CollectionStatusResponse {
   message?: string; // For not_initialized status
 }
 
+// Chips API types
+export interface ChipUsedData {
+  chip_type: string;
+  gameweek: number;
+  points_gained: number | null;
+}
+
+export interface HalfChipsData {
+  chips_used: ChipUsedData[];
+  chips_remaining: string[];
+}
+
+export interface ManagerChipsData {
+  manager_id: number;
+  name: string;
+  first_half: HalfChipsData;
+  second_half: HalfChipsData;
+}
+
+export interface LeagueChipsResponse {
+  league_id: number;
+  season_id: number;
+  current_gameweek: number;
+  current_half: number;
+  managers: ManagerChipsData[];
+}
+
 async function fetchBackend<T>(endpoint: string): Promise<T> {
   let response: Response;
 
@@ -156,4 +183,17 @@ export const backendApi = {
    */
   getCollectionStatus: () =>
     fetchBackend<CollectionStatusResponse>('/api/v1/points-against/status'),
+
+  /**
+   * Get chip usage for all managers in a league.
+   * When sync=true, fetches fresh data from FPL API and stores it.
+   */
+  getLeagueChips: (
+    leagueId: number,
+    currentGameweek: number,
+    { seasonId = 1, sync = false }: { seasonId?: number; sync?: boolean } = {}
+  ) =>
+    fetchBackend<LeagueChipsResponse>(
+      `/api/v1/chips/league/${leagueId}?current_gameweek=${currentGameweek}&season_id=${seasonId}&sync=${sync}`
+    ),
 };

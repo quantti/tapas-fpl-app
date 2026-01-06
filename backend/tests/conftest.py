@@ -1,7 +1,7 @@
 """Shared pytest fixtures for backend tests."""
 
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -20,6 +20,16 @@ async def async_client() -> AsyncClient:
 # =============================================================================
 # MockDB: Shared Database Mock Fixture
 # =============================================================================
+
+
+class AsyncContextManagerMock:
+    """Async context manager mock for use with 'async with' statements."""
+
+    async def __aenter__(self) -> "AsyncContextManagerMock":
+        return self
+
+    async def __aexit__(self, *args: Any) -> None:
+        pass
 
 
 class MockDB:
@@ -59,6 +69,9 @@ class MockDB:
                         Always patch where the function is USED, not where it's defined.
         """
         self.conn = AsyncMock()
+        # conn.transaction() is sync but returns an async context manager
+        # Use MagicMock for transaction to avoid it returning a coroutine
+        self.conn.transaction = MagicMock(return_value=AsyncContextManagerMock())
         self.patch = patch(module_path)
         self._mock_get_conn = None
 

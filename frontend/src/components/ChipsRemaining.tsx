@@ -1,40 +1,43 @@
 import { Zap } from 'lucide-react';
-import { useMemo } from 'react';
 
-import { CHIP_LABELS, getRemainingChips } from 'utils/chips';
+import { useLeagueChips } from 'services/queries/useLeagueChips';
+
+import { CHIP_LABELS } from 'utils/chips';
 
 import { Card } from './Card';
 import { CardHeader } from './CardHeader';
 import { CardRow } from './CardRow';
 import * as styles from './ChipsRemaining.module.css';
 
-import type { ManagerGameweekData } from 'services/queries/useFplData';
-
 interface Props {
-  managerDetails: ManagerGameweekData[];
+  leagueId: number;
   currentGameweek: number;
-  deadlineTime?: string;
 }
 
-export function ChipsRemaining({ managerDetails, currentGameweek, deadlineTime }: Props) {
-  // Determine which half of the season we're in (2025/26 rules: full chip reset at GW20)
-  // Second half starts when GW19 deadline passes (chips for GW20+ available)
-  const isSecondHalf = useMemo(() => {
-    if (currentGameweek >= 20) return true;
-    if (currentGameweek === 19 && deadlineTime) {
-      return new Date() > new Date(deadlineTime);
-    }
-    return false;
-  }, [currentGameweek, deadlineTime]);
+export function ChipsRemaining({ leagueId, currentGameweek }: Props) {
+  const { managers, currentHalf, isLoading, isBackendUnavailable } = useLeagueChips(
+    leagueId,
+    currentGameweek,
+    { sync: true } // Sync fresh chip data on first load
+  );
 
-  // Calculate remaining chips for each manager
-  const managersWithChips = managerDetails
-    .map((manager) => ({
-      ...manager,
-      remainingChips: getRemainingChips(manager.chipsUsed, isSecondHalf),
-    }))
+  // Don't render while loading or if backend is unavailable
+  if (isLoading || isBackendUnavailable) {
+    return null;
+  }
+
+  // Get remaining chips for the current half
+  const managersWithChips = managers
+    .map((manager) => {
+      const halfData = currentHalf === 2 ? manager.second_half : manager.first_half;
+      return {
+        managerId: manager.manager_id,
+        name: manager.name,
+        remainingChips: halfData.chips_remaining,
+      };
+    })
     .filter((manager) => manager.remainingChips.length > 0)
-    .sort((a, b) => a.rank - b.rank);
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   if (managersWithChips.length === 0) {
     return null;
@@ -47,11 +50,11 @@ export function ChipsRemaining({ managerDetails, currentGameweek, deadlineTime }
       </CardHeader>
       <div className={styles.list}>
         {managersWithChips.map((manager) => (
-          <CardRow key={manager.managerId} label={manager.teamName}>
+          <CardRow key={manager.managerId} label={manager.name}>
             <div className={styles.chips}>
               {manager.remainingChips.map((chip, index) => (
                 <span key={`${chip}-${index}`} className={styles.chip}>
-                  {CHIP_LABELS[chip] || chip}
+                  {CHIP_LABELS[chip] || chip.toUpperCase()}
                 </span>
               ))}
             </div>

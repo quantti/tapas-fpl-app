@@ -113,6 +113,26 @@ class ChipUsage:
     event: int  # Gameweek number when used
 
 
+@dataclass(slots=True)
+class LeagueMember:
+    """A manager in a mini-league."""
+
+    manager_id: int
+    player_name: str
+    team_name: str
+    rank: int
+    total_points: int
+
+
+@dataclass(slots=True)
+class LeagueStandings:
+    """League standings including league info and members."""
+
+    league_id: int
+    league_name: str
+    members: list[LeagueMember]
+
+
 @dataclass
 class BootstrapData:
     """Core bootstrap data from FPL API."""
@@ -316,3 +336,67 @@ class FplApiClient:
                 chips.append(ChipUsage(name=name, event=event))
 
         return chips
+
+    async def get_league_standings(self, league_id: int) -> LeagueStandings:
+        """
+        Fetch league standings with all members.
+
+        The /leagues-classic/{id}/standings/ endpoint returns paginated results.
+        We fetch all pages to get all members.
+
+        Args:
+            league_id: FPL classic league ID
+
+        Returns:
+            LeagueStandings with league info and all members
+        """
+        members: list[LeagueMember] = []
+        league_name = f"League {league_id}"  # Default fallback
+        page = 1
+        has_next = True
+
+        while has_next:
+            data = await self._get(
+                f"{FPL_BASE_URL}/leagues-classic/{league_id}/standings/?page_standings={page}"
+            )
+
+            # Extract league name from first page response
+            if page == 1:
+                league_info = data.get("league", {})
+                league_name = league_info.get("name", league_name)
+
+            standings = data.get("standings", {})
+            results = standings.get("results", [])
+
+            for entry in results:
+                manager_id = _safe_int(entry.get("entry"))
+                # Filter out invalid entries (manager_id=0 means parsing failed)
+                if manager_id <= 0:
+                    logger.warning(
+                        f"Skipping invalid entry in league {league_id}: {entry}"
+                    )
+                    continue
+
+                members.append(
+                    LeagueMember(
+                        manager_id=manager_id,
+                        player_name=entry.get("player_name", ""),
+                        team_name=entry.get("entry_name", ""),
+                        rank=_safe_int(entry.get("rank")),
+                        total_points=_safe_int(entry.get("total")),
+                    )
+                )
+
+            has_next = standings.get("has_next", False)
+            page += 1
+
+            # Safety limit to prevent infinite loops
+            if page > 100:
+                logger.warning(f"League {league_id} has >5000 members, stopping at page 100")
+                break
+
+        return LeagueStandings(
+            league_id=league_id,
+            league_name=league_name,
+            members=members,
+        )
