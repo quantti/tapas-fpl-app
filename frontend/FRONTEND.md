@@ -1058,19 +1058,32 @@ Dismissible banner on Dashboard alerting users to new releases.
 ```bash
 npm test                    # Watch mode (unit tests)
 npm test -- --run           # Single run
-npm run test:e2e:docker     # E2E tests in Docker (recommended)
-npm run test:e2e:docker:update  # Update visual snapshots (Docker)
+npm run test:e2e:docker     # E2E tests in Docker (CI-matching)
 ```
 
 ### Visual Snapshot Testing
 
-E2E tests include visual regression tests using Playwright's `toHaveScreenshot()`. **All E2E tests run in Docker** using the official Playwright image to ensure consistent rendering.
+⚠️ **CRITICAL: Always use Docker for E2E tests and snapshots!**
 
-**Why Docker?** Font rendering differs between operating systems. Docker ensures:
-- Local snapshots match CI exactly
-- Same environment everywhere: `mcr.microsoft.com/playwright:v1.57.0-jammy`
+E2E tests include visual regression tests using Playwright's `toHaveScreenshot()`. **All E2E tests MUST run in Docker** using the official Playwright image.
 
-**Note:** The version in the Docker image must match `@playwright/test` in package.json.
+```bash
+# Run E2E tests (use this always)
+npm run test:e2e:docker
+
+# Update visual snapshots (use this when snapshots need updating)
+npm run test:e2e:docker -- --update-snapshots
+```
+
+**Never run `npx playwright test` directly** - this uses local fonts/rendering that differs from CI.
+
+**Why Docker is mandatory:**
+- CI runs in Docker with specific fonts and rendering
+- Local `npx playwright test` produces different pixel output
+- Snapshots generated locally will fail in CI
+- Docker ensures: local snapshots = CI snapshots
+
+**Docker image:** `mcr.microsoft.com/playwright:v1.57.0-jammy` (must match `@playwright/test` version)
 
 ### Test Files
 
