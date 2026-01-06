@@ -1,3 +1,10 @@
+## [0.23.2](https://github.com/quantti/tapas-fpl-app/compare/v0.23.1...v0.23.2) (2026-01-06)
+
+
+### Bug Fixes
+
+* **tests:** regenerate snapshots with Docker for CI consistency ([4e211a2](https://github.com/quantti/tapas-fpl-app/commit/4e211a2a1bcc784e2f18abdd17cd9105f61f6bc4))
+
 ## [0.23.1](https://github.com/quantti/tapas-fpl-app/compare/v0.23.0...v0.23.1) (2026-01-06)
 
 
