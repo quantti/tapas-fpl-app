@@ -782,7 +782,7 @@ class TestChipsServiceSyncLeagueChips:
                 league_id=98765, season_id=1, fpl_client=mock_fpl_client
             )
 
-        assert total == 2  # 1 chip per manager
+        assert total == (2, 0, 2)  # 2 chips synced, 0 failures, 2 members
         assert mock_fpl_client.get_entry_history.call_count == 2
         # Verify both managers were queried
         mock_fpl_client.get_entry_history.assert_any_call(123)
@@ -802,14 +802,20 @@ class TestChipsServiceSyncLeagueChips:
                 league_id=98765, season_id=1, fpl_client=mock_fpl_client
             )
 
-        assert total == 0
+        assert total == (0, 0, 0)  # 0 chips, 0 failures, 0 members
         mock_fpl_client.get_entry_history.assert_not_called()
 
     async def test_continues_sync_when_one_manager_fails(
         self, chips_service: "ChipsService", mock_db: MockDB
     ):
-        """Should continue syncing other managers when one fails."""
+        """Should continue syncing other managers when one fails.
+
+        Tests that expected errors (network, timeout) are caught and logged,
+        allowing sync to continue for other managers.
+        """
         from unittest.mock import AsyncMock
+
+        import httpx
 
         from app.services.fpl_client import ChipUsage
 
@@ -822,7 +828,7 @@ class TestChipsServiceSyncLeagueChips:
         mock_fpl_client = AsyncMock()
         mock_fpl_client.get_entry_history.side_effect = [
             [ChipUsage(name="wildcard", event=5)],  # John - success
-            Exception("FPL API error"),  # Jane - fails
+            httpx.HTTPError("FPL API error"),  # Jane - fails with expected error type
             [ChipUsage(name="bboost", event=8)],  # Bob - success
         ]
 
@@ -834,7 +840,7 @@ class TestChipsServiceSyncLeagueChips:
             )
 
         # Should still sync 2 chips (John + Bob), skipping Jane's failure
-        assert total == 2
+        assert total == (2, 1, 3)  # 2 chips synced, 1 failure, 3 members
         assert mock_fpl_client.get_entry_history.call_count == 3
 
 

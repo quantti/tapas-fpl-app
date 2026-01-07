@@ -51,7 +51,9 @@ INSERT INTO _migrations (name) VALUES
     ('005_season_2025_26.sql'),
     ('006_player_fixture_stats.sql'),
     ('007_player_fixture_stats_improvements.sql'),
-    ('008_chip_usage.sql')
+    ('008_chip_usage.sql'),
+    ('009_league_manager_index.sql'),
+    ('010_collection_status.sql')
 ON CONFLICT (name) DO NOTHING;
 ```
 
@@ -80,6 +82,7 @@ backend/
 ├── scripts/
 │   ├── migrate.py               # Database migration runner
 │   ├── collect_points_against.py # Full Points Against data collector (~66 min)
+│   ├── scheduled_update.py      # Combined scheduled update (daily via Supercronic)
 │   ├── test_small_collection.py # Test collection with 5 players (~2 min)
 │   └── seed_test_data.py        # Test data seeder
 ├── tests/
@@ -116,6 +119,9 @@ The database uses **composite primary keys** `(id, season_id)` for FPL entities 
 | `005_season_2025_26.sql` | Add 2025-26 season, clean test data from points_against tables |
 | `006_player_fixture_stats.sql` | player_fixture_stats (35+ fields), player_vs_team_stats view, player_season_deltas view, get_player_form() function |
 | `007_player_fixture_stats_improvements.sql` | updated_at column + trigger, check constraint, improved view and function |
+| `008_chip_usage.sql` | chip_usage table for tracking manager chip activations |
+| `009_league_manager_index.sql` | Index optimization for league_manager queries |
+| `010_collection_status.sql` | collection_status table for tracking scheduled update progress per season |
 
 ### Table Overview (23 tables)
 
@@ -378,6 +384,48 @@ Seed test data for development.
 ```bash
 fly ssh console --app tapas-fpl-backend -C "python -m scripts.seed_test_data"
 ```
+
+### scheduled_update.py
+
+Combined scheduled update that runs daily via Supercronic. Updates both Points Against and Chips data.
+
+```bash
+# Run scheduled update
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.scheduled_update"
+
+# Check status
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.scheduled_update --status"
+
+# Dry run (check what would be updated without making changes)
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.scheduled_update --dry-run"
+```
+
+**Options:**
+- `--status` - Show current update status (last processed gameweek, timestamp)
+- `--dry-run` - Check for new gameweek without making changes
+
+**Environment Variables:**
+- `SCHEDULED_UPDATE_LEAGUE_ID` - League to sync chips for (default: 620837)
+- `SCHEDULED_UPDATE_TIMEOUT` - Maximum runtime in seconds (default: 1800)
+
+**Automatic Scheduling:**
+- Runs daily at 06:00 UTC via Supercronic (configured in `crontab`)
+- Only processes if a new finalized gameweek is detected
+- Skips if already processed (idempotent)
+
+**Process:**
+1. Check FPL API for finalized gameweeks (`data_checked: true`)
+2. Compare against last processed gameweek per season
+3. Run Points Against incremental update (~2-5 min)
+4. Verify Points Against data was saved correctly
+5. Run Chips sync for tracked league (~30 sec)
+6. Verify Chips data (checks failure rate < 10%)
+7. Mark gameweek as processed
+
+**Failure Handling:**
+- If any step fails, gameweek is NOT marked as processed
+- Next run will retry automatically
+- Manual intervention required if repeated failures
 
 ## Deployment (Fly.io)
 

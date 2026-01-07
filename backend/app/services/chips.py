@@ -8,11 +8,16 @@ FPL 2025-26 Rules:
 import asyncio
 import logging
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import asyncpg
+import httpx
 
 from app.db import get_connection
-from app.services.fpl_client import FplApiClient, LeagueMember, LeagueStandings
+from app.services.fpl_client import FplApiClient, LeagueMember
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -451,7 +456,7 @@ class ChipsService:
         league_id: int,
         season_id: int,
         fpl_client: FplApiClient,
-    ) -> int:
+    ) -> tuple[int, int, int]:
         """Sync chip usage for all managers in a league.
 
         Uses asyncio.gather for concurrent requests (FplApiClient handles rate limiting).
@@ -466,7 +471,7 @@ class ChipsService:
             fpl_client: FPL API client instance
 
         Returns:
-            Total number of chips synced across all managers
+            Tuple of (chips_synced, failed_count, total_members)
         """
         # Ensure league members exist in DB (fetches from FPL API if needed)
         async with get_connection() as conn:
@@ -475,31 +480,43 @@ class ChipsService:
             )
 
         if not members:
-            return 0
+            return (0, 0, 0)
 
-        async def sync_one(manager_id: int) -> int:
-            """Sync single manager, return 0 on failure."""
+        async def sync_one(manager_id: int) -> tuple[int, bool]:
+            """Sync single manager, return (chips_count, success).
+
+            Catches expected errors (network, database) and logs them.
+            Unexpected errors propagate up to fail the entire sync.
+            """
             try:
-                return await self.sync_manager_chips(manager_id, season_id, fpl_client)
-            except Exception as e:
-                logger.error(f"Failed to sync chips for manager {manager_id}: {e}")
-                return 0
+                count = await self.sync_manager_chips(manager_id, season_id, fpl_client)
+                return (count, True)
+            except (asyncpg.PostgresError, httpx.HTTPError, TimeoutError) as e:
+                logger.error(
+                    f"Failed to sync chips for manager {manager_id}: {e}",
+                    exc_info=True,
+                )
+                return (0, False)
 
         # Concurrent sync (FplApiClient semaphore handles rate limiting)
         tasks = [sync_one(m.manager_id) for m in members]
         results = await asyncio.gather(*tasks)
 
-        total = sum(results)
-        failed_count = results.count(0)
+        total_chips = sum(r[0] for r in results)
+        failed_count = sum(1 for r in results if not r[1])
+        total_members = len(members)
+
         if failed_count > 0:
             logger.warning(
-                f"League {league_id} sync completed with {failed_count}/{len(members)} "
+                f"League {league_id} sync completed with {failed_count}/{total_members} "
                 f"manager failures"
             )
 
-        return total
+        return (total_chips, failed_count, total_members)
 
-    def _build_manager_chips(self, manager_id: int, rows: list) -> ManagerChips:
+    def _build_manager_chips(
+        self, manager_id: int, rows: "Sequence[asyncpg.Record]"
+    ) -> ManagerChips:
         """Build ManagerChips from database rows.
 
         Args:
