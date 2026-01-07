@@ -78,7 +78,9 @@ backend/
 │   ├── 005_season_2025_26.sql
 │   ├── 006_player_fixture_stats.sql
 │   ├── 007_player_fixture_stats_improvements.sql
-│   └── 008_chip_usage.sql
+│   ├── 008_chip_usage.sql
+│   ├── 009_league_manager_index.sql
+│   └── 010_collection_status.sql
 ├── scripts/
 │   ├── migrate.py               # Database migration runner
 │   ├── collect_points_against.py # Full Points Against data collector (~66 min)
@@ -123,7 +125,7 @@ The database uses **composite primary keys** `(id, season_id)` for FPL entities 
 | `009_league_manager_index.sql` | Index optimization for league_manager queries |
 | `010_collection_status.sql` | collection_status table for tracking scheduled update progress per season |
 
-### Table Overview (23 tables)
+### Table Overview (24 tables)
 
 **Core FPL Entities:**
 - `season` - FPL seasons (current: 2025-26)
@@ -159,6 +161,9 @@ The database uses **composite primary keys** `(id, season_id)` for FPL entities 
 - `points_against_by_fixture` - FPL points conceded per team per fixture
 - `points_against_collection_status` - Data collection state tracking
 - `player_fixture_stats` - Detailed per-player per-fixture stats (35+ fields)
+
+**Collection Tracking:**
+- `collection_status` - Tracks last processed gameweek per collector per season (scheduled updates)
 
 ### Key Design Patterns
 
@@ -415,15 +420,27 @@ fly ssh console --app tapas-fpl-backend -C "python -m scripts.scheduled_update -
 
 **Process:**
 1. Check FPL API for finalized gameweeks (`data_checked: true`)
-2. Compare against last processed gameweek per season
-3. Run Points Against incremental update (~2-5 min)
-4. Verify Points Against data was saved correctly
-5. Run Chips sync for tracked league (~30 sec)
-6. Verify Chips data (checks failure rate < 10%)
-7. Mark gameweek as processed
+2. Validate FPL API response (events, players, teams must be present)
+3. Compare against last processed gameweek per season
+4. Acquire advisory lock (prevents concurrent runs)
+5. Run Points Against incremental update (~2-5 min)
+6. Verify Points Against data via `points_against_collection_status` table
+7. Run Chips sync for tracked league (~30 sec)
+8. Verify Chips data (failure rate < 10%, members > 0)
+9. Mark gameweek as processed
+10. Release advisory lock
+
+**Robustness Features:**
+- **Advisory locks**: `pg_try_advisory_lock` prevents race conditions from cron overlap or manual runs
+- **Bootstrap validation**: Fails fast if FPL API returns empty players/teams (API updating)
+- **Failure rate threshold**: Chips sync fails if >10% of managers fail to sync
+- **Zero members check**: Catches wrong league ID configuration
+- **PA status verification**: Checks `points_against_collection_status` table for completion
+- **Specific exceptions**: Only catches expected errors (`asyncpg.PostgresError`, `httpx.HTTPError`, `TimeoutError`)
 
 **Failure Handling:**
 - If any step fails, gameweek is NOT marked as processed
+- Advisory lock is always released (via `finally` block)
 - Next run will retry automatically
 - Manual intervention required if repeated failures
 
@@ -479,7 +496,36 @@ fly machine start <machine_id> --app tapas-fpl-backend
 
 # Restart the app
 fly apps restart tapas-fpl-backend
+
+# Destroy a stopped machine
+fly machine destroy <machine_id> --app tapas-fpl-backend --force
 ```
+
+### Auto-stop Configuration
+
+The app runs two process types with different auto-stop behavior:
+
+| Process | Behavior | Why |
+|---------|----------|-----|
+| `api` | Auto-stops when idle | Saves costs, 2-3s cold start is acceptable |
+| `cron` | Runs 24/7 | Must be alive at 06:00 UTC for scheduled jobs |
+
+**Configure auto-stop for API machines:**
+
+```bash
+# Enable auto-stop (stops when idle, starts on request)
+fly machine update <machine_id> --autostop=stop --autostart=true --app tapas-fpl-backend -y
+
+# Disable auto-stop (runs 24/7)
+fly machine update <machine_id> --autostop=off --app tapas-fpl-backend -y
+```
+
+**Auto-stop values:**
+- `off` - Never auto-stop (runs 24/7)
+- `stop` - Stop when idle (default for API)
+- `suspend` - Suspend when idle (faster wake-up than stop)
+
+**Note:** The `cron` process is not part of `[http_service]` in fly.toml, so it doesn't auto-stop. Only configure auto-stop for `api` machines.
 
 ### Logs
 

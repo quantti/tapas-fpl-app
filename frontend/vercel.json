@@ -5,7 +5,6 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "rewrites": [
-    { "source": "/api/fpl/:path*", "destination": "/api/fpl/[...path]" },
-    { "source": "/((?!api/).*)", "destination": "/" }
+    { "source": "/api/fpl/:path*", "destination": "/api/fpl/[...path]" }
   ]
 }
