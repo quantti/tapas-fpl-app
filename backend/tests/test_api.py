@@ -1,5 +1,7 @@
 """Integration tests for API endpoints."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -12,6 +14,14 @@ async def client():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest.fixture
+def mock_pool():
+    """Mock get_pool to make require_db() dependency pass."""
+    with patch("app.dependencies.get_pool") as mock:
+        mock.return_value = MagicMock()
+        yield mock
 
 
 class TestHealthEndpoint:
@@ -96,14 +106,18 @@ class TestPointsAgainstEndpoints:
         assert response.status_code == 503
         assert "Database not available" in response.json()["detail"]
 
-    async def test_team_history_validates_team_id_too_high(self, client: AsyncClient):
+    async def test_team_history_validates_team_id_too_high(
+        self, client: AsyncClient, mock_pool
+    ):
         """Team history should reject team_id > 20."""
         response = await client.get("/api/v1/points-against/21/history")
 
         assert response.status_code == 400
         assert "Invalid team_id" in response.json()["detail"]
 
-    async def test_team_history_validates_team_id_too_low(self, client: AsyncClient):
+    async def test_team_history_validates_team_id_too_low(
+        self, client: AsyncClient, mock_pool
+    ):
         """Team history should reject team_id < 1."""
         response = await client.get("/api/v1/points-against/0/history")
 

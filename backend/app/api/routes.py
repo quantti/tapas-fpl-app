@@ -6,9 +6,9 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.db import get_pool
+from app.dependencies import require_db
 from app.services.chips import ChipsService
 from app.services.fpl_client import FplApiClient
 from app.services.points_against import PointsAgainstService
@@ -80,22 +80,12 @@ async def optimize_transfers() -> dict:
 # =============================================================================
 
 
-def _check_db_available() -> None:
-    """Check if database is available, raise 503 if not."""
-    try:
-        get_pool()
-    except RuntimeError as e:
-        raise HTTPException(
-            status_code=503,
-            detail="Database not available. Points Against feature requires database connection.",
-        ) from e
-
-
 @router.get("/api/v1/points-against")
 async def get_points_against(
     season_id: int = Query(
         default=1, ge=1, le=100, description="Season ID (default: 1 for 2024-25)"
     ),
+    _: None = Depends(require_db),
 ) -> dict:
     """
     Get points conceded by all teams for the season.
@@ -103,7 +93,6 @@ async def get_points_against(
     Returns teams sorted by total points conceded (highest first = weakest defense).
     Useful for identifying captain targets and transfer opportunities.
     """
-    _check_db_available()
 
     # Check cache first
     cache_key = f"points_against_{season_id}"
@@ -151,6 +140,7 @@ async def get_team_points_against_history(
     season_id: int = Query(
         default=1, ge=1, le=100, description="Season ID (default: 1 for 2024-25)"
     ),
+    _: None = Depends(require_db),
 ) -> dict:
     """
     Get fixture-by-fixture points conceded by a specific team.
@@ -161,8 +151,6 @@ async def get_team_points_against_history(
     # Validate team_id first (FPL teams are 1-20)
     if not 1 <= team_id <= 20:
         raise HTTPException(status_code=400, detail="Invalid team_id. Must be between 1 and 20.")
-
-    _check_db_available()
 
     # Check cache first
     cache_key = f"team_history_{team_id}_{season_id}"
@@ -205,14 +193,13 @@ async def get_team_points_against_history(
 
 
 @router.get("/api/v1/points-against/status")
-async def get_points_against_status() -> dict:
+async def get_points_against_status(_: None = Depends(require_db)) -> dict:
     """
     Get the status of the Points Against data collection.
 
     Shows when data was last updated, how many players were processed,
     and whether collection is currently running.
     """
-    _check_db_available()
 
     try:
         service = PointsAgainstService()
@@ -265,6 +252,7 @@ async def get_league_chips(
     sync: bool = Query(
         default=False, description="Sync chip data from FPL API before returning"
     ),
+    _: None = Depends(require_db),
 ) -> dict:
     """
     Get chip usage for all managers in a league.
@@ -277,8 +265,6 @@ async def get_league_chips(
     # Validate league_id (must be positive)
     if league_id < 1:
         raise HTTPException(status_code=422, detail="league_id must be >= 1")
-
-    _check_db_available()
 
     try:
         service = ChipsService()
@@ -360,6 +346,7 @@ async def get_manager_chips(
     sync: bool = Query(
         default=False, description="Sync chip data from FPL API before returning"
     ),
+    _: None = Depends(require_db),
 ) -> dict:
     """
     Get chip usage for a single manager.
@@ -372,8 +359,6 @@ async def get_manager_chips(
     # Validate manager_id (must be positive)
     if manager_id < 1:
         raise HTTPException(status_code=422, detail="manager_id must be >= 1")
-
-    _check_db_available()
 
     try:
         service = ChipsService()

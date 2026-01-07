@@ -21,8 +21,8 @@ def mock_chips_db() -> MockDB:
 
 @pytest.fixture
 def mock_pool():
-    """Mock DB pool check for API routes (503 check)."""
-    with patch("app.api.routes.get_pool") as mock:
+    """Mock DB pool check for require_db() dependency (503 check)."""
+    with patch("app.dependencies.get_pool") as mock:
         mock.return_value = MagicMock()
         yield mock
 
@@ -44,7 +44,7 @@ class TestChipsLeagueEndpoint:
         ids=["zero", "negative", "large_negative"],
     )
     async def test_league_chips_validates_invalid_league_id(
-        self, async_client: AsyncClient, invalid_league_id: int
+        self, async_client: AsyncClient, mock_pool, invalid_league_id: int
     ):
         """League chips should reject invalid league_id values."""
         response = await async_client.get(
@@ -54,7 +54,7 @@ class TestChipsLeagueEndpoint:
         assert response.status_code == 422  # FastAPI validation error
 
     async def test_league_chips_validates_non_integer_league_id(
-        self, async_client: AsyncClient
+        self, async_client: AsyncClient, mock_pool
     ):
         """League chips should return 422 for non-integer league_id."""
         response = await async_client.get("/api/v1/chips/league/abc?current_gameweek=15")
@@ -67,7 +67,7 @@ class TestChipsLeagueEndpoint:
         ids=["zero", "negative", "gw39", "gw100"],
     )
     async def test_league_chips_validates_invalid_current_gameweek(
-        self, async_client: AsyncClient, invalid_gw: int
+        self, async_client: AsyncClient, mock_pool, invalid_gw: int
     ):
         """League chips should reject invalid current_gameweek values."""
         response = await async_client.get(
@@ -77,7 +77,7 @@ class TestChipsLeagueEndpoint:
         assert response.status_code == 422  # FastAPI validation error
 
     async def test_league_chips_validates_non_integer_current_gameweek(
-        self, async_client: AsyncClient
+        self, async_client: AsyncClient, mock_pool
     ):
         """League chips should return 422 for non-integer current_gameweek."""
         response = await async_client.get("/api/v1/chips/league/12345?current_gameweek=abc")
@@ -85,7 +85,7 @@ class TestChipsLeagueEndpoint:
         assert response.status_code == 422  # FastAPI validation error
 
     async def test_league_chips_validates_missing_current_gameweek(
-        self, async_client: AsyncClient
+        self, async_client: AsyncClient, mock_pool
     ):
         """League chips should return 422 when current_gameweek is missing."""
         response = await async_client.get("/api/v1/chips/league/12345")
@@ -125,7 +125,7 @@ class TestChipsLeagueEndpoint:
         ids=["zero", "negative", "large_negative"],
     )
     async def test_league_chips_validates_invalid_season_id(
-        self, async_client: AsyncClient, invalid_season_id: int
+        self, async_client: AsyncClient, mock_pool, invalid_season_id: int
     ):
         """League chips should reject invalid season_id values."""
         response = await async_client.get(
@@ -135,7 +135,7 @@ class TestChipsLeagueEndpoint:
         assert response.status_code == 422  # FastAPI validation error
 
     async def test_league_chips_validates_non_integer_season_id(
-        self, async_client: AsyncClient
+        self, async_client: AsyncClient, mock_pool
     ):
         """League chips should return 422 for non-integer season_id query param."""
         response = await async_client.get(
@@ -173,7 +173,7 @@ class TestChipsManagerEndpoint:
         ids=["zero", "negative", "large_negative"],
     )
     async def test_manager_chips_validates_invalid_manager_id(
-        self, async_client: AsyncClient, invalid_manager_id: int
+        self, async_client: AsyncClient, mock_pool, invalid_manager_id: int
     ):
         """Manager chips should reject invalid manager_id values."""
         response = await async_client.get(f"/api/v1/chips/manager/{invalid_manager_id}")
@@ -181,7 +181,7 @@ class TestChipsManagerEndpoint:
         assert response.status_code == 422  # FastAPI validation error
 
     async def test_manager_chips_validates_non_integer_manager_id(
-        self, async_client: AsyncClient
+        self, async_client: AsyncClient, mock_pool
     ):
         """Manager chips should return 422 for non-integer manager_id."""
         response = await async_client.get("/api/v1/chips/manager/abc")
@@ -208,7 +208,7 @@ class TestChipsManagerEndpoint:
         ids=["zero", "negative", "large_negative"],
     )
     async def test_manager_chips_validates_invalid_season_id(
-        self, async_client: AsyncClient, invalid_season_id: int
+        self, async_client: AsyncClient, mock_pool, invalid_season_id: int
     ):
         """Manager chips should reject invalid season_id values."""
         response = await async_client.get(
@@ -218,7 +218,7 @@ class TestChipsManagerEndpoint:
         assert response.status_code == 422  # FastAPI validation error
 
     async def test_manager_chips_validates_non_integer_season_id(
-        self, async_client: AsyncClient
+        self, async_client: AsyncClient, mock_pool
     ):
         """Manager chips should return 422 for non-integer season_id query param."""
         response = await async_client.get("/api/v1/chips/manager/12345?season_id=abc")

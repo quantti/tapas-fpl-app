@@ -19,12 +19,20 @@ from unittest.mock import MagicMock, patch
 import pytest
 from httpx import AsyncClient
 
+from app.services.history import clear_cache
 from tests.conftest import MockDB
-
 
 # =============================================================================
 # Fixtures for API tests with DB mock
 # =============================================================================
+
+
+@pytest.fixture(autouse=True)
+def clear_history_cache():
+    """Clear history service cache before each test to prevent pollution."""
+    clear_cache()
+    yield
+    clear_cache()
 
 
 @pytest.fixture
@@ -35,8 +43,8 @@ def mock_api_db() -> MockDB:
 
 @pytest.fixture
 def mock_pool():
-    """Mock get_pool to make _check_db_available() pass."""
-    with patch("app.api.history.get_pool") as mock:
+    """Mock get_pool to make require_db() dependency pass."""
+    with patch("app.dependencies.get_pool") as mock:
         mock.return_value = MagicMock()
         yield mock
 
@@ -65,14 +73,16 @@ class TestHistoryLeagueEndpoint:
         ids=["zero", "negative", "large_negative"],
     )
     async def test_league_history_validates_invalid_league_id(
-        self, async_client: AsyncClient, invalid_league_id: int
+        self, async_client: AsyncClient, mock_pool, invalid_league_id: int
     ):
         """League history should reject invalid league_id values."""
         response = await async_client.get(f"/api/v1/history/league/{invalid_league_id}")
 
         assert response.status_code == 422
 
-    async def test_league_history_validates_non_integer_league_id(self, async_client: AsyncClient):
+    async def test_league_history_validates_non_integer_league_id(
+        self, async_client: AsyncClient, mock_pool
+    ):
         """League history should return 422 for non-integer league_id."""
         response = await async_client.get("/api/v1/history/league/abc")
 
@@ -80,7 +90,7 @@ class TestHistoryLeagueEndpoint:
 
     async def test_league_history_accepts_season_id_param(self, async_client: AsyncClient):
         """League history should accept optional season_id parameter."""
-        response = await async_client.get("/api/v1/history/league/12345?season_id=2024-25")
+        response = await async_client.get("/api/v1/history/league/12345?season_id=1")
 
         # Will return 503 (no DB), but validates the param is accepted
         assert response.status_code == 503
@@ -173,7 +183,7 @@ class TestHistoryLeagueResponseFormat:
             # Chips entry structure
             if manager["chips"]:
                 chip = manager["chips"][0]
-                assert "name" in chip
+                assert "chip_type" in chip
                 assert "gameweek" in chip
 
     async def test_league_history_with_picks_includes_squad(
@@ -318,14 +328,16 @@ class TestHistoryPositionsEndpoint:
         ids=["zero", "negative", "large_negative"],
     )
     async def test_positions_validates_invalid_league_id(
-        self, async_client: AsyncClient, invalid_league_id: int
+        self, async_client: AsyncClient, mock_pool, invalid_league_id: int
     ):
         """Positions should reject invalid league_id values."""
         response = await async_client.get(f"/api/v1/history/league/{invalid_league_id}/positions")
 
         assert response.status_code == 422
 
-    async def test_positions_validates_non_integer_league_id(self, async_client: AsyncClient):
+    async def test_positions_validates_non_integer_league_id(
+        self, async_client: AsyncClient, mock_pool
+    ):
         """Positions should return 422 for non-integer league_id."""
         response = await async_client.get("/api/v1/history/league/abc/positions")
 
@@ -334,7 +346,7 @@ class TestHistoryPositionsEndpoint:
     async def test_positions_accepts_season_id_param(self, async_client: AsyncClient):
         """Positions should accept optional season_id parameter."""
         response = await async_client.get(
-            "/api/v1/history/league/12345/positions?season_id=2024-25"
+            "/api/v1/history/league/12345/positions?season_id=1"
         )
 
         assert response.status_code == 503
@@ -482,14 +494,16 @@ class TestHistoryStatsEndpoint:
         ids=["zero", "negative", "large_negative"],
     )
     async def test_stats_validates_invalid_league_id(
-        self, async_client: AsyncClient, invalid_league_id: int
+        self, async_client: AsyncClient, mock_pool, invalid_league_id: int
     ):
         """Stats should reject invalid league_id values."""
         response = await async_client.get(f"/api/v1/history/league/{invalid_league_id}/stats")
 
         assert response.status_code == 422
 
-    async def test_stats_validates_non_integer_league_id(self, async_client: AsyncClient):
+    async def test_stats_validates_non_integer_league_id(
+        self, async_client: AsyncClient, mock_pool
+    ):
         """Stats should return 422 for non-integer league_id."""
         response = await async_client.get("/api/v1/history/league/abc/stats")
 
@@ -497,7 +511,7 @@ class TestHistoryStatsEndpoint:
 
     async def test_stats_accepts_season_id_param(self, async_client: AsyncClient):
         """Stats should accept optional season_id parameter."""
-        response = await async_client.get("/api/v1/history/league/12345/stats?season_id=2024-25")
+        response = await async_client.get("/api/v1/history/league/12345/stats?season_id=1")
 
         assert response.status_code == 503
 
@@ -513,7 +527,7 @@ class TestHistoryStatsEndpoint:
         ids=["zero", "negative", "gw39", "gw100"],
     )
     async def test_stats_validates_invalid_current_gameweek(
-        self, async_client: AsyncClient, invalid_gw: int
+        self, async_client: AsyncClient, mock_pool, invalid_gw: int
     ):
         """Stats should reject invalid current_gameweek values."""
         response = await async_client.get(
@@ -843,19 +857,19 @@ class TestHistoryComparisonEndpoint:
         assert response.status_code == 503
         assert "Database not available" in response.json()["detail"]
 
-    async def test_comparison_requires_manager_a(self, async_client: AsyncClient):
+    async def test_comparison_requires_manager_a(self, async_client: AsyncClient, mock_pool):
         """Comparison should return 422 when manager_a is missing."""
         response = await async_client.get("/api/v1/history/comparison?manager_b=456&league_id=789")
 
         assert response.status_code == 422
 
-    async def test_comparison_requires_manager_b(self, async_client: AsyncClient):
+    async def test_comparison_requires_manager_b(self, async_client: AsyncClient, mock_pool):
         """Comparison should return 422 when manager_b is missing."""
         response = await async_client.get("/api/v1/history/comparison?manager_a=123&league_id=789")
 
         assert response.status_code == 422
 
-    async def test_comparison_requires_league_id(self, async_client: AsyncClient):
+    async def test_comparison_requires_league_id(self, async_client: AsyncClient, mock_pool):
         """Comparison should return 422 when league_id is missing."""
         response = await async_client.get("/api/v1/history/comparison?manager_a=123&manager_b=456")
 
@@ -867,7 +881,7 @@ class TestHistoryComparisonEndpoint:
         ids=["zero", "negative", "large_negative"],
     )
     async def test_comparison_validates_invalid_manager_a(
-        self, async_client: AsyncClient, invalid_id: int
+        self, async_client: AsyncClient, mock_pool, invalid_id: int
     ):
         """Comparison should reject invalid manager_a values."""
         response = await async_client.get(
@@ -882,7 +896,7 @@ class TestHistoryComparisonEndpoint:
         ids=["zero", "negative", "large_negative"],
     )
     async def test_comparison_validates_invalid_manager_b(
-        self, async_client: AsyncClient, invalid_id: int
+        self, async_client: AsyncClient, mock_pool, invalid_id: int
     ):
         """Comparison should reject invalid manager_b values."""
         response = await async_client.get(
@@ -897,7 +911,7 @@ class TestHistoryComparisonEndpoint:
         ids=["zero", "negative", "large_negative"],
     )
     async def test_comparison_validates_invalid_league_id(
-        self, async_client: AsyncClient, invalid_id: int
+        self, async_client: AsyncClient, mock_pool, invalid_id: int
     ):
         """Comparison should reject invalid league_id values."""
         response = await async_client.get(
@@ -906,7 +920,9 @@ class TestHistoryComparisonEndpoint:
 
         assert response.status_code == 422
 
-    async def test_comparison_validates_non_integer_params(self, async_client: AsyncClient):
+    async def test_comparison_validates_non_integer_params(
+        self, async_client: AsyncClient, mock_pool
+    ):
         """Comparison should return 422 for non-integer params."""
         response = await async_client.get(
             "/api/v1/history/comparison?manager_a=abc&manager_b=456&league_id=789"
@@ -917,7 +933,7 @@ class TestHistoryComparisonEndpoint:
     async def test_comparison_accepts_season_id_param(self, async_client: AsyncClient):
         """Comparison should accept optional season_id parameter."""
         response = await async_client.get(
-            "/api/v1/history/comparison?manager_a=123&manager_b=456&league_id=789&season_id=2024-25"
+            "/api/v1/history/comparison?manager_a=123&manager_b=456&league_id=789&season_id=1"
         )
 
         assert response.status_code == 503
@@ -1126,8 +1142,12 @@ class TestHistoryComparisonBusinessLogic:
         self, async_client: AsyncClient, mock_pool, mock_api_db: MockDB
     ):
         """Should return 400 if either manager not in database."""
-        # Manager A not found (empty result)
-        mock_api_db.conn.fetch.side_effect = [[]]  # Empty result for manager_a
+        # asyncio.gather fetches both managers in parallel, so need 2 return values
+        # Manager A not found (empty), Manager B exists (but won't be checked)
+        mock_api_db.conn.fetch.side_effect = [
+            [],  # Empty result for manager_a
+            [{"id": 456, "player_name": "Jane", "team_name": "FC Jane"}],  # manager_b
+        ]
 
         with mock_api_db:
             response = await async_client.get(

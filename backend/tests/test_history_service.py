@@ -12,10 +12,19 @@ from typing import TYPE_CHECKING, TypedDict
 
 import pytest
 
+from app.services.history import clear_cache
 from tests.conftest import MockDB
 
 if TYPE_CHECKING:
     from app.services.history import HistoryService
+
+
+@pytest.fixture(autouse=True)
+def clear_history_cache():
+    """Clear history service cache before each test to prevent pollution."""
+    clear_cache()
+    yield
+    clear_cache()
 
 
 # =============================================================================
@@ -162,7 +171,7 @@ class TestCalculateFreeTransfers:
         history: list[ManagerHistoryRow] = [
             _make_history_row(gameweek=i, transfers_made=0) for i in range(1, 5)
         ]
-        result = calculate_free_transfers(history, current_gameweek=5, season_id="2024-25")
+        result = calculate_free_transfers(history, current_gameweek=5, season_id=1)
         assert result == 5
 
     def test_max_five_not_exceeded(self):
@@ -173,7 +182,7 @@ class TestCalculateFreeTransfers:
         history: list[ManagerHistoryRow] = [
             _make_history_row(gameweek=i, transfers_made=0) for i in range(1, 11)
         ]
-        result = calculate_free_transfers(history, current_gameweek=11, season_id="2024-25")
+        result = calculate_free_transfers(history, current_gameweek=11, season_id=1)
         assert result == 5
 
     def test_hit_reduces_to_one_free_transfer(self):
@@ -364,10 +373,10 @@ class TestHistoryServiceGetLeagueHistory:
         mock_history_db.conn.fetch.side_effect = [mock_managers, mock_history, mock_chips]
 
         with mock_history_db:
-            result = await history_service.get_league_history(league_id=98765, season_id="2024-25")
+            result = await history_service.get_league_history(league_id=98765, season_id=1)
 
         assert result["league_id"] == 98765
-        assert result["season_id"] == "2024-25"
+        assert result["season_id"] == 1
         assert len(result["managers"]) == 2
 
         john = next(m for m in result["managers"] if m["manager_id"] == 123)
@@ -398,7 +407,7 @@ class TestHistoryServiceGetLeagueHistory:
 
         with mock_history_db:
             result = await history_service.get_league_history(
-                league_id=98765, season_id="2024-25", include_picks=True
+                league_id=98765, season_id=1, include_picks=True
             )
 
         john = result["managers"][0]
@@ -419,7 +428,7 @@ class TestHistoryServiceGetLeagueHistory:
         mock_history_db.conn.fetch.side_effect = [mock_managers, mock_history, mock_chips]
 
         with mock_history_db:
-            result = await history_service.get_league_history(league_id=98765, season_id="2024-25")
+            result = await history_service.get_league_history(league_id=98765, season_id=1)
 
         john = result["managers"][0]
         gw1 = john["history"][0]
@@ -432,7 +441,7 @@ class TestHistoryServiceGetLeagueHistory:
         mock_history_db.conn.fetch.side_effect = [[], [], []]
 
         with mock_history_db:
-            result = await history_service.get_league_history(league_id=99999, season_id="2024-25")
+            result = await history_service.get_league_history(league_id=99999, season_id=1)
 
         assert result["managers"] == []
 
@@ -464,7 +473,7 @@ class TestHistoryServiceGetLeaguePositions:
 
         with mock_history_db:
             result = await history_service.get_league_positions(
-                league_id=98765, season_id="2024-25"
+                league_id=98765, season_id=1
             )
 
         assert result["league_id"] == 98765
@@ -472,13 +481,13 @@ class TestHistoryServiceGetLeaguePositions:
 
         gw1 = result["positions"][0]
         assert gw1["gameweek"] == 1
-        assert gw1[123] == 2  # John 2nd (50 pts)
-        assert gw1[456] == 1  # Jane 1st (60 pts)
+        assert gw1["123"] == 2  # John 2nd (50 pts)
+        assert gw1["456"] == 1  # Jane 1st (60 pts)
 
         gw2 = result["positions"][1]
         assert gw2["gameweek"] == 2
-        assert gw2[123] == 1  # John 1st (100 pts)
-        assert gw2[456] == 2  # Jane 2nd (90 pts)
+        assert gw2["123"] == 1  # John 1st (100 pts)
+        assert gw2["456"] == 2  # Jane 2nd (90 pts)
 
     async def test_includes_manager_metadata_for_chart(
         self, history_service: "HistoryService", mock_history_db: MockDB
@@ -493,7 +502,7 @@ class TestHistoryServiceGetLeaguePositions:
 
         with mock_history_db:
             result = await history_service.get_league_positions(
-                league_id=98765, season_id="2024-25"
+                league_id=98765, season_id=1
             )
 
         assert len(result["managers"]) == 1
@@ -530,7 +539,7 @@ class TestHistoryServiceGetLeagueStats:
 
         with mock_history_db:
             result = await history_service.get_league_stats(
-                league_id=98765, season_id="2024-25", current_gameweek=2
+                league_id=98765, season_id=1, current_gameweek=2
             )
 
         john = next(b for b in result["bench_points"] if b["manager_id"] == 123)
@@ -561,7 +570,7 @@ class TestHistoryServiceGetLeagueStats:
 
         with mock_history_db:
             result = await history_service.get_league_stats(
-                league_id=98765, season_id="2024-25", current_gameweek=1
+                league_id=98765, season_id=1, current_gameweek=1
             )
 
         john = result["captain_differentials"][0]
@@ -584,7 +593,7 @@ class TestHistoryServiceGetLeagueStats:
 
         with mock_history_db:
             result = await history_service.get_league_stats(
-                league_id=98765, season_id="2024-25", current_gameweek=3
+                league_id=98765, season_id=1, current_gameweek=3
             )
 
         john = result["free_transfers"][0]
@@ -626,7 +635,7 @@ class TestHistoryServiceGetManagerComparison:
 
         with mock_history_db:
             result = await history_service.get_manager_comparison(
-                manager_a=123, manager_b=456, league_id=98765, season_id="2024-25"
+                manager_a=123, manager_b=456, league_id=98765, season_id=1
             )
 
         assert result["manager_a"]["manager_id"] == 123
@@ -665,7 +674,7 @@ class TestHistoryServiceGetManagerComparison:
 
         with mock_history_db:
             result = await history_service.get_manager_comparison(
-                manager_a=123, manager_b=456, league_id=98765, season_id="2024-25"
+                manager_a=123, manager_b=456, league_id=98765, season_id=1
             )
 
         assert sorted(result["common_players"]) == [100, 300]
@@ -692,7 +701,7 @@ class TestHistoryServiceGetManagerComparison:
 
         with mock_history_db:
             result = await history_service.get_manager_comparison(
-                manager_a=123, manager_b=456, league_id=98765, season_id="2024-25"
+                manager_a=123, manager_b=456, league_id=98765, season_id=1
             )
 
         assert "league_template_overlap_a" in result
@@ -702,13 +711,15 @@ class TestHistoryServiceGetManagerComparison:
         self, history_service: "HistoryService", mock_history_db: MockDB
     ):
         """Should raise error when manager not found."""
+        # asyncio.gather fetches both managers in parallel, so need 2 return values
         mock_history_db.conn.fetch.side_effect = [
             [],  # manager_a not found
+            [{"id": 456, "player_name": "Jane", "team_name": "FC Jane"}],  # manager_b
         ]
 
         with mock_history_db, pytest.raises(ValueError, match="Manager .* not found"):
             await history_service.get_manager_comparison(
-                manager_a=99999, manager_b=456, league_id=98765, season_id="2024-25"
+                manager_a=99999, manager_b=456, league_id=98765, season_id=1
             )
 
     async def test_raises_error_when_comparing_same_manager(
@@ -717,7 +728,7 @@ class TestHistoryServiceGetManagerComparison:
         """Should raise error when comparing manager to themselves."""
         with pytest.raises(ValueError, match="Cannot compare manager to themselves"):
             await history_service.get_manager_comparison(
-                manager_a=123, manager_b=123, league_id=98765, season_id="2024-25"
+                manager_a=123, manager_b=123, league_id=98765, season_id=1
             )
 
 
@@ -736,7 +747,7 @@ class TestHistoryServiceErrorHandling:
         mock_history_db.conn.fetch.side_effect = Exception("Connection timeout")
 
         with mock_history_db, pytest.raises(Exception, match="Connection timeout"):
-            await history_service.get_league_history(league_id=98765, season_id="2024-25")
+            await history_service.get_league_history(league_id=98765, season_id=1)
 
 
 # =============================================================================
