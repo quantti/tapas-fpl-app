@@ -77,11 +77,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const response = await fetch(fplUrl, {
       headers: {
-        'User-Agent': 'TapasFPL/1.0',
+        // Browser-like headers to avoid Cloudflare 403 blocks
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept: 'application/json',
+        'Accept-Language': 'en-GB,en;q=0.9',
       },
     });
 
     if (!response.ok) {
+      // Don't cache error responses
+      res.setHeader('Cache-Control', 'no-store');
       return res.status(response.status).json({
         error: 'FPL API error',
         status: response.status,
