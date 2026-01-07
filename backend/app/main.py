@@ -1,6 +1,5 @@
 """Main FastAPI application entry point."""
 
-import asyncio
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -9,6 +8,7 @@ import asyncpg
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.history import router as history_router
 from app.api.routes import router
 from app.config import get_settings
 from app.db import close_pool, init_pool
@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         try:
             await init_pool()
             logger.info("Database pool initialized")
-        except (OSError, asyncio.TimeoutError, asyncpg.PostgresError) as e:
+        except (TimeoutError, OSError, asyncpg.PostgresError) as e:
             logger.warning("Database pool initialization failed: %s", e)
             logger.warning("Continuing without database - some features may be unavailable")
 
@@ -67,6 +67,7 @@ app.add_middleware(
 
 # Include API routes
 app.include_router(router)
+app.include_router(history_router)
 
 
 @app.get("/health")
@@ -90,5 +91,3 @@ async def health_check() -> dict:
         "status": "healthy",
         "database": db_status,
     }
-
-
