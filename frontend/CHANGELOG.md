@@ -1,3 +1,10 @@
+# [0.24.0](https://github.com/quantti/tapas-fpl-app/compare/v0.23.3...v0.24.0) (2026-01-07)
+
+
+### Features
+
+* **backend:** add scheduled updates infrastructure ([b60aca0](https://github.com/quantti/tapas-fpl-app/commit/b60aca0ec01d3a7452df9eed30c40564b282656f))
+
 ## [0.23.3](https://github.com/quantti/tapas-fpl-app/compare/v0.23.2...v0.23.3) (2026-01-06)
 
 
