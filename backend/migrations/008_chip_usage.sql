@@ -39,8 +39,7 @@ CREATE INDEX idx_chip_usage_manager_season ON chip_usage(manager_id, season_id);
 CREATE INDEX idx_chip_usage_season_half ON chip_usage(season_id, season_half);
 CREATE INDEX idx_chip_usage_chip_type ON chip_usage(chip_type, season_id);
 
--- RLS
-ALTER TABLE chip_usage OWNER TO postgres;
+-- RLS (owner set by current user, not hardcoded)
 ALTER TABLE chip_usage ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read access" ON chip_usage FOR SELECT USING (true);
 

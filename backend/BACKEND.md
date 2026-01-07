@@ -13,6 +13,137 @@ uvicorn app.main:app --reload  # Start dev server (port 8000)
 python -m pytest               # Run tests
 ```
 
+## Local Development with Docker
+
+For full-stack local development (frontend + backend + database), use the local Docker setup.
+
+### Quick Start
+
+```bash
+cd frontend
+npm run start:dev      # Starts everything (DB, backend, frontend)
+npm run start:prod     # Frontend with production backend (vercel dev)
+```
+
+### What `start:dev` Does
+
+1. Starts PostgreSQL in Docker (`tapas-fpl-db`)
+2. Runs database migrations
+3. Seeds test data (optional)
+4. Starts backend API (port 8000)
+5. Starts frontend dev server (Vite, port 5173)
+
+### Keeping Local DB in Sync with Production
+
+The local database must have the **same migrations** as production (Supabase).
+
+**When adding new migrations:**
+
+1. Create migration file in `backend/migrations/` (numbered sequentially)
+2. Test locally: `npm run start:dev`
+3. Deploy to production:
+   ```bash
+   fly ssh console --app tapas-fpl-backend -C "python -m scripts.migrate"
+   ```
+
+**When production has new migrations:**
+
+```bash
+# Check migration status
+docker exec tapas-fpl-db psql -U tapas -d tapas_fpl -c "SELECT * FROM _migrations ORDER BY name;"
+
+# If out of sync, easiest fix is to recreate local DB
+docker compose down -v  # -v removes the volume (data)
+npm run start:dev       # Recreates DB with all migrations
+```
+
+**Migration naming:**
+- Use sequential numbers: `001_`, `002_`, etc.
+- Never rename migration files after they're applied to production
+- If you need to fix a migration, create a new one
+
+**Writing portable migrations:**
+
+Migrations must work on both local (Docker) and production (Supabase):
+
+```sql
+-- ❌ DON'T: Hardcode usernames
+ALTER TABLE my_table OWNER TO postgres;
+
+-- ✅ DO: Let owner be set by whoever runs migration
+-- (Just omit OWNER statements entirely)
+
+-- ✅ DO: RLS works regardless of owner
+ALTER TABLE my_table ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow read" ON my_table FOR SELECT USING (true);
+```
+
+| Statement | Local | Production | Recommendation |
+|-----------|-------|------------|----------------|
+| `OWNER TO postgres` | ❌ Fails | ✅ Works | Omit |
+| `OWNER TO tapas` | ✅ Works | ❌ Fails | Omit |
+| `ENABLE ROW LEVEL SECURITY` | ✅ Works | ✅ Works | Use |
+| `CREATE POLICY` | ✅ Works | ✅ Works | Use |
+
+### Test Data
+
+Local development uses mock data seeded by `scripts/seed_test_data.py`. This is NOT real FPL data.
+
+```bash
+# Manually seed test data (usually automatic via start:dev)
+cd backend
+source .venv/bin/activate
+DATABASE_URL="postgresql://tapas:localdev@localhost:5432/tapas_fpl" python -m scripts.seed_test_data
+```
+
+### Docker Commands
+
+```bash
+# Start only the database
+cd backend && docker compose up -d
+
+# Stop everything
+docker compose down
+
+# Reset database (delete all data)
+docker compose down -v
+
+# View database logs
+docker logs tapas-fpl-db
+
+# Connect to database directly
+docker exec -it tapas-fpl-db psql -U tapas -d tapas_fpl
+```
+
+### Local vs Production Differences
+
+| Aspect | Local (Docker) | Production (Supabase) |
+|--------|----------------|----------------------|
+| Database | PostgreSQL in Docker | Supabase PostgreSQL 17 |
+| User | `tapas` | `postgres` |
+| Database name | `tapas_fpl` | `postgres` |
+| Connection | `localhost:5432` | IPv6 direct / IPv4 pooler |
+| Data | Test data | Real FPL data |
+| RLS | Disabled | Enabled |
+
+### Troubleshooting Local Setup
+
+**"relation does not exist"**
+- Migration tracking out of sync
+- Fix: `docker compose down -v && npm run start:dev`
+
+**"role 'postgres' does not exist"**
+- Migration file has `OWNER TO postgres` (production-only)
+- Fix: Edit migration to remove `OWNER TO postgres` line
+
+**Port 5432 already in use**
+```bash
+# Check what's using the port
+sudo lsof -i :5432
+# Stop local PostgreSQL if running
+sudo systemctl stop postgresql
+```
+
 ## Database Migrations
 
 Migrations are tracked in a `_migrations` table and managed via the migration script:
