@@ -96,3 +96,17 @@ def mock_db() -> MockDB:
             return MockDB("app.services.points_against.get_connection")
     """
     return MockDB("app.services.chips.get_connection")
+
+
+@pytest.fixture
+def mock_pool():
+    """Mock get_pool to make require_db() dependency pass.
+
+    Use this fixture when testing endpoint validation (422 errors) where you
+    need to bypass the database availability check but don't need actual DB queries.
+
+    For tests that need actual DB mocking, use MockDB fixtures instead.
+    """
+    with patch("app.dependencies.get_pool") as mock:
+        mock.return_value = MagicMock()
+        yield mock

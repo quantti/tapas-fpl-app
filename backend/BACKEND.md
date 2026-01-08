@@ -144,6 +144,81 @@ sudo lsof -i :5432
 sudo systemctl stop postgresql
 ```
 
+## Planning & Design
+
+### Data Model Validation (Critical!)
+
+**Before planning any implementation, verify that actual data matches your assumptions.**
+
+This lesson was learned from a refactoring session where test fixtures and service implementations were based on incorrect assumptions about FPL API response structures and database schema. The result: hours of debugging cache pollution, mock data mismatches, and type errors that could have been avoided with upfront data validation.
+
+#### The Problem
+
+When planning implementations involving external APIs or complex data models:
+- **Assumptions are often wrong** - Documentation may be outdated, or you may misremember field names/types
+- **Mock data diverges from reality** - Test fixtures based on assumptions break in subtle ways
+- **Type mismatches cause silent bugs** - String keys vs integer keys, nullable vs required fields
+
+#### Validation Checklist
+
+Before writing any code, run these verification steps:
+
+1. **Query actual data sources:**
+   ```bash
+   # FPL API - check actual response structure
+   curl -s "https://fantasy.premierleague.com/api/entry/91555/history/" | jq '.current[0] | keys'
+
+   # Database - check actual column types and values
+   fly ssh console --app tapas-fpl-backend -C "python -c \"
+   import asyncio, asyncpg, os
+   async def check():
+       conn = await asyncpg.connect(os.environ['DATABASE_URL'])
+       row = await conn.fetchrow('SELECT * FROM manager_gw_snapshot LIMIT 1')
+       print(dict(row) if row else 'No data')
+   asyncio.run(check())
+   \""
+   ```
+
+2. **Document field names and types explicitly:**
+   - Don't assume `season_id` is a string like `"2024-25"` - verify it's actually integer `1`
+   - Don't assume response keys are integers - they may be strings (`"123"` vs `123`)
+   - Check nullable fields - `overall_rank` can be `None` early in season
+
+3. **Create TypedDicts from actual data:**
+   ```python
+   # AFTER verifying actual structure, create typed mock data
+   class ManagerHistoryRow(TypedDict):
+       gameweek: int
+       total_points: int
+       overall_rank: int | None  # Nullable! Verified from API
+   ```
+
+4. **Verify mock data matches production:**
+   - Cross-reference test fixtures against real API responses
+   - Use actual field names from database `\d table_name` output
+   - Test with real league/manager IDs before generalizing
+
+#### Common Data Model Pitfalls
+
+| Assumption | Reality | Impact |
+|------------|---------|--------|
+| `season_id` is `"2024-25"` | `season_id` is integer `1` | All queries fail |
+| Response keys are integers | Keys are strings in JSON | KeyError in tests |
+| All fields are required | Many fields nullable | NoneType errors |
+| API structure matches docs | API may have changed | Wrong field access |
+
+#### Example: What We Got Wrong
+
+```python
+# WRONG - Based on assumptions
+mock_data = {"season_id": "2024-25", "positions": {123: 1}}
+
+# CORRECT - After verifying actual data
+mock_data = {"season_id": 1, "positions": {"123": 1}}
+```
+
+**Key takeaway:** 30 minutes of data verification upfront saves hours of debugging later.
+
 ## Database Migrations
 
 Migrations are tracked in a `_migrations` table and managed via the migration script:
@@ -1226,6 +1301,70 @@ mock_conn.__aexit__.return_value = None
 | Missing very large ID tests | Test with `9999999999999` for overflow protection |
 | Missing malformed data tests | Test empty strings, nulls from database |
 | Missing nullable field tests | Verify `None` values don't crash serialization |
+
+### Service Cache Management
+
+Some services use in-memory caching to reduce database calls. **Tests must clear caches to prevent pollution.**
+
+#### History Service Cache
+
+The history service (`app/services/history.py`) uses TTL-based in-memory caching for expensive queries. It exposes a `clear_cache()` function specifically for test isolation.
+
+**Usage in tests:**
+
+```python
+# test_history_service.py
+from app.services.history import clear_cache
+
+@pytest.fixture(autouse=True)
+def clear_history_cache():
+    """Clear history service cache before and after each test."""
+    clear_cache()  # Clear before test
+    yield
+    clear_cache()  # Clear after test
+```
+
+**Why clear before AND after:**
+- **Before:** Ensures test starts with clean state (no leftover data from previous tests)
+- **After:** Prevents test data from leaking into subsequent tests
+
+**When to use `clear_cache()`:**
+- Any test that calls `get_league_history()`, `get_league_positions()`, or `get_league_stats()`
+- Cache tests that verify cache hit/miss behavior
+- Integration tests that need fresh database queries
+
+**Cache implementation notes:**
+- Cache entries use `time.monotonic()` for TTL (clock-independent)
+- Cache key format: `"{method}_{league_id}_{season_id}"`
+- Default TTL: 10 minutes (configured in `history.py`)
+- Cache bypassed when `include_picks=True` (picks change frequently)
+
+#### Adding Cache Clearing to New Services
+
+If you add caching to a new service:
+
+1. Expose a `clear_cache()` function:
+   ```python
+   # In your service
+   _cache: dict[str, CacheEntry] = {}
+
+   def clear_cache() -> None:
+       """Clear all cached data. Used by tests to prevent pollution."""
+       _cache.clear()
+   ```
+
+2. Create an autouse fixture in the test file:
+   ```python
+   from app.services.your_service import clear_cache
+
+   @pytest.fixture(autouse=True)
+   def clear_service_cache():
+       clear_cache()
+       yield
+       clear_cache()
+   ```
+
+3. Document it in this section.
 
 ### Test Coverage
 

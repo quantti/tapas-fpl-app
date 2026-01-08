@@ -2,6 +2,11 @@
 
 These functions are stateless and have no database or external dependencies,
 making them easy to test in isolation.
+
+Note on caching: These functions take mutable container types (lists, dicts) as
+arguments, which are unhashable and therefore incompatible with @lru_cache.
+Service-level TTL caching in history.py handles caching at the appropriate level
+for HTTP requests.
 """
 
 from typing import TypedDict

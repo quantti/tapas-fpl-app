@@ -56,7 +56,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - [x] Bench points tracking (cumulative wasted points)
 - [x] Captain differential tracker
 - [x] League position history chart (bump chart)
-- [x] Chips remaining tracker (backend API ready, frontend needs integration to fix API spam)
+- [x] Chips remaining tracker
 - [x] Transfers display (in/out per manager)
 - [x] Team value and hit stats
 - [x] Gameweek countdown banner
@@ -70,7 +70,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - [x] Cookie consent banner (GDPR-compliant)
 - [x] Release notification banner
 - [x] Head-to-Head manager comparison with template overlap score
-- [x] Points Against - tracks FPL points conceded by each team (backend API ready, frontend card hidden until data populated)
+- [x] Points Against - tracks FPL points conceded by each team
 
 ## Project Structure
 

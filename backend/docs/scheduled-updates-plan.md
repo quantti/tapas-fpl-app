@@ -332,11 +332,11 @@ if failed:
 - [x] Create `backend/crontab` file
 - [x] Create `backend/scripts/scheduled_update.py`
 - [x] Add `collection_status` table migration (`migrations/010_collection_status.sql`)
-- [ ] Update `backend/Dockerfile` with Supercronic
-- [ ] Update `backend/fly.toml` with processes
-- [ ] Test locally with `python -m scripts.scheduled_update`
-- [ ] Deploy to Fly.io
-- [ ] Verify cron runs with `fly logs`
+- [x] Update `backend/Dockerfile` with Supercronic
+- [x] Update `backend/fly.toml` with processes
+- [x] Test locally with `python -m scripts.scheduled_update`
+- [x] Deploy to Fly.io
+- [x] Verify cron runs with `fly logs`
 - [ ] Add status endpoints (optional - `show_status()` already provides CLI status)
 
 ---

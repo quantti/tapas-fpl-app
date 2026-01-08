@@ -1,7 +1,5 @@
 """Tests for Chips Remaining API endpoints (TDD - written before implementation)."""
 
-from unittest.mock import MagicMock, patch
-
 import pytest
 from httpx import AsyncClient
 
@@ -17,14 +15,6 @@ from tests.conftest import MockDB
 def mock_chips_db() -> MockDB:
     """Mock database connection for chips service."""
     return MockDB("app.services.chips.get_connection")
-
-
-@pytest.fixture
-def mock_pool():
-    """Mock DB pool check for require_db() dependency (503 check)."""
-    with patch("app.dependencies.get_pool") as mock:
-        mock.return_value = MagicMock()
-        yield mock
 
 
 class TestChipsLeagueEndpoint:

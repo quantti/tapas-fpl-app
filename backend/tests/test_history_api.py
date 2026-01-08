@@ -14,8 +14,6 @@ Endpoints covered:
 - GET /api/v1/history/comparison - Head-to-head manager comparison
 """
 
-from unittest.mock import MagicMock, patch
-
 import pytest
 from httpx import AsyncClient
 
@@ -39,14 +37,6 @@ def clear_history_cache():
 def mock_api_db() -> MockDB:
     """Mock database for API endpoint tests."""
     return MockDB("app.services.history.get_connection")
-
-
-@pytest.fixture
-def mock_pool():
-    """Mock get_pool to make require_db() dependency pass."""
-    with patch("app.dependencies.get_pool") as mock:
-        mock.return_value = MagicMock()
-        yield mock
 
 # =============================================================================
 # GET /api/v1/history/league/{league_id}
@@ -590,7 +580,7 @@ class TestHistoryStatsResponseFormat:
         # Top-level fields
         assert "season_id" in data
         assert "bench_points" in data
-        assert "captain_differentials" in data
+        assert "captain_differential" in data
         assert "free_transfers" in data
 
         # Bench points structure
@@ -598,11 +588,11 @@ class TestHistoryStatsResponseFormat:
         entry = data["bench_points"][0]
         assert "manager_id" in entry
         assert "name" in entry
-        assert "total" in entry
+        assert "bench_points" in entry
 
-        # Captain differentials structure
-        assert len(data["captain_differentials"]) == 1
-        entry = data["captain_differentials"][0]
+        # Captain differential structure
+        assert len(data["captain_differential"]) == 1
+        entry = data["captain_differential"][0]
         assert "manager_id" in entry
         assert "name" in entry
         assert "differential_picks" in entry
@@ -613,7 +603,7 @@ class TestHistoryStatsResponseFormat:
         entry = data["free_transfers"][0]
         assert "manager_id" in entry
         assert "name" in entry
-        assert "remaining" in entry
+        assert "free_transfers" in entry
 
 
 class TestHistoryStatsBusinessLogic:
@@ -657,7 +647,7 @@ class TestHistoryStatsBusinessLogic:
         assert response.status_code == 200
         data = response.json()
 
-        assert data["bench_points"][0]["total"] == 33
+        assert data["bench_points"][0]["bench_points"] == 33
 
     async def test_captain_differential_vs_template(
         self, async_client: AsyncClient, mock_pool, mock_api_db: MockDB
@@ -706,7 +696,7 @@ class TestHistoryStatsBusinessLogic:
         assert response.status_code == 200
         data = response.json()
 
-        captain_diff = data["captain_differentials"][0]
+        captain_diff = data["captain_differential"][0]
         assert captain_diff["differential_picks"] == 1  # 1 differential captain pick
 
     async def test_free_transfers_calculation(
@@ -790,7 +780,7 @@ class TestHistoryStatsBusinessLogic:
         data = response.json()
 
         # After GW4 with no transfers, should have 2 FT (1 + 1 carried)
-        assert data["free_transfers"][0]["remaining"] == 2
+        assert data["free_transfers"][0]["free_transfers"] == 2
 
     async def test_free_transfers_max_5_rule(
         self, async_client: AsyncClient, mock_pool, mock_api_db: MockDB
@@ -833,7 +823,7 @@ class TestHistoryStatsBusinessLogic:
         data = response.json()
 
         # Should be capped at 5
-        assert data["free_transfers"][0]["remaining"] == 5
+        assert data["free_transfers"][0]["free_transfers"] == 5
 
 
 # =============================================================================

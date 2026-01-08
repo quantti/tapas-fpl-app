@@ -11,7 +11,7 @@ Provides:
 import asyncio
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from app.db import get_connection
@@ -178,10 +178,14 @@ CACHE_TTL_SECONDS = 300  # 5 minutes for history data
 
 @dataclass
 class CacheEntry:
-    """Cache entry with TTL."""
+    """Cache entry with TTL.
+
+    Note: expires_at must always be explicitly set via _set_cached().
+    There is no default to avoid creating immediately-expired entries.
+    """
 
     data: Any
-    expires_at: float = field(default_factory=lambda: time.monotonic())
+    expires_at: float
 
     def is_valid(self) -> bool:
         return time.monotonic() < self.expires_at
@@ -533,7 +537,7 @@ class HistoryService:
 
             # Bench points
             total_bench = calculate_bench_points(history)
-            bench_points_list.append({"manager_id": mid, "name": name, "total": total_bench})
+            bench_points_list.append({"manager_id": mid, "name": name, "bench_points": total_bench})
 
             # Captain differential
             captain_diff = calculate_captain_differential(picks, gameweeks)
@@ -548,12 +552,14 @@ class HistoryService:
 
             # Free transfers (now uses int season_id)
             ft_remaining = calculate_free_transfers(history, current_gameweek, season_id)
-            free_transfers_list.append({"manager_id": mid, "name": name, "remaining": ft_remaining})
+            free_transfers_list.append({"manager_id": mid, "name": name, "free_transfers": ft_remaining})
 
         return {
+            "league_id": league_id,
             "season_id": season_id,
+            "current_gameweek": current_gameweek,
             "bench_points": bench_points_list,
-            "captain_differentials": captain_diff_list,
+            "captain_differential": captain_diff_list,
             "free_transfers": free_transfers_list,
         }
 
@@ -576,11 +582,8 @@ class HistoryService:
             Dict with comparison stats for both managers
 
         Raises:
-            ValueError: If manager not found or comparing to self
+            ValueError: If manager not found or invalid season
         """
-        if manager_a == manager_b:
-            raise ValueError("Cannot compare manager to themselves")
-
         _validate_season_id(season_id)
 
         async with get_connection() as conn:

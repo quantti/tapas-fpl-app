@@ -1,35 +1,15 @@
 """Integration tests for API endpoints."""
 
-from unittest.mock import MagicMock, patch
-
 import pytest
-from httpx import ASGITransport, AsyncClient
-
-from app.main import app
-
-
-@pytest.fixture
-async def client():
-    """Async HTTP client for testing the FastAPI app."""
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
-
-
-@pytest.fixture
-def mock_pool():
-    """Mock get_pool to make require_db() dependency pass."""
-    with patch("app.dependencies.get_pool") as mock:
-        mock.return_value = MagicMock()
-        yield mock
+from httpx import AsyncClient
 
 
 class TestHealthEndpoint:
     """Tests for health check endpoint."""
 
-    async def test_health_returns_healthy(self, client: AsyncClient):
+    async def test_health_returns_healthy(self, async_client: AsyncClient):
         """Health endpoint should return healthy status with database info."""
-        response = await client.get("/health")
+        response = await async_client.get("/health")
 
         assert response.status_code == 200
         data = response.json()
@@ -41,9 +21,9 @@ class TestHealthEndpoint:
 class TestDocsEndpoint:
     """Tests for documentation endpoints."""
 
-    async def test_docs_available(self, client: AsyncClient):
+    async def test_docs_available(self, async_client: AsyncClient):
         """OpenAPI docs should be available."""
-        response = await client.get("/docs")
+        response = await async_client.get("/docs")
 
         # FastAPI redirects /docs to /docs/ or returns HTML
         assert response.status_code in (200, 307)
@@ -52,26 +32,26 @@ class TestDocsEndpoint:
 class TestAnalyticsEndpoints:
     """Tests for analytics stub endpoints."""
 
-    async def test_expected_points_stub(self, client: AsyncClient):
+    async def test_expected_points_stub(self, async_client: AsyncClient):
         """Expected points endpoint should return stub response."""
-        response = await client.get("/api/analytics/expected-points/12345")
+        response = await async_client.get("/api/analytics/expected-points/12345")
 
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "not_implemented"
         assert data["player_id"] == 12345
 
-    async def test_expected_points_with_horizon(self, client: AsyncClient):
+    async def test_expected_points_with_horizon(self, async_client: AsyncClient):
         """Expected points should accept horizon parameter."""
-        response = await client.get("/api/analytics/expected-points/12345?horizon=10")
+        response = await async_client.get("/api/analytics/expected-points/12345?horizon=10")
 
         assert response.status_code == 200
         data = response.json()
         assert data["horizon"] == 10
 
-    async def test_optimize_transfers_stub(self, client: AsyncClient):
+    async def test_optimize_transfers_stub(self, async_client: AsyncClient):
         """Optimize transfers endpoint should return stub response."""
-        response = await client.post("/api/analytics/optimize-transfers")
+        response = await async_client.post("/api/analytics/optimize-transfers")
 
         assert response.status_code == 200
         data = response.json()
@@ -81,9 +61,9 @@ class TestAnalyticsEndpoints:
 class TestCORSHeaders:
     """Tests for CORS configuration."""
 
-    async def test_cors_headers_present(self, client: AsyncClient):
+    async def test_cors_headers_present(self, async_client: AsyncClient):
         """CORS headers should be present in response."""
-        response = await client.options(
+        response = await async_client.options(
             "/health",
             headers={
                 "Origin": "http://localhost:3000",
@@ -98,43 +78,43 @@ class TestCORSHeaders:
 class TestPointsAgainstEndpoints:
     """Tests for Points Against API endpoints."""
 
-    async def test_points_against_returns_503_without_db(self, client: AsyncClient):
+    async def test_points_against_returns_503_without_db(self, async_client: AsyncClient):
         """Points against should return 503 when database unavailable."""
-        response = await client.get("/api/v1/points-against")
+        response = await async_client.get("/api/v1/points-against")
 
         # Expect 503 since test fixture doesn't initialize DB pool
         assert response.status_code == 503
         assert "Database not available" in response.json()["detail"]
 
     async def test_team_history_validates_team_id_too_high(
-        self, client: AsyncClient, mock_pool
+        self, async_client: AsyncClient, mock_pool
     ):
         """Team history should reject team_id > 20."""
-        response = await client.get("/api/v1/points-against/21/history")
+        response = await async_client.get("/api/v1/points-against/21/history")
 
         assert response.status_code == 400
         assert "Invalid team_id" in response.json()["detail"]
 
     async def test_team_history_validates_team_id_too_low(
-        self, client: AsyncClient, mock_pool
+        self, async_client: AsyncClient, mock_pool
     ):
         """Team history should reject team_id < 1."""
-        response = await client.get("/api/v1/points-against/0/history")
+        response = await async_client.get("/api/v1/points-against/0/history")
 
         assert response.status_code == 400
         assert "Invalid team_id" in response.json()["detail"]
 
-    async def test_team_history_returns_503_without_db(self, client: AsyncClient):
+    async def test_team_history_returns_503_without_db(self, async_client: AsyncClient):
         """Team history should return 503 when database unavailable."""
-        response = await client.get("/api/v1/points-against/1/history")
+        response = await async_client.get("/api/v1/points-against/1/history")
 
         # Expect 503 since test fixture doesn't initialize DB pool
         assert response.status_code == 503
         assert "Database not available" in response.json()["detail"]
 
-    async def test_status_returns_503_without_db(self, client: AsyncClient):
+    async def test_status_returns_503_without_db(self, async_client: AsyncClient):
         """Status endpoint should return 503 when database unavailable."""
-        response = await client.get("/api/v1/points-against/status")
+        response = await async_client.get("/api/v1/points-against/status")
 
         # Expect 503 since test fixture doesn't initialize DB pool
         assert response.status_code == 503

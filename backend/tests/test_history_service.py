@@ -543,10 +543,10 @@ class TestHistoryServiceGetLeagueStats:
             )
 
         john = next(b for b in result["bench_points"] if b["manager_id"] == 123)
-        assert john["total"] == 25
+        assert john["bench_points"] == 25
 
         jane = next(b for b in result["bench_points"] if b["manager_id"] == 456)
-        assert jane["total"] == 25
+        assert jane["bench_points"] == 25
 
     async def test_returns_captain_differentials(
         self, history_service: "HistoryService", mock_history_db: MockDB
@@ -573,7 +573,7 @@ class TestHistoryServiceGetLeagueStats:
                 league_id=98765, season_id=1, current_gameweek=1
             )
 
-        john = result["captain_differentials"][0]
+        john = result["captain_differential"][0]
         assert john["manager_id"] == 123
         assert john["differential_picks"] == 1
 
@@ -598,7 +598,7 @@ class TestHistoryServiceGetLeagueStats:
 
         john = result["free_transfers"][0]
         assert john["manager_id"] == 123
-        assert john["remaining"] == 3  # 1 + 2 carried (max 5)
+        assert john["free_transfers"] == 3  # 1 + 2 carried (max 5)
 
 
 # =============================================================================
@@ -722,14 +722,8 @@ class TestHistoryServiceGetManagerComparison:
                 manager_a=99999, manager_b=456, league_id=98765, season_id=1
             )
 
-    async def test_raises_error_when_comparing_same_manager(
-        self, history_service: "HistoryService"
-    ):
-        """Should raise error when comparing manager to themselves."""
-        with pytest.raises(ValueError, match="Cannot compare manager to themselves"):
-            await history_service.get_manager_comparison(
-                manager_a=123, manager_b=123, league_id=98765, season_id=1
-            )
+    # Note: Same-manager validation test removed - validation moved to API layer
+    # See test_history_api.py::TestHistoryComparisonEndpoint::test_comparison_rejects_same_manager
 
 
 # =============================================================================
@@ -748,6 +742,167 @@ class TestHistoryServiceErrorHandling:
 
         with mock_history_db, pytest.raises(Exception, match="Connection timeout"):
             await history_service.get_league_history(league_id=98765, season_id=1)
+
+    async def test_gather_propagates_second_query_failure(
+        self, history_service: "HistoryService", mock_history_db: MockDB
+    ):
+        """asyncio.gather should propagate error if second parallel query fails."""
+        mock_managers: list[ManagerRow] = [
+            {"id": 123, "player_name": "John", "team_name": "FC John"}
+        ]
+
+        # First query (managers) succeeds, but second query (history) in gather fails
+        mock_history_db.conn.fetch.side_effect = [
+            mock_managers,  # Members query succeeds
+            Exception("Chips query timeout"),  # Chips query in gather fails
+        ]
+
+        with mock_history_db, pytest.raises(Exception, match="Chips query timeout"):
+            await history_service.get_league_history(league_id=98765, season_id=1)
+
+    async def test_gather_propagates_stats_query_failure(
+        self, history_service: "HistoryService", mock_history_db: MockDB
+    ):
+        """asyncio.gather should propagate error when stats parallel query fails."""
+        mock_managers: list[ManagerRow] = [
+            {"id": 123, "player_name": "John", "team_name": "FC John"}
+        ]
+
+        # Members succeed, history succeeds, but picks query fails
+        mock_history_db.conn.fetch.side_effect = [
+            mock_managers,  # Members query succeeds
+            Exception("History query failed"),  # History query in gather fails
+        ]
+
+        with mock_history_db, pytest.raises(Exception, match="History query failed"):
+            await history_service.get_league_stats(
+                league_id=98765, season_id=1, current_gameweek=1
+            )
+
+    async def test_comparison_gather_propagates_manager_lookup_failure(
+        self, history_service: "HistoryService", mock_history_db: MockDB
+    ):
+        """Manager comparison should propagate error if parallel lookup fails."""
+        # First manager lookup succeeds, second fails
+        mock_history_db.conn.fetch.side_effect = [
+            [{"id": 123, "player_name": "John", "team_name": "FC John"}],
+            Exception("Manager B lookup failed"),
+        ]
+
+        with mock_history_db, pytest.raises(Exception, match="Manager B lookup failed"):
+            await history_service.get_manager_comparison(
+                manager_a=123, manager_b=456, league_id=98765, season_id=1
+            )
+
+
+# =============================================================================
+# Cache Behavior Tests
+# =============================================================================
+
+
+class TestHistoryServiceCacheBehavior:
+    """Tests for caching behavior in HistoryService."""
+
+    async def test_second_call_returns_cached_data(
+        self, history_service: "HistoryService", mock_history_db: MockDB
+    ):
+        """Second call should return cached data without hitting database."""
+        mock_managers: list[ManagerRow] = [
+            {"id": 123, "player_name": "John", "team_name": "FC John"}
+        ]
+        mock_history: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=123, gameweek=1, total_points=100)
+        ]
+        mock_chips: list[ChipRow] = []
+
+        mock_history_db.conn.fetch.side_effect = [mock_managers, mock_history, mock_chips]
+
+        with mock_history_db:
+            # First call - hits database
+            result1 = await history_service.get_league_history(
+                league_id=98765, season_id=1
+            )
+
+            # Reset side_effect - second call should NOT hit database
+            mock_history_db.conn.fetch.side_effect = Exception("Should not be called")
+
+            # Second call - should return cached data
+            result2 = await history_service.get_league_history(
+                league_id=98765, season_id=1
+            )
+
+        assert result1 == result2
+        assert result1["managers"][0]["manager_id"] == 123
+
+    async def test_cache_is_bypassed_when_include_picks_is_true(
+        self, history_service: "HistoryService", mock_history_db: MockDB
+    ):
+        """Cache should be bypassed when include_picks=True."""
+        mock_managers: list[ManagerRow] = [
+            {"id": 123, "player_name": "John", "team_name": "FC John"}
+        ]
+        mock_history: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=123, gameweek=1)
+        ]
+        mock_chips: list[ChipRow] = []
+        mock_picks: list[PickRow] = []
+
+        # Set up for two calls - both should hit database
+        # Each call needs: managers, history, chips, picks
+        mock_history_db.conn.fetch.side_effect = [
+            mock_managers,
+            mock_history,
+            mock_chips,
+            mock_picks,
+            mock_managers,
+            mock_history,
+            mock_chips,
+            mock_picks,
+        ]
+
+        with mock_history_db:
+            await history_service.get_league_history(
+                league_id=98765, season_id=1, include_picks=True
+            )
+            await history_service.get_league_history(
+                league_id=98765, season_id=1, include_picks=True
+            )
+
+        # Should have made 8 fetch calls (4 per call with include_picks=True)
+        assert mock_history_db.conn.fetch.call_count == 8
+
+    async def test_different_leagues_have_separate_caches(
+        self, history_service: "HistoryService", mock_history_db: MockDB
+    ):
+        """Different league IDs should have separate cache entries."""
+        mock_managers_a: list[ManagerRow] = [
+            {"id": 123, "player_name": "John", "team_name": "League A"}
+        ]
+        mock_managers_b: list[ManagerRow] = [
+            {"id": 456, "player_name": "Jane", "team_name": "League B"}
+        ]
+        mock_history: list[ManagerHistoryRow] = []
+        mock_chips: list[ChipRow] = []
+
+        mock_history_db.conn.fetch.side_effect = [
+            mock_managers_a,
+            mock_history,
+            mock_chips,
+            mock_managers_b,
+            mock_history,
+            mock_chips,
+        ]
+
+        with mock_history_db:
+            result_a = await history_service.get_league_history(
+                league_id=11111, season_id=1
+            )
+            result_b = await history_service.get_league_history(
+                league_id=22222, season_id=1
+            )
+
+        assert result_a["managers"][0]["manager_id"] == 123
+        assert result_b["managers"][0]["manager_id"] == 456
 
 
 # =============================================================================

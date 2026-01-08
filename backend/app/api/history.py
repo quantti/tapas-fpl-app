@@ -160,10 +160,11 @@ class ComparisonResponse(BaseModel):
 # Custom Path type for league_id validation (ge=1 for positive integers only)
 LeagueIdPath = Annotated[int, Path(ge=1, description="League ID (must be positive)")]
 
-# Common season_id query parameter (default set in function signature, not here)
+# Common season_id query parameter
+# Valid values: 1 = 2024-25, 2 = 2025-26 (must match VALID_SEASON_IDS in history service)
 SeasonIdQuery = Annotated[
     int,
-    Query(ge=1, le=100, description="Season ID (default: 1 for 2024-25)"),
+    Query(ge=1, le=2, description="Season ID: 1 = 2024-25, 2 = 2025-26"),
 ]
 
 
