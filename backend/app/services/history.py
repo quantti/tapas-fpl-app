@@ -504,6 +504,12 @@ class HistoryService:
         """
         _validate_season_id(season_id)
 
+        # Check cache (includes current_gameweek since free transfers depend on it)
+        cache_key = f"league_stats_{league_id}_{season_id}_{current_gameweek}"
+        cached = _get_cached(cache_key)
+        if cached is not None:
+            return cached
+
         async with get_connection() as conn:
             # Get league members
             members = await conn.fetch(_LEAGUE_MEMBERS_SQL, league_id, season_id)
@@ -518,53 +524,55 @@ class HistoryService:
 
             manager_ids = [m["id"] for m in members]
 
-            # Run queries sequentially (asyncpg doesn't support parallel queries on same connection)
+            # Run queries sequentially (asyncpg doesn't support parallel on same connection)
             history_rows = await conn.fetch(_MANAGER_HISTORY_SQL, manager_ids, season_id)
             pick_rows = await conn.fetch(_CAPTAIN_PICKS_SQL, manager_ids, season_id)
             gameweek_rows = await conn.fetch(_GAMEWEEKS_SQL, season_id)
 
-        # Group data by manager
-        history_by_manager: dict[int, list[ManagerHistoryRow]] = {m["id"]: [] for m in members}
-        for row in history_rows:
-            history_by_manager[row["manager_id"]].append(dict(row))
+            # Group data by manager (in-memory, fast)
+            history_by_manager: dict[int, list[ManagerHistoryRow]] = {
+                m["id"]: [] for m in members
+            }
+            for row in history_rows:
+                history_by_manager[row["manager_id"]].append(dict(row))
 
-        picks_by_manager: dict[int, list[PickRow]] = {m["id"]: [] for m in members}
-        for row in pick_rows:
-            picks_by_manager[row["manager_id"]].append(dict(row))
+            picks_by_manager: dict[int, list[PickRow]] = {m["id"]: [] for m in members}
+            for row in pick_rows:
+                picks_by_manager[row["manager_id"]].append(dict(row))
 
-        gameweeks: list[GameweekRow] = [dict(row) for row in gameweek_rows]
+            gameweeks: list[GameweekRow] = [dict(row) for row in gameweek_rows]
 
-        # Collect all unique player IDs (captains + template captains)
-        all_player_ids: set[int] = set()
-        for picks in picks_by_manager.values():
-            for pick in picks:
-                all_player_ids.add(pick["player_id"])
-        for gw in gameweeks:
-            if gw.get("most_captained"):
-                all_player_ids.add(gw["most_captained"])
+            # Collect player IDs for name/points lookup
+            all_player_ids: set[int] = set()
+            for picks in picks_by_manager.values():
+                for pick in picks:
+                    all_player_ids.add(pick["player_id"])
+            for gw in gameweeks:
+                if gw.get("most_captained"):
+                    all_player_ids.add(gw["most_captained"])
 
-        # Fetch player names and per-GW points
-        player_names: dict[int, str] = {}
-        player_gw_points: dict[int, dict[int, int]] = {}
-
-        if all_player_ids:
-            async with get_connection() as conn:
+            # Fetch player names and per-GW points (same connection)
+            name_rows: list[Any] = []
+            points_rows: list[Any] = []
+            if all_player_ids:
                 player_ids_list = list(all_player_ids)
-                # Run sequentially (asyncpg: no parallel on same connection)
                 name_rows = await conn.fetch(_PLAYER_NAMES_SQL, player_ids_list, season_id)
-                points_rows = await conn.fetch(_PLAYER_GW_POINTS_SQL, player_ids_list, season_id)
+                points_rows = await conn.fetch(
+                    _PLAYER_GW_POINTS_SQL, player_ids_list, season_id
+                )
 
-            # Build player name lookup
-            for row in name_rows:
-                player_names[row["id"]] = row["web_name"]
+        # Build lookups (outside connection block)
+        player_names: dict[int, str] = {}
+        for row in name_rows:
+            player_names[row["id"]] = row["web_name"]
 
-            # Build player GW points lookup
-            for row in points_rows:
-                pid = row["player_id"]
-                gw = row["gameweek"]
-                if pid not in player_gw_points:
-                    player_gw_points[pid] = {}
-                player_gw_points[pid][gw] = row["total_points"]
+        player_gw_points: dict[int, dict[int, int]] = {}
+        for row in points_rows:
+            pid = row["player_id"]
+            gw = row["gameweek"]
+            if pid not in player_gw_points:
+                player_gw_points[pid] = {}
+            player_gw_points[pid][gw] = row["total_points"]
 
         # Calculate stats
         bench_points_list = []
@@ -601,7 +609,7 @@ class HistoryService:
                 "manager_id": mid, "name": name, "free_transfers": ft_remaining
             })
 
-        return {
+        result = {
             "league_id": league_id,
             "season_id": season_id,
             "current_gameweek": current_gameweek,
@@ -609,6 +617,9 @@ class HistoryService:
             "captain_differential": captain_diff_list,
             "free_transfers": free_transfers_list,
         }
+
+        _set_cached(cache_key, result)
+        return result
 
     async def get_manager_comparison(
         self,

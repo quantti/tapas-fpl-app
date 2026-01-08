@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { CACHE_TIMES, CURRENT_SEASON_ID } from 'src/config';
+import { CURRENT_SEASON_ID } from 'src/config';
 
 import {
   BackendApiError,
@@ -8,6 +8,7 @@ import {
   type GameweekPosition,
   type ManagerMetadata,
 } from 'services/backendApi';
+import { backendQueryDefaults } from 'services/queries/backendQueryConfig';
 import { queryKeys } from 'services/queryKeys';
 
 interface UseLeaguePositionsReturn {
@@ -48,20 +49,10 @@ export function useLeaguePositions(
   { seasonId = CURRENT_SEASON_ID, enabled = true }: UseLeaguePositionsOptions = {}
 ): UseLeaguePositionsReturn {
   const query = useQuery({
+    ...backendQueryDefaults,
     queryKey: queryKeys.leaguePositions(leagueId, seasonId),
     queryFn: () => backendApi.getLeaguePositions(leagueId, seasonId),
-    staleTime: CACHE_TIMES.FIVE_MINUTES,
-    gcTime: CACHE_TIMES.THIRTY_MINUTES,
     enabled: enabled && leagueId > 0,
-    retry: (failureCount, error) => {
-      // Don't retry on service unavailable (503 or network error) - it won't help
-      if (error instanceof BackendApiError && error.isServiceUnavailable) {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    // Exponential backoff for Fly.io cold starts (2-3s typical)
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
 
   const isBackendUnavailable =
