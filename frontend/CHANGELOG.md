@@ -1,3 +1,12 @@
+## [0.24.1](https://github.com/quantti/tapas-fpl-app/compare/v0.24.0...v0.24.1) (2026-01-08)
+
+
+### Bug Fixes
+
+* **backend:** resolve code review issues in history service ([f7555e0](https://github.com/quantti/tapas-fpl-app/commit/f7555e0d729d0add0e95e24fb61a2e0f2667950b))
+* **frontend:** add browser headers to FPL proxy and SPA rewrites ([f132259](https://github.com/quantti/tapas-fpl-app/commit/f13225979887841150fef19ef4d2ef44b23f7959))
+* restore SPA routing and improve local dev compatibility ([9cefd9a](https://github.com/quantti/tapas-fpl-app/commit/9cefd9a7ac8f59d39415feded4bff5efa486b3b3))
+
 # [0.24.0](https://github.com/quantti/tapas-fpl-app/compare/v0.23.3...v0.24.0) (2026-01-07)
 
 
