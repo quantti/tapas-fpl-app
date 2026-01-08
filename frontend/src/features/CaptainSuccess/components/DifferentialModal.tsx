@@ -4,7 +4,18 @@ import { Modal } from 'components/Modal';
 
 import * as styles from './DifferentialModal.module.css';
 
-import type { DifferentialPick } from 'services/queries/useCaptainSuccess';
+/** Per-gameweek differential captain pick details */
+export interface DifferentialPick {
+  gameweek: number;
+  captainId: number;
+  captainName: string;
+  captainPoints: number;
+  templateId: number;
+  templateName: string;
+  templatePoints: number;
+  gain: number;
+  multiplier: number; // 2 for normal, 3 for TC
+}
 
 interface Props {
   isOpen: boolean;

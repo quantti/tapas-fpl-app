@@ -5,54 +5,50 @@ import { Card } from 'components/Card';
 import { CardHeader } from 'components/CardHeader';
 import { CardRow } from 'components/CardRow';
 
-import { useBenchPoints } from 'services/queries/useBenchPoints';
+import { useLeagueStats } from 'services/queries/useLeagueStats';
 
 import * as styles from './BenchPoints.module.css';
 
-import type { ManagerGameweekData } from 'services/queries/useFplData';
-
 interface Props {
-  managerDetails: ManagerGameweekData[];
+  leagueId: number;
   currentGameweek: number;
 }
 
-export function BenchPoints({ managerDetails, currentGameweek }: Props) {
-  // Extract manager IDs and names for the hook
-  const managerIds = useMemo(
-    () => managerDetails.map((m) => ({ id: m.managerId, teamName: m.teamName })),
-    [managerDetails]
+export function BenchPoints({ leagueId, currentGameweek }: Props) {
+  const { benchPoints, isLoading, error, isBackendUnavailable } = useLeagueStats(
+    leagueId,
+    currentGameweek
   );
-
-  const { benchPoints, loading, error } = useBenchPoints(managerIds, currentGameweek);
 
   // Sort by most bench points (descending) - these are "wasted" points
   const sortedData = useMemo(
-    () => [...benchPoints].sort((a, b) => b.totalBenchPoints - a.totalBenchPoints),
+    () => [...benchPoints].sort((a, b) => b.bench_points - a.bench_points),
     [benchPoints]
   );
 
-  if (managerDetails.length === 0) return null;
+  // Don't render if no data or backend unavailable (silent fail)
+  if (benchPoints.length === 0 || isBackendUnavailable) return null;
 
-  const totalBenchPoints = sortedData.reduce((sum, d) => sum + d.totalBenchPoints, 0);
+  const totalBenchPoints = sortedData.reduce((sum, d) => sum + d.bench_points, 0);
 
   return (
     <Card>
       <CardHeader
         icon={<Armchair size={16} color="#6B8CAE" />}
-        action={!loading && <span className={styles.total}>{totalBenchPoints} pts</span>}
+        action={!isLoading && <span className={styles.total}>{totalBenchPoints} pts</span>}
       >
         Bench Points
       </CardHeader>
-      {loading && <p className={styles.loading}>Loading...</p>}
-      {!loading && error && <p className={styles.error}>{error}</p>}
-      {!loading && !error && (
+      {isLoading && <p className={styles.loading}>Loading...</p>}
+      {!isLoading && error && <p className={styles.error}>{error}</p>}
+      {!isLoading && !error && (
         <div className={styles.list}>
           {sortedData.map((data, index) => (
             <CardRow
-              key={data.managerId}
+              key={data.manager_id}
               rank={index + 1}
-              label={data.teamName}
-              value={data.totalBenchPoints}
+              label={data.name}
+              value={data.bench_points}
               valueColor="warning"
             />
           ))}

@@ -83,20 +83,11 @@ export function Statistics() {
             playersMap={playersMap}
           />
         )}
-        <BenchPoints managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
-        <CaptainSuccess
-          managerDetails={managerDetails}
-          currentGameweek={currentGameweek.id}
-          gameweeks={bootstrap?.events ?? []}
-          playersMap={playersMap}
-        />
+        <BenchPoints leagueId={LEAGUE_ID} currentGameweek={currentGameweek.id} />
+        <CaptainSuccess leagueId={LEAGUE_ID} currentGameweek={currentGameweek.id} />
         <ChipsRemaining leagueId={LEAGUE_ID} currentGameweek={currentGameweek.id} />
-        <FreeTransfers
-          managerDetails={managerDetails}
-          currentGameweek={currentGameweek.id}
-          deadlineTime={currentGameweek.deadline_time}
-        />
-        <LeaguePosition managerDetails={managerDetails} currentGameweek={currentGameweek.id} />
+        <FreeTransfers leagueId={LEAGUE_ID} currentGameweek={currentGameweek.id} />
+        <LeaguePosition leagueId={LEAGUE_ID} />
         <PlayerOwnership
           managerDetails={managerDetails}
           playersMap={playersMap}

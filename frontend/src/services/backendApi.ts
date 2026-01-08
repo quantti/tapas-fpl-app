@@ -111,11 +111,24 @@ export interface FreeTransferStat {
   free_transfers: number;
 }
 
+export interface CaptainDifferentialDetail {
+  gameweek: number;
+  captain_id: number;
+  captain_name: string;
+  captain_points: number;
+  template_id: number;
+  template_name: string;
+  template_points: number;
+  gain: number; // Can be negative
+  multiplier: number; // 2 for normal, 3 for TC
+}
+
 export interface CaptainDifferentialStat {
   manager_id: number;
   name: string;
   differential_picks: number;
   gain: number; // Can be negative
+  details: CaptainDifferentialDetail[];
 }
 
 export interface LeagueStatsResponse {

@@ -1,11 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { BackendApiError } from 'services/backendApi';
+import { BackendApiError, backendApi } from 'services/backendApi';
 
 import { useLeagueStats } from './useLeagueStats';
+
+import type { ReactNode } from 'react';
 
 // Mock the backendApi module
 vi.mock('services/backendApi', async () => {
@@ -17,9 +18,6 @@ vi.mock('services/backendApi', async () => {
     },
   };
 });
-
-// Import mocked module
-import { backendApi } from 'services/backendApi';
 
 const mockGetLeagueStats = vi.mocked(backendApi.getLeagueStats);
 

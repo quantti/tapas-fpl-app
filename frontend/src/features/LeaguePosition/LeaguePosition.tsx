@@ -1,15 +1,13 @@
 import { TrendingUp } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 import { Card } from 'components/Card';
 import { CardHeader } from 'components/CardHeader';
 
-import { useLeaguePositionHistory } from 'services/queries/useLeaguePositionHistory';
+import { useLeaguePositions } from 'services/queries/useLeaguePositions';
 
 import * as styles from './LeaguePosition.module.css';
-
-import type { ManagerGameweekData } from 'services/queries/useFplData';
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -27,8 +25,7 @@ function useIsMobile() {
 }
 
 interface Props {
-  managerDetails: ManagerGameweekData[];
-  currentGameweek: number;
+  leagueId: number;
 }
 
 const AXIS_STYLE = {
@@ -37,39 +34,32 @@ const AXIS_STYLE = {
   tickLine: { stroke: 'var(--color-border)' },
 };
 
-export function LeaguePosition({ managerDetails, currentGameweek }: Props) {
+export function LeaguePosition({ leagueId }: Props) {
   const isMobile = useIsMobile();
 
-  // Extract manager IDs and names for the hook
-  const managers = useMemo(
-    () => managerDetails.map((m) => ({ id: m.managerId, teamName: m.teamName })),
-    [managerDetails]
-  );
+  const { positions, managers, isLoading, error, isBackendUnavailable } =
+    useLeaguePositions(leagueId);
 
-  const { data, loading, error } = useLeaguePositionHistory(managers, currentGameweek);
+  // Don't render if no data or backend unavailable (silent fail)
+  if (managers.length === 0 || isBackendUnavailable) return null;
 
-  if (managerDetails.length === 0) return null;
-
-  const managerCount = managerDetails.length;
+  const managerCount = managers.length;
 
   return (
     <Card className={styles.card}>
       <CardHeader icon={<TrendingUp size={16} color="#6366f1" />}>
         League Position History
       </CardHeader>
-      {loading && <p className={styles.loading}>Loading history...</p>}
-      {!loading && error && <p className={styles.error}>{error}</p>}
-      {!loading && !error && data && (
+      {isLoading && <p className={styles.loading}>Loading history...</p>}
+      {!isLoading && error && <p className={styles.error}>{error}</p>}
+      {!isLoading && !error && positions.length > 0 && (
         <div className={styles.chartContainer}>
           <div
             className={styles.chartInner}
-            style={{ minWidth: Math.max(600, data.positions.length * 25) }}
+            style={{ minWidth: Math.max(600, positions.length * 25) }}
           >
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart
-                data={data.positions}
-                margin={{ top: 20, right: 30, left: 30, bottom: 20 }}
-              >
+              <LineChart data={positions} margin={{ top: 20, right: 30, left: 30, bottom: 20 }}>
                 <XAxis dataKey="gameweek" tickFormatter={(gw) => `GW${gw}`} {...AXIS_STYLE} />
                 <YAxis
                   reversed
@@ -89,7 +79,7 @@ export function LeaguePosition({ managerDetails, currentGameweek }: Props) {
                         <div className={styles.tooltip}>
                           <div className={styles.tooltipTitle}>Gameweek {label}</div>
                           {sorted.map((entry) => {
-                            const manager = data.managers.find((m) => `m${m.id}` === entry.dataKey);
+                            const manager = managers.find((m) => String(m.id) === entry.dataKey);
                             return (
                               <div
                                 key={entry.dataKey}
@@ -97,7 +87,7 @@ export function LeaguePosition({ managerDetails, currentGameweek }: Props) {
                                 style={{ color: entry.color }}
                               >
                                 <span className={styles.tooltipPosition}>{entry.value}.</span>
-                                <span>{manager?.teamName}</span>
+                                <span>{manager?.name}</span>
                               </div>
                             );
                           })}
@@ -106,26 +96,26 @@ export function LeaguePosition({ managerDetails, currentGameweek }: Props) {
                     }}
                   />
                 )}
-                {data.managers.map((manager) => (
+                {managers.map((manager) => (
                   <Line
                     key={manager.id}
                     type="monotone"
-                    dataKey={`m${manager.id}`}
+                    dataKey={String(manager.id)}
                     stroke={manager.color}
                     strokeWidth={2}
                     dot={{ r: 3, fill: manager.color }}
                     activeDot={{ r: 5 }}
-                    name={manager.teamName}
+                    name={manager.name}
                   />
                 ))}
               </LineChart>
             </ResponsiveContainer>
             {/* Legend below chart */}
             <div className={styles.legend}>
-              {data.managers.map((manager) => (
+              {managers.map((manager) => (
                 <div key={manager.id} className={styles.legendItem}>
                   <span className={styles.legendColor} style={{ backgroundColor: manager.color }} />
-                  <span className={styles.legendName}>{manager.teamName}</span>
+                  <span className={styles.legendName}>{manager.name}</span>
                 </div>
               ))}
             </div>

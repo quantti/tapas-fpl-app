@@ -5,11 +5,9 @@ import { Card } from 'components/Card';
 import { CardHeader } from 'components/CardHeader';
 import { CardRow, type ValueColor } from 'components/CardRow';
 
-import { useFreeTransfers } from 'services/queries/useFreeTransfers';
+import { useLeagueStats } from 'services/queries/useLeagueStats';
 
 import * as styles from './FreeTransfers.module.css';
-
-import type { ManagerGameweekData } from 'services/queries/useFplData';
 
 /**
  * Returns color based on free transfer count:
@@ -26,31 +24,23 @@ function getFreeTransferColor(ft: number): ValueColor {
 }
 
 interface Props {
-  managerDetails: ManagerGameweekData[];
+  leagueId: number;
   currentGameweek: number;
-  deadlineTime?: string; // ISO datetime string
 }
 
-export function FreeTransfers({ managerDetails, currentGameweek, deadlineTime }: Props) {
-  // Check if deadline has passed (transfers now apply to next GW)
-  const deadlinePassed = useMemo(() => {
-    if (!deadlineTime) return false;
-    return new Date() > new Date(deadlineTime);
-  }, [deadlineTime]);
-
-  // Extract manager IDs and names for the hook (memoized to prevent re-renders)
-  const managerIds = useMemo(
-    () => managerDetails.map((m) => ({ id: m.managerId, teamName: m.teamName })),
-    [managerDetails]
+export function FreeTransfers({ leagueId, currentGameweek }: Props) {
+  const { freeTransfers, isLoading, error, isBackendUnavailable } = useLeagueStats(
+    leagueId,
+    currentGameweek
   );
 
-  const { freeTransfers, loading, error } = useFreeTransfers(
-    managerIds,
-    currentGameweek,
-    deadlinePassed
+  // Sort by free transfers count (descending - most FTs first)
+  const sortedData = useMemo(
+    () => [...freeTransfers].sort((a, b) => b.free_transfers - a.free_transfers),
+    [freeTransfers]
   );
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Card>
         <div className={styles.FreeTransfers}>
@@ -63,33 +53,22 @@ export function FreeTransfers({ managerDetails, currentGameweek, deadlineTime }:
     );
   }
 
-  if (error) {
-    return null; // Fail silently to not break page
-  }
-
-  if (freeTransfers.length === 0) {
+  // Don't render if error, no data, or backend unavailable (silent fail)
+  if (error || freeTransfers.length === 0 || isBackendUnavailable) {
     return null;
   }
-
-  // Sort by rank (use original managerDetails order which is by rank)
-  const managersWithFT = freeTransfers
-    .map((ft) => {
-      const manager = managerDetails.find((m) => m.managerId === ft.managerId);
-      return { ...ft, rank: manager?.rank ?? 999 };
-    })
-    .sort((a, b) => a.rank - b.rank);
 
   return (
     <Card data-testid="free-transfers">
       <div className={styles.FreeTransfers}>
         <CardHeader icon={<ArrowLeftRight size={16} color="#8B5CF6" />}>Free Transfers</CardHeader>
         <div className={styles.list}>
-          {managersWithFT.map((manager) => (
+          {sortedData.map((manager) => (
             <CardRow
-              key={manager.managerId}
-              label={manager.teamName}
-              value={`${manager.freeTransfers} FT`}
-              valueColor={getFreeTransferColor(manager.freeTransfers)}
+              key={manager.manager_id}
+              label={manager.name}
+              value={`${manager.free_transfers} FT`}
+              valueColor={getFreeTransferColor(manager.free_transfers)}
             />
           ))}
         </div>

@@ -6,21 +6,24 @@ import { Card } from 'components/Card';
 import { CardHeader } from 'components/CardHeader';
 import { CardRow } from 'components/CardRow';
 
-import { useCaptainDifferential } from 'services/queries/useCaptainSuccess';
+import { useLeagueStats } from 'services/queries/useLeagueStats';
+
+import { transformKeys } from 'utils/caseTransform';
 
 import * as styles from './CaptainSuccess.module.css';
 import { CaptainDifferentialModal } from './components/DifferentialModal';
 
-import type { DifferentialPick } from 'services/queries/useCaptainSuccess';
-import type { ManagerGameweekData } from 'services/queries/useFplData';
-import type { Gameweek, Player } from 'types/fpl';
+import type { CaptainDifferentialDetail, CaptainDifferentialStat } from 'services/backendApi';
+import type { CamelCaseKeys } from 'utils/caseTransform';
 
 interface Props {
-  managerDetails: ManagerGameweekData[];
+  leagueId: number;
   currentGameweek: number;
-  gameweeks: Gameweek[];
-  playersMap: Map<number, Player>;
 }
+
+/** Frontend camelCase version of backend types */
+type DifferentialPick = CamelCaseKeys<CaptainDifferentialDetail>;
+type DifferentialStat = CamelCaseKeys<CaptainDifferentialStat>;
 
 interface ModalState {
   isOpen: boolean;
@@ -29,7 +32,7 @@ interface ModalState {
   totalGain: number;
 }
 
-export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, playersMap }: Props) {
+export function CaptainSuccess({ leagueId, currentGameweek }: Props) {
   const [modal, setModal] = useState<ModalState>({
     isOpen: false,
     teamName: '',
@@ -37,25 +40,19 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
     totalGain: 0,
   });
 
-  const managerIds = useMemo(
-    () => managerDetails.map((m) => ({ id: m.managerId, teamName: m.teamName })),
-    [managerDetails]
+  const { captainDifferential, isLoading, error, isBackendUnavailable } = useLeagueStats(
+    leagueId,
+    currentGameweek
   );
 
-  const { stats, loading, error } = useCaptainDifferential(
-    managerIds,
-    currentGameweek,
-    gameweeks,
-    playersMap
+  // Transform backend snake_case to frontend camelCase
+  const data: DifferentialStat[] = useMemo(
+    () => transformKeys(captainDifferential),
+    [captainDifferential]
   );
 
   // Sort by differential gain (highest first - best differential pickers)
-  const sortedData = useMemo(
-    () => [...stats].sort((a, b) => b.differentialGain - a.differentialGain),
-    [stats]
-  );
-
-  if (managerDetails.length === 0) return null;
+  const sortedData = useMemo(() => [...data].sort((a, b) => b.gain - a.gain), [data]);
 
   // Check if anyone made differential picks
   const totalDifferentialPicks = sortedData.reduce((sum, d) => sum + d.differentialPicks, 0);
@@ -63,39 +60,42 @@ export function CaptainSuccess({ managerDetails, currentGameweek, gameweeks, pla
   return (
     <Card>
       <CardHeader icon={<Crown size={16} color="#FFD700" />}>Differential Captains</CardHeader>
-      {loading && <p className={styles.loading}>Loading...</p>}
-      {!loading && error && <p className={styles.error}>{error}</p>}
-      {!loading && !error && totalDifferentialPicks === 0 && (
+      {isLoading && <p className={styles.loading}>Loading...</p>}
+      {!isLoading && error && <p className={styles.error}>{error}</p>}
+      {!isLoading && isBackendUnavailable && (
+        <p className={styles.empty}>Backend unavailable - check back later</p>
+      )}
+      {!isLoading && !error && !isBackendUnavailable && totalDifferentialPicks === 0 && (
         <p className={styles.empty}>No differential picks yet</p>
       )}
-      {!loading && !error && totalDifferentialPicks > 0 && (
+      {!isLoading && !error && !isBackendUnavailable && totalDifferentialPicks > 0 && (
         <div className={styles.list}>
           {sortedData
             .filter((d) => d.differentialPicks > 0)
-            .map((data, index) => (
+            .map((stat, index) => (
               <CardRow
-                key={data.managerId}
+                key={stat.managerId}
                 rank={index + 1}
-                label={data.teamName}
+                label={stat.name}
                 onClick={() =>
                   setModal({
                     isOpen: true,
-                    teamName: data.teamName,
-                    details: data.details,
-                    totalGain: data.differentialGain,
+                    teamName: stat.name,
+                    details: stat.details,
+                    totalGain: stat.gain,
                   })
                 }
               >
                 <span className={styles.stats}>
-                  <span className={styles.picks}>{data.differentialPicks}×</span>
+                  <span className={styles.picks}>{stat.differentialPicks}×</span>
                   <span
                     className={clsx(
                       styles.gain,
-                      data.differentialGain >= 0 ? styles.positive : styles.negative
+                      stat.gain >= 0 ? styles.positive : styles.negative
                     )}
                   >
-                    {data.differentialGain >= 0 ? '+' : ''}
-                    {data.differentialGain}
+                    {stat.gain >= 0 ? '+' : ''}
+                    {stat.gain}
                   </span>
                 </span>
               </CardRow>
