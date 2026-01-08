@@ -1,7 +1,17 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { StrictMode } from 'react';
+import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
+
+// Lazy load devtools - only in development and NOT in vercel dev (production-like)
+// This prevents massive memory accumulation from devtools storing query history
+const ReactQueryDevtools = lazy(() =>
+  import('@tanstack/react-query-devtools').then((mod) => ({
+    default: mod.ReactQueryDevtools,
+  }))
+);
+
+// Only show devtools in pure dev mode (npm run dev), not vercel dev
+const showDevtools = import.meta.env.DEV && !import.meta.env.VITE_BACKEND_URL;
 
 import { CACHE_TIMES } from 'src/config';
 
@@ -34,7 +44,11 @@ createRoot(document.querySelector('#root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <App />
-      <ReactQueryDevtools initialIsOpen={false} />
+      {showDevtools && (
+        <Suspense fallback={null}>
+          <ReactQueryDevtools initialIsOpen={false} />
+        </Suspense>
+      )}
     </QueryClientProvider>
   </StrictMode>
 );

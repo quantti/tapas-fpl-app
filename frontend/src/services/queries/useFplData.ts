@@ -227,7 +227,9 @@ export function useFplData() {
   const isApiUnavailable = errorObject instanceof FplApiError && errorObject.isServiceUnavailable;
 
   // Compute last updated time
-  const lastUpdated = useMemo(() => {
+  // Note: This is cheap to compute, so we don't memoize to avoid dependency array issues
+  // with managerQueries being a new array reference each render
+  const lastUpdated = (() => {
     const timestamps = [
       bootstrapQuery.dataUpdatedAt,
       standingsQuery.dataUpdatedAt,
@@ -235,7 +237,7 @@ export function useFplData() {
     ].filter((t) => t > 0);
 
     return timestamps.length > 0 ? new Date(Math.max(...timestamps)) : null;
-  }, [bootstrapQuery.dataUpdatedAt, standingsQuery.dataUpdatedAt, managerQueries]);
+  })();
 
   // Manual refresh function - invalidates all queries
   const refresh = () => {
