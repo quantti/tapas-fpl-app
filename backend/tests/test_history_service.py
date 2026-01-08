@@ -301,6 +301,205 @@ class TestCalculateCaptainDifferential:
 
 
 # =============================================================================
+# Pure Function Tests: calculate_captain_differential_with_details
+# =============================================================================
+
+
+class TestCalculateCaptainDifferentialWithDetails:
+    """Tests for captain differential calculation with per-GW details."""
+
+    def test_returns_details_for_differential_picks(self):
+        """Should return per-GW details with player names and points."""
+        from app.services.calculations import calculate_captain_differential_with_details
+
+        picks: list[PickRow] = [
+            _make_pick_row(gameweek=1, player_id=100, is_captain=True, points=15),
+        ]
+        gameweeks: list[GameweekRow] = [{"id": 1, "most_captained": 200}]
+        player_names = {100: "Salah", 200: "Haaland"}
+        player_gw_points = {100: {1: 15}, 200: {1: 10}}
+
+        result = calculate_captain_differential_with_details(
+            picks, gameweeks, player_names, player_gw_points
+        )
+
+        assert result["differential_picks"] == 1
+        assert result["gain"] == 10  # (15-10) * 2
+        assert len(result["details"]) == 1
+
+        detail = result["details"][0]
+        assert detail["gameweek"] == 1
+        assert detail["captain_id"] == 100
+        assert detail["captain_name"] == "Salah"
+        assert detail["captain_points"] == 15
+        assert detail["template_id"] == 200
+        assert detail["template_name"] == "Haaland"
+        assert detail["template_points"] == 10
+        assert detail["gain"] == 10
+        assert detail["multiplier"] == 2
+
+    def test_handles_missing_player_name(self):
+        """Should use 'Unknown' when player name not in lookup."""
+        from app.services.calculations import calculate_captain_differential_with_details
+
+        picks: list[PickRow] = [
+            _make_pick_row(gameweek=1, player_id=100, is_captain=True, points=10),
+        ]
+        gameweeks: list[GameweekRow] = [{"id": 1, "most_captained": 200}]
+        player_names = {}  # Empty - no names found
+        player_gw_points = {200: {1: 8}}
+
+        result = calculate_captain_differential_with_details(
+            picks, gameweeks, player_names, player_gw_points
+        )
+
+        detail = result["details"][0]
+        assert detail["captain_name"] == "Unknown"
+        assert detail["template_name"] == "Unknown"
+
+    def test_handles_missing_template_points(self):
+        """Should use 0 when template captain points not found."""
+        from app.services.calculations import calculate_captain_differential_with_details
+
+        picks: list[PickRow] = [
+            _make_pick_row(gameweek=1, player_id=100, is_captain=True, points=10),
+        ]
+        gameweeks: list[GameweekRow] = [{"id": 1, "most_captained": 200}]
+        player_names = {100: "Salah", 200: "Haaland"}
+        player_gw_points = {}  # Empty - no points found
+
+        result = calculate_captain_differential_with_details(
+            picks, gameweeks, player_names, player_gw_points
+        )
+
+        detail = result["details"][0]
+        assert detail["template_points"] == 0
+        assert detail["gain"] == 20  # (10 - 0) * 2
+
+    def test_handles_multiplier_of_1_as_captain(self):
+        """Multiplier of 1 should be treated as 2 (captain default)."""
+        from app.services.calculations import calculate_captain_differential_with_details
+
+        picks: list[PickRow] = [
+            _make_pick_row(gameweek=1, player_id=100, is_captain=True, points=10, multiplier=1),
+        ]
+        gameweeks: list[GameweekRow] = [{"id": 1, "most_captained": 200}]
+        player_names = {100: "Salah", 200: "Haaland"}
+        player_gw_points = {200: {1: 8}}
+
+        result = calculate_captain_differential_with_details(
+            picks, gameweeks, player_names, player_gw_points
+        )
+
+        detail = result["details"][0]
+        assert detail["multiplier"] == 2  # Defaulted from 1 to 2
+        assert detail["gain"] == 4  # (10 - 8) * 2
+
+    def test_handles_triple_captain_multiplier(self):
+        """TC chip should use multiplier of 3."""
+        from app.services.calculations import calculate_captain_differential_with_details
+
+        picks: list[PickRow] = [
+            _make_pick_row(gameweek=1, player_id=100, is_captain=True, points=10, multiplier=3),
+        ]
+        gameweeks: list[GameweekRow] = [{"id": 1, "most_captained": 200}]
+        player_names = {100: "Salah", 200: "Haaland"}
+        player_gw_points = {200: {1: 8}}
+
+        result = calculate_captain_differential_with_details(
+            picks, gameweeks, player_names, player_gw_points
+        )
+
+        detail = result["details"][0]
+        assert detail["multiplier"] == 3
+        assert detail["gain"] == 6  # (10 - 8) * 3
+
+    def test_sorts_details_by_gameweek(self):
+        """Details should be sorted ascending by gameweek."""
+        from app.services.calculations import calculate_captain_differential_with_details
+
+        # Picks in reverse order
+        picks: list[PickRow] = [
+            _make_pick_row(gameweek=3, player_id=100, is_captain=True, points=10),
+            _make_pick_row(gameweek=1, player_id=100, is_captain=True, points=12),
+            _make_pick_row(gameweek=2, player_id=100, is_captain=True, points=8),
+        ]
+        gameweeks: list[GameweekRow] = [
+            {"id": 1, "most_captained": 200},
+            {"id": 2, "most_captained": 200},
+            {"id": 3, "most_captained": 200},
+        ]
+        player_names = {100: "Salah", 200: "Haaland"}
+        player_gw_points = {200: {1: 5, 2: 5, 3: 5}}
+
+        result = calculate_captain_differential_with_details(
+            picks, gameweeks, player_names, player_gw_points
+        )
+
+        assert len(result["details"]) == 3
+        assert result["details"][0]["gameweek"] == 1
+        assert result["details"][1]["gameweek"] == 2
+        assert result["details"][2]["gameweek"] == 3
+
+    def test_returns_empty_for_no_picks(self):
+        """Should return empty details when no picks."""
+        from app.services.calculations import calculate_captain_differential_with_details
+
+        result = calculate_captain_differential_with_details(
+            picks=[],
+            gameweeks=[{"id": 1, "most_captained": 200}],
+            player_names={},
+            player_gw_points={},
+        )
+
+        assert result["differential_picks"] == 0
+        assert result["gain"] == 0
+        assert result["details"] == []
+
+    def test_returns_empty_for_no_gameweeks(self):
+        """Should return empty details when no gameweeks."""
+        from app.services.calculations import calculate_captain_differential_with_details
+
+        picks: list[PickRow] = [
+            _make_pick_row(gameweek=1, player_id=100, is_captain=True, points=10),
+        ]
+
+        result = calculate_captain_differential_with_details(
+            picks=picks,
+            gameweeks=[],
+            player_names={},
+            player_gw_points={},
+        )
+
+        assert result["differential_picks"] == 0
+        assert result["gain"] == 0
+        assert result["details"] == []
+
+    def test_skips_non_differential_picks(self):
+        """Should only include gameweeks where captain differs from template."""
+        from app.services.calculations import calculate_captain_differential_with_details
+
+        picks: list[PickRow] = [
+            _make_pick_row(gameweek=1, player_id=200, is_captain=True, points=10),  # Same as template
+            _make_pick_row(gameweek=2, player_id=100, is_captain=True, points=15),  # Different
+        ]
+        gameweeks: list[GameweekRow] = [
+            {"id": 1, "most_captained": 200},
+            {"id": 2, "most_captained": 200},
+        ]
+        player_names = {100: "Salah", 200: "Haaland"}
+        player_gw_points = {200: {1: 10, 2: 8}}
+
+        result = calculate_captain_differential_with_details(
+            picks, gameweeks, player_names, player_gw_points
+        )
+
+        assert result["differential_picks"] == 1
+        assert len(result["details"]) == 1
+        assert result["details"][0]["gameweek"] == 2
+
+
+# =============================================================================
 # Pure Function Tests: calculate_league_positions
 # =============================================================================
 
