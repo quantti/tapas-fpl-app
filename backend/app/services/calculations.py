@@ -11,7 +11,6 @@ for HTTP requests.
 
 from typing import TypedDict
 
-
 # =============================================================================
 # TypedDicts for type hints
 # =============================================================================
@@ -179,12 +178,34 @@ def calculate_free_transfers(
     return ft
 
 
+class CaptainDifferentialDetail(TypedDict):
+    """Per-gameweek captain differential detail."""
+
+    gameweek: int
+    captain_id: int
+    captain_name: str
+    captain_points: int
+    template_id: int
+    template_name: str
+    template_points: int
+    gain: int
+    multiplier: int
+
+
+class CaptainDifferentialResult(TypedDict):
+    """Result of captain differential calculation."""
+
+    differential_picks: int
+    gain: int
+    details: list[CaptainDifferentialDetail]
+
+
 def calculate_captain_differential(
     picks: list[PickRow],
     gameweeks: list[GameweekRow],
     template_captain_points: dict[int, int] | None = None,
 ) -> dict[str, int]:
-    """Calculate captain differential statistics.
+    """Calculate captain differential statistics (aggregate only).
 
     A differential captain is when the manager's captain differs from
     the most-captained player (template captain).
@@ -234,6 +255,85 @@ def calculate_captain_differential(
                 total_gain += manager_points - template_points
 
     return {"differential_picks": differential_picks, "gain": total_gain}
+
+
+def calculate_captain_differential_with_details(
+    picks: list[PickRow],
+    gameweeks: list[GameweekRow],
+    player_names: dict[int, str],
+    player_gw_points: dict[int, dict[int, int]],
+) -> CaptainDifferentialResult:
+    """Calculate captain differential with per-GW breakdown.
+
+    Args:
+        picks: List of manager picks (captain picks only)
+        gameweeks: List of gameweeks with most_captained player ID
+        player_names: Dict mapping player_id -> web_name
+        player_gw_points: Dict mapping player_id -> {gameweek -> points}
+
+    Returns:
+        CaptainDifferentialResult with aggregate stats and per-GW details
+    """
+    if not picks or not gameweeks:
+        return {"differential_picks": 0, "gain": 0, "details": []}
+
+    # Build lookup for template captain by gameweek
+    template_by_gw = {gw["id"]: gw["most_captained"] for gw in gameweeks}
+
+    details: list[CaptainDifferentialDetail] = []
+    total_gain = 0
+
+    for pick in picks:
+        if not pick.get("is_captain"):
+            continue
+
+        gw = pick["gameweek"]
+        template_captain_id = template_by_gw.get(gw)
+
+        if template_captain_id is None:
+            continue
+
+        captain_id = pick["player_id"]
+
+        # Check if differential (different from template)
+        if captain_id != template_captain_id:
+            # Get multiplier (2 for normal, 3 for TC)
+            multiplier = pick.get("multiplier", 1)
+            if multiplier == 1:
+                multiplier = 2  # Regular captain uses 2x
+
+            # Get captain's raw points (before multiplier)
+            captain_raw_points = pick["points"]
+
+            # Get template captain's raw points
+            template_raw_points = player_gw_points.get(template_captain_id, {}).get(gw, 0)
+
+            # Calculate gain: (captain_raw - template_raw) * multiplier
+            gain = (captain_raw_points - template_raw_points) * multiplier
+            total_gain += gain
+
+            details.append(
+                {
+                    "gameweek": gw,
+                    "captain_id": captain_id,
+                    "captain_name": player_names.get(captain_id, "Unknown"),
+                    "captain_points": captain_raw_points,
+                    "template_id": template_captain_id,
+                    "template_name": player_names.get(template_captain_id, "Unknown"),
+                    "template_points": template_raw_points,
+                    "gain": gain,
+                    "multiplier": multiplier,
+                }
+            )
+
+    # Sort details by gameweek
+    details.sort(key=lambda x: x["gameweek"])
+
+    return {
+        "differential_picks": len(details),
+        "gain": total_gain,
+        "details": details,
+    }
 
 
 def calculate_league_positions(

@@ -108,6 +108,20 @@ class FreeTransferStat(BaseModel):
     free_transfers: int = Field(ge=1, le=5)
 
 
+class CaptainDifferentialDetail(BaseModel):
+    """Per-gameweek captain differential detail."""
+
+    gameweek: int = Field(ge=1, le=38)
+    captain_id: int
+    captain_name: str
+    captain_points: int
+    template_id: int
+    template_name: str
+    template_points: int
+    gain: int  # Can be negative
+    multiplier: int = Field(ge=2, le=3)  # 2 for normal, 3 for TC
+
+
 class CaptainDifferentialStat(BaseModel):
     """Captain differential statistic for a manager."""
 
@@ -115,6 +129,7 @@ class CaptainDifferentialStat(BaseModel):
     name: str
     differential_picks: int = Field(ge=0)
     gain: int  # Can be negative
+    details: list[CaptainDifferentialDetail]
 
 
 class LeagueStatsResponse(BaseModel):

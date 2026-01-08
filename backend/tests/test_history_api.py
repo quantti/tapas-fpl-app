@@ -563,12 +563,17 @@ class TestHistoryStatsResponseFormat:
             }
         ]
         mock_gameweeks = [{"id": 1, "most_captained": 427}]
+        # Player names and GW points for collected player IDs
+        mock_player_names = [{"id": 427, "web_name": "Salah"}]
+        mock_player_gw_points = [{"player_id": 427, "gameweek": 1, "total_points": 12}]
 
         mock_api_db.conn.fetch.side_effect = [
             mock_members,
             mock_history,
             mock_captain_picks,
             mock_gameweeks,
+            mock_player_names,
+            mock_player_gw_points,
         ]
 
         with mock_api_db:
@@ -682,12 +687,23 @@ class TestHistoryStatsBusinessLogic:
             }
         ]
         mock_gameweeks = [{"id": 1, "most_captained": 427}]  # Template captain
+        # Player names and GW points for both captain (328) and template (427)
+        mock_player_names = [
+            {"id": 328, "web_name": "Bruno"},
+            {"id": 427, "web_name": "Salah"},
+        ]
+        mock_player_gw_points = [
+            {"player_id": 328, "gameweek": 1, "total_points": 15},
+            {"player_id": 427, "gameweek": 1, "total_points": 10},
+        ]
 
         mock_api_db.conn.fetch.side_effect = [
             mock_members,
             mock_history,
             mock_captain_picks,
             mock_gameweeks,
+            mock_player_names,
+            mock_player_gw_points,
         ]
 
         with mock_api_db:

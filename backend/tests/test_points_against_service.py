@@ -1,6 +1,6 @@
 """Tests for Points Against service with mocked database."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -165,8 +165,8 @@ class TestGetCollectionStatus:
 
     async def test_returns_status(self, service: PointsAgainstService):
         """Should return CollectionStatus when data exists."""
-        last_full = datetime(2025, 1, 3, 3, 0, 0, tzinfo=timezone.utc)
-        last_incr = datetime(2025, 1, 5, 3, 0, 0, tzinfo=timezone.utc)
+        last_full = datetime(2025, 1, 3, 3, 0, 0, tzinfo=UTC)
+        last_incr = datetime(2025, 1, 5, 3, 0, 0, tzinfo=UTC)
 
         mock_row = {
             "season_id": 1,

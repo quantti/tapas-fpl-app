@@ -233,7 +233,7 @@ class TestCalculateCaptainDifferential:
 
     def test_counts_differential_picks(self):
         """Should count gameweeks where captain differs from template."""
-        from app.services.history import calculate_captain_differential
+        from app.services.calculations import calculate_captain_differential
 
         picks: list[PickRow] = [
             _make_pick_row(gameweek=1, player_id=100, is_captain=True),
@@ -250,7 +250,7 @@ class TestCalculateCaptainDifferential:
 
     def test_calculates_points_gained(self):
         """Should calculate net points gained from differential picks."""
-        from app.services.history import calculate_captain_differential
+        from app.services.calculations import calculate_captain_differential
 
         picks: list[PickRow] = [
             _make_pick_row(gameweek=1, player_id=100, is_captain=True, points=15),
@@ -268,7 +268,7 @@ class TestCalculateCaptainDifferential:
 
     def test_handles_triple_captain(self):
         """Triple captain should have multiplier of 3."""
-        from app.services.history import calculate_captain_differential
+        from app.services.calculations import calculate_captain_differential
 
         picks: list[PickRow] = [
             _make_pick_row(gameweek=1, player_id=100, is_captain=True, points=10, multiplier=3),
@@ -285,7 +285,7 @@ class TestCalculateCaptainDifferential:
 
     def test_returns_zero_for_no_differentials(self):
         """Should return 0 when all captains match template."""
-        from app.services.history import calculate_captain_differential
+        from app.services.calculations import calculate_captain_differential
 
         picks: list[PickRow] = [
             _make_pick_row(gameweek=1, player_id=100, is_captain=True),
@@ -560,12 +560,24 @@ class TestHistoryServiceGetLeagueStats:
             _make_pick_row(manager_id=123, gameweek=1, player_id=100, is_captain=True, points=15)
         ]
         mock_gameweeks: list[GameweekRow] = [{"id": 1, "most_captained": 200}]
+        # Player names for the collected player IDs (100 from pick, 200 from template)
+        mock_player_names = [
+            {"id": 100, "web_name": "Salah"},
+            {"id": 200, "web_name": "Haaland"},
+        ]
+        # GW points for those players
+        mock_player_gw_points = [
+            {"player_id": 100, "gameweek": 1, "total_points": 15},
+            {"player_id": 200, "gameweek": 1, "total_points": 10},
+        ]
 
         mock_history_db.conn.fetch.side_effect = [
             mock_managers,
             mock_history,
             mock_picks,
             mock_gameweeks,
+            mock_player_names,
+            mock_player_gw_points,
         ]
 
         with mock_history_db:

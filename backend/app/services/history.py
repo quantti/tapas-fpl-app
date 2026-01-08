@@ -8,7 +8,6 @@ Provides:
 - Head-to-head manager comparison
 """
 
-import asyncio
 import logging
 import time
 from dataclasses import dataclass
@@ -21,7 +20,7 @@ from app.services.calculations import (
     ManagerHistoryRow,
     PickRow,
     calculate_bench_points,
-    calculate_captain_differential,
+    calculate_captain_differential_with_details,
     calculate_free_transfers,
     calculate_league_positions,
 )
@@ -52,6 +51,21 @@ _MANAGER_INFO_SQL = """
            name as team_name
     FROM manager
     WHERE id = $1 AND season_id = $2
+"""
+
+# Get player names by IDs
+_PLAYER_NAMES_SQL = """
+    SELECT id, web_name
+    FROM player
+    WHERE id = ANY($1) AND season_id = $2
+"""
+
+# Get player points per gameweek (for template captain lookup)
+_PLAYER_GW_POINTS_SQL = """
+    SELECT pfs.player_id, pfs.gameweek, pfs.total_points
+    FROM player_fixture_stats pfs
+    WHERE pfs.player_id = ANY($1) AND pfs.season_id = $2
+    ORDER BY pfs.player_id, pfs.gameweek
 """
 
 # Get full history for managers
@@ -286,11 +300,9 @@ class HistoryService:
 
             manager_ids = [m["id"] for m in members]
 
-            # 2. Get history and chips in parallel
-            history_rows, chip_rows = await asyncio.gather(
-                conn.fetch(_MANAGER_HISTORY_SQL, manager_ids, season_id),
-                conn.fetch(_MANAGER_CHIPS_SQL, manager_ids, season_id),
-            )
+            # 2. Get history and chips sequentially (asyncpg: no parallel on same conn)
+            history_rows = await conn.fetch(_MANAGER_HISTORY_SQL, manager_ids, season_id)
+            chip_rows = await conn.fetch(_MANAGER_CHIPS_SQL, manager_ids, season_id)
 
             # 3. Optionally get picks
             pick_rows: list[Any] = []
@@ -480,7 +492,7 @@ class HistoryService:
     ) -> dict[str, Any]:
         """Get aggregated stats for statistics page.
 
-        Includes bench points, captain differentials, free transfers.
+        Includes bench points, captain differentials (with per-GW details), free transfers.
 
         Args:
             league_id: FPL league ID
@@ -488,7 +500,7 @@ class HistoryService:
             current_gameweek: Current gameweek number
 
         Returns:
-            Dict with bench_points, captain_differentials, free_transfers
+            Dict with bench_points, captain_differential (with details), free_transfers
         """
         _validate_season_id(season_id)
 
@@ -500,18 +512,16 @@ class HistoryService:
                 return {
                     "season_id": season_id,
                     "bench_points": [],
-                    "captain_differentials": [],
+                    "captain_differential": [],
                     "free_transfers": [],
                 }
 
             manager_ids = [m["id"] for m in members]
 
-            # Get history, picks, and gameweeks in parallel
-            history_rows, pick_rows, gameweek_rows = await asyncio.gather(
-                conn.fetch(_MANAGER_HISTORY_SQL, manager_ids, season_id),
-                conn.fetch(_CAPTAIN_PICKS_SQL, manager_ids, season_id),
-                conn.fetch(_GAMEWEEKS_SQL, season_id),
-            )
+            # Run queries sequentially (asyncpg doesn't support parallel queries on same connection)
+            history_rows = await conn.fetch(_MANAGER_HISTORY_SQL, manager_ids, season_id)
+            pick_rows = await conn.fetch(_CAPTAIN_PICKS_SQL, manager_ids, season_id)
+            gameweek_rows = await conn.fetch(_GAMEWEEKS_SQL, season_id)
 
         # Group data by manager
         history_by_manager: dict[int, list[ManagerHistoryRow]] = {m["id"]: [] for m in members}
@@ -523,6 +533,38 @@ class HistoryService:
             picks_by_manager[row["manager_id"]].append(dict(row))
 
         gameweeks: list[GameweekRow] = [dict(row) for row in gameweek_rows]
+
+        # Collect all unique player IDs (captains + template captains)
+        all_player_ids: set[int] = set()
+        for picks in picks_by_manager.values():
+            for pick in picks:
+                all_player_ids.add(pick["player_id"])
+        for gw in gameweeks:
+            if gw.get("most_captained"):
+                all_player_ids.add(gw["most_captained"])
+
+        # Fetch player names and per-GW points
+        player_names: dict[int, str] = {}
+        player_gw_points: dict[int, dict[int, int]] = {}
+
+        if all_player_ids:
+            async with get_connection() as conn:
+                player_ids_list = list(all_player_ids)
+                # Run sequentially (asyncpg: no parallel on same connection)
+                name_rows = await conn.fetch(_PLAYER_NAMES_SQL, player_ids_list, season_id)
+                points_rows = await conn.fetch(_PLAYER_GW_POINTS_SQL, player_ids_list, season_id)
+
+            # Build player name lookup
+            for row in name_rows:
+                player_names[row["id"]] = row["web_name"]
+
+            # Build player GW points lookup
+            for row in points_rows:
+                pid = row["player_id"]
+                gw = row["gameweek"]
+                if pid not in player_gw_points:
+                    player_gw_points[pid] = {}
+                player_gw_points[pid][gw] = row["total_points"]
 
         # Calculate stats
         bench_points_list = []
@@ -539,20 +581,25 @@ class HistoryService:
             total_bench = calculate_bench_points(history)
             bench_points_list.append({"manager_id": mid, "name": name, "bench_points": total_bench})
 
-            # Captain differential
-            captain_diff = calculate_captain_differential(picks, gameweeks)
+            # Captain differential with details
+            captain_diff = calculate_captain_differential_with_details(
+                picks, gameweeks, player_names, player_gw_points
+            )
             captain_diff_list.append(
                 {
                     "manager_id": mid,
                     "name": name,
                     "differential_picks": captain_diff["differential_picks"],
                     "gain": captain_diff["gain"],
+                    "details": captain_diff["details"],
                 }
             )
 
             # Free transfers (now uses int season_id)
             ft_remaining = calculate_free_transfers(history, current_gameweek, season_id)
-            free_transfers_list.append({"manager_id": mid, "name": name, "free_transfers": ft_remaining})
+            free_transfers_list.append({
+                "manager_id": mid, "name": name, "free_transfers": ft_remaining
+            })
 
         return {
             "league_id": league_id,
@@ -587,22 +634,18 @@ class HistoryService:
         _validate_season_id(season_id)
 
         async with get_connection() as conn:
-            # Fetch both managers' info in parallel
-            manager_a_task = conn.fetch(_MANAGER_INFO_SQL, manager_a, season_id)
-            manager_b_task = conn.fetch(_MANAGER_INFO_SQL, manager_b, season_id)
-
-            manager_a_rows, manager_b_rows = await asyncio.gather(manager_a_task, manager_b_task)
+            # Fetch both managers' info sequentially (asyncpg: no parallel on same conn)
+            manager_a_rows = await conn.fetch(_MANAGER_INFO_SQL, manager_a, season_id)
+            manager_b_rows = await conn.fetch(_MANAGER_INFO_SQL, manager_b, season_id)
 
             if not manager_a_rows:
                 raise ValueError(f"Manager {manager_a} not found")
             if not manager_b_rows:
                 raise ValueError(f"Manager {manager_b} not found")
 
-            # Fetch histories in parallel
-            history_a_task = conn.fetch(_SINGLE_MANAGER_HISTORY_SQL, manager_a, season_id)
-            history_b_task = conn.fetch(_SINGLE_MANAGER_HISTORY_SQL, manager_b, season_id)
-
-            history_a, history_b = await asyncio.gather(history_a_task, history_b_task)
+            # Fetch histories
+            history_a = await conn.fetch(_SINGLE_MANAGER_HISTORY_SQL, manager_a, season_id)
+            history_b = await conn.fetch(_SINGLE_MANAGER_HISTORY_SQL, manager_b, season_id)
 
             # Determine max gameweek for picks query
             max_gw = max(
@@ -610,15 +653,11 @@ class HistoryService:
                 default=max((r["gameweek"] for r in history_b), default=1),
             )
 
-            # Fetch picks and chips in parallel
-            picks_a_task = conn.fetch(_STARTING_XI_PICKS_SQL, manager_a, season_id, max_gw)
-            picks_b_task = conn.fetch(_STARTING_XI_PICKS_SQL, manager_b, season_id, max_gw)
-            chips_a_task = conn.fetch(_SINGLE_MANAGER_CHIPS_SQL, manager_a, season_id)
-            chips_b_task = conn.fetch(_SINGLE_MANAGER_CHIPS_SQL, manager_b, season_id)
-
-            picks_a, picks_b, chips_a, chips_b = await asyncio.gather(
-                picks_a_task, picks_b_task, chips_a_task, chips_b_task
-            )
+            # Fetch picks and chips
+            picks_a = await conn.fetch(_STARTING_XI_PICKS_SQL, manager_a, season_id, max_gw)
+            picks_b = await conn.fetch(_STARTING_XI_PICKS_SQL, manager_b, season_id, max_gw)
+            chips_a = await conn.fetch(_SINGLE_MANAGER_CHIPS_SQL, manager_a, season_id)
+            chips_b = await conn.fetch(_SINGLE_MANAGER_CHIPS_SQL, manager_b, season_id)
 
         # Build stats for both managers
         stats_a = self._build_manager_stats(
