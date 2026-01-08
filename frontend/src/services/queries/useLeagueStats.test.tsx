@@ -73,10 +73,11 @@ describe('useLeagueStats', () => {
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       expect(result.current.benchPoints).toHaveLength(2);
-      expect(result.current.benchPoints[0].bench_points).toBe(50);
+      // Hook transforms snake_case to camelCase
+      expect(result.current.benchPoints[0].benchPoints).toBe(50);
 
       expect(result.current.freeTransfers).toHaveLength(2);
-      expect(result.current.freeTransfers[1].free_transfers).toBe(5);
+      expect(result.current.freeTransfers[1].freeTransfers).toBe(5);
 
       expect(result.current.captainDifferential).toHaveLength(2);
       expect(result.current.captainDifferential[0].gain).toBe(15);

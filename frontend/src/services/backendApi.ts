@@ -201,8 +201,9 @@ async function fetchBackend<T>(endpoint: string): Promise<T> {
 /**
  * Validate that the teams array has the expected shape.
  * Throws if data is malformed to prevent runtime errors.
+ * @internal Exported for testing only
  */
-function validateTeamsResponse(data: unknown): data is PointsAgainstResponse {
+export function validateTeamsResponse(data: unknown): data is PointsAgainstResponse {
   if (!data || typeof data !== 'object') return false;
   const response = data as Record<string, unknown>;
   if (!Array.isArray(response.teams)) return false;
@@ -217,8 +218,9 @@ function validateTeamsResponse(data: unknown): data is PointsAgainstResponse {
 
 /**
  * Validate LeagueChipsResponse has expected shape.
+ * @internal Exported for testing only
  */
-function validateLeagueChipsResponse(data: unknown): data is LeagueChipsResponse {
+export function validateLeagueChipsResponse(data: unknown): data is LeagueChipsResponse {
   if (!data || typeof data !== 'object') return false;
   const response = data as Record<string, unknown>;
   if (typeof response.league_id !== 'number') return false;
@@ -236,8 +238,9 @@ function validateLeagueChipsResponse(data: unknown): data is LeagueChipsResponse
 
 /**
  * Validate LeagueStatsResponse has expected shape.
+ * @internal Exported for testing only
  */
-function validateLeagueStatsResponse(data: unknown): data is LeagueStatsResponse {
+export function validateLeagueStatsResponse(data: unknown): data is LeagueStatsResponse {
   if (!data || typeof data !== 'object') return false;
   const response = data as Record<string, unknown>;
   if (typeof response.league_id !== 'number') return false;
@@ -250,8 +253,9 @@ function validateLeagueStatsResponse(data: unknown): data is LeagueStatsResponse
 
 /**
  * Validate LeaguePositionsResponse has expected shape.
+ * @internal Exported for testing only
  */
-function validateLeaguePositionsResponse(data: unknown): data is LeaguePositionsResponse {
+export function validateLeaguePositionsResponse(data: unknown): data is LeaguePositionsResponse {
   if (!data || typeof data !== 'object') return false;
   const response = data as Record<string, unknown>;
   if (typeof response.league_id !== 'number') return false;

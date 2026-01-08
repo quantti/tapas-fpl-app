@@ -36,7 +36,7 @@ export function FreeTransfers({ leagueId, currentGameweek }: Props) {
 
   // Sort by free transfers count (descending - most FTs first)
   const sortedData = useMemo(
-    () => [...freeTransfers].sort((a, b) => b.free_transfers - a.free_transfers),
+    () => [...freeTransfers].sort((a, b) => b.freeTransfers - a.freeTransfers),
     [freeTransfers]
   );
 
@@ -65,10 +65,10 @@ export function FreeTransfers({ leagueId, currentGameweek }: Props) {
         <div className={styles.list}>
           {sortedData.map((manager) => (
             <CardRow
-              key={manager.manager_id}
+              key={manager.managerId}
               label={manager.name}
-              value={`${manager.free_transfers} FT`}
-              valueColor={getFreeTransferColor(manager.free_transfers)}
+              value={`${manager.freeTransfers} FT`}
+              valueColor={getFreeTransferColor(manager.freeTransfers)}
             />
           ))}
         </div>

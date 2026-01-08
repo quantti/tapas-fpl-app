@@ -22,14 +22,14 @@ export function BenchPoints({ leagueId, currentGameweek }: Props) {
 
   // Sort by most bench points (descending) - these are "wasted" points
   const sortedData = useMemo(
-    () => [...benchPoints].sort((a, b) => b.bench_points - a.bench_points),
+    () => [...benchPoints].sort((a, b) => b.benchPoints - a.benchPoints),
     [benchPoints]
   );
 
   // Don't render if no data or backend unavailable (silent fail)
   if (benchPoints.length === 0 || isBackendUnavailable) return null;
 
-  const totalBenchPoints = sortedData.reduce((sum, d) => sum + d.bench_points, 0);
+  const totalBenchPoints = sortedData.reduce((sum, d) => sum + d.benchPoints, 0);
 
   return (
     <Card>
@@ -45,10 +45,10 @@ export function BenchPoints({ leagueId, currentGameweek }: Props) {
         <div className={styles.list}>
           {sortedData.map((data, index) => (
             <CardRow
-              key={data.manager_id}
+              key={data.managerId}
               rank={index + 1}
               label={data.name}
-              value={data.bench_points}
+              value={data.benchPoints}
               valueColor="warning"
             />
           ))}

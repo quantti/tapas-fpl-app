@@ -8,12 +8,10 @@ import { CardRow } from 'components/CardRow';
 
 import { useLeagueStats } from 'services/queries/useLeagueStats';
 
-import { transformKeys } from 'utils/caseTransform';
-
 import * as styles from './CaptainSuccess.module.css';
 import { CaptainDifferentialModal } from './components/DifferentialModal';
 
-import type { CaptainDifferentialDetail, CaptainDifferentialStat } from 'services/backendApi';
+import type { CaptainDifferentialDetail } from 'services/backendApi';
 import type { CamelCaseKeys } from 'utils/caseTransform';
 
 interface Props {
@@ -21,9 +19,8 @@ interface Props {
   currentGameweek: number;
 }
 
-/** Frontend camelCase version of backend types */
+/** Frontend camelCase version of backend detail type */
 type DifferentialPick = CamelCaseKeys<CaptainDifferentialDetail>;
-type DifferentialStat = CamelCaseKeys<CaptainDifferentialStat>;
 
 interface ModalState {
   isOpen: boolean;
@@ -45,14 +42,12 @@ export function CaptainSuccess({ leagueId, currentGameweek }: Props) {
     currentGameweek
   );
 
-  // Transform backend snake_case to frontend camelCase
-  const data: DifferentialStat[] = useMemo(
-    () => transformKeys(captainDifferential),
+  // Sort by differential gain (highest first - best differential pickers)
+  // Hook returns camelCase data, so we can use it directly
+  const sortedData = useMemo(
+    () => [...captainDifferential].sort((a, b) => b.gain - a.gain),
     [captainDifferential]
   );
-
-  // Sort by differential gain (highest first - best differential pickers)
-  const sortedData = useMemo(() => [...data].sort((a, b) => b.gain - a.gain), [data]);
 
   // Check if anyone made differential picks
   const totalDifferentialPicks = sortedData.reduce((sum, d) => sum + d.differentialPicks, 0);

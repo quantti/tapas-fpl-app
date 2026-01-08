@@ -12,13 +12,22 @@ import {
 import { backendQueryDefaults } from 'services/queries/backendQueryConfig';
 import { queryKeys } from 'services/queryKeys';
 
+import { type CamelCaseKeys, transformKeys } from 'utils/caseTransform';
+
+/** Bench points stat with camelCase keys */
+export type BenchPointsStatCamel = CamelCaseKeys<BenchPointsStat>;
+/** Free transfers stat with camelCase keys */
+export type FreeTransferStatCamel = CamelCaseKeys<FreeTransferStat>;
+/** Captain differential stat with camelCase keys */
+export type CaptainDifferentialStatCamel = CamelCaseKeys<CaptainDifferentialStat>;
+
 interface UseLeagueStatsReturn {
-  /** Bench points for all managers */
-  benchPoints: BenchPointsStat[];
-  /** Free transfers remaining for all managers */
-  freeTransfers: FreeTransferStat[];
-  /** Captain differential stats for all managers */
-  captainDifferential: CaptainDifferentialStat[];
+  /** Bench points for all managers (camelCase keys) */
+  benchPoints: BenchPointsStatCamel[];
+  /** Free transfers remaining for all managers (camelCase keys) */
+  freeTransfers: FreeTransferStatCamel[];
+  /** Captain differential stats for all managers (camelCase keys) */
+  captainDifferential: CaptainDifferentialStatCamel[];
   /** Current gameweek from response */
   currentGameweek: number;
   /** Loading state */
@@ -65,9 +74,9 @@ export function useLeagueStats(
     query.error instanceof BackendApiError && query.error.isServiceUnavailable;
 
   return {
-    benchPoints: query.data?.bench_points ?? [],
-    freeTransfers: query.data?.free_transfers ?? [],
-    captainDifferential: query.data?.captain_differential ?? [],
+    benchPoints: transformKeys(query.data?.bench_points ?? []),
+    freeTransfers: transformKeys(query.data?.free_transfers ?? []),
+    captainDifferential: transformKeys(query.data?.captain_differential ?? []),
     currentGameweek: query.data?.current_gameweek ?? currentGameweek,
     isLoading: query.isLoading,
     error: query.error?.message ?? null,

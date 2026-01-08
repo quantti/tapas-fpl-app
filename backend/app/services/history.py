@@ -515,12 +515,15 @@ class HistoryService:
             members = await conn.fetch(_LEAGUE_MEMBERS_SQL, league_id, season_id)
 
             if not members:
-                return {
+                # Cache empty results to prevent repeated lookups for non-existent leagues
+                empty_result = {
                     "season_id": season_id,
                     "bench_points": [],
                     "captain_differential": [],
                     "free_transfers": [],
                 }
+                _set_cached(cache_key, empty_result)
+                return empty_result
 
             manager_ids = [m["id"] for m in members]
 
