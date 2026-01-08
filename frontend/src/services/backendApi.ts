@@ -98,6 +98,54 @@ export interface LeagueChipsResponse {
   managers: ManagerChipsData[];
 }
 
+// History API types - League Stats
+export interface BenchPointsStat {
+  manager_id: number;
+  name: string;
+  bench_points: number;
+}
+
+export interface FreeTransferStat {
+  manager_id: number;
+  name: string;
+  free_transfers: number;
+}
+
+export interface CaptainDifferentialStat {
+  manager_id: number;
+  name: string;
+  differential_picks: number;
+  gain: number; // Can be negative
+}
+
+export interface LeagueStatsResponse {
+  league_id: number;
+  season_id: number;
+  current_gameweek: number;
+  bench_points: BenchPointsStat[];
+  free_transfers: FreeTransferStat[];
+  captain_differential: CaptainDifferentialStat[];
+}
+
+// History API types - League Positions
+export interface ManagerMetadata {
+  id: number;
+  name: string;
+  color: string;
+}
+
+export interface GameweekPosition {
+  gameweek: number;
+  [managerId: string]: number; // Dynamic keys: manager_id -> rank
+}
+
+export interface LeaguePositionsResponse {
+  league_id: number;
+  season_id: number;
+  positions: GameweekPosition[];
+  managers: ManagerMetadata[];
+}
+
 async function fetchBackend<T>(endpoint: string): Promise<T> {
   let response: Response;
 
@@ -154,6 +202,57 @@ function validateTeamsResponse(data: unknown): data is PointsAgainstResponse {
   return true;
 }
 
+/**
+ * Validate LeagueChipsResponse has expected shape.
+ */
+function validateLeagueChipsResponse(data: unknown): data is LeagueChipsResponse {
+  if (!data || typeof data !== 'object') return false;
+  const response = data as Record<string, unknown>;
+  if (typeof response.league_id !== 'number') return false;
+  if (typeof response.current_gameweek !== 'number') return false;
+  if (!Array.isArray(response.managers)) return false;
+
+  // Validate first manager has expected structure (if array not empty)
+  if (response.managers.length > 0) {
+    const manager = response.managers[0] as Record<string, unknown>;
+    if (typeof manager.manager_id !== 'number') return false;
+    if (!manager.first_half || typeof manager.first_half !== 'object') return false;
+  }
+  return true;
+}
+
+/**
+ * Validate LeagueStatsResponse has expected shape.
+ */
+function validateLeagueStatsResponse(data: unknown): data is LeagueStatsResponse {
+  if (!data || typeof data !== 'object') return false;
+  const response = data as Record<string, unknown>;
+  if (typeof response.league_id !== 'number') return false;
+  if (typeof response.current_gameweek !== 'number') return false;
+  if (!Array.isArray(response.bench_points)) return false;
+  if (!Array.isArray(response.free_transfers)) return false;
+  if (!Array.isArray(response.captain_differential)) return false;
+  return true;
+}
+
+/**
+ * Validate LeaguePositionsResponse has expected shape.
+ */
+function validateLeaguePositionsResponse(data: unknown): data is LeaguePositionsResponse {
+  if (!data || typeof data !== 'object') return false;
+  const response = data as Record<string, unknown>;
+  if (typeof response.league_id !== 'number') return false;
+  if (!Array.isArray(response.positions)) return false;
+  if (!Array.isArray(response.managers)) return false;
+
+  // Validate first position entry has gameweek (if array not empty)
+  if (response.positions.length > 0) {
+    const position = response.positions[0] as Record<string, unknown>;
+    if (typeof position.gameweek !== 'number') return false;
+  }
+  return true;
+}
+
 export const backendApi = {
   /**
    * Get points conceded by all teams for the season.
@@ -188,12 +287,50 @@ export const backendApi = {
    * Get chip usage for all managers in a league.
    * When sync=true, fetches fresh data from FPL API and stores it.
    */
-  getLeagueChips: (
+  getLeagueChips: async (
     leagueId: number,
     currentGameweek: number,
     { seasonId = 1, sync = false }: { seasonId?: number; sync?: boolean } = {}
-  ) =>
-    fetchBackend<LeagueChipsResponse>(
+  ): Promise<LeagueChipsResponse> => {
+    const data = await fetchBackend<LeagueChipsResponse>(
       `/api/v1/chips/league/${leagueId}?current_gameweek=${currentGameweek}&season_id=${seasonId}&sync=${sync}`
-    ),
+    );
+    if (!validateLeagueChipsResponse(data)) {
+      throw new BackendApiError(200, 'OK', 'Invalid response shape from chips endpoint');
+    }
+    return data;
+  },
+
+  /**
+   * Get aggregated statistics for all managers in a league.
+   * Returns bench points, free transfers, and captain differentials.
+   * Replaces ~100+ individual FPL API calls with a single backend call.
+   */
+  getLeagueStats: async (
+    leagueId: number,
+    currentGameweek: number,
+    seasonId = 1
+  ): Promise<LeagueStatsResponse> => {
+    const data = await fetchBackend<LeagueStatsResponse>(
+      `/api/v1/history/league/${leagueId}/stats?current_gameweek=${currentGameweek}&season_id=${seasonId}`
+    );
+    if (!validateLeagueStatsResponse(data)) {
+      throw new BackendApiError(200, 'OK', 'Invalid response shape from stats endpoint');
+    }
+    return data;
+  },
+
+  /**
+   * Get league position history for bump chart visualization.
+   * Returns positions for each manager at each gameweek, plus metadata with colors.
+   */
+  getLeaguePositions: async (leagueId: number, seasonId = 1): Promise<LeaguePositionsResponse> => {
+    const data = await fetchBackend<LeaguePositionsResponse>(
+      `/api/v1/history/league/${leagueId}/positions?season_id=${seasonId}`
+    );
+    if (!validateLeaguePositionsResponse(data)) {
+      throw new BackendApiError(200, 'OK', 'Invalid response shape from positions endpoint');
+    }
+    return data;
+  },
 };

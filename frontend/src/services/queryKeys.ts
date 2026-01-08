@@ -41,6 +41,12 @@ export const queryKeys = {
   // Chips (from backend API)
   leagueChips: (leagueId: number, gameweek: number, seasonId: number) =>
     ['leagueChips', leagueId, gameweek, seasonId] as const,
+
+  // History (from backend API)
+  leagueStats: (leagueId: number, gameweek: number, seasonId: number) =>
+    ['leagueStats', leagueId, gameweek, seasonId] as const,
+  leaguePositions: (leagueId: number, seasonId: number) =>
+    ['leaguePositions', leagueId, seasonId] as const,
 } as const;
 
 // Type exports for use in tests or other utilities
