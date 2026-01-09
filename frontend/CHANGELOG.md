@@ -1,3 +1,21 @@
+# [0.25.0](https://github.com/quantti/tapas-fpl-app/compare/v0.24.1...v0.25.0) (2026-01-09)
+
+
+### Bug Fixes
+
+* address code review findings for Tier 2 analytics ([1be9853](https://github.com/quantti/tapas-fpl-app/commit/1be98539aee502d11d72257c9551b76561630071))
+* **backend:** address code review findings for league stats ([4bc3100](https://github.com/quantti/tapas-fpl-app/commit/4bc3100af7da8403a13132ce615a6f11b869c158))
+* prevent memory leak from ReactQueryDevtools in vercel dev ([edec615](https://github.com/quantti/tapas-fpl-app/commit/edec61506ab338a525a33ca4c4f2bbf02ea7749b))
+
+
+### Features
+
+* **backend:** add captain differential details with player names ([977b328](https://github.com/quantti/tapas-fpl-app/commit/977b32853e7ca1409dcfa73cfa134260fa61a556))
+* **backend:** add head-to-head manager comparison endpoint ([c8df347](https://github.com/quantti/tapas-fpl-app/commit/c8df34759c32f6b8c7792c5e8ee2f094b11a5918))
+* **frontend:** add query hooks for backend history endpoints ([dc7fa1a](https://github.com/quantti/tapas-fpl-app/commit/dc7fa1aa7c309bad06ff3b3d54a9c31b904429cb))
+* **frontend:** integrate head-to-head comparison with backend API ([c2d7db3](https://github.com/quantti/tapas-fpl-app/commit/c2d7db3434209b1c1ed1d729959d2337fabe195c))
+* **head-to-head:** add Tier 2 analytics with InfoTooltip ([997595c](https://github.com/quantti/tapas-fpl-app/commit/997595c1b604c39b7f22bbc18ba92322bb14c036))
+
 ## [0.24.1](https://github.com/quantti/tapas-fpl-app/compare/v0.24.0...v0.24.1) (2026-01-08)
 
 
