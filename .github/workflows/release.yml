@@ -1,8 +1,12 @@
 name: Release
 
 on:
-  push:
+  # Trigger after CI workflow completes (includes deploy jobs)
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
+  # Manual trigger for dry-run testing
   workflow_dispatch:
     inputs:
       dry_run:
@@ -20,7 +24,8 @@ jobs:
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
-    # Auto-runs on push to main, or manual with dry-run option
+    # Only run if CI succeeded (or manual trigger)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - uses: actions/checkout@v4
