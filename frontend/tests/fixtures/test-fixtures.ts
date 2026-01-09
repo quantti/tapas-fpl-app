@@ -134,23 +134,29 @@ export async function setupApiMocking(page: Page) {
     });
   });
 
-  // Mock backend API (Points Against, Chips) - return empty/unavailable to avoid test failures
-  // Use specific /api/v1/ prefix to avoid matching source files like /src/utils/chips.ts
-  await page.route('**/api/v1/points-against**', async (route) => {
-    await route.fulfill({
-      status: 503,
-      contentType: 'application/json',
-      body: JSON.stringify({ detail: 'Service temporarily unavailable' }),
-    });
-  });
+  // Mock backend API endpoints - return 503 to simulate unavailable backend
+  // This ensures consistent test snapshots regardless of backend availability
+  const unavailableResponse = {
+    status: 503,
+    contentType: 'application/json',
+    body: JSON.stringify({ detail: 'Service temporarily unavailable' }),
+  };
 
-  await page.route('**/api/v1/chips/**', async (route) => {
-    await route.fulfill({
-      status: 503,
-      contentType: 'application/json',
-      body: JSON.stringify({ detail: 'Service temporarily unavailable' }),
-    });
-  });
+  // Points Against
+  await page.route('**/api/v1/points-against**', (route) => route.fulfill(unavailableResponse));
+
+  // Chips
+  await page.route('**/api/v1/chips/**', (route) => route.fulfill(unavailableResponse));
+
+  // League stats (bench points, free transfers, captain differential)
+  await page.route('**/api/v1/history/league/*/stats**', (route) =>
+    route.fulfill(unavailableResponse)
+  );
+
+  // League positions (position history chart)
+  await page.route('**/api/v1/history/league/*/positions**', (route) =>
+    route.fulfill(unavailableResponse)
+  );
 
   // Mock H2H comparison endpoint
   await page.route('**/api/v1/history/comparison**', async (route) => {
