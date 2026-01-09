@@ -469,3 +469,95 @@ def calculate_last_5_average(history: list[ManagerHistoryRow]) -> float:
     last_5 = sorted_history[:5]
 
     return sum(row["gameweek_points"] for row in last_5) / len(last_5)
+
+
+# =============================================================================
+# Tier 2 Calculations
+# =============================================================================
+
+
+def calculate_form_momentum(history: list[ManagerHistoryRow]) -> str:
+    """Calculate form momentum based on 3-GW rolling average trend.
+
+    Compares the most recent 3-GW average to the previous 3-GW average.
+
+    Args:
+        history: List of manager history rows (any order)
+
+    Returns:
+        "improving" if recent avg > previous avg by >5%
+        "declining" if recent avg < previous avg by >5%
+        "stable" otherwise (or if insufficient data)
+    """
+    if len(history) < 6:
+        return "stable"  # Need at least 6 GWs for meaningful comparison
+
+    # Sort by gameweek descending
+    sorted_history = sorted(history, key=lambda x: x["gameweek"], reverse=True)
+
+    # Recent 3 GWs (most recent)
+    recent_3 = sorted_history[:3]
+    recent_avg = sum(row["gameweek_points"] for row in recent_3) / 3
+
+    # Previous 3 GWs (4th, 5th, 6th most recent)
+    previous_3 = sorted_history[3:6]
+    previous_avg = sum(row["gameweek_points"] for row in previous_3) / 3
+
+    # Avoid division by zero
+    if previous_avg == 0:
+        return "stable"
+
+    # Calculate percentage change
+    change_pct = ((recent_avg - previous_avg) / previous_avg) * 100
+
+    if change_pct > 5:
+        return "improving"
+    elif change_pct < -5:
+        return "declining"
+    else:
+        return "stable"
+
+
+def calculate_recovery_rate(history: list[ManagerHistoryRow]) -> float:
+    """Calculate average points gained after red arrow gameweeks.
+
+    A "red arrow" is a gameweek where overall rank dropped (got worse).
+    Recovery rate measures how well a manager bounces back.
+
+    Args:
+        history: List of manager history rows (any order)
+
+    Returns:
+        Average points scored in GWs immediately after a red arrow.
+        Returns 0.0 if no red arrows or insufficient data.
+    """
+    if len(history) < 2:
+        return 0.0
+
+    # Sort by gameweek ascending
+    sorted_history = sorted(history, key=lambda x: x["gameweek"])
+
+    recovery_points: list[int] = []
+
+    for i in range(1, len(sorted_history)):
+        prev_gw = sorted_history[i - 1]
+        current_gw = sorted_history[i]
+
+        prev_rank = prev_gw.get("overall_rank")
+        current_rank = current_gw.get("overall_rank")
+
+        # Skip if rank data is missing
+        if prev_rank is None or current_rank is None:
+            continue
+
+        # Check if previous GW was a red arrow (rank got worse = number increased)
+        if current_rank > prev_rank:
+            # This is a red arrow GW - look at NEXT GW for recovery
+            if i + 1 < len(sorted_history):
+                next_gw = sorted_history[i + 1]
+                recovery_points.append(next_gw["gameweek_points"])
+
+    if not recovery_points:
+        return 0.0
+
+    return sum(recovery_points) / len(recovery_points)

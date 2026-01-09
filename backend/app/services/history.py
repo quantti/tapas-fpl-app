@@ -23,10 +23,12 @@ from app.services.calculations import (
     calculate_bench_waste_rate,
     calculate_captain_differential_with_details,
     calculate_consistency_score,
+    calculate_form_momentum,
     calculate_free_transfers,
     calculate_hit_frequency,
     calculate_last_5_average,
     calculate_league_positions,
+    calculate_recovery_rate,
 )
 
 logger = logging.getLogger(__name__)
@@ -935,6 +937,10 @@ class HistoryService:
         hit_frequency = calculate_hit_frequency(history_list)
         last_5_average = calculate_last_5_average(history_list)
 
+        # Tier 2 analytics
+        form_momentum = calculate_form_momentum(history_list)
+        recovery_rate = calculate_recovery_rate(history_list)
+
         # Template overlap calculations
         league_template_overlap = (
             _calculate_template_overlap(starting_xi, league_template_ids)
@@ -981,6 +987,9 @@ class HistoryService:
             "bench_waste_rate": round(bench_waste_rate, 2),
             "hit_frequency": round(hit_frequency, 2),
             "last_5_average": round(last_5_average, 2),
+            # Tier 2 analytics
+            "form_momentum": form_momentum,
+            "recovery_rate": round(recovery_rate, 2),
         }
 
     def _calculate_head_to_head(

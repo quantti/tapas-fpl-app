@@ -59,6 +59,9 @@ export interface ComparisonStats {
   consistencyScore: number;
   benchWasteRate: number;
   hitFrequency: number;
+  // Tier 2 analytics
+  formMomentum: string; // "improving", "stable", "declining"
+  recoveryRate: number;
 }
 
 export interface UseHeadToHeadComparisonParams {
@@ -166,6 +169,9 @@ function transformManagerStats(backend: BackendManagerComparisonStats): Comparis
     consistencyScore: backend.consistency_score,
     benchWasteRate: backend.bench_waste_rate,
     hitFrequency: backend.hit_frequency,
+    // Tier 2 analytics
+    formMomentum: backend.form_momentum,
+    recoveryRate: backend.recovery_rate,
   };
 }
 

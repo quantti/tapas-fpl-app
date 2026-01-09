@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Card } from 'components/Card';
 import { CardHeader } from 'components/CardHeader';
+import { InfoTooltip } from 'components/InfoTooltip';
 
 import { BackendApiError } from 'services/backendApi';
 import { useHeadToHeadComparison } from 'services/queries/useHeadToHeadComparison';
@@ -62,6 +63,31 @@ function getErrorMessage(error: Error): string {
   return 'Failed to load comparison data. Please try again.';
 }
 
+/**
+ * Capitalize first letter of form momentum
+ */
+function formatFormMomentum(momentum: string): string {
+  return momentum.charAt(0).toUpperCase() + momentum.slice(1);
+}
+
+/**
+ * Get comparison class for form momentum
+ */
+function getFormCompareClass(momentum: string): CompareResult {
+  if (momentum === 'improving') return 'better';
+  if (momentum === 'declining') return 'worse';
+  return 'neutral';
+}
+
+// Analytics metric descriptions for tooltips
+const ANALYTICS_INFO = {
+  consistency: 'Standard deviation of gameweek points. Lower = more consistent performer.',
+  benchWaste: 'Average bench points as % of total points. Lower = better squad selection.',
+  hitFrequency: '% of gameweeks with transfer hits taken. Lower = better planning.',
+  form: 'Trend based on last 3 GWs vs previous 3 GWs. >5% change = improving/declining.',
+  recovery: 'Average points scored in GWs after a rank drop. Higher = better bounce-back.',
+} as const;
+
 interface ComparisonContentProps {
   managerAId: number | null;
   managerBId: number | null;
@@ -115,7 +141,7 @@ function renderComparisonContent({
 }
 
 interface StatRowProps {
-  label: string;
+  label: React.ReactNode;
   valueA: string | number;
   valueB: string | number;
   compareA: CompareResult;
@@ -152,12 +178,9 @@ function TemplateOverlapRow({ label, overlapA, overlapB }: TemplateOverlapRowPro
     <div className={styles.templateOverlapSection}>
       <div className={styles.templateOverlapRow}>
         <div className={`${styles.templateSide} ${styles.left}`}>
-          <div className={styles.templateStats}>
-            <span className={`${styles.templateCount} ${styles[compareA]}`}>
-              {overlapA.matchCount}/11
-            </span>
-            <span className={styles.templateLabel}>{overlapA.playstyleLabel}</span>
-          </div>
+          <span className={`${styles.templateCount} ${styles[compareA]}`}>
+            {overlapA.matchCount}/11
+          </span>
           <div className={styles.progressBar}>
             {Array.from({ length: 11 }).map((_, i) => (
               <div
@@ -166,17 +189,15 @@ function TemplateOverlapRow({ label, overlapA, overlapB }: TemplateOverlapRowPro
               />
             ))}
           </div>
+          <span className={styles.templateLabel}>{overlapA.playstyleLabel}</span>
         </div>
 
         <span className={styles.statLabel}>{label}</span>
 
         <div className={`${styles.templateSide} ${styles.right}`}>
-          <div className={styles.templateStats}>
-            <span className={`${styles.templateCount} ${styles[compareB]}`}>
-              {overlapB.matchCount}/11
-            </span>
-            <span className={styles.templateLabel}>{overlapB.playstyleLabel}</span>
-          </div>
+          <span className={`${styles.templateCount} ${styles[compareB]}`}>
+            {overlapB.matchCount}/11
+          </span>
           <div className={styles.progressBar}>
             {Array.from({ length: 11 }).map((_, i) => (
               <div
@@ -185,6 +206,7 @@ function TemplateOverlapRow({ label, overlapA, overlapB }: TemplateOverlapRowPro
               />
             ))}
           </div>
+          <span className={styles.templateLabel}>{overlapB.playstyleLabel}</span>
         </div>
       </div>
     </div>
@@ -450,6 +472,64 @@ function ComparisonGrid({
           )}
         />
       )}
+
+      {/* Analytics */}
+      <div className={styles.sectionTitle}>Analytics</div>
+      <StatRow
+        label={
+          <>
+            Consistency <InfoTooltip text={ANALYTICS_INFO.consistency} />
+          </>
+        }
+        valueA={managerA.consistencyScore.toFixed(1)}
+        valueB={managerB.consistencyScore.toFixed(1)}
+        compareA={getComparisonClass(managerA.consistencyScore, managerB.consistencyScore, true)}
+        compareB={getComparisonClass(managerB.consistencyScore, managerA.consistencyScore, true)}
+      />
+      <StatRow
+        label={
+          <>
+            Bench Waste <InfoTooltip text={ANALYTICS_INFO.benchWaste} />
+          </>
+        }
+        valueA={`${managerA.benchWasteRate.toFixed(1)}%`}
+        valueB={`${managerB.benchWasteRate.toFixed(1)}%`}
+        compareA={getComparisonClass(managerA.benchWasteRate, managerB.benchWasteRate, true)}
+        compareB={getComparisonClass(managerB.benchWasteRate, managerA.benchWasteRate, true)}
+      />
+      <StatRow
+        label={
+          <>
+            Hit Frequency <InfoTooltip text={ANALYTICS_INFO.hitFrequency} />
+          </>
+        }
+        valueA={`${managerA.hitFrequency.toFixed(0)}%`}
+        valueB={`${managerB.hitFrequency.toFixed(0)}%`}
+        compareA={getComparisonClass(managerA.hitFrequency, managerB.hitFrequency, true)}
+        compareB={getComparisonClass(managerB.hitFrequency, managerA.hitFrequency, true)}
+      />
+      <StatRow
+        label={
+          <>
+            Form <InfoTooltip text={ANALYTICS_INFO.form} />
+          </>
+        }
+        valueA={formatFormMomentum(managerA.formMomentum)}
+        valueB={formatFormMomentum(managerB.formMomentum)}
+        compareA={getFormCompareClass(managerA.formMomentum)}
+        compareB={getFormCompareClass(managerB.formMomentum)}
+      />
+      <StatRow
+        label={
+          <>
+            Recovery <InfoTooltip text={ANALYTICS_INFO.recovery} />
+          </>
+        }
+        valueA={managerA.recoveryRate > 0 ? managerA.recoveryRate.toFixed(1) : '—'}
+        valueB={managerB.recoveryRate > 0 ? managerB.recoveryRate.toFixed(1) : '—'}
+        compareA={getComparisonClass(managerA.recoveryRate, managerB.recoveryRate)}
+        compareB={getComparisonClass(managerB.recoveryRate, managerA.recoveryRate)}
+      />
     </div>
   );
 }

@@ -218,6 +218,15 @@ class ManagerComparisonStats(BaseModel):
     hit_frequency: float = Field(ge=0, le=100, description="% of GWs with hits taken")
     last_5_average: float = Field(ge=0, description="Average points over last 5 GWs")
 
+    # Tier 2 analytics
+    form_momentum: str = Field(
+        default="stable",
+        description="3-GW trend: 'improving', 'stable', or 'declining'",
+    )
+    recovery_rate: float = Field(
+        ge=0, default=0.0, description="Avg points after red arrow GWs"
+    )
+
 
 class HeadToHeadRecord(BaseModel):
     """Head-to-head record between two managers."""

@@ -179,6 +179,9 @@ export interface BackendManagerComparisonStats {
   bench_waste_rate: number;
   hit_frequency: number;
   last_5_average: number;
+  // Tier 2 analytics
+  form_momentum: string; // "improving", "stable", "declining"
+  recovery_rate: number;
 }
 
 export interface BackendHeadToHead {

@@ -36,6 +36,5 @@ export const templateLabel: string;
 export const templateOverlapRow: string;
 export const templateOverlapSection: string;
 export const templateSide: string;
-export const templateStats: string;
 export const vsLabel: string;
 export const worse: string;

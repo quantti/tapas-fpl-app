@@ -1623,6 +1623,193 @@ class TestCalculateTemplateOverlap:
 
 
 # =============================================================================
+# Pure Function Tests: Tier 2 Analytics - calculate_form_momentum
+# =============================================================================
+
+
+class TestCalculateFormMomentum:
+    """Tests for form momentum calculation (3-GW rolling average trend)."""
+
+    def test_returns_improving_when_recent_avg_higher(self):
+        """Should return 'improving' when recent 3 GWs avg > previous 3 by >5%."""
+        from app.services.calculations import calculate_form_momentum
+
+        # GW1-3 avg = 50, GW4-6 avg = 70 → +40% change
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=50),
+            _make_history_row(gameweek=2, gameweek_points=50),
+            _make_history_row(gameweek=3, gameweek_points=50),
+            _make_history_row(gameweek=4, gameweek_points=70),
+            _make_history_row(gameweek=5, gameweek_points=70),
+            _make_history_row(gameweek=6, gameweek_points=70),
+        ]
+        assert calculate_form_momentum(history) == "improving"
+
+    def test_returns_declining_when_recent_avg_lower(self):
+        """Should return 'declining' when recent 3 GWs avg < previous 3 by >5%."""
+        from app.services.calculations import calculate_form_momentum
+
+        # GW1-3 avg = 70, GW4-6 avg = 50 → -28.6% change
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=70),
+            _make_history_row(gameweek=2, gameweek_points=70),
+            _make_history_row(gameweek=3, gameweek_points=70),
+            _make_history_row(gameweek=4, gameweek_points=50),
+            _make_history_row(gameweek=5, gameweek_points=50),
+            _make_history_row(gameweek=6, gameweek_points=50),
+        ]
+        assert calculate_form_momentum(history) == "declining"
+
+    def test_returns_stable_when_change_within_5_percent(self):
+        """Should return 'stable' when change is within ±5%."""
+        from app.services.calculations import calculate_form_momentum
+
+        # GW1-3 avg = 50, GW4-6 avg = 51 → +2% change
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=50),
+            _make_history_row(gameweek=2, gameweek_points=50),
+            _make_history_row(gameweek=3, gameweek_points=50),
+            _make_history_row(gameweek=4, gameweek_points=51),
+            _make_history_row(gameweek=5, gameweek_points=51),
+            _make_history_row(gameweek=6, gameweek_points=51),
+        ]
+        assert calculate_form_momentum(history) == "stable"
+
+    def test_returns_stable_for_insufficient_data(self):
+        """Should return 'stable' when less than 6 GWs available."""
+        from app.services.calculations import calculate_form_momentum
+
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=50),
+            _make_history_row(gameweek=2, gameweek_points=60),
+            _make_history_row(gameweek=3, gameweek_points=70),
+        ]
+        assert calculate_form_momentum(history) == "stable"
+
+    def test_returns_stable_for_empty_history(self):
+        """Should return 'stable' for empty history."""
+        from app.services.calculations import calculate_form_momentum
+
+        assert calculate_form_momentum([]) == "stable"
+
+    def test_handles_unsorted_gameweeks(self):
+        """Should correctly sort gameweeks before calculation."""
+        from app.services.calculations import calculate_form_momentum
+
+        # Unsorted input, same as improving test
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=4, gameweek_points=70),
+            _make_history_row(gameweek=1, gameweek_points=50),
+            _make_history_row(gameweek=6, gameweek_points=70),
+            _make_history_row(gameweek=2, gameweek_points=50),
+            _make_history_row(gameweek=5, gameweek_points=70),
+            _make_history_row(gameweek=3, gameweek_points=50),
+        ]
+        assert calculate_form_momentum(history) == "improving"
+
+    def test_returns_stable_when_previous_avg_zero(self):
+        """Should return 'stable' when previous 3 avg is 0 (avoid division by zero)."""
+        from app.services.calculations import calculate_form_momentum
+
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=0),
+            _make_history_row(gameweek=2, gameweek_points=0),
+            _make_history_row(gameweek=3, gameweek_points=0),
+            _make_history_row(gameweek=4, gameweek_points=50),
+            _make_history_row(gameweek=5, gameweek_points=50),
+            _make_history_row(gameweek=6, gameweek_points=50),
+        ]
+        assert calculate_form_momentum(history) == "stable"
+
+
+# =============================================================================
+# Pure Function Tests: Tier 2 Analytics - calculate_recovery_rate
+# =============================================================================
+
+
+class TestCalculateRecoveryRate:
+    """Tests for recovery rate calculation (points after red arrows)."""
+
+    def test_returns_average_points_after_red_arrows(self):
+        """Should return average of points in GWs after red arrows."""
+        from app.services.calculations import calculate_recovery_rate
+
+        # GW2 is red arrow (rank 1000→1500), GW3 is recovery (60 pts)
+        # GW4 is red arrow (rank 1200→1800), GW5 is recovery (80 pts)
+        # Recovery avg = (60 + 80) / 2 = 70
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=50, overall_rank=1000),
+            _make_history_row(gameweek=2, gameweek_points=40, overall_rank=1500),  # Red arrow
+            _make_history_row(gameweek=3, gameweek_points=60, overall_rank=1200),  # Recovery
+            _make_history_row(gameweek=4, gameweek_points=30, overall_rank=1800),  # Red arrow
+            _make_history_row(gameweek=5, gameweek_points=80, overall_rank=1400),  # Recovery
+        ]
+        assert calculate_recovery_rate(history) == 70.0
+
+    def test_returns_zero_for_no_red_arrows(self):
+        """Should return 0 when no red arrows (always green arrows)."""
+        from app.services.calculations import calculate_recovery_rate
+
+        # Rank keeps improving (lower is better)
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=50, overall_rank=1000),
+            _make_history_row(gameweek=2, gameweek_points=60, overall_rank=800),
+            _make_history_row(gameweek=3, gameweek_points=70, overall_rank=600),
+        ]
+        assert calculate_recovery_rate(history) == 0.0
+
+    def test_returns_zero_for_empty_history(self):
+        """Should return 0 for empty history."""
+        from app.services.calculations import calculate_recovery_rate
+
+        assert calculate_recovery_rate([]) == 0.0
+
+    def test_returns_zero_for_single_gw(self):
+        """Should return 0 when only 1 GW (no red arrow possible)."""
+        from app.services.calculations import calculate_recovery_rate
+
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=50, overall_rank=1000),
+        ]
+        assert calculate_recovery_rate(history) == 0.0
+
+    def test_ignores_gws_without_rank_data(self):
+        """Should skip GWs where rank is None."""
+        from app.services.calculations import calculate_recovery_rate
+
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=50, overall_rank=1000),
+            _make_history_row(gameweek=2, gameweek_points=40, overall_rank=None),  # No rank
+            _make_history_row(gameweek=3, gameweek_points=60, overall_rank=1200),
+        ]
+        assert calculate_recovery_rate(history) == 0.0
+
+    def test_handles_red_arrow_at_end_of_season(self):
+        """Should not crash when red arrow is in the last GW (no recovery GW)."""
+        from app.services.calculations import calculate_recovery_rate
+
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=50, overall_rank=1000),
+            _make_history_row(gameweek=2, gameweek_points=40, overall_rank=1500),  # Red arrow, no recovery after
+        ]
+        assert calculate_recovery_rate(history) == 0.0
+
+    def test_handles_unsorted_gameweeks(self):
+        """Should correctly sort gameweeks before calculation."""
+        from app.services.calculations import calculate_recovery_rate
+
+        # Same as first test but unsorted
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=3, gameweek_points=60, overall_rank=1200),
+            _make_history_row(gameweek=1, gameweek_points=50, overall_rank=1000),
+            _make_history_row(gameweek=5, gameweek_points=80, overall_rank=1400),
+            _make_history_row(gameweek=2, gameweek_points=40, overall_rank=1500),
+            _make_history_row(gameweek=4, gameweek_points=30, overall_rank=1800),
+        ]
+        assert calculate_recovery_rate(history) == 70.0
+
+
+# =============================================================================
 # Helper Functions for Test Data
 # =============================================================================
 

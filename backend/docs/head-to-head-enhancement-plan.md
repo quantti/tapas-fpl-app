@@ -1,6 +1,6 @@
 # Head-to-Head Comparison API Enhancement Plan
 
-**Status:** Phase 3 Complete ✅ — Ready for Tier 2 Features
+**Status:** Tier 2 Analytics Complete ✅
 **Created:** 2026-01-09
 **Updated:** 2026-01-09
 **Backend Commit:** e692acf
@@ -39,6 +39,30 @@ Added core Phase 1 fields and Tier 1 analytics to the comparison endpoint:
 - `app/services/history.py` - Updated `_build_manager_stats()` to call new functions
 - `app/api/history.py` - Extended `ManagerComparisonStats` Pydantic model
 - `tests/test_history_service.py` - 18 new TDD tests (17 pure function + 1 integration)
+
+### Tier 2 Analytics ✅
+
+Added Tier 2 analytics based on manager history data:
+
+| Field | Description | Implementation |
+|-------|-------------|----------------|
+| `form_momentum` | 3-GW trend: "improving", "stable", "declining" | `calculate_form_momentum()` |
+| `recovery_rate` | Avg points scored after red arrow GWs | `calculate_recovery_rate()` |
+
+**Skipped metrics:**
+- `captain_vs_best` - Avg diff between captain points and best XI player (user feedback: low value)
+
+**Files modified:**
+- `app/services/calculations.py` - 2 new pure functions
+- `app/services/history.py` - Call new functions in `_build_manager_stats()`
+- `app/api/history.py` - Added Tier 2 fields to `ManagerComparisonStats`
+- `tests/test_history_service.py` - 14 new TDD tests
+- `frontend/src/services/backendApi.ts` - Added Tier 2 types
+- `frontend/src/services/queries/useHeadToHeadComparison.ts` - Updated types and transformer
+
+**Test counts:**
+- Backend: 308 tests pass
+- Frontend: 641 tests pass
 
 ## Problem
 
