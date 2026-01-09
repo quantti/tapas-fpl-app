@@ -1006,8 +1006,9 @@ class TestHistoryComparisonResponseFormat:
         mock_chips_a = [{"chip_type": "wildcard", "season_half": 1}]
         mock_chips_b = []
 
-        # 10 fetch calls: manager_a, manager_b, history_a, history_b,
-        # picks_a, picks_b, chips_a, chips_b, captain_picks, gameweeks
+        # 13 fetch calls: manager_a, manager_b, history_a, history_b,
+        # picks_a, picks_b, chips_a, chips_b, captain_picks, gameweeks,
+        # league_standings, league_template, world_template
         mock_api_db.conn.fetch.side_effect = [
             mock_manager_a,
             mock_manager_b,
@@ -1019,6 +1020,9 @@ class TestHistoryComparisonResponseFormat:
             mock_chips_b,
             [],  # captain_picks
             [{"id": 1, "most_captained": 427}],  # gameweeks
+            [],  # league_standings
+            [],  # league_template
+            [],  # world_template
         ]
 
         with mock_api_db:
@@ -1046,6 +1050,7 @@ class TestHistoryComparisonResponseFormat:
             assert "team_name" in manager
             assert "total_points" in manager
             assert "overall_rank" in manager
+            assert "league_rank" in manager  # New: league context
             assert "total_transfers" in manager
             assert "total_hits" in manager
             assert "hits_cost" in manager
@@ -1057,6 +1062,9 @@ class TestHistoryComparisonResponseFormat:
             assert "best_gameweek" in manager
             assert "worst_gameweek" in manager
             assert "starting_xi" in manager
+            # Template overlap fields
+            assert "league_template_overlap" in manager
+            assert "world_template_overlap" in manager
             # Tier 1 analytics
             assert "consistency_score" in manager
             assert "bench_waste_rate" in manager
@@ -1088,13 +1096,28 @@ class TestHistoryComparisonBusinessLogic:
                 "active_chip": None,
             }
         ]
-        mock_history_b = mock_history_a.copy()
+        mock_history_b = [
+            {
+                "manager_id": 456,
+                "gameweek": 1,
+                "gameweek_points": 65,
+                "total_points": 65,
+                "points_on_bench": 0,
+                "overall_rank": 1000,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            }
+        ]
         # Players: A has [427, 328, 100], B has [427, 500, 100] -> common: [100, 427]
         mock_picks_a = [{"player_id": 427}, {"player_id": 328}, {"player_id": 100}]
         mock_picks_b = [{"player_id": 427}, {"player_id": 500}, {"player_id": 100}]
         mock_chips_a = []
         mock_chips_b = []
 
+        # 13 fetch calls including new template queries
         mock_api_db.conn.fetch.side_effect = [
             mock_manager_a,
             mock_manager_b,
@@ -1106,6 +1129,9 @@ class TestHistoryComparisonBusinessLogic:
             mock_chips_b,
             [],  # captain_picks
             [{"id": 1, "most_captained": 427}],  # gameweeks
+            [],  # league_standings
+            [],  # league_template
+            [],  # world_template
         ]
 
         with mock_api_db:
@@ -1214,6 +1240,7 @@ class TestHistoryComparisonBusinessLogic:
         mock_chips_a = []
         mock_chips_b = []
 
+        # 13 fetch calls including new template queries
         mock_api_db.conn.fetch.side_effect = [
             mock_manager_a,
             mock_manager_b,
@@ -1229,6 +1256,9 @@ class TestHistoryComparisonBusinessLogic:
                 {"id": 2, "most_captained": 1},
                 {"id": 3, "most_captained": 1},
             ],
+            [],  # league_standings
+            [],  # league_template
+            [],  # world_template
         ]
 
         with mock_api_db:
@@ -1276,3 +1306,407 @@ class TestHistoryComparisonBusinessLogic:
 
         assert response.status_code == 400
         assert "themselves" in response.json()["detail"].lower()
+
+    async def test_comparison_returns_league_rank(
+        self, async_client: AsyncClient, mock_pool, mock_api_db: MockDB
+    ):
+        """Should return each manager's rank within the league."""
+        mock_manager_a = [{"id": 123, "player_name": "John Doe", "team_name": "FC John"}]
+        mock_manager_b = [{"id": 456, "player_name": "Jane Smith", "team_name": "FC Jane"}]
+        mock_history_a = [
+            {
+                "manager_id": 123,
+                "gameweek": 1,
+                "gameweek_points": 65,
+                "total_points": 65,
+                "points_on_bench": 0,
+                "overall_rank": 1000,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            }
+        ]
+        mock_history_b = [
+            {
+                "manager_id": 456,
+                "gameweek": 1,
+                "gameweek_points": 70,
+                "total_points": 70,
+                "points_on_bench": 0,
+                "overall_rank": 500,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            }
+        ]
+        mock_picks_a = [{"player_id": 427}]
+        mock_picks_b = [{"player_id": 427}]
+        # League standings: Jane (456) is rank 1, John (123) is rank 2
+        mock_league_standings = [
+            {"manager_id": 456, "rank": 1},
+            {"manager_id": 123, "rank": 2},
+        ]
+
+        mock_api_db.conn.fetch.side_effect = [
+            mock_manager_a,
+            mock_manager_b,
+            mock_history_a,
+            mock_history_b,
+            mock_picks_a,
+            mock_picks_b,
+            [],  # chips_a
+            [],  # chips_b
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 427}],  # gameweeks
+            mock_league_standings,  # league standings query
+            [],  # league_template query
+            [],  # world_template query
+        ]
+
+        with mock_api_db:
+            response = await async_client.get(
+                "/api/v1/history/comparison?manager_a=123&manager_b=456&league_id=789"
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify league_rank is present and correct
+        assert "league_rank" in data["manager_a"]
+        assert "league_rank" in data["manager_b"]
+        assert data["manager_a"]["league_rank"] == 2  # John is rank 2
+        assert data["manager_b"]["league_rank"] == 1  # Jane is rank 1
+
+        # Verify template overlaps are None when no template data
+        assert data["manager_a"]["league_template_overlap"] is None
+        assert data["manager_a"]["world_template_overlap"] is None
+
+    async def test_comparison_returns_league_template_overlap(
+        self, async_client: AsyncClient, mock_pool, mock_api_db: MockDB
+    ):
+        """Should return overlap between manager's XI and league template."""
+        mock_manager_a = [{"id": 123, "player_name": "John Doe", "team_name": "FC John"}]
+        mock_manager_b = [{"id": 456, "player_name": "Jane Smith", "team_name": "FC Jane"}]
+        mock_history_a = [
+            {
+                "manager_id": 123,
+                "gameweek": 1,
+                "gameweek_points": 65,
+                "total_points": 65,
+                "points_on_bench": 0,
+                "overall_rank": 1000,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            }
+        ]
+        mock_history_b = [
+            {
+                "manager_id": 456,
+                "gameweek": 1,
+                "gameweek_points": 65,
+                "total_points": 65,
+                "points_on_bench": 0,
+                "overall_rank": 1000,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            }
+        ]
+        # Manager A has players [427, 328, 100] - 2 match league template [427, 328, 500]
+        # Manager B has players [427, 500, 200] - 2 match league template
+        mock_picks_a = [{"player_id": 427}, {"player_id": 328}, {"player_id": 100}]
+        mock_picks_b = [{"player_id": 427}, {"player_id": 500}, {"player_id": 200}]
+        # League template: most owned players across all league managers
+        # Simulated: 427 (3 owners), 328 (2 owners), 500 (2 owners)
+        mock_league_template = [
+            {"player_id": 427, "owner_count": 3},
+            {"player_id": 328, "owner_count": 2},
+            {"player_id": 500, "owner_count": 2},
+        ]
+
+        mock_api_db.conn.fetch.side_effect = [
+            mock_manager_a,
+            mock_manager_b,
+            mock_history_a,
+            mock_history_b,
+            mock_picks_a,
+            mock_picks_b,
+            [],  # chips_a
+            [],  # chips_b
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 427}],  # gameweeks
+            [],  # league_standings
+            mock_league_template,  # league template query
+            [],  # world_template query
+        ]
+
+        with mock_api_db:
+            response = await async_client.get(
+                "/api/v1/history/comparison?manager_a=123&manager_b=456&league_id=789"
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify league_template_overlap structure for Manager A
+        overlap_a = data["manager_a"]["league_template_overlap"]
+        assert "match_count" in overlap_a
+        assert "match_percentage" in overlap_a
+        assert "matching_player_ids" in overlap_a
+        assert "differential_player_ids" in overlap_a
+        assert "playstyle_label" in overlap_a
+
+        # Manager A has 427, 328 matching template [427, 328, 500]
+        assert overlap_a["match_count"] == 2
+        assert overlap_a["match_percentage"] == pytest.approx(66.7, abs=0.1)
+        assert set(overlap_a["matching_player_ids"]) == {427, 328}
+        assert 100 in overlap_a["differential_player_ids"]
+        assert overlap_a["playstyle_label"] == "Differential"  # 2-4 matches = Differential
+
+        # Verify Manager B overlap too
+        overlap_b = data["manager_b"]["league_template_overlap"]
+        assert overlap_b["match_count"] == 2  # 427, 500 match template
+        assert set(overlap_b["matching_player_ids"]) == {427, 500}
+        assert 200 in overlap_b["differential_player_ids"]
+
+    async def test_comparison_returns_world_template_overlap(
+        self, async_client: AsyncClient, mock_pool, mock_api_db: MockDB
+    ):
+        """Should return overlap between manager's XI and world template (top owned)."""
+        mock_manager_a = [{"id": 123, "player_name": "John Doe", "team_name": "FC John"}]
+        mock_manager_b = [{"id": 456, "player_name": "Jane Smith", "team_name": "FC Jane"}]
+        mock_history_a = [
+            {
+                "manager_id": 123,
+                "gameweek": 1,
+                "gameweek_points": 65,
+                "total_points": 65,
+                "points_on_bench": 0,
+                "overall_rank": 1000,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            }
+        ]
+        mock_history_b = [
+            {
+                "manager_id": 456,
+                "gameweek": 1,
+                "gameweek_points": 65,
+                "total_points": 65,
+                "points_on_bench": 0,
+                "overall_rank": 1000,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            }
+        ]
+        # Manager A has players [427, 328, 100]
+        # World template (highest selected_by_percent): [427, 351, 500]
+        mock_picks_a = [{"player_id": 427}, {"player_id": 328}, {"player_id": 100}]
+        mock_picks_b = [{"player_id": 427}, {"player_id": 351}, {"player_id": 500}]
+        # World's most owned players by selected_by_percent
+        mock_world_template = [
+            {"id": 427, "selected_by_percent": 85.5},  # Salah
+            {"id": 351, "selected_by_percent": 78.2},  # Haaland
+            {"id": 500, "selected_by_percent": 45.0},  # Popular mid
+        ]
+
+        mock_api_db.conn.fetch.side_effect = [
+            mock_manager_a,
+            mock_manager_b,
+            mock_history_a,
+            mock_history_b,
+            mock_picks_a,
+            mock_picks_b,
+            [],  # chips_a
+            [],  # chips_b
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 427}],  # gameweeks
+            [],  # league_standings
+            [],  # league_template
+            mock_world_template,  # world template query (top owned players)
+        ]
+
+        with mock_api_db:
+            response = await async_client.get(
+                "/api/v1/history/comparison?manager_a=123&manager_b=456&league_id=789"
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify world_template_overlap structure
+        overlap_a = data["manager_a"]["world_template_overlap"]
+        assert "match_count" in overlap_a
+        assert "match_percentage" in overlap_a
+        assert "matching_player_ids" in overlap_a
+        assert "differential_player_ids" in overlap_a
+        assert "playstyle_label" in overlap_a
+
+        # Manager A has only 427 matching world template [427, 351, 500]
+        assert overlap_a["match_count"] == 1
+        assert 427 in overlap_a["matching_player_ids"]
+
+        # Manager B matches all 3 world template players
+        # Note: playstyle labels are based on match COUNT not percentage:
+        # 9-11=Template, 5-8=Balanced, 2-4=Differential, 0-1=Maverick
+        overlap_b = data["manager_b"]["world_template_overlap"]
+        assert overlap_b["match_count"] == 3
+        assert overlap_b["playstyle_label"] == "Differential"  # 3 matches = Differential
+
+    async def test_comparison_handles_zero_template_overlap(
+        self, async_client: AsyncClient, mock_pool, mock_api_db: MockDB
+    ):
+        """Should handle case where manager has zero overlap with template (Maverick)."""
+        mock_manager_a = [{"id": 123, "player_name": "John Doe", "team_name": "FC John"}]
+        mock_manager_b = [{"id": 456, "player_name": "Jane Smith", "team_name": "FC Jane"}]
+        mock_history_a = [
+            {
+                "manager_id": 123,
+                "gameweek": 1,
+                "gameweek_points": 65,
+                "total_points": 65,
+                "points_on_bench": 0,
+                "overall_rank": 1000,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            }
+        ]
+        mock_history_b = [
+            {
+                "manager_id": 456,
+                "gameweek": 1,
+                "gameweek_points": 65,
+                "total_points": 65,
+                "points_on_bench": 0,
+                "overall_rank": 1000,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            }
+        ]
+        # Manager A has completely different players from world template
+        mock_picks_a = [{"player_id": 999}, {"player_id": 998}, {"player_id": 997}]
+        mock_picks_b = [{"player_id": 427}]  # Only one player
+        mock_world_template = [
+            {"id": 427, "selected_by_percent": 85.5},
+            {"id": 351, "selected_by_percent": 78.2},
+            {"id": 500, "selected_by_percent": 45.0},
+        ]
+
+        mock_api_db.conn.fetch.side_effect = [
+            mock_manager_a,
+            mock_manager_b,
+            mock_history_a,
+            mock_history_b,
+            mock_picks_a,
+            mock_picks_b,
+            [],  # chips_a
+            [],  # chips_b
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 427}],  # gameweeks
+            [],  # league_standings
+            [],  # league_template
+            mock_world_template,  # world template query
+        ]
+
+        with mock_api_db:
+            response = await async_client.get(
+                "/api/v1/history/comparison?manager_a=123&manager_b=456&league_id=789"
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Manager A has zero overlap - should be "Maverick"
+        overlap_a = data["manager_a"]["world_template_overlap"]
+        assert overlap_a["match_count"] == 0
+        assert overlap_a["match_percentage"] == 0.0
+        assert overlap_a["matching_player_ids"] == []
+        assert overlap_a["playstyle_label"] == "Maverick"
+
+    async def test_comparison_handles_missing_league_rank(
+        self, async_client: AsyncClient, mock_pool, mock_api_db: MockDB
+    ):
+        """Should return None for league_rank when manager not in league standings."""
+        mock_manager_a = [{"id": 123, "player_name": "John Doe", "team_name": "FC John"}]
+        mock_manager_b = [{"id": 456, "player_name": "Jane Smith", "team_name": "FC Jane"}]
+        mock_history_a = [
+            {
+                "manager_id": 123,
+                "gameweek": 1,
+                "gameweek_points": 65,
+                "total_points": 65,
+                "points_on_bench": 0,
+                "overall_rank": 1000,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            }
+        ]
+        mock_history_b = [
+            {
+                "manager_id": 456,
+                "gameweek": 1,
+                "gameweek_points": 65,
+                "total_points": 65,
+                "points_on_bench": 0,
+                "overall_rank": 1000,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            }
+        ]
+        mock_picks_a = [{"player_id": 427}]
+        mock_picks_b = [{"player_id": 427}]
+
+        mock_api_db.conn.fetch.side_effect = [
+            mock_manager_a,
+            mock_manager_b,
+            mock_history_a,
+            mock_history_b,
+            mock_picks_a,
+            mock_picks_b,
+            [],  # chips_a
+            [],  # chips_b
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 427}],  # gameweeks
+            [],  # league_standings - empty, managers not in this league's standings
+            [],  # league_template
+            [],  # world_template
+        ]
+
+        with mock_api_db:
+            response = await async_client.get(
+                "/api/v1/history/comparison?manager_a=123&manager_b=456&league_id=789"
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Both managers should have None for league_rank when not in standings
+        assert data["manager_a"]["league_rank"] is None
+        assert data["manager_b"]["league_rank"] is None

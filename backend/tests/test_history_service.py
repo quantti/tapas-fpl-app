@@ -884,6 +884,7 @@ class TestHistoryServiceGetManagerComparison:
             _make_history_row(manager_id=456, gameweek=1, total_points=90)
         ]
 
+        # 13 fetch calls including new template queries
         mock_history_db.conn.fetch.side_effect = [
             [mock_manager_a],
             [mock_manager_b],
@@ -895,6 +896,9 @@ class TestHistoryServiceGetManagerComparison:
             [],  # chips_b
             [],  # captain_picks
             [{"id": 1, "most_captained": 100}],  # gameweeks
+            [],  # league_standings
+            [],  # league_template
+            [],  # world_template
         ]
 
         with mock_history_db:
@@ -931,6 +935,7 @@ class TestHistoryServiceGetManagerComparison:
             _make_pick_row(manager_id=456, gameweek=5, player_id=300, position=3),  # Common
         ]
 
+        # 13 fetch calls including new template queries
         mock_history_db.conn.fetch.side_effect = [
             [mock_manager_a],
             [mock_manager_b],
@@ -942,6 +947,9 @@ class TestHistoryServiceGetManagerComparison:
             [],  # chips_b
             [],  # captain_picks
             [{"id": 5, "most_captained": 100}],  # gameweeks
+            [],  # league_standings
+            [],  # league_template
+            [],  # world_template
         ]
 
         with mock_history_db:
@@ -959,6 +967,7 @@ class TestHistoryServiceGetManagerComparison:
         mock_manager_a: ManagerRow = {"id": 123, "player_name": "John", "team_name": "FC John"}
         mock_manager_b: ManagerRow = {"id": 456, "player_name": "Jane", "team_name": "FC Jane"}
 
+        # 13 fetch calls including new template queries
         mock_history_db.conn.fetch.side_effect = [
             [mock_manager_a],
             [mock_manager_b],
@@ -970,6 +979,9 @@ class TestHistoryServiceGetManagerComparison:
             [],  # chips_b
             [],  # captain_picks
             [{"id": 1, "most_captained": 100}],  # gameweeks
+            [],  # league_standings
+            [],  # league_template
+            [],  # world_template
         ]
 
         with mock_history_db:
@@ -977,10 +989,11 @@ class TestHistoryServiceGetManagerComparison:
                 manager_a=123, manager_b=456, league_id=98765, season_id=1
             )
 
-        # Phase 1 doesn't include template overlap - removed from scope
-        # Just verify basic structure works
+        # Verify template overlap fields are present
         assert "manager_a" in result
         assert "manager_b" in result
+        assert "league_template_overlap" in result["manager_a"]
+        assert "world_template_overlap" in result["manager_a"]
 
     async def test_raises_error_for_unknown_manager(
         self, history_service: "HistoryService", mock_history_db: MockDB
@@ -1028,6 +1041,7 @@ class TestHistoryServiceGetManagerComparison:
             ),
         ]
 
+        # 13 fetch calls including new template queries
         mock_history_db.conn.fetch.side_effect = [
             [mock_manager_a],
             [mock_manager_b],
@@ -1043,6 +1057,9 @@ class TestHistoryServiceGetManagerComparison:
                 {"id": 2, "most_captained": 100},
                 {"id": 3, "most_captained": 100},
             ],
+            [],  # league_standings
+            [],  # league_template
+            [],  # world_template
         ]
 
         with mock_history_db:
@@ -1479,6 +1496,130 @@ class TestCalculateLast5Average:
         result = calculate_last_5_average(history)
         # Last 5 (GW3-7): 50, 60, 70, 80, 90 → avg = 70
         assert result == 70.0
+
+
+# =============================================================================
+# Template Overlap Tests
+# =============================================================================
+
+
+class TestCalculateTemplateOverlap:
+    """Tests for _calculate_template_overlap function."""
+
+    def test_full_overlap_returns_template_label(self):
+        """11 matching players should return 'Template' label."""
+        from app.services.history import _calculate_template_overlap
+
+        starting_xi = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        template = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        result = _calculate_template_overlap(starting_xi, template)
+
+        assert result["match_count"] == 11
+        assert result["match_percentage"] == 100.0
+        assert result["playstyle_label"] == "Template"
+
+    def test_9_matches_is_template_boundary(self):
+        """9 matches should be the lower boundary for 'Template'."""
+        from app.services.history import _calculate_template_overlap
+
+        starting_xi = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        template = [1, 2, 3, 4, 5, 6, 7, 8, 9, 99, 100]  # 9 matches
+        result = _calculate_template_overlap(starting_xi, template)
+
+        assert result["match_count"] == 9
+        assert result["playstyle_label"] == "Template"
+
+    def test_8_matches_is_balanced(self):
+        """8 matches should be 'Balanced'."""
+        from app.services.history import _calculate_template_overlap
+
+        starting_xi = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        template = [1, 2, 3, 4, 5, 6, 7, 8, 98, 99, 100]  # 8 matches
+        result = _calculate_template_overlap(starting_xi, template)
+
+        assert result["match_count"] == 8
+        assert result["playstyle_label"] == "Balanced"
+
+    def test_5_matches_is_balanced_boundary(self):
+        """5 matches should be the lower boundary for 'Balanced'."""
+        from app.services.history import _calculate_template_overlap
+
+        starting_xi = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        template = [1, 2, 3, 4, 5, 96, 97, 98, 99, 100, 101]  # 5 matches
+        result = _calculate_template_overlap(starting_xi, template)
+
+        assert result["match_count"] == 5
+        assert result["playstyle_label"] == "Balanced"
+
+    def test_4_matches_is_differential(self):
+        """4 matches should be 'Differential'."""
+        from app.services.history import _calculate_template_overlap
+
+        starting_xi = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        template = [1, 2, 3, 4, 95, 96, 97, 98, 99, 100, 101]  # 4 matches
+        result = _calculate_template_overlap(starting_xi, template)
+
+        assert result["match_count"] == 4
+        assert result["playstyle_label"] == "Differential"
+
+    def test_2_matches_is_differential_boundary(self):
+        """2 matches should be the lower boundary for 'Differential'."""
+        from app.services.history import _calculate_template_overlap
+
+        starting_xi = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        template = [1, 2, 93, 94, 95, 96, 97, 98, 99, 100, 101]  # 2 matches
+        result = _calculate_template_overlap(starting_xi, template)
+
+        assert result["match_count"] == 2
+        assert result["playstyle_label"] == "Differential"
+
+    def test_1_match_is_maverick(self):
+        """1 match should be 'Maverick'."""
+        from app.services.history import _calculate_template_overlap
+
+        starting_xi = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        template = [1, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101]  # 1 match
+        result = _calculate_template_overlap(starting_xi, template)
+
+        assert result["match_count"] == 1
+        assert result["playstyle_label"] == "Maverick"
+
+    def test_zero_matches_is_maverick(self):
+        """0 matches should be 'Maverick'."""
+        from app.services.history import _calculate_template_overlap
+
+        starting_xi = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        template = [91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101]  # 0 matches
+        result = _calculate_template_overlap(starting_xi, template)
+
+        assert result["match_count"] == 0
+        assert result["match_percentage"] == 0.0
+        assert result["playstyle_label"] == "Maverick"
+
+    def test_empty_starting_xi_returns_zero(self):
+        """Empty starting XI should return 0% and 'Maverick'."""
+        from app.services.history import _calculate_template_overlap
+
+        starting_xi: list[int] = []
+        template = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        result = _calculate_template_overlap(starting_xi, template)
+
+        assert result["match_count"] == 0
+        assert result["match_percentage"] == 0.0
+        assert result["playstyle_label"] == "Maverick"
+        assert result["matching_player_ids"] == []
+        assert result["differential_player_ids"] == []
+
+    def test_returns_matching_and_differential_ids(self):
+        """Should return sorted lists of matching and differential player IDs."""
+        from app.services.history import _calculate_template_overlap
+
+        starting_xi = [5, 3, 1, 7, 9]  # Unsorted
+        template = [1, 2, 3, 4, 5]  # 3 matches: 1, 3, 5
+        result = _calculate_template_overlap(starting_xi, template)
+
+        assert result["matching_player_ids"] == [1, 3, 5]  # Sorted
+        assert result["differential_player_ids"] == [7, 9]  # Sorted
 
 
 # =============================================================================

@@ -11,7 +11,7 @@ Provides:
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypedDict
 
 from app.db import get_connection
 from app.services.calculations import (
@@ -30,6 +30,31 @@ from app.services.calculations import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# Domain Constants
+# =============================================================================
+
+STARTING_XI_SIZE = 11  # FPL starting lineup size (excludes 4 bench players)
+
+
+# =============================================================================
+# Type Definitions
+# =============================================================================
+
+
+class TemplateOverlapDict(TypedDict):
+    """Type definition for template overlap calculation result.
+
+    Playstyle thresholds: 9-11 Template, 5-8 Balanced, 2-4 Differential, 0-1 Maverick
+    """
+
+    match_count: int
+    match_percentage: float
+    matching_player_ids: list[int]
+    differential_player_ids: list[int]
+    playstyle_label: str
 
 
 # =============================================================================
@@ -186,6 +211,36 @@ _SINGLE_MANAGER_CHIPS_SQL = """
     WHERE manager_id = $1 AND season_id = $2
 """
 
+# Get league standings (rank within league) for specific managers
+_LEAGUE_STANDINGS_SQL = """
+    SELECT manager_id, rank
+    FROM league_manager
+    WHERE league_id = $1 AND season_id = $2 AND manager_id = ANY($3)
+"""
+
+# Get league template: most owned players in starting XI across league managers
+# Returns top 11 players by ownership count in current GW
+_LEAGUE_TEMPLATE_SQL = """
+    SELECT mp.player_id, COUNT(DISTINCT s.manager_id) as owner_count
+    FROM manager_gw_snapshot s
+    JOIN manager_pick mp ON mp.snapshot_id = s.id
+    JOIN league_manager lm ON lm.manager_id = s.manager_id AND lm.season_id = s.season_id
+    WHERE lm.league_id = $1 AND s.season_id = $2 AND s.gameweek = $3
+      AND mp.position <= 11
+    GROUP BY mp.player_id
+    ORDER BY owner_count DESC, mp.player_id
+    LIMIT 11
+"""
+
+# Get world template: globally most owned players (top 11 by selected_by_percent)
+_WORLD_TEMPLATE_SQL = """
+    SELECT id, selected_by_percent
+    FROM player
+    WHERE season_id = $1
+    ORDER BY selected_by_percent DESC
+    LIMIT 11
+"""
+
 
 # =============================================================================
 # Caching
@@ -250,6 +305,51 @@ def _validate_season_id(season_id: int) -> None:
     if season_id not in VALID_SEASON_IDS:
         valid = sorted(VALID_SEASON_IDS)
         raise ValueError(f"Invalid season_id: {season_id}. Valid values: {valid}")
+
+
+def _calculate_template_overlap(
+    starting_xi: list[int], template_player_ids: list[int]
+) -> TemplateOverlapDict:
+    """Calculate overlap between a manager's XI and a template.
+
+    Note: Mirrors TemplateOverlap Pydantic model in api/history.py
+
+    Args:
+        starting_xi: Player IDs in manager's starting XI (max STARTING_XI_SIZE)
+        template_player_ids: Player IDs in the template (most owned)
+
+    Returns:
+        Dict with match_count, match_percentage, matching_player_ids,
+        differential_player_ids, and playstyle_label
+    """
+    xi_set = set(starting_xi)
+    template_set = set(template_player_ids)
+
+    matching = xi_set & template_set
+    differential = xi_set - template_set
+
+    match_count = len(matching)
+    xi_size = len(starting_xi)
+    match_percentage = round((match_count / xi_size) * 100, 1) if xi_size > 0 else 0.0
+
+    # Playstyle labels based on match count (out of STARTING_XI_SIZE=11)
+    # 9-11: Template, 5-8: Balanced, 2-4: Differential, 0-1: Maverick
+    if match_count >= 9:
+        playstyle_label = "Template"
+    elif match_count >= 5:
+        playstyle_label = "Balanced"
+    elif match_count >= 2:
+        playstyle_label = "Differential"
+    else:
+        playstyle_label = "Maverick"
+
+    return {
+        "match_count": match_count,
+        "match_percentage": match_percentage,
+        "matching_player_ids": sorted(matching),
+        "differential_player_ids": sorted(differential),
+        "playstyle_label": playstyle_label,
+    }
 
 
 # =============================================================================
@@ -688,6 +788,26 @@ class HistoryService:
             # Fetch gameweeks for differential captain calculation
             gameweeks = await conn.fetch(_GAMEWEEKS_SQL, season_id)
 
+            # Fetch league standings (ranks for both managers)
+            league_standings = await conn.fetch(
+                _LEAGUE_STANDINGS_SQL, league_id, season_id, manager_ids
+            )
+
+            # Fetch league template (most owned players in this league)
+            league_template = await conn.fetch(
+                _LEAGUE_TEMPLATE_SQL, league_id, season_id, max_gw
+            )
+
+            # Fetch world template (globally most owned players)
+            world_template = await conn.fetch(_WORLD_TEMPLATE_SQL, season_id)
+
+        # Build lookup for league ranks
+        league_rank_lookup = {r["manager_id"]: r["rank"] for r in league_standings}
+
+        # Extract template player IDs
+        league_template_ids = [r["player_id"] for r in league_template]
+        world_template_ids = [r["id"] for r in world_template]
+
         # Group captain picks by manager
         captain_picks_a = [p for p in captain_picks if p["manager_id"] == manager_a]
         captain_picks_b = [p for p in captain_picks if p["manager_id"] == manager_b]
@@ -705,6 +825,9 @@ class HistoryService:
             gameweeks=gameweeks_list,
             current_gameweek=max_gw,
             season_id=season_id,
+            league_rank=league_rank_lookup.get(manager_a),
+            league_template_ids=league_template_ids,
+            world_template_ids=world_template_ids,
         )
         stats_b = self._build_manager_stats(
             manager_row=manager_b_rows[0],
@@ -715,6 +838,9 @@ class HistoryService:
             gameweeks=gameweeks_list,
             current_gameweek=max_gw,
             season_id=season_id,
+            league_rank=league_rank_lookup.get(manager_b),
+            league_template_ids=league_template_ids,
+            world_template_ids=world_template_ids,
         )
 
         # Find common players
@@ -740,6 +866,9 @@ class HistoryService:
         gameweeks: list[GameweekRow],
         current_gameweek: int,
         season_id: int,
+        league_rank: int | None = None,
+        league_template_ids: list[int] | None = None,
+        world_template_ids: list[int] | None = None,
     ) -> dict[str, Any]:
         """Build stats dict for a single manager.
 
@@ -752,6 +881,9 @@ class HistoryService:
             gameweeks: Gameweek data with most_captained
             current_gameweek: Current gameweek number
             season_id: Season ID for FT calculation
+            league_rank: Manager's rank within the league
+            league_template_ids: Player IDs in league template (most owned)
+            world_template_ids: Player IDs in world template (globally most owned)
 
         Returns:
             Dict with manager stats
@@ -803,12 +935,25 @@ class HistoryService:
         hit_frequency = calculate_hit_frequency(history_list)
         last_5_average = calculate_last_5_average(history_list)
 
+        # Template overlap calculations
+        league_template_overlap = (
+            _calculate_template_overlap(starting_xi, league_template_ids)
+            if league_template_ids
+            else None
+        )
+        world_template_overlap = (
+            _calculate_template_overlap(starting_xi, world_template_ids)
+            if world_template_ids
+            else None
+        )
+
         return {
             "manager_id": manager_row["id"],
             "name": manager_row["player_name"].strip(),
             "team_name": manager_row["team_name"],
             "total_points": total_points,
             "overall_rank": overall_rank,
+            "league_rank": league_rank,
             "total_transfers": total_transfers,
             "total_hits": total_hits,
             "hits_cost": hits_cost,
@@ -828,6 +973,9 @@ class HistoryService:
                 else None
             ),
             "starting_xi": starting_xi,
+            # Template overlap
+            "league_template_overlap": league_template_overlap,
+            "world_template_overlap": world_template_overlap,
             # Tier 1 analytics
             "consistency_score": round(consistency_score, 2),
             "bench_waste_rate": round(bench_waste_rate, 2),

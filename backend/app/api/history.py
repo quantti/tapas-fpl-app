@@ -154,6 +154,18 @@ class GameweekExtreme(BaseModel):
     points: int
 
 
+class TemplateOverlap(BaseModel):
+    """Template team overlap statistics."""
+
+    match_count: int = Field(ge=0, le=11, description="Number of matching players")
+    match_percentage: float = Field(ge=0, le=100, description="Percentage of XI matching")
+    matching_player_ids: list[int] = Field(description="Player IDs that match template")
+    differential_player_ids: list[int] = Field(description="Player IDs not in template")
+    playstyle_label: str = Field(
+        description="Playstyle label: Template (9-11), Balanced (5-8), Differential (2-4), Maverick (0-1)"
+    )
+
+
 class ManagerComparisonStats(BaseModel):
     """Comparison stats for a single manager."""
 
@@ -165,6 +177,9 @@ class ManagerComparisonStats(BaseModel):
     # Season totals
     total_points: int
     overall_rank: int | None
+    league_rank: int | None = Field(
+        default=None, ge=1, description="Manager's rank within the league"
+    )
 
     # Transfers
     total_transfers: int = Field(ge=0)
@@ -187,6 +202,14 @@ class ManagerComparisonStats(BaseModel):
     # Current squad
     starting_xi: list[int] = Field(
         min_length=0, max_length=11, description="Player IDs in starting XI"
+    )
+
+    # Template overlap
+    league_template_overlap: TemplateOverlap | None = Field(
+        default=None, description="Overlap with league's most owned players"
+    )
+    world_template_overlap: TemplateOverlap | None = Field(
+        default=None, description="Overlap with globally most owned players"
     )
 
     # Tier 1 analytics
