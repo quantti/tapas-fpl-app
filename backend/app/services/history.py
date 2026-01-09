@@ -20,8 +20,12 @@ from app.services.calculations import (
     ManagerHistoryRow,
     PickRow,
     calculate_bench_points,
+    calculate_bench_waste_rate,
     calculate_captain_differential_with_details,
+    calculate_consistency_score,
     calculate_free_transfers,
+    calculate_hit_frequency,
+    calculate_last_5_average,
     calculate_league_positions,
 )
 
@@ -175,9 +179,9 @@ _STARTING_XI_PICKS_SQL = """
       AND mp.position <= 11
 """
 
-# Get chips used by single manager
+# Get chips used by single manager (includes season_half for 2025/26 rules)
 _SINGLE_MANAGER_CHIPS_SQL = """
-    SELECT chip_type
+    SELECT chip_type, season_half
     FROM chip_usage
     WHERE manager_id = $1 AND season_id = $2
 """
@@ -517,7 +521,9 @@ class HistoryService:
             if not members:
                 # Cache empty results to prevent repeated lookups for non-existent leagues
                 empty_result = {
+                    "league_id": league_id,
                     "season_id": season_id,
+                    "current_gameweek": current_gameweek,
                     "bench_points": [],
                     "captain_differential": [],
                     "free_transfers": [],
@@ -667,18 +673,48 @@ class HistoryService:
                 default=max((r["gameweek"] for r in history_b), default=1),
             )
 
-            # Fetch picks and chips
+            # Fetch starting XI picks
             picks_a = await conn.fetch(_STARTING_XI_PICKS_SQL, manager_a, season_id, max_gw)
             picks_b = await conn.fetch(_STARTING_XI_PICKS_SQL, manager_b, season_id, max_gw)
+
+            # Fetch chips
             chips_a = await conn.fetch(_SINGLE_MANAGER_CHIPS_SQL, manager_a, season_id)
             chips_b = await conn.fetch(_SINGLE_MANAGER_CHIPS_SQL, manager_b, season_id)
 
+            # Fetch captain picks for both managers (for captain_points calculation)
+            manager_ids = [manager_a, manager_b]
+            captain_picks = await conn.fetch(_CAPTAIN_PICKS_SQL, manager_ids, season_id)
+
+            # Fetch gameweeks for differential captain calculation
+            gameweeks = await conn.fetch(_GAMEWEEKS_SQL, season_id)
+
+        # Group captain picks by manager
+        captain_picks_a = [p for p in captain_picks if p["manager_id"] == manager_a]
+        captain_picks_b = [p for p in captain_picks if p["manager_id"] == manager_b]
+
+        # Build gameweek lookup for template captain
+        gameweeks_list: list[GameweekRow] = [dict(r) for r in gameweeks]
+
         # Build stats for both managers
         stats_a = self._build_manager_stats(
-            manager_a_rows[0], history_a, picks_a, chips_a
+            manager_row=manager_a_rows[0],
+            history=history_a,
+            picks=picks_a,
+            chips=chips_a,
+            captain_picks=captain_picks_a,
+            gameweeks=gameweeks_list,
+            current_gameweek=max_gw,
+            season_id=season_id,
         )
         stats_b = self._build_manager_stats(
-            manager_b_rows[0], history_b, picks_b, chips_b
+            manager_row=manager_b_rows[0],
+            history=history_b,
+            picks=picks_b,
+            chips=chips_b,
+            captain_picks=captain_picks_b,
+            gameweeks=gameweeks_list,
+            current_gameweek=max_gw,
+            season_id=season_id,
         )
 
         # Find common players
@@ -691,8 +727,7 @@ class HistoryService:
             "manager_a": stats_a,
             "manager_b": stats_b,
             "common_players": common_players,
-            "league_template_overlap_a": len(common_players),
-            "league_template_overlap_b": len(common_players),
+            "head_to_head": self._calculate_head_to_head(history_a, history_b),
         }
 
     def _build_manager_stats(
@@ -701,19 +736,27 @@ class HistoryService:
         history: list[Any],
         picks: list[Any],
         chips: list[Any],
+        captain_picks: list[Any],
+        gameweeks: list[GameweekRow],
+        current_gameweek: int,
+        season_id: int,
     ) -> dict[str, Any]:
         """Build stats dict for a single manager.
 
         Args:
             manager_row: Manager info row
             history: History rows
-            picks: Current picks rows
+            picks: Current starting XI picks rows
             chips: Chips used rows
+            captain_picks: Captain picks with points for all GWs
+            gameweeks: Gameweek data with most_captained
+            current_gameweek: Current gameweek number
+            season_id: Season ID for FT calculation
 
         Returns:
             Dict with manager stats
         """
-        history_list = [dict(r) for r in history]
+        history_list: list[ManagerHistoryRow] = [dict(r) for r in history]
 
         total_points = history_list[-1]["total_points"] if history_list else 0
         overall_rank = history_list[-1]["overall_rank"] if history_list else None
@@ -725,9 +768,40 @@ class HistoryService:
         best_gw = max(history_list, key=lambda x: x["gameweek_points"], default=None)
         worst_gw = min(history_list, key=lambda x: x["gameweek_points"], default=None)
 
-        chips_used = [r["chip_type"] for r in chips]
+        # 2025/26 rules: ALL 4 chips reset at GW20 (season_half 1 = GW1-19, 2 = GW20-38)
+        current_half = 1 if current_gameweek <= 19 else 2
+        chips_used = [
+            r["chip_type"] for r in chips if r["season_half"] == current_half
+        ]
         all_chips = ["wildcard", "bboost", "3xc", "freehit"]
         chips_remaining = [c for c in all_chips if c not in chips_used]
+
+        # Free transfers remaining
+        remaining_transfers = calculate_free_transfers(
+            history_list, current_gameweek + 1, season_id
+        )
+
+        # Captain points (total with multiplier)
+        captain_points = sum(
+            p["points"] * p["multiplier"] for p in captain_picks
+        )
+
+        # Differential captains (different from template)
+        template_by_gw = {gw["id"]: gw["most_captained"] for gw in gameweeks}
+        differential_captains = sum(
+            1
+            for p in captain_picks
+            if p["player_id"] != template_by_gw.get(p["gameweek"])
+        )
+
+        # Starting XI player IDs
+        starting_xi = sorted([r["player_id"] for r in picks])
+
+        # Tier 1 analytics - use pure calculation functions
+        consistency_score = calculate_consistency_score(history_list)
+        bench_waste_rate = calculate_bench_waste_rate(history_list)
+        hit_frequency = calculate_hit_frequency(history_list)
+        last_5_average = calculate_last_5_average(history_list)
 
         return {
             "manager_id": manager_row["id"],
@@ -738,6 +812,9 @@ class HistoryService:
             "total_transfers": total_transfers,
             "total_hits": total_hits,
             "hits_cost": hits_cost,
+            "remaining_transfers": remaining_transfers,
+            "captain_points": captain_points,
+            "differential_captains": differential_captains,
             "chips_used": chips_used,
             "chips_remaining": chips_remaining,
             "best_gameweek": (
@@ -750,4 +827,44 @@ class HistoryService:
                 if worst_gw
                 else None
             ),
+            "starting_xi": starting_xi,
+            # Tier 1 analytics
+            "consistency_score": round(consistency_score, 2),
+            "bench_waste_rate": round(bench_waste_rate, 2),
+            "hit_frequency": round(hit_frequency, 2),
+            "last_5_average": round(last_5_average, 2),
         }
+
+    def _calculate_head_to_head(
+        self,
+        history_a: list[Any],
+        history_b: list[Any],
+    ) -> dict[str, int]:
+        """Calculate head-to-head record between two managers.
+
+        Args:
+            history_a: History rows for manager A
+            history_b: History rows for manager B
+
+        Returns:
+            Dict with wins_a, wins_b, draws counts
+        """
+        # Build lookup by gameweek
+        points_a = {r["gameweek"]: r["gameweek_points"] for r in history_a}
+        points_b = {r["gameweek"]: r["gameweek_points"] for r in history_b}
+
+        wins_a = 0
+        wins_b = 0
+        draws = 0
+
+        # Compare only gameweeks where both have data
+        common_gws = set(points_a.keys()) & set(points_b.keys())
+        for gw in common_gws:
+            if points_a[gw] > points_b[gw]:
+                wins_a += 1
+            elif points_b[gw] > points_a[gw]:
+                wins_b += 1
+            else:
+                draws += 1
+
+        return {"wins_a": wins_a, "wins_b": wins_b, "draws": draws}

@@ -602,6 +602,7 @@ class TestHistoryStatsResponseFormat:
         assert "name" in entry
         assert "differential_picks" in entry
         assert "gain" in entry
+        assert "details" in entry  # Details array (empty when captain == template)
 
         # Free transfers structure
         assert len(data["free_transfers"]) == 1
@@ -714,6 +715,20 @@ class TestHistoryStatsBusinessLogic:
 
         captain_diff = data["captain_differential"][0]
         assert captain_diff["differential_picks"] == 1  # 1 differential captain pick
+
+        # Verify details structure when there ARE differential picks
+        assert "details" in captain_diff
+        assert len(captain_diff["details"]) == 1
+        detail = captain_diff["details"][0]
+        assert detail["gameweek"] == 1
+        assert detail["captain_id"] == 328
+        assert detail["captain_name"] == "Bruno"
+        assert detail["captain_points"] == 15
+        assert detail["template_id"] == 427
+        assert detail["template_name"] == "Salah"
+        assert detail["template_points"] == 10
+        assert detail["gain"] == 10  # (15 - 10) * 2 = 10
+        assert detail["multiplier"] == 2
 
     async def test_free_transfers_calculation(
         self, async_client: AsyncClient, mock_pool, mock_api_db: MockDB
@@ -988,11 +1003,11 @@ class TestHistoryComparisonResponseFormat:
         # Starting XI picks (position <= 11)
         mock_picks_a = [{"player_id": 427}, {"player_id": 328}]
         mock_picks_b = [{"player_id": 427}, {"player_id": 500}]
-        mock_chips_a = [{"chip_type": "wildcard"}]
+        mock_chips_a = [{"chip_type": "wildcard", "season_half": 1}]
         mock_chips_b = []
 
-        # 8 fetch calls in order: manager_a, manager_b, history_a, history_b,
-        # picks_a, picks_b, chips_a, chips_b
+        # 10 fetch calls: manager_a, manager_b, history_a, history_b,
+        # picks_a, picks_b, chips_a, chips_b, captain_picks, gameweeks
         mock_api_db.conn.fetch.side_effect = [
             mock_manager_a,
             mock_manager_b,
@@ -1002,6 +1017,8 @@ class TestHistoryComparisonResponseFormat:
             mock_picks_b,
             mock_chips_a,
             mock_chips_b,
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 427}],  # gameweeks
         ]
 
         with mock_api_db:
@@ -1017,13 +1034,12 @@ class TestHistoryComparisonResponseFormat:
         assert "manager_a" in data
         assert "manager_b" in data
         assert "common_players" in data
-        assert "league_template_overlap_a" in data
-        assert "league_template_overlap_b" in data
+        assert "head_to_head" in data
 
         # Verify common_players contains shared player
         assert 427 in data["common_players"]
 
-        # Manager structure (same for both) - matches actual implementation
+        # Manager structure (same for both) - matches Phase 1 implementation
         for manager in [data["manager_a"], data["manager_b"]]:
             assert "manager_id" in manager
             assert "name" in manager
@@ -1033,10 +1049,19 @@ class TestHistoryComparisonResponseFormat:
             assert "total_transfers" in manager
             assert "total_hits" in manager
             assert "hits_cost" in manager
+            assert "remaining_transfers" in manager
+            assert "captain_points" in manager
+            assert "differential_captains" in manager
             assert "chips_used" in manager
             assert "chips_remaining" in manager
             assert "best_gameweek" in manager
             assert "worst_gameweek" in manager
+            assert "starting_xi" in manager
+            # Tier 1 analytics
+            assert "consistency_score" in manager
+            assert "bench_waste_rate" in manager
+            assert "hit_frequency" in manager
+            assert "last_5_average" in manager
 
 
 class TestHistoryComparisonBusinessLogic:
@@ -1079,6 +1104,8 @@ class TestHistoryComparisonBusinessLogic:
             mock_picks_b,
             mock_chips_a,
             mock_chips_b,
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 427}],  # gameweeks
         ]
 
         with mock_api_db:
@@ -1093,18 +1120,19 @@ class TestHistoryComparisonBusinessLogic:
         assert len(data["common_players"]) == 2
         assert set(data["common_players"]) == {100, 427}
 
-    async def test_comparison_calculates_template_overlap(
+    async def test_comparison_calculates_head_to_head(
         self, async_client: AsyncClient, mock_pool, mock_api_db: MockDB
     ):
-        """Template overlap should count shared players between managers."""
+        """Head-to-head record should count GW wins, losses, and draws."""
         mock_manager_a = [{"id": 123, "player_name": "John Doe", "team_name": "FC John"}]
         mock_manager_b = [{"id": 456, "player_name": "Jane Smith", "team_name": "FC Jane"}]
+        # GW1: A wins (70 > 60), GW2: B wins (65 > 55), GW3: draw (50 = 50)
         mock_history_a = [
             {
                 "manager_id": 123,
                 "gameweek": 1,
-                "gameweek_points": 65,
-                "total_points": 65,
+                "gameweek_points": 70,
+                "total_points": 70,
                 "points_on_bench": 0,
                 "overall_rank": 1000,
                 "transfers_made": 0,
@@ -1112,10 +1140,75 @@ class TestHistoryComparisonBusinessLogic:
                 "bank": 5,
                 "team_value": 1000,
                 "active_chip": None,
-            }
+            },
+            {
+                "manager_id": 123,
+                "gameweek": 2,
+                "gameweek_points": 55,
+                "total_points": 125,
+                "points_on_bench": 0,
+                "overall_rank": 1000,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            },
+            {
+                "manager_id": 123,
+                "gameweek": 3,
+                "gameweek_points": 50,
+                "total_points": 175,
+                "points_on_bench": 0,
+                "overall_rank": 1000,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            },
         ]
-        mock_history_b = mock_history_a.copy()
-        # 3 common players
+        mock_history_b = [
+            {
+                "manager_id": 456,
+                "gameweek": 1,
+                "gameweek_points": 60,
+                "total_points": 60,
+                "points_on_bench": 0,
+                "overall_rank": 1000,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            },
+            {
+                "manager_id": 456,
+                "gameweek": 2,
+                "gameweek_points": 65,
+                "total_points": 125,
+                "points_on_bench": 0,
+                "overall_rank": 1000,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            },
+            {
+                "manager_id": 456,
+                "gameweek": 3,
+                "gameweek_points": 50,
+                "total_points": 175,
+                "points_on_bench": 0,
+                "overall_rank": 1000,
+                "transfers_made": 0,
+                "transfers_cost": 0,
+                "bank": 5,
+                "team_value": 1000,
+                "active_chip": None,
+            },
+        ]
         mock_picks_a = [{"player_id": 1}, {"player_id": 2}, {"player_id": 3}]
         mock_picks_b = [{"player_id": 1}, {"player_id": 2}, {"player_id": 3}]
         mock_chips_a = []
@@ -1130,6 +1223,12 @@ class TestHistoryComparisonBusinessLogic:
             mock_picks_b,
             mock_chips_a,
             mock_chips_b,
+            [],  # captain_picks
+            [  # gameweeks
+                {"id": 1, "most_captained": 1},
+                {"id": 2, "most_captained": 1},
+                {"id": 3, "most_captained": 1},
+            ],
         ]
 
         with mock_api_db:
@@ -1140,9 +1239,10 @@ class TestHistoryComparisonBusinessLogic:
         assert response.status_code == 200
         data = response.json()
 
-        # Overlap is based on common players count
-        assert data["league_template_overlap_a"] == 3
-        assert data["league_template_overlap_b"] == 3
+        # Head-to-head: A wins 1, B wins 1, draws 1
+        assert data["head_to_head"]["wins_a"] == 1
+        assert data["head_to_head"]["wins_b"] == 1
+        assert data["head_to_head"]["draws"] == 1
 
     async def test_comparison_returns_400_for_unknown_manager(
         self, async_client: AsyncClient, mock_pool, mock_api_db: MockDB

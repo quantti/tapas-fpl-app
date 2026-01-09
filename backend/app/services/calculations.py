@@ -9,6 +9,7 @@ Service-level TTL caching in history.py handles caching at the appropriate level
 for HTTP requests.
 """
 
+from statistics import pstdev
 from typing import TypedDict
 
 # =============================================================================
@@ -138,7 +139,10 @@ def calculate_free_transfers(
         return 1
 
     # Determine max FT based on season
-    max_ft = MAX_FREE_TRANSFERS_NEW if season_id >= NEW_FT_RULES_SEASON_ID else MAX_FREE_TRANSFERS_LEGACY
+    if season_id >= NEW_FT_RULES_SEASON_ID:
+        max_ft = MAX_FREE_TRANSFERS_NEW
+    else:
+        max_ft = MAX_FREE_TRANSFERS_LEGACY
 
     # Sort history by gameweek
     sorted_history = sorted(history, key=lambda x: x["gameweek"])
@@ -179,7 +183,11 @@ def calculate_free_transfers(
 
 
 class CaptainDifferentialDetail(TypedDict):
-    """Per-gameweek captain differential detail."""
+    """Per-gameweek captain differential detail.
+
+    Note: Keep in sync with CaptainDifferentialDetail Pydantic model
+    in app/api/history.py (used for API response validation).
+    """
 
     gameweek: int
     captain_id: int
@@ -380,3 +388,84 @@ def calculate_league_positions(
         result[manager_id] = current_rank
 
     return result
+
+
+def calculate_consistency_score(history: list[ManagerHistoryRow]) -> float:
+    """Calculate consistency score as standard deviation of gameweek points.
+
+    Lower values indicate more consistent performance (less variance).
+
+    Args:
+        history: List of manager history rows with gameweek_points field
+
+    Returns:
+        Population standard deviation of gameweek points (0.0 if < 2 gameweeks)
+    """
+    if len(history) < 2:
+        return 0.0
+
+    points = [row["gameweek_points"] for row in history]
+    return pstdev(points)
+
+
+def calculate_bench_waste_rate(history: list[ManagerHistoryRow]) -> float:
+    """Calculate average bench points as percentage of total points per GW.
+
+    Measures how much value is being "wasted" on the bench.
+
+    Args:
+        history: List of manager history rows with gameweek_points and points_on_bench
+
+    Returns:
+        Average percentage of bench points vs total points (skips 0-point GWs)
+    """
+    if not history:
+        return 0.0
+
+    percentages: list[float] = []
+    for row in history:
+        total = row["gameweek_points"]
+        if total <= 0:
+            continue  # Skip zero-point gameweeks to avoid division by zero
+        bench = row["points_on_bench"]
+        percentages.append((bench / total) * 100)
+
+    if not percentages:
+        return 0.0
+
+    return sum(percentages) / len(percentages)
+
+
+def calculate_hit_frequency(history: list[ManagerHistoryRow]) -> float:
+    """Calculate percentage of gameweeks where hits were taken.
+
+    Args:
+        history: List of manager history rows with transfers_cost field
+
+    Returns:
+        Percentage (0-100) of gameweeks with hits (transfers_cost < 0)
+    """
+    if not history:
+        return 0.0
+
+    hits_count = sum(1 for row in history if row["transfers_cost"] < 0)
+    return (hits_count / len(history)) * 100
+
+
+def calculate_last_5_average(history: list[ManagerHistoryRow]) -> float:
+    """Calculate average points over the last 5 gameweeks.
+
+    Args:
+        history: List of manager history rows (any order)
+
+    Returns:
+        Average of last 5 gameweeks' points (or all GWs if < 5)
+    """
+    if not history:
+        return 0.0
+
+    # Sort by gameweek descending and take last 5
+    sorted_history = sorted(history, key=lambda x: x["gameweek"], reverse=True)
+    last_5 = sorted_history[:5]
+
+    return sum(row["gameweek_points"] for row in last_5) / len(last_5)

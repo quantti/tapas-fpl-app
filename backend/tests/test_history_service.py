@@ -480,8 +480,10 @@ class TestCalculateCaptainDifferentialWithDetails:
         from app.services.calculations import calculate_captain_differential_with_details
 
         picks: list[PickRow] = [
-            _make_pick_row(gameweek=1, player_id=200, is_captain=True, points=10),  # Same as template
-            _make_pick_row(gameweek=2, player_id=100, is_captain=True, points=15),  # Different
+            # GW1: Same as template (200)
+            _make_pick_row(gameweek=1, player_id=200, is_captain=True, points=10),
+            # GW2: Different from template (100 vs 200)
+            _make_pick_row(gameweek=2, player_id=100, is_captain=True, points=15),
         ]
         gameweeks: list[GameweekRow] = [
             {"id": 1, "most_captained": 200},
@@ -788,6 +790,55 @@ class TestHistoryServiceGetLeagueStats:
         assert john["manager_id"] == 123
         assert john["differential_picks"] == 1
 
+    async def test_captain_differential_negative_gain(
+        self, history_service: "HistoryService", mock_history_db: MockDB
+    ):
+        """Should calculate negative gain when differential captain underperforms template."""
+        mock_managers: list[ManagerRow] = [
+            {"id": 123, "player_name": "John", "team_name": "FC John"}
+        ]
+        mock_history: list[ManagerHistoryRow] = []
+        # John picked player 100 as captain, but template was player 200
+        mock_picks: list[PickRow] = [
+            _make_pick_row(manager_id=123, gameweek=1, player_id=100, is_captain=True, points=5)
+        ]
+        mock_gameweeks: list[GameweekRow] = [{"id": 1, "most_captained": 200}]
+        mock_player_names = [
+            {"id": 100, "web_name": "Palmer"},
+            {"id": 200, "web_name": "Haaland"},
+        ]
+        # Palmer scored 5 points, Haaland scored 15 points
+        # Negative gain = (5 - 15) * 2 = -20
+        mock_player_gw_points = [
+            {"player_id": 100, "gameweek": 1, "total_points": 5},
+            {"player_id": 200, "gameweek": 1, "total_points": 15},
+        ]
+
+        mock_history_db.conn.fetch.side_effect = [
+            mock_managers,
+            mock_history,
+            mock_picks,
+            mock_gameweeks,
+            mock_player_names,
+            mock_player_gw_points,
+        ]
+
+        with mock_history_db:
+            result = await history_service.get_league_stats(
+                league_id=98765, season_id=1, current_gameweek=1
+            )
+
+        john = result["captain_differential"][0]
+        assert john["manager_id"] == 123
+        assert john["differential_picks"] == 1
+        assert john["gain"] == -20  # (5 - 15) * 2 = -20
+
+        # Verify details include the negative gain
+        detail = john["details"][0]
+        assert detail["captain_points"] == 5
+        assert detail["template_points"] == 15
+        assert detail["gain"] == -20
+
     async def test_returns_free_transfers_remaining(
         self, history_service: "HistoryService", mock_history_db: MockDB
     ):
@@ -842,6 +893,8 @@ class TestHistoryServiceGetManagerComparison:
             [],  # picks_b
             [],  # chips_a
             [],  # chips_b
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 100}],  # gameweeks
         ]
 
         with mock_history_db:
@@ -853,6 +906,12 @@ class TestHistoryServiceGetManagerComparison:
         assert result["manager_a"]["total_points"] == 100
         assert result["manager_b"]["manager_id"] == 456
         assert result["manager_b"]["total_points"] == 90
+        # Verify Phase 1 fields are present
+        assert "remaining_transfers" in result["manager_a"]
+        assert "captain_points" in result["manager_a"]
+        assert "differential_captains" in result["manager_a"]
+        assert "starting_xi" in result["manager_a"]
+        assert "head_to_head" in result
 
     async def test_finds_common_players(
         self, history_service: "HistoryService", mock_history_db: MockDB
@@ -875,12 +934,14 @@ class TestHistoryServiceGetManagerComparison:
         mock_history_db.conn.fetch.side_effect = [
             [mock_manager_a],
             [mock_manager_b],
-            [],  # history_a
-            [],  # history_b
+            [_make_history_row(manager_id=123, gameweek=5)],  # history_a (needed for max_gw)
+            [_make_history_row(manager_id=456, gameweek=5)],  # history_b
             mock_picks_a,
             mock_picks_b,
             [],  # chips_a
             [],  # chips_b
+            [],  # captain_picks
+            [{"id": 5, "most_captained": 100}],  # gameweeks
         ]
 
         with mock_history_db:
@@ -901,13 +962,14 @@ class TestHistoryServiceGetManagerComparison:
         mock_history_db.conn.fetch.side_effect = [
             [mock_manager_a],
             [mock_manager_b],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],  # league template
+            [_make_history_row(manager_id=123, gameweek=1)],  # history_a
+            [_make_history_row(manager_id=456, gameweek=1)],  # history_b
+            [],  # picks_a
+            [],  # picks_b
+            [],  # chips_a
+            [],  # chips_b
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 100}],  # gameweeks
         ]
 
         with mock_history_db:
@@ -915,8 +977,10 @@ class TestHistoryServiceGetManagerComparison:
                 manager_a=123, manager_b=456, league_id=98765, season_id=1
             )
 
-        assert "league_template_overlap_a" in result
-        assert "league_template_overlap_b" in result
+        # Phase 1 doesn't include template overlap - removed from scope
+        # Just verify basic structure works
+        assert "manager_a" in result
+        assert "manager_b" in result
 
     async def test_raises_error_for_unknown_manager(
         self, history_service: "HistoryService", mock_history_db: MockDB
@@ -932,6 +996,73 @@ class TestHistoryServiceGetManagerComparison:
             await history_service.get_manager_comparison(
                 manager_a=99999, manager_b=456, league_id=98765, season_id=1
             )
+
+    async def test_returns_tier1_analytics_fields(
+        self, history_service: "HistoryService", mock_history_db: MockDB
+    ):
+        """Should return Tier 1 analytics fields: consistency, bench waste, hits, form."""
+        mock_manager_a: ManagerRow = {"id": 123, "player_name": "John", "team_name": "FC John"}
+        mock_manager_b: ManagerRow = {"id": 456, "player_name": "Jane", "team_name": "FC Jane"}
+        # Multi-gameweek history for meaningful analytics
+        mock_history_a: list[ManagerHistoryRow] = [
+            _make_history_row(
+                manager_id=123, gameweek=1, gameweek_points=50, points_on_bench=5
+            ),
+            _make_history_row(
+                manager_id=123, gameweek=2, gameweek_points=60,
+                points_on_bench=8, transfers_cost=-4,
+            ),
+            _make_history_row(
+                manager_id=123, gameweek=3, gameweek_points=70, points_on_bench=3
+            ),
+        ]
+        mock_history_b: list[ManagerHistoryRow] = [
+            _make_history_row(
+                manager_id=456, gameweek=1, gameweek_points=45, points_on_bench=2
+            ),
+            _make_history_row(
+                manager_id=456, gameweek=2, gameweek_points=55, points_on_bench=4
+            ),
+            _make_history_row(
+                manager_id=456, gameweek=3, gameweek_points=65, points_on_bench=6
+            ),
+        ]
+
+        mock_history_db.conn.fetch.side_effect = [
+            [mock_manager_a],
+            [mock_manager_b],
+            mock_history_a,
+            mock_history_b,
+            [],  # picks_a
+            [],  # picks_b
+            [],  # chips_a
+            [],  # chips_b
+            [],  # captain_picks
+            [  # gameweeks
+                {"id": 1, "most_captained": 100},
+                {"id": 2, "most_captained": 100},
+                {"id": 3, "most_captained": 100},
+            ],
+        ]
+
+        with mock_history_db:
+            result = await history_service.get_manager_comparison(
+                manager_a=123, manager_b=456, league_id=98765, season_id=1
+            )
+
+        # Verify Tier 1 fields are present and numeric
+        assert "consistency_score" in result["manager_a"]
+        assert "bench_waste_rate" in result["manager_a"]
+        assert "hit_frequency" in result["manager_a"]
+        assert "last_5_average" in result["manager_a"]
+
+        # Verify calculated values (manager_a has 1 hit out of 3 GWs = 33.33%)
+        assert result["manager_a"]["hit_frequency"] == pytest.approx(33.33, rel=0.01)
+        # Manager B has no hits = 0%
+        assert result["manager_b"]["hit_frequency"] == 0.0
+
+        # last_5_average for manager_a: (50+60+70)/3 = 60
+        assert result["manager_a"]["last_5_average"] == 60.0
 
     # Note: Same-manager validation test removed - validation moved to API layer
     # See test_history_api.py::TestHistoryComparisonEndpoint::test_comparison_rejects_same_manager
@@ -1114,6 +1245,240 @@ class TestHistoryServiceCacheBehavior:
 
         assert result_a["managers"][0]["manager_id"] == 123
         assert result_b["managers"][0]["manager_id"] == 456
+
+
+# =============================================================================
+# Pure Function Tests: Tier 1 Analytics - calculate_consistency_score
+# =============================================================================
+
+
+class TestCalculateConsistencyScore:
+    """Tests for consistency score calculation (standard deviation of GW points)."""
+
+    def test_returns_stddev_of_gameweek_points(self):
+        """Should return standard deviation of gameweek_points."""
+        from app.services.calculations import calculate_consistency_score
+
+        # Points: 50, 70, 60 → mean=60, variance=((10^2 + 10^2 + 0^2)/3)=66.67, stddev≈8.16
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=50),
+            _make_history_row(gameweek=2, gameweek_points=70),
+            _make_history_row(gameweek=3, gameweek_points=60),
+        ]
+        result = calculate_consistency_score(history)
+        assert round(result, 2) == 8.16
+
+    def test_returns_zero_for_empty_history(self):
+        """Should return 0 when no history provided."""
+        from app.services.calculations import calculate_consistency_score
+
+        assert calculate_consistency_score([]) == 0.0
+
+    def test_returns_zero_for_single_gameweek(self):
+        """Should return 0 when only one gameweek (no variance possible)."""
+        from app.services.calculations import calculate_consistency_score
+
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=50)
+        ]
+        assert calculate_consistency_score(history) == 0.0
+
+    def test_high_variance_manager(self):
+        """Should return higher score for inconsistent managers."""
+        from app.services.calculations import calculate_consistency_score
+
+        # Very inconsistent: 20, 80, 30, 90 → high stddev
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=20),
+            _make_history_row(gameweek=2, gameweek_points=80),
+            _make_history_row(gameweek=3, gameweek_points=30),
+            _make_history_row(gameweek=4, gameweek_points=90),
+        ]
+        result = calculate_consistency_score(history)
+        # Mean = 55, deviations: -35, 25, -25, 35
+        # Variance = (35^2 + 25^2 + 25^2 + 35^2)/4 = (1225+625+625+1225)/4 = 925
+        # StdDev = sqrt(925) ≈ 30.41
+        assert round(result, 2) == 30.41
+
+    def test_low_variance_manager(self):
+        """Should return lower score for consistent managers."""
+        from app.services.calculations import calculate_consistency_score
+
+        # Very consistent: 55, 55, 55, 55 → stddev = 0
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=55),
+            _make_history_row(gameweek=2, gameweek_points=55),
+            _make_history_row(gameweek=3, gameweek_points=55),
+            _make_history_row(gameweek=4, gameweek_points=55),
+        ]
+        assert calculate_consistency_score(history) == 0.0
+
+
+# =============================================================================
+# Pure Function Tests: Tier 1 Analytics - calculate_bench_waste_rate
+# =============================================================================
+
+
+class TestCalculateBenchWasteRate:
+    """Tests for bench waste rate calculation (avg bench points as % of total)."""
+
+    def test_returns_percentage_of_bench_vs_total(self):
+        """Should return bench points as percentage of total points per GW."""
+        from app.services.calculations import calculate_bench_waste_rate
+
+        # GW1: 10 bench / 60 total = 16.67%
+        # GW2: 5 bench / 50 total = 10%
+        # Average = 13.33%
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=60, points_on_bench=10),
+            _make_history_row(gameweek=2, gameweek_points=50, points_on_bench=5),
+        ]
+        result = calculate_bench_waste_rate(history)
+        assert round(result, 2) == 13.33
+
+    def test_returns_zero_for_empty_history(self):
+        """Should return 0 when no history provided."""
+        from app.services.calculations import calculate_bench_waste_rate
+
+        assert calculate_bench_waste_rate([]) == 0.0
+
+    def test_returns_zero_when_no_bench_points(self):
+        """Should return 0 when no bench points in any gameweek."""
+        from app.services.calculations import calculate_bench_waste_rate
+
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=60, points_on_bench=0),
+            _make_history_row(gameweek=2, gameweek_points=50, points_on_bench=0),
+        ]
+        assert calculate_bench_waste_rate(history) == 0.0
+
+    def test_handles_zero_points_gameweek(self):
+        """Should skip gameweeks with zero total points (avoid division by zero)."""
+        from app.services.calculations import calculate_bench_waste_rate
+
+        # GW2 has 0 total points, should be skipped
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=50, points_on_bench=5),  # 10%
+            _make_history_row(gameweek=2, gameweek_points=0, points_on_bench=0),   # Skip
+            _make_history_row(gameweek=3, gameweek_points=60, points_on_bench=12), # 20%
+        ]
+        result = calculate_bench_waste_rate(history)
+        # Average of 10% and 20% = 15%
+        assert round(result, 2) == 15.0
+
+
+# =============================================================================
+# Pure Function Tests: Tier 1 Analytics - calculate_hit_frequency
+# =============================================================================
+
+
+class TestCalculateHitFrequency:
+    """Tests for hit frequency calculation (% of GWs with hits taken)."""
+
+    def test_returns_percentage_of_gws_with_hits(self):
+        """Should return percentage of gameweeks where hits were taken."""
+        from app.services.calculations import calculate_hit_frequency
+
+        # 2 out of 4 GWs had hits = 50%
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, transfers_cost=0),
+            _make_history_row(gameweek=2, transfers_cost=-4),  # Hit
+            _make_history_row(gameweek=3, transfers_cost=0),
+            _make_history_row(gameweek=4, transfers_cost=-8),  # Hit
+        ]
+        result = calculate_hit_frequency(history)
+        assert result == 50.0
+
+    def test_returns_zero_for_empty_history(self):
+        """Should return 0 when no history provided."""
+        from app.services.calculations import calculate_hit_frequency
+
+        assert calculate_hit_frequency([]) == 0.0
+
+    def test_returns_zero_when_no_hits(self):
+        """Should return 0 when no hits taken."""
+        from app.services.calculations import calculate_hit_frequency
+
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, transfers_cost=0),
+            _make_history_row(gameweek=2, transfers_cost=0),
+            _make_history_row(gameweek=3, transfers_cost=0),
+        ]
+        assert calculate_hit_frequency(history) == 0.0
+
+    def test_returns_100_when_hits_every_week(self):
+        """Should return 100 when hits taken every gameweek."""
+        from app.services.calculations import calculate_hit_frequency
+
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, transfers_cost=-4),
+            _make_history_row(gameweek=2, transfers_cost=-8),
+            _make_history_row(gameweek=3, transfers_cost=-4),
+        ]
+        assert calculate_hit_frequency(history) == 100.0
+
+
+# =============================================================================
+# Pure Function Tests: Tier 1 Analytics - calculate_last_5_average
+# =============================================================================
+
+
+class TestCalculateLast5Average:
+    """Tests for last 5 gameweeks average calculation."""
+
+    def test_returns_average_of_last_5_gws(self):
+        """Should return average of last 5 gameweek points."""
+        from app.services.calculations import calculate_last_5_average
+
+        # Last 5 GWs: 50, 60, 70, 80, 90 → avg = 70
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=30),  # Not counted
+            _make_history_row(gameweek=2, gameweek_points=40),  # Not counted
+            _make_history_row(gameweek=3, gameweek_points=50),
+            _make_history_row(gameweek=4, gameweek_points=60),
+            _make_history_row(gameweek=5, gameweek_points=70),
+            _make_history_row(gameweek=6, gameweek_points=80),
+            _make_history_row(gameweek=7, gameweek_points=90),
+        ]
+        result = calculate_last_5_average(history)
+        assert result == 70.0
+
+    def test_returns_average_when_less_than_5_gws(self):
+        """Should return average of all gameweeks when less than 5."""
+        from app.services.calculations import calculate_last_5_average
+
+        # Only 3 GWs: 50, 60, 70 → avg = 60
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=50),
+            _make_history_row(gameweek=2, gameweek_points=60),
+            _make_history_row(gameweek=3, gameweek_points=70),
+        ]
+        result = calculate_last_5_average(history)
+        assert result == 60.0
+
+    def test_returns_zero_for_empty_history(self):
+        """Should return 0 when no history provided."""
+        from app.services.calculations import calculate_last_5_average
+
+        assert calculate_last_5_average([]) == 0.0
+
+    def test_handles_unsorted_gameweeks(self):
+        """Should sort by gameweek and take last 5."""
+        from app.services.calculations import calculate_last_5_average
+
+        # Unsorted input, last 5 should be GW3-7
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=5, gameweek_points=70),
+            _make_history_row(gameweek=1, gameweek_points=30),
+            _make_history_row(gameweek=7, gameweek_points=90),
+            _make_history_row(gameweek=3, gameweek_points=50),
+            _make_history_row(gameweek=6, gameweek_points=80),
+            _make_history_row(gameweek=2, gameweek_points=40),
+            _make_history_row(gameweek=4, gameweek_points=60),
+        ]
+        result = calculate_last_5_average(history)
+        # Last 5 (GW3-7): 50, 60, 70, 80, 90 → avg = 70
+        assert result == 70.0
 
 
 # =============================================================================

@@ -86,6 +86,54 @@ describe('useLeagueStats', () => {
       expect(result.current.error).toBeNull();
     });
 
+    it('transforms nested captain differential details to camelCase', async () => {
+      const mockResponse = {
+        league_id: 123,
+        season_id: 1,
+        current_gameweek: 10,
+        bench_points: [],
+        free_transfers: [],
+        captain_differential: [
+          {
+            manager_id: 1,
+            name: 'Manager 1',
+            differential_picks: 1,
+            gain: 10,
+            details: [
+              {
+                gameweek: 5,
+                captain_id: 427,
+                captain_name: 'Salah',
+                captain_points: 12,
+                template_id: 351,
+                template_name: 'Haaland',
+                template_points: 8,
+                gain: 8,
+                multiplier: 2,
+              },
+            ],
+          },
+        ],
+      };
+
+      mockGetLeagueStats.mockResolvedValue(mockResponse);
+
+      const { result } = renderHook(() => useLeagueStats(123, 10), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      // Verify nested details are transformed to camelCase
+      const detail = result.current.captainDifferential[0].details[0];
+      expect(detail.captainId).toBe(427);
+      expect(detail.captainName).toBe('Salah');
+      expect(detail.captainPoints).toBe(12);
+      expect(detail.templateId).toBe(351);
+      expect(detail.templateName).toBe('Haaland');
+      expect(detail.templatePoints).toBe(8);
+    });
+
     it('passes correct parameters to API', async () => {
       mockGetLeagueStats.mockResolvedValue({
         league_id: 456,

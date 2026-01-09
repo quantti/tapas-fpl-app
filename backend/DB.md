@@ -913,6 +913,7 @@ CREATE TABLE player_fixture_stats (
 CREATE INDEX idx_pfs_player_season ON player_fixture_stats(player_id, season_id);
 CREATE INDEX idx_pfs_opponent ON player_fixture_stats(opponent_team_id, season_id);
 CREATE INDEX idx_pfs_player_gw ON player_fixture_stats(player_id, season_id, gameweek DESC);
+CREATE INDEX idx_pfs_player_gw_asc ON player_fixture_stats(player_id, season_id, gameweek);
 CREATE INDEX idx_pfs_season_gw ON player_fixture_stats(season_id, gameweek);
 CREATE INDEX idx_pfs_xg_delta ON player_fixture_stats(season_id, (goals_scored - expected_goals) DESC)
     WHERE minutes >= 60;

@@ -258,8 +258,9 @@ INSERT INTO _migrations (name) VALUES
     ('006_player_fixture_stats.sql'),
     ('007_player_fixture_stats_improvements.sql'),
     ('008_chip_usage.sql'),
-    ('009_league_manager_index.sql'),
-    ('010_collection_status.sql')
+    ('009_fix_points_against_pk.sql'),
+    ('010_collection_status.sql'),
+    ('011_pfs_captain_lookup_index.sql')
 ON CONFLICT (name) DO NOTHING;
 ```
 
@@ -285,8 +286,9 @@ backend/
 │   ├── 006_player_fixture_stats.sql
 │   ├── 007_player_fixture_stats_improvements.sql
 │   ├── 008_chip_usage.sql
-│   ├── 009_league_manager_index.sql
-│   └── 010_collection_status.sql
+│   ├── 009_fix_points_against_pk.sql
+│   ├── 010_collection_status.sql
+│   └── 011_pfs_captain_lookup_index.sql
 ├── scripts/
 │   ├── migrate.py               # Database migration runner
 │   ├── collect_points_against.py # Full Points Against data collector (~66 min)
@@ -328,8 +330,9 @@ The database uses **composite primary keys** `(id, season_id)` for FPL entities 
 | `006_player_fixture_stats.sql` | player_fixture_stats (35+ fields), player_vs_team_stats view, player_season_deltas view, get_player_form() function |
 | `007_player_fixture_stats_improvements.sql` | updated_at column + trigger, check constraint, improved view and function |
 | `008_chip_usage.sql` | chip_usage table for tracking manager chip activations |
-| `009_league_manager_index.sql` | Index optimization for league_manager queries |
+| `009_fix_points_against_pk.sql` | Fix points_against_by_fixture primary key |
 | `010_collection_status.sql` | collection_status table for tracking scheduled update progress per season |
+| `011_pfs_captain_lookup_index.sql` | Index for captain differential lookup query (gameweek ASC order) |
 
 ### Table Overview (24 tables)
 

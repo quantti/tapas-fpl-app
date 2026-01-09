@@ -109,7 +109,11 @@ class FreeTransferStat(BaseModel):
 
 
 class CaptainDifferentialDetail(BaseModel):
-    """Per-gameweek captain differential detail."""
+    """Per-gameweek captain differential detail.
+
+    Note: Keep in sync with CaptainDifferentialDetail TypedDict
+    in app/services/calculations.py (used for internal calculations).
+    """
 
     gameweek: int = Field(ge=1, le=38)
     captain_id: int
@@ -143,29 +147,71 @@ class LeagueStatsResponse(BaseModel):
     captain_differential: list[CaptainDifferentialStat]
 
 
+class GameweekExtreme(BaseModel):
+    """Best or worst gameweek record."""
+
+    gw: int = Field(ge=1, le=38)
+    points: int
+
+
 class ManagerComparisonStats(BaseModel):
     """Comparison stats for a single manager."""
 
+    # Identity
     manager_id: int
     name: str
+    team_name: str
+
+    # Season totals
     total_points: int
-    gameweek_points: int
     overall_rank: int | None
-    transfers_made: int = Field(ge=0)
-    transfers_cost: int = Field(le=0)
-    bench_points: int = Field(ge=0)
-    team_value: int = Field(ge=0)
-    bank: int = Field(ge=0)
-    template_overlap: float = Field(ge=0, le=100)
+
+    # Transfers
+    total_transfers: int = Field(ge=0)
+    total_hits: int = Field(ge=0)
+    hits_cost: int = Field(le=0)  # Negative value (cost)
+    remaining_transfers: int = Field(ge=1, le=5, description="Free transfers available")
+
+    # Captain performance
+    captain_points: int = Field(ge=0, description="Total captain points (with multiplier)")
+    differential_captains: int = Field(ge=0, description="GWs with non-template captain")
+
+    # Chips (current half-season)
+    chips_used: list[str]
+    chips_remaining: list[str]
+
+    # Gameweek extremes
+    best_gameweek: GameweekExtreme | None
+    worst_gameweek: GameweekExtreme | None
+
+    # Current squad
+    starting_xi: list[int] = Field(
+        min_length=0, max_length=11, description="Player IDs in starting XI"
+    )
+
+    # Tier 1 analytics
+    consistency_score: float = Field(ge=0, description="StdDev of GW points (lower=consistent)")
+    bench_waste_rate: float = Field(ge=0, le=100, description="Avg bench points as % of total")
+    hit_frequency: float = Field(ge=0, le=100, description="% of GWs with hits taken")
+    last_5_average: float = Field(ge=0, description="Average points over last 5 GWs")
+
+
+class HeadToHeadRecord(BaseModel):
+    """Head-to-head record between two managers."""
+
+    wins_a: int = Field(ge=0, description="Gameweeks won by manager A")
+    wins_b: int = Field(ge=0, description="Gameweeks won by manager B")
+    draws: int = Field(ge=0, description="Gameweeks with equal points")
 
 
 class ComparisonResponse(BaseModel):
     """Response for GET /comparison."""
 
+    season_id: int = Field(ge=1, le=2, description="Season ID")
     manager_a: ManagerComparisonStats
     manager_b: ManagerComparisonStats
     common_players: list[int]
-    head_to_head: dict[str, int]  # wins_a, wins_b, draws
+    head_to_head: HeadToHeadRecord
 
 
 # =============================================================================
