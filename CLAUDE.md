@@ -114,8 +114,12 @@ npm run lint             # Run ESLint
 npm run format           # Check formatting (Biome)
 npm run css:types        # Generate CSS module type definitions
 npm test                 # Run unit tests
-npm run test:e2e:docker  # Run E2E tests in Docker
+npm run test:e2e:docker  # Run E2E tests in Docker (ALWAYS use this)
+npm run test:e2e:docker -- --update-snapshots  # Update visual snapshots
 ```
+
+⚠️ **E2E Tests: ALWAYS use Docker!**
+Visual snapshots MUST be generated using `npm run test:e2e:docker`. Never use `npx playwright test` directly - local fonts/rendering differ from CI, causing snapshot mismatches.
 
 ### Backend
 ```bash
