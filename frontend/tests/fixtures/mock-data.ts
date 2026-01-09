@@ -1260,17 +1260,18 @@ export const mockLiveResponse = {
  * Entry history response - historical gameweek data
  */
 export function mockEntryHistoryResponse(entryId: number) {
+  // Use deterministic values based on entryId and index for consistent snapshots
   return {
     current: Array.from({ length: 18 }, (_, i) => ({
       event: i + 1,
-      points: 50 + Math.floor(Math.random() * 40) + (entryId % 10),
+      points: 50 + ((i * 7 + entryId) % 40) + (entryId % 10),
       total_points: 50 * (i + 1) + (entryId % 100),
-      rank: 100000 + Math.floor(Math.random() * 50000),
-      overall_rank: 50000 + Math.floor(Math.random() * 20000),
-      event_transfers: i > 0 ? Math.floor(Math.random() * 2) : 0,
+      rank: 100000 + ((i * 1000 + entryId * 100) % 50000),
+      overall_rank: 50000 + ((i * 500 + entryId * 50) % 20000),
+      event_transfers: i > 0 ? (i + entryId) % 2 : 0,
       event_transfers_cost: 0,
       value: 1000 + i * 2,
-      bank: 5 + Math.floor(Math.random() * 10),
+      bank: 5 + ((i + entryId) % 10),
     })),
     past: [{ season_name: '2023/24', total_points: 2100, rank: 150000 }],
     chips: [{ name: 'bboost', time: '2025-01-15T12:00:00Z', event: 5 }],
