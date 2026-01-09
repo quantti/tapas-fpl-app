@@ -18,6 +18,13 @@ export const CHIP_LABELS: Record<string, string> = {
   wildcard: 'WC',
 };
 
+export const CHIP_DISPLAY_NAMES: Record<string, string> = {
+  bboost: 'Bench Boost',
+  '3xc': 'Triple Captain',
+  freehit: 'Free Hit',
+  wildcard: 'Wildcard',
+};
+
 /**
  * Get remaining chips for the current half of the season.
  * @param chipsUsed - All chips used by the manager (from history.chips)
@@ -60,10 +67,25 @@ export function getUsedChips(chipsUsed: ChipUsage[], isSecondHalf: boolean): str
 }
 
 /**
- * Get chip display label from internal name.
+ * Get chip display label from internal name (short: BB, TC, FH, WC).
  */
 export function getChipLabel(name: string): string {
   return CHIP_LABELS[name.toLowerCase()] ?? name.toUpperCase();
+}
+
+/**
+ * Get chip full display name from internal name (e.g., "Bench Boost").
+ */
+export function getChipDisplayName(name: string): string {
+  return CHIP_DISPLAY_NAMES[name.toLowerCase()] ?? name;
+}
+
+/**
+ * Format array of chip internal names to display names.
+ */
+export function formatChipNames(chips: string[]): string {
+  if (chips.length === 0) return '—';
+  return chips.map(getChipDisplayName).join(', ');
 }
 
 /**

@@ -1,17 +1,14 @@
-import { useQueries } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { getChipsForCurrentHalf } from 'utils/chips';
-import { buildTemplateTeam, calculateOwnership, calculateWorldOwnership } from 'utils/templateTeam';
-
-import { fplApi } from '../api';
+import {
+  backendApi,
+  BackendApiError,
+  type BackendManagerComparisonStats,
+  type BackendTemplateOverlap,
+  type ComparisonResponse,
+} from '../backendApi';
 import { queryKeys } from '../queryKeys';
-
-import { calculateFreeTransfers } from './useFreeTransfers';
-import { useHistoricalData } from './useHistoricalData';
-
-import type { ManagerGameweekData } from './useFplData';
-import type { Gameweek, Player, Team } from 'types/fpl';
 
 export type PlaystyleLabel = 'Template' | 'Balanced' | 'Differential' | 'Maverick';
 
@@ -58,16 +55,17 @@ export interface ComparisonStats {
   // Gameweek extremes
   bestGameweek: GameweekExtreme | null;
   worstGameweek: GameweekExtreme | null;
+  // Tier 1 analytics (new from backend)
+  consistencyScore: number;
+  benchWasteRate: number;
+  hitFrequency: number;
 }
 
 export interface UseHeadToHeadComparisonParams {
   managerAId: number | null;
   managerBId: number | null;
-  managerDetails: ManagerGameweekData[];
-  currentGameweek: number;
-  gameweeks: Gameweek[];
-  playersMap: Map<number, Player>;
-  teamsMap: Map<number, Team>;
+  leagueId: number;
+  seasonId?: number;
 }
 
 export interface RosterComparison {
@@ -77,10 +75,17 @@ export interface RosterComparison {
   managerBOnlyIds: number[];
 }
 
+export interface HeadToHeadRecord {
+  winsA: number;
+  winsB: number;
+  draws: number;
+}
+
 export interface UseHeadToHeadComparisonReturn {
   managerA: ComparisonStats | null;
   managerB: ComparisonStats | null;
   rosterComparison: RosterComparison | null;
+  headToHead: HeadToHeadRecord | null;
   loading: boolean;
   error: Error | null;
 }
@@ -97,293 +102,151 @@ export function getPlaystyleLabel(matchCount: number): PlaystyleLabel {
   return 'Maverick';
 }
 
+/**
+ * Transform backend template overlap to frontend format
+ */
+function transformTemplateOverlap(backend: BackendTemplateOverlap | null): TemplateOverlap {
+  if (!backend) {
+    return {
+      matchCount: 0,
+      matchPercentage: 0,
+      matchingPlayerIds: [],
+      differentialPlayerIds: [],
+      playstyleLabel: 'Maverick',
+    };
+  }
+  return {
+    matchCount: backend.match_count,
+    matchPercentage: backend.match_percentage,
+    matchingPlayerIds: backend.matching_player_ids,
+    differentialPlayerIds: backend.differential_player_ids,
+    playstyleLabel: backend.playstyle_label as PlaystyleLabel,
+  };
+}
+
+/**
+ * Transform backend manager stats to frontend ComparisonStats format
+ */
+function transformManagerStats(backend: BackendManagerComparisonStats): ComparisonStats {
+  return {
+    managerId: backend.manager_id,
+    teamName: backend.team_name,
+    // Season overview
+    totalPoints: backend.total_points,
+    overallRank: backend.overall_rank ?? 0,
+    leagueRank: backend.league_rank ?? 0,
+    last5Average: backend.last_5_average,
+    // Transfers
+    totalTransfers: backend.total_transfers,
+    remainingTransfers: backend.remaining_transfers,
+    totalHits: backend.total_hits,
+    hitsCost: backend.hits_cost,
+    // Captain
+    captainPoints: backend.captain_points,
+    differentialCaptains: backend.differential_captains,
+    // Chips
+    chipsUsed: backend.chips_used,
+    chipsRemaining: backend.chips_remaining,
+    // Value (backend returns in 0.1m units, divide by 10 for millions)
+    squadValue: 0, // Note: Not returned by comparison endpoint (use from managerDetails)
+    bank: 0, // Note: Not returned by comparison endpoint (use from managerDetails)
+    // Template overlap
+    leagueTemplateOverlap: transformTemplateOverlap(backend.league_template_overlap),
+    worldTemplateOverlap: transformTemplateOverlap(backend.world_template_overlap),
+    // Roster
+    startingXI: backend.starting_xi,
+    // Gameweek extremes
+    bestGameweek: backend.best_gameweek
+      ? { gw: backend.best_gameweek.gw, points: backend.best_gameweek.points }
+      : null,
+    worstGameweek: backend.worst_gameweek
+      ? { gw: backend.worst_gameweek.gw, points: backend.worst_gameweek.points }
+      : null,
+    // Tier 1 analytics
+    consistencyScore: backend.consistency_score,
+    benchWasteRate: backend.bench_waste_rate,
+    hitFrequency: backend.hit_frequency,
+  };
+}
+
+/**
+ * Build roster comparison from common players and starting XIs
+ */
+function buildRosterComparison(
+  commonPlayers: number[],
+  managerAXI: number[],
+  managerBXI: number[]
+): RosterComparison {
+  const commonSet = new Set(commonPlayers);
+
+  return {
+    commonCount: commonPlayers.length,
+    commonPlayerIds: commonPlayers,
+    managerAOnlyIds: managerAXI.filter((id) => !commonSet.has(id)),
+    managerBOnlyIds: managerBXI.filter((id) => !commonSet.has(id)),
+  };
+}
+
+/**
+ * Hook to fetch head-to-head comparison data from backend.
+ * Replaces ~87 FPL API calls with a single backend call.
+ */
 export function useHeadToHeadComparison({
   managerAId,
   managerBId,
-  managerDetails,
-  currentGameweek,
-  gameweeks,
-  playersMap,
-  teamsMap,
+  leagueId,
+  seasonId = 1,
 }: UseHeadToHeadComparisonParams): UseHeadToHeadComparisonReturn {
-  // Get deadline time for current gameweek (needed for chip half calculation and FT)
-  const deadlineTime = gameweeks.find((gw) => gw.id === currentGameweek)?.deadline_time;
+  const enabled = managerAId !== null && managerBId !== null && managerAId !== managerBId;
 
-  // Check if deadline has passed (affects FT calculation - you get +1 after deadline)
-  const deadlinePassed = deadlineTime ? new Date() > new Date(deadlineTime) : false;
-
-  // Get manager data from already-fetched managerDetails
-  const managerAData = managerDetails.find((m) => m.managerId === managerAId) ?? null;
-  const managerBData = managerDetails.find((m) => m.managerId === managerBId) ?? null;
-
-  // Manager IDs for historical data fetching
-  const selectedManagerIds = useMemo(() => {
-    const ids: { id: number; teamName: string }[] = [];
-    if (managerAData) ids.push({ id: managerAData.managerId, teamName: managerAData.teamName });
-    if (managerBData) ids.push({ id: managerBData.managerId, teamName: managerBData.teamName });
-    return ids;
-  }, [managerAData, managerBData]);
-
-  // Calculate league template team (most owned starting XI in league)
-  const leagueTemplatePlayerIds = useMemo(() => {
-    if (managerDetails.length === 0 || playersMap.size === 0) return new Set<number>();
-
-    const ownership = calculateOwnership(managerDetails, playersMap, teamsMap);
-    const templateTeam = buildTemplateTeam(ownership);
-    return new Set(templateTeam.map((p) => p.player.id));
-  }, [managerDetails, playersMap, teamsMap]);
-
-  // Calculate world template team (most owned starting XI globally)
-  const worldTemplatePlayerIds = useMemo(() => {
-    if (playersMap.size === 0) return new Set<number>();
-
-    const players = Array.from(playersMap.values());
-    const ownership = calculateWorldOwnership(players, teamsMap);
-    const templateTeam = buildTemplateTeam(ownership);
-    return new Set(templateTeam.map((p) => p.player.id));
-  }, [playersMap, teamsMap]);
-
-  // Calculate template overlap for a manager against a given template
-  const calculateTemplateOverlap = useMemo(() => {
-    return (managerData: ManagerGameweekData, templatePlayerIds: Set<number>): TemplateOverlap => {
-      // Get manager's starting XI (multiplier > 0)
-      const startingXI = managerData.picks.filter((p) => p.multiplier > 0).map((p) => p.playerId);
-
-      const matchingPlayerIds: number[] = [];
-      const differentialPlayerIds: number[] = [];
-
-      for (const playerId of startingXI) {
-        if (templatePlayerIds.has(playerId)) {
-          matchingPlayerIds.push(playerId);
-        } else {
-          differentialPlayerIds.push(playerId);
-        }
+  const { data, isLoading, error } = useQuery<ComparisonResponse, Error>({
+    queryKey: queryKeys.managerComparison(managerAId ?? 0, managerBId ?? 0, leagueId, seasonId),
+    queryFn: () => backendApi.getManagerComparison(managerAId!, managerBId!, leagueId, seasonId),
+    enabled,
+    staleTime: 60 * 1000, // 1 minute
+    retry: (failureCount, err) => {
+      // Don't retry on 4xx errors (bad request, not found)
+      if (err instanceof BackendApiError && err.status >= 400 && err.status < 500) {
+        return false;
       }
-
-      const matchCount = matchingPlayerIds.length;
-      return {
-        matchCount,
-        matchPercentage: (matchCount / 11) * 100,
-        matchingPlayerIds,
-        differentialPlayerIds,
-        playstyleLabel: getPlaystyleLabel(matchCount),
-      };
-    };
-  }, []);
-
-  // Fetch entry history for total transfers count
-  const historyQueries = useQueries({
-    queries: selectedManagerIds.map((manager) => ({
-      queryKey: queryKeys.entryHistory(manager.id),
-      queryFn: () => fplApi.getEntryHistory(manager.id),
-      staleTime: 60 * 1000,
-      enabled: selectedManagerIds.length > 0,
-    })),
+      return failureCount < 2;
+    },
   });
 
-  // Use historical data for captain calculations
-  const {
-    liveDataByGw,
-    picksByManagerAndGw,
-    completedGameweeks,
-    isLoading: historicalLoading,
-    error: historicalError,
-  } = useHistoricalData({
-    managerIds: selectedManagerIds,
-    currentGameweek,
-    enabled: selectedManagerIds.length > 0 && currentGameweek > 1 && playersMap.size > 0,
-  });
+  const managerA = useMemo(() => {
+    if (!data) return null;
+    return transformManagerStats(data.manager_a);
+  }, [data]);
 
-  // Build template captain map (most captained per GW)
-  const templateCaptainByGw = useMemo(() => {
-    const map = new Map<number, number>();
-    for (const gw of gameweeks) {
-      if (gw.id < currentGameweek && gw.most_captained) {
-        map.set(gw.id, gw.most_captained);
-      }
-    }
-    return map;
-  }, [gameweeks, currentGameweek]);
+  const managerB = useMemo(() => {
+    if (!data) return null;
+    return transformManagerStats(data.manager_b);
+  }, [data]);
 
-  // Calculate captain stats for a manager
-  const calculateCaptainStats = useMemo(() => {
-    return (managerId: number): { captainPoints: number; differentialCaptains: number } => {
-      let captainPoints = 0;
-      let differentialCaptains = 0;
+  const rosterComparison = useMemo(() => {
+    if (!data) return null;
+    return buildRosterComparison(
+      data.common_players,
+      data.manager_a.starting_xi,
+      data.manager_b.starting_xi
+    );
+  }, [data]);
 
-      for (const gw of completedGameweeks) {
-        const picks = picksByManagerAndGw.get(`${managerId}-${gw}`);
-        const liveData = liveDataByGw.get(gw);
-        const templateCaptainId = templateCaptainByGw.get(gw);
-
-        if (!picks || !liveData) continue;
-
-        const captainPick = picks.picks.find((p) => p.is_captain);
-        if (!captainPick) continue;
-
-        // Calculate captain points
-        const multiplier = picks.activeChip === '3xc' ? 3 : 2;
-        const captainLive = liveData.elements.find((e) => e.id === captainPick.element);
-        captainPoints += (captainLive?.stats.total_points ?? 0) * multiplier;
-
-        // Check if differential
-        if (templateCaptainId && captainPick.element !== templateCaptainId) {
-          differentialCaptains++;
-        }
-      }
-
-      return { captainPoints, differentialCaptains };
-    };
-  }, [completedGameweeks, picksByManagerAndGw, liveDataByGw, templateCaptainByGw]);
-
-  // Build comparison stats for a manager
-  const buildStats = useMemo(() => {
-    return (
-      managerData: ManagerGameweekData | null,
-      historyIndex: number
-    ): ComparisonStats | null => {
-      if (!managerData) return null;
-
-      const historyQuery = historyQueries[historyIndex];
-      // Guard: Don't return partial data while history is loading
-      // This prevents race condition where 0 values flash before real data arrives
-      if (!historyQuery?.data) return null;
-
-      const history = historyQuery.data;
-
-      // Total transfers from history
-      const totalTransfers = history.current.reduce((sum, gw) => sum + gw.event_transfers, 0);
-
-      // Calculate last 5 GW average (sorted by event descending, take last 5)
-      const sortedGws = [...history.current].sort((a, b) => b.event - a.event);
-      const last5Gws = sortedGws.slice(0, 5);
-      const last5Average =
-        last5Gws.length > 0
-          ? last5Gws.reduce((sum, gw) => sum + gw.points, 0) / last5Gws.length
-          : 0;
-
-      // Calculate remaining free transfers
-      const remainingTransfers = calculateFreeTransfers(
-        history.current,
-        history.chips,
-        currentGameweek,
-        deadlinePassed
-      );
-
-      // Captain stats from historical data
-      const { captainPoints, differentialCaptains } = calculateCaptainStats(managerData.managerId);
-
-      // Chips for current half
-      const { used: chipsUsed, remaining: chipsRemaining } = getChipsForCurrentHalf(
-        managerData.chipsUsed,
-        currentGameweek,
-        deadlineTime
-      );
-
-      // Starting XI player IDs
-      const startingXI = managerData.picks.filter((p) => p.multiplier > 0).map((p) => p.playerId);
-
-      // Best and worst gameweeks
-      let bestGameweek: GameweekExtreme | null = null;
-      let worstGameweek: GameweekExtreme | null = null;
-
-      if (history.current.length > 0) {
-        const sortedByPoints = [...history.current].sort((a, b) => b.points - a.points);
-        const best = sortedByPoints[0];
-        const worst = sortedByPoints[sortedByPoints.length - 1];
-        bestGameweek = { gw: best.event, points: best.points };
-        worstGameweek = { gw: worst.event, points: worst.points };
-      }
-
-      return {
-        managerId: managerData.managerId,
-        teamName: managerData.teamName,
-        // Season overview
-        totalPoints: managerData.totalPoints,
-        overallRank: managerData.overallRank,
-        leagueRank: managerData.rank,
-        last5Average,
-        // Transfers
-        totalTransfers,
-        remainingTransfers,
-        totalHits: Math.abs(managerData.totalHitsCost) / 4, // Convert cost to count
-        hitsCost: managerData.totalHitsCost,
-        // Captain
-        captainPoints,
-        differentialCaptains,
-        // Chips
-        chipsUsed,
-        chipsRemaining,
-        // Value (already divided by 10 in useFplData)
-        squadValue: managerData.teamValue,
-        bank: managerData.bank,
-        // Template overlap
-        leagueTemplateOverlap: calculateTemplateOverlap(managerData, leagueTemplatePlayerIds),
-        worldTemplateOverlap: calculateTemplateOverlap(managerData, worldTemplatePlayerIds),
-        // Roster
-        startingXI,
-        // Gameweek extremes
-        bestGameweek,
-        worstGameweek,
-      };
-    };
-  }, [
-    historyQueries,
-    calculateCaptainStats,
-    calculateTemplateOverlap,
-    leagueTemplatePlayerIds,
-    worldTemplatePlayerIds,
-    currentGameweek,
-    deadlineTime,
-    deadlinePassed,
-  ]);
-
-  // Build final comparison data
-  const managerA = useMemo(() => buildStats(managerAData, 0), [buildStats, managerAData]);
-
-  const managerB = useMemo(() => buildStats(managerBData, 1), [buildStats, managerBData]);
-
-  // Calculate roster comparison (common and unique players)
-  const rosterComparison = useMemo((): RosterComparison | null => {
-    if (!managerA || !managerB) return null;
-
-    const setA = new Set(managerA.startingXI);
-    const setB = new Set(managerB.startingXI);
-
-    const commonPlayerIds: number[] = [];
-    const managerAOnlyIds: number[] = [];
-    const managerBOnlyIds: number[] = [];
-
-    for (const id of managerA.startingXI) {
-      if (setB.has(id)) {
-        commonPlayerIds.push(id);
-      } else {
-        managerAOnlyIds.push(id);
-      }
-    }
-
-    for (const id of managerB.startingXI) {
-      if (!setA.has(id)) {
-        managerBOnlyIds.push(id);
-      }
-    }
-
+  const headToHead = useMemo(() => {
+    if (!data) return null;
     return {
-      commonCount: commonPlayerIds.length,
-      commonPlayerIds,
-      managerAOnlyIds,
-      managerBOnlyIds,
+      winsA: data.head_to_head.wins_a,
+      winsB: data.head_to_head.wins_b,
+      draws: data.head_to_head.draws,
     };
-  }, [managerA, managerB]);
-
-  const historyLoading = historyQueries.some((q) => q.isLoading);
-  const historyError = historyQueries.find((q) => q.error)?.error ?? null;
+  }, [data]);
 
   return {
     managerA,
     managerB,
     rosterComparison,
-    loading: historyLoading || historicalLoading,
-    error: historyError ?? historicalError ?? null,
+    headToHead,
+    loading: isLoading,
+    error: error ?? null,
   };
 }

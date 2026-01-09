@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
   AVAILABLE_CHIPS,
+  CHIP_DISPLAY_NAMES,
   CHIP_LABELS,
+  formatChipNames,
+  getChipDisplayName,
   getChipLabel,
   getChipsForCurrentHalf,
   getRemainingChips,
@@ -40,6 +43,51 @@ describe('chips utility', () => {
 
     it('should return uppercase name for unknown chips', () => {
       expect(getChipLabel('unknown')).toBe('UNKNOWN');
+    });
+  });
+
+  describe('getChipDisplayName', () => {
+    it('should return correct display name for known chips', () => {
+      expect(getChipDisplayName('bboost')).toBe('Bench Boost');
+      expect(getChipDisplayName('3xc')).toBe('Triple Captain');
+      expect(getChipDisplayName('freehit')).toBe('Free Hit');
+      expect(getChipDisplayName('wildcard')).toBe('Wildcard');
+    });
+
+    it('should handle uppercase input', () => {
+      expect(getChipDisplayName('BBOOST')).toBe('Bench Boost');
+      expect(getChipDisplayName('Wildcard')).toBe('Wildcard');
+    });
+
+    it('should return original name for unknown chips', () => {
+      expect(getChipDisplayName('unknown')).toBe('unknown');
+    });
+  });
+
+  describe('formatChipNames', () => {
+    it('should format array of chip names', () => {
+      expect(formatChipNames(['wildcard', 'bboost'])).toBe('Wildcard, Bench Boost');
+    });
+
+    it('should return dash for empty array', () => {
+      expect(formatChipNames([])).toBe('—');
+    });
+
+    it('should format all chips correctly', () => {
+      expect(formatChipNames(['bboost', '3xc', 'freehit', 'wildcard'])).toBe(
+        'Bench Boost, Triple Captain, Free Hit, Wildcard'
+      );
+    });
+  });
+
+  describe('CHIP_DISPLAY_NAMES', () => {
+    it('should have correct display names', () => {
+      expect(CHIP_DISPLAY_NAMES).toEqual({
+        bboost: 'Bench Boost',
+        '3xc': 'Triple Captain',
+        freehit: 'Free Hit',
+        wildcard: 'Wildcard',
+      });
     });
   });
 

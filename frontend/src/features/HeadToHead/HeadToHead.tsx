@@ -4,9 +4,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card } from 'components/Card';
 import { CardHeader } from 'components/CardHeader';
 
-import { FplApiError } from 'services/api';
+import { BackendApiError } from 'services/backendApi';
 import { useHeadToHeadComparison } from 'services/queries/useHeadToHeadComparison';
 
+import { formatChipNames } from 'utils/chips';
 import { formatRank, getComparisonClass } from 'utils/comparison';
 
 import * as styles from './HeadToHead.module.css';
@@ -14,18 +15,17 @@ import * as styles from './HeadToHead.module.css';
 import type { ManagerGameweekData } from 'services/queries/useFplData';
 import type {
   ComparisonStats,
+  HeadToHeadRecord,
   RosterComparison,
   TemplateOverlap,
 } from 'services/queries/useHeadToHeadComparison';
-import type { Gameweek, Player, Team } from 'types/fpl';
+import type { Player } from 'types/fpl';
 import type { CompareResult } from 'utils/comparison';
 
 interface Props {
+  leagueId: number;
   managerDetails: ManagerGameweekData[];
-  currentGameweek: number;
-  gameweeks: Gameweek[];
   playersMap: Map<number, Player>;
-  teamsMap: Map<number, Team>;
 }
 
 /**
@@ -41,15 +41,18 @@ function getLeadLabel(pointsDiff: number, teamAName: string, teamBName: string):
  * Get user-friendly error message based on error type
  */
 function getErrorMessage(error: Error): string {
-  if (error instanceof FplApiError) {
+  if (error instanceof BackendApiError) {
     if (error.isServiceUnavailable) {
-      return 'FPL is updating data. Please try again in a few minutes.';
+      return 'Backend service is unavailable. Please try again in a few minutes.';
     }
     if (error.status === 404) {
       return 'Manager data not found. They may have joined the league recently.';
     }
+    if (error.status === 400) {
+      return 'Invalid comparison request. Please select different managers.';
+    }
     if (error.status >= 500) {
-      return 'FPL servers are experiencing issues. Please try again later.';
+      return 'Backend servers are experiencing issues. Please try again later.';
     }
     return `Failed to load data (${error.status}). Please try again.`;
   }
@@ -67,6 +70,7 @@ interface ComparisonContentProps {
   managerA: ComparisonStats | null;
   managerB: ComparisonStats | null;
   rosterComparison: RosterComparison | null;
+  headToHead: HeadToHeadRecord | null;
   playersMap: Map<number, Player>;
 }
 
@@ -81,6 +85,7 @@ function renderComparisonContent({
   managerA,
   managerB,
   rosterComparison,
+  headToHead,
   playersMap,
 }: ComparisonContentProps): React.ReactNode {
   if (!managerAId || !managerBId) {
@@ -94,6 +99,7 @@ function renderComparisonContent({
           managerA={managerA}
           managerB={managerB}
           rosterComparison={rosterComparison}
+          headToHead={headToHead}
           playersMap={playersMap}
         />
       </div>
@@ -189,10 +195,17 @@ interface ComparisonGridProps {
   managerA: ComparisonStats;
   managerB: ComparisonStats;
   rosterComparison: RosterComparison | null;
+  headToHead: HeadToHeadRecord | null;
   playersMap: Map<number, Player>;
 }
 
-function ComparisonGrid({ managerA, managerB, rosterComparison, playersMap }: ComparisonGridProps) {
+function ComparisonGrid({
+  managerA,
+  managerB,
+  rosterComparison,
+  headToHead,
+  playersMap,
+}: ComparisonGridProps) {
   // Calculate point difference
   const pointsDiff = managerA.totalPoints - managerB.totalPoints;
 
@@ -318,15 +331,15 @@ function ComparisonGrid({ managerA, managerB, rosterComparison, playersMap }: Co
       <div className={styles.sectionTitle}>Chips (Current Half)</div>
       <StatRow
         label="Used"
-        valueA={managerA.chipsUsed.length > 0 ? managerA.chipsUsed.join(', ') : '—'}
-        valueB={managerB.chipsUsed.length > 0 ? managerB.chipsUsed.join(', ') : '—'}
+        valueA={formatChipNames(managerA.chipsUsed)}
+        valueB={formatChipNames(managerB.chipsUsed)}
         compareA="neutral"
         compareB="neutral"
       />
       <StatRow
         label="Remaining"
-        valueA={managerA.chipsRemaining.length > 0 ? managerA.chipsRemaining.join(', ') : '—'}
-        valueB={managerB.chipsRemaining.length > 0 ? managerB.chipsRemaining.join(', ') : '—'}
+        valueA={formatChipNames(managerA.chipsRemaining)}
+        valueB={formatChipNames(managerB.chipsRemaining)}
         compareA="neutral"
         compareB="neutral"
       />
@@ -393,8 +406,26 @@ function ComparisonGrid({ managerA, managerB, rosterComparison, playersMap }: Co
         </>
       )}
 
-      {/* Gameweeks */}
-      <div className={styles.sectionTitle}>Gameweeks</div>
+      {/* Head-to-Head Record */}
+      <div className={styles.sectionTitle}>Head-to-Head Record</div>
+      {headToHead && (headToHead.winsA > 0 || headToHead.winsB > 0 || headToHead.draws > 0) && (
+        <>
+          <StatRow
+            label="GW Wins"
+            valueA={headToHead.winsA}
+            valueB={headToHead.winsB}
+            compareA={getComparisonClass(headToHead.winsA, headToHead.winsB)}
+            compareB={getComparisonClass(headToHead.winsB, headToHead.winsA)}
+          />
+          <StatRow
+            label="Draws"
+            valueA={headToHead.draws}
+            valueB={headToHead.draws}
+            compareA="neutral"
+            compareB="neutral"
+          />
+        </>
+      )}
       {managerA.bestGameweek && managerB.bestGameweek && (
         <StatRow
           label="Best GW"
@@ -423,13 +454,7 @@ function ComparisonGrid({ managerA, managerB, rosterComparison, playersMap }: Co
   );
 }
 
-export function HeadToHead({
-  managerDetails,
-  currentGameweek,
-  gameweeks,
-  playersMap,
-  teamsMap,
-}: Props) {
+export function HeadToHead({ leagueId, managerDetails, playersMap }: Props) {
   const [managerAId, setManagerAId] = useState<number | null>(null);
   const [managerBId, setManagerBId] = useState<number | null>(null);
 
@@ -439,15 +464,40 @@ export function HeadToHead({
     [managerDetails]
   );
 
-  const { managerA, managerB, rosterComparison, loading, error } = useHeadToHeadComparison({
+  const {
+    managerA: backendManagerA,
+    managerB: backendManagerB,
+    rosterComparison,
+    headToHead,
+    loading,
+    error,
+  } = useHeadToHeadComparison({
     managerAId,
     managerBId,
-    managerDetails,
-    currentGameweek,
-    gameweeks,
-    playersMap,
-    teamsMap,
+    leagueId,
   });
+
+  // Enrich backend stats with squad value/bank from managerDetails
+  // (backend doesn't return these fields)
+  const managerA = useMemo((): ComparisonStats | null => {
+    if (!backendManagerA) return null;
+    const details = managerDetails.find((m) => m.managerId === backendManagerA.managerId);
+    return {
+      ...backendManagerA,
+      squadValue: details?.teamValue ?? 0,
+      bank: details?.bank ?? 0,
+    };
+  }, [backendManagerA, managerDetails]);
+
+  const managerB = useMemo((): ComparisonStats | null => {
+    if (!backendManagerB) return null;
+    const details = managerDetails.find((m) => m.managerId === backendManagerB.managerId);
+    return {
+      ...backendManagerB,
+      squadValue: details?.teamValue ?? 0,
+      bank: details?.bank ?? 0,
+    };
+  }, [backendManagerB, managerDetails]);
 
   // Scroll to content when data loads for a new manager pair
   const contentRef = useRef<HTMLDivElement>(null);
@@ -543,6 +593,7 @@ export function HeadToHead({
             managerA,
             managerB,
             rosterComparison,
+            headToHead,
             playersMap,
           })}
         </div>

@@ -140,6 +140,61 @@ export interface LeagueStatsResponse {
   captain_differential: CaptainDifferentialStat[];
 }
 
+// History API types - Manager Comparison
+export interface BackendTemplateOverlap {
+  match_count: number;
+  match_percentage: number;
+  matching_player_ids: number[];
+  differential_player_ids: number[];
+  playstyle_label: string; // "Template", "Balanced", "Differential", "Maverick"
+}
+
+export interface BackendGameweekExtreme {
+  gw: number;
+  points: number;
+}
+
+export interface BackendManagerComparisonStats {
+  manager_id: number;
+  name: string;
+  team_name: string;
+  total_points: number;
+  overall_rank: number | null;
+  league_rank: number | null;
+  total_transfers: number;
+  total_hits: number;
+  hits_cost: number;
+  remaining_transfers: number;
+  captain_points: number;
+  differential_captains: number;
+  chips_used: string[];
+  chips_remaining: string[];
+  best_gameweek: BackendGameweekExtreme | null;
+  worst_gameweek: BackendGameweekExtreme | null;
+  starting_xi: number[];
+  league_template_overlap: BackendTemplateOverlap | null;
+  world_template_overlap: BackendTemplateOverlap | null;
+  // Tier 1 analytics
+  consistency_score: number;
+  bench_waste_rate: number;
+  hit_frequency: number;
+  last_5_average: number;
+}
+
+export interface BackendHeadToHead {
+  wins_a: number;
+  wins_b: number;
+  draws: number;
+}
+
+export interface ComparisonResponse {
+  season_id: number;
+  manager_a: BackendManagerComparisonStats;
+  manager_b: BackendManagerComparisonStats;
+  common_players: number[];
+  head_to_head: BackendHeadToHead;
+}
+
 // History API types - League Positions
 export interface ManagerMetadata {
   id: number;
@@ -270,6 +325,28 @@ export function validateLeaguePositionsResponse(data: unknown): data is LeaguePo
   return true;
 }
 
+/**
+ * Validate ComparisonResponse has expected shape.
+ * @internal Exported for testing only
+ */
+export function validateComparisonResponse(data: unknown): data is ComparisonResponse {
+  if (!data || typeof data !== 'object') return false;
+  const response = data as Record<string, unknown>;
+  if (typeof response.season_id !== 'number') return false;
+  if (!response.manager_a || typeof response.manager_a !== 'object') return false;
+  if (!response.manager_b || typeof response.manager_b !== 'object') return false;
+  if (!Array.isArray(response.common_players)) return false;
+  if (!response.head_to_head || typeof response.head_to_head !== 'object') return false;
+
+  // Validate manager_a has required fields
+  const managerA = response.manager_a as Record<string, unknown>;
+  if (typeof managerA.manager_id !== 'number') return false;
+  if (typeof managerA.total_points !== 'number') return false;
+  if (!Array.isArray(managerA.starting_xi)) return false;
+
+  return true;
+}
+
 export const backendApi = {
   /**
    * Get points conceded by all teams for the season.
@@ -347,6 +424,30 @@ export const backendApi = {
     );
     if (!validateLeaguePositionsResponse(data)) {
       throw new BackendApiError(200, 'OK', 'Invalid response shape from positions endpoint');
+    }
+    return data;
+  },
+
+  /**
+   * Get head-to-head comparison between two managers.
+   * Returns detailed stats, template overlap, and analytics for both managers.
+   * Replaces ~87 individual FPL API calls with a single backend call.
+   */
+  getManagerComparison: async (
+    managerA: number,
+    managerB: number,
+    leagueId: number,
+    seasonId = 1
+  ): Promise<ComparisonResponse> => {
+    const params = new URLSearchParams({
+      manager_a: String(managerA),
+      manager_b: String(managerB),
+      league_id: String(leagueId),
+      season_id: String(seasonId),
+    });
+    const data = await fetchBackend<ComparisonResponse>(`/api/v1/history/comparison?${params}`);
+    if (!validateComparisonResponse(data)) {
+      throw new BackendApiError(200, 'OK', 'Invalid response shape from comparison endpoint');
     }
     return data;
   },

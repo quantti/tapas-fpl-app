@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 
+import { LEAGUE_ID } from 'src/config';
+
 import { FplUpdating } from 'components/FplUpdating';
 import { LoadingState } from 'components/LoadingState';
 import { PointsAgainstCard } from 'components/PointsAgainstCard';
@@ -85,13 +87,7 @@ export function Analytics() {
 
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Head-to-Head</h2>
-        <HeadToHead
-          managerDetails={managerDetails}
-          currentGameweek={currentGameweek.id}
-          gameweeks={bootstrap?.events ?? []}
-          playersMap={playersMap}
-          teamsMap={teamsMap}
-        />
+        <HeadToHead leagueId={LEAGUE_ID} managerDetails={managerDetails} playersMap={playersMap} />
       </section>
 
       <section className={styles.section}>
