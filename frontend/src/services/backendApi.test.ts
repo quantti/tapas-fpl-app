@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   BackendApiError,
+  validateComparisonResponse,
   validateLeagueChipsResponse,
   validateLeaguePositionsResponse,
   validateLeagueStatsResponse,
@@ -293,5 +294,168 @@ describe('validateLeaguePositionsResponse', () => {
       managers: [],
     };
     expect(validateLeaguePositionsResponse(data)).toBe(false);
+  });
+});
+
+describe('validateComparisonResponse', () => {
+  const validManagerStats = {
+    manager_id: 1001,
+    name: 'Manager A',
+    team_name: 'Team A FC',
+    total_points: 1500,
+    overall_rank: 100000,
+    league_rank: 1,
+    total_transfers: 25,
+    total_hits: 2,
+    hits_cost: -8,
+    remaining_transfers: 2,
+    captain_points: 300,
+    differential_captains: 5,
+    chips_used: ['wildcard'],
+    chips_remaining: ['bboost', '3xc', 'freehit'],
+    best_gameweek: { gw: 15, points: 85 },
+    worst_gameweek: { gw: 3, points: 25 },
+    starting_xi: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    league_template_overlap: {
+      match_count: 8,
+      match_percentage: 72.7,
+      matching_player_ids: [1, 2, 3, 4, 5, 6, 7, 8],
+      differential_player_ids: [9, 10, 11],
+      playstyle_label: 'Balanced',
+    },
+    world_template_overlap: null,
+    consistency_score: 15.2,
+    bench_waste_rate: 8.5,
+    hit_frequency: 12.0,
+    last_5_average: 55.4,
+  };
+
+  const validResponse = {
+    season_id: 1,
+    manager_a: { ...validManagerStats },
+    manager_b: { ...validManagerStats, manager_id: 1002, name: 'Manager B' },
+    common_players: [1, 2, 3, 4, 5],
+    head_to_head: { wins_a: 10, wins_b: 8, draws: 2 },
+  };
+
+  it('returns true for valid response', () => {
+    expect(validateComparisonResponse(validResponse)).toBe(true);
+  });
+
+  it('returns true for response with null optional fields', () => {
+    const data = {
+      ...validResponse,
+      manager_a: {
+        ...validManagerStats,
+        overall_rank: null,
+        league_rank: null,
+        best_gameweek: null,
+        worst_gameweek: null,
+      },
+    };
+    expect(validateComparisonResponse(data)).toBe(true);
+  });
+
+  it('returns true for empty common_players array', () => {
+    const data = { ...validResponse, common_players: [] };
+    expect(validateComparisonResponse(data)).toBe(true);
+  });
+
+  it('returns false for null input', () => {
+    expect(validateComparisonResponse(null)).toBe(false);
+  });
+
+  it('returns false for undefined input', () => {
+    const undef = undefined as unknown;
+    expect(validateComparisonResponse(undef)).toBe(false);
+  });
+
+  it('returns false when season_id is missing', () => {
+    const { season_id, ...rest } = validResponse;
+    void season_id; // Suppress unused variable warning
+    expect(validateComparisonResponse(rest)).toBe(false);
+  });
+
+  it('returns false when season_id is not a number', () => {
+    const data = { ...validResponse, season_id: '1' };
+    expect(validateComparisonResponse(data)).toBe(false);
+  });
+
+  it('returns false when manager_a is missing', () => {
+    const { manager_a, ...rest } = validResponse;
+    void manager_a;
+    expect(validateComparisonResponse(rest)).toBe(false);
+  });
+
+  it('returns false when manager_a is not an object', () => {
+    const data = { ...validResponse, manager_a: 'not an object' };
+    expect(validateComparisonResponse(data)).toBe(false);
+  });
+
+  it('returns false when manager_b is missing', () => {
+    const { manager_b, ...rest } = validResponse;
+    void manager_b;
+    expect(validateComparisonResponse(rest)).toBe(false);
+  });
+
+  it('returns false when common_players is not an array', () => {
+    const data = { ...validResponse, common_players: 'not array' };
+    expect(validateComparisonResponse(data)).toBe(false);
+  });
+
+  it('returns false when head_to_head is missing', () => {
+    const { head_to_head, ...rest } = validResponse;
+    void head_to_head;
+    expect(validateComparisonResponse(rest)).toBe(false);
+  });
+
+  it('returns false when head_to_head is not an object', () => {
+    const data = { ...validResponse, head_to_head: 'not an object' };
+    expect(validateComparisonResponse(data)).toBe(false);
+  });
+
+  it('returns false when manager_a lacks manager_id', () => {
+    const { manager_id, ...managerWithoutId } = validManagerStats;
+    void manager_id;
+    const data = { ...validResponse, manager_a: managerWithoutId };
+    expect(validateComparisonResponse(data)).toBe(false);
+  });
+
+  it('returns false when manager_a.manager_id is not a number', () => {
+    const data = {
+      ...validResponse,
+      manager_a: { ...validManagerStats, manager_id: '1001' },
+    };
+    expect(validateComparisonResponse(data)).toBe(false);
+  });
+
+  it('returns false when manager_a lacks total_points', () => {
+    const { total_points, ...managerWithoutPoints } = validManagerStats;
+    void total_points;
+    const data = { ...validResponse, manager_a: managerWithoutPoints };
+    expect(validateComparisonResponse(data)).toBe(false);
+  });
+
+  it('returns false when manager_a.total_points is not a number', () => {
+    const data = {
+      ...validResponse,
+      manager_a: { ...validManagerStats, total_points: '1500' },
+    };
+    expect(validateComparisonResponse(data)).toBe(false);
+  });
+
+  it('returns false when manager_a lacks starting_xi', () => {
+    const { starting_xi, ...managerWithoutXI } = validManagerStats;
+    void starting_xi;
+    const data = { ...validResponse, manager_a: managerWithoutXI };
+    expect(validateComparisonResponse(data)).toBe(false);
+  });
+
+  it('returns false when manager_a.starting_xi is not an array', () => {
+    const data = {
+      ...validResponse,
+      manager_a: { ...validManagerStats, starting_xi: 'not array' },
+    };
+    expect(validateComparisonResponse(data)).toBe(false);
   });
 });

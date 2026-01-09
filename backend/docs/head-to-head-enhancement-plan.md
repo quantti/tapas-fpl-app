@@ -1,9 +1,10 @@
 # Head-to-Head Comparison API Enhancement Plan
 
-**Status:** Phase 1 Complete ✅ — Ready for Phase 2 (Frontend Integration)
+**Status:** Phase 3 Complete ✅ — Ready for Tier 2 Features
 **Created:** 2026-01-09
 **Updated:** 2026-01-09
-**Commit:** e692acf
+**Backend Commit:** e692acf
+**Frontend Commit:** 3e03801
 **Goal:** Extend existing comparison endpoint to eliminate ~600 frontend API calls
 
 ## Completed Work
@@ -204,18 +205,42 @@ Add high-value, low-effort metrics calculable from existing snapshots:
 
 **Queries:** Single aggregation query per manager
 
-### Phase 2: Frontend integration
+### Phase 2: Frontend Integration ✅
 
-1. Create `useHeadToHeadComparison` hook that calls backend
-2. Remove `useHistoricalData` dependency
-3. Update `HeadToHead.tsx` to use new response shape
-4. Delete unused `useHistoricalData.ts` after migration
+**Completed in commit 3e03801:**
 
-### Phase 3: Cleanup
+1. ✅ Rewrote `useHeadToHeadComparison` hook to call backend API
+2. ✅ Added `ComparisonResponse` types to `backendApi.ts`
+3. ✅ Added `validateComparisonResponse` validation function
+4. ✅ Updated `HeadToHead.tsx` to use new response shape
+5. ✅ Added `formatChipNames()` utility for display names
+6. ✅ Combined UI sections (Gameweeks + Head-to-Head Record)
+7. ✅ Added `seasonId` to query key (multi-season compliance)
 
-1. Remove old frontend calculation logic
-2. Archive/remove `useLeaguePositionHistory.ts` (already unused)
-3. Update tests
+**Files modified:**
+- `frontend/src/services/backendApi.ts` - Types, validation, API method
+- `frontend/src/services/queries/useHeadToHeadComparison.ts` - Complete rewrite
+- `frontend/src/services/queryKeys.ts` - Added managerComparison key with seasonId
+- `frontend/src/features/HeadToHead/HeadToHead.tsx` - Updated for new data shape
+- `frontend/src/utils/chips.ts` - Added display name formatting
+- `frontend/src/utils/chips.test.ts` - Tests for new functions
+
+**Result:** Replaced ~87 FPL API calls with single backend call
+
+### Phase 3: Cleanup ✅
+
+**Completed cleanup tasks:**
+
+1. ✅ Deleted unused `useHistoricalData.ts` (no imports found)
+2. ✅ Verified `useLeaguePositions.ts` is actively used (kept)
+3. ✅ Added 19 new validation tests for `validateComparisonResponse`
+4. ✅ All 641 frontend tests pass
+
+**Files removed:**
+- `frontend/src/services/queries/useHistoricalData.ts` - Dead code, replaced by backend API
+
+**Files modified:**
+- `frontend/src/services/backendApi.test.ts` - Added `validateComparisonResponse` tests
 
 ## Data Dependencies
 
@@ -371,6 +396,8 @@ SELECT SUM(points_in - points_out) as transfer_roi FROM transfers;
 
 - [x] Endpoint returns all fields needed by frontend (Phase 1 complete)
 - [ ] Response time < 500ms (needs production measurement)
-- [ ] Frontend uses single API call instead of 87 (Phase 2)
-- [x] All existing comparison tests pass (138 tests)
+- [x] Frontend uses single API call instead of 87 (Phase 2 complete)
+- [x] All existing comparison tests pass (138 backend + 641 frontend tests)
 - [x] New fields have test coverage (34 new tests for Phase 1)
+- [x] Frontend tests for new chip utility functions (35 chip tests)
+- [x] Dead code removed and validation tests added (Phase 3 complete)
