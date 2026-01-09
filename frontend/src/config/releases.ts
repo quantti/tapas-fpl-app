@@ -12,6 +12,18 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: '0.25.0',
+    date: 'January 9, 2026',
+    items: [
+      {
+        title: 'Head-to-Head Analytics',
+        description:
+          'Enhanced manager comparison with Form Momentum, Recovery Rate, and template overlap scores. Compare any two managers with detailed analytics including consistency, hit frequency, and playstyle classification. Performance improved by moving calculations to the backend API.',
+        type: 'feature',
+      },
+    ],
+  },
+  {
     version: '0.23.3',
     date: 'January 6, 2026',
     items: [
