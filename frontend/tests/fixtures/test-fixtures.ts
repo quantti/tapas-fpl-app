@@ -18,6 +18,7 @@ import {
   mockEntryTransfersResponse,
   mockElementSummaryResponse,
   mockEventStatusResponse,
+  mockComparisonResponse,
   MOCK_MANAGER_IDS,
 } from './mock-data';
 
@@ -148,6 +149,18 @@ export async function setupApiMocking(page: Page) {
       status: 503,
       contentType: 'application/json',
       body: JSON.stringify({ detail: 'Service temporarily unavailable' }),
+    });
+  });
+
+  // Mock H2H comparison endpoint
+  await page.route('**/api/v1/history/comparison**', async (route) => {
+    const url = new URL(route.request().url());
+    const managerA = Number(url.searchParams.get('manager_a')) || MOCK_MANAGER_IDS.manager1;
+    const managerB = Number(url.searchParams.get('manager_b')) || MOCK_MANAGER_IDS.manager2;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(mockComparisonResponse(managerA, managerB)),
     });
   });
 }

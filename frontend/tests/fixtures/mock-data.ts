@@ -1419,3 +1419,141 @@ export const mockEventStatusResponse = {
   ],
   leagues: 'Updated',
 };
+
+/**
+ * Head-to-Head comparison response from backend API
+ * Used for /api/v1/history/comparison endpoint
+ */
+
+// Manager name mapping for mock data
+const MOCK_MANAGER_NAMES: Record<number, { name: string; teamName: string }> = {
+  [MOCK_MANAGER_IDS.manager1]: { name: 'Alice', teamName: 'Soccerballers United' },
+  [MOCK_MANAGER_IDS.manager2]: { name: 'Bob', teamName: 'Bob United' },
+  [MOCK_MANAGER_IDS.manager3]: { name: 'Charlie', teamName: 'Charlie City' },
+  [MOCK_MANAGER_IDS.manager4]: { name: 'Diana', teamName: 'Diana Town' },
+};
+
+// Predefined stats for manager A vs B comparison
+const MANAGER_A_STATS = {
+  totalPoints: 1234,
+  overallRank: 45678,
+  leagueRank: 1,
+  totalTransfers: 12,
+  totalHits: 2,
+  hitsCost: 8,
+  remainingTransfers: 2,
+  captainPoints: 186,
+  differentialCaptains: 3,
+  chipsUsed: ['wildcard'],
+  chipsRemaining: ['bboost', 'freehit', '3xc'],
+  bestGw: { gw: 12, points: 89 },
+  worstGw: { gw: 5, points: 32 },
+  leagueOverlap: { count: 8, pct: 72.7, matching: [1, 2, 3, 4, 5, 6, 10, 11], diff: [12, 13, 14] },
+  worldOverlap: { count: 7, pct: 63.6, matching: [1, 2, 3, 4, 5, 6, 10], diff: [11, 12, 13, 14] },
+  consistency: 0.78,
+  benchWaste: 0.12,
+  hitFreq: 0.11,
+  last5Avg: 52.4,
+  formMomentum: 'improving',
+  recoveryRate: 58.5,
+};
+
+const MANAGER_B_STATS = {
+  totalPoints: 1198,
+  overallRank: 52341,
+  leagueRank: 2,
+  totalTransfers: 15,
+  totalHits: 4,
+  hitsCost: 16,
+  remainingTransfers: 1,
+  captainPoints: 172,
+  differentialCaptains: 5,
+  chipsUsed: ['wildcard', 'bboost'],
+  chipsRemaining: ['freehit', '3xc'],
+  bestGw: { gw: 8, points: 95 },
+  worstGw: { gw: 3, points: 28 },
+  leagueOverlap: { count: 6, pct: 54.5, matching: [1, 2, 3, 5, 6, 10], diff: [4, 11, 12, 13, 14] },
+  worldOverlap: { count: 5, pct: 45.5, matching: [1, 2, 3, 5, 6], diff: [4, 10, 11, 12, 13, 14] },
+  consistency: 0.65,
+  benchWaste: 0.18,
+  hitFreq: 0.22,
+  last5Avg: 48.2,
+  formMomentum: 'stable',
+  recoveryRate: 52.0,
+};
+
+const MOCK_STARTING_XI = [
+  PLAYER_IDS.MARTINEZ,
+  PLAYER_IDS.VAN_DIJK,
+  PLAYER_IDS.ALEXANDER_ARNOLD,
+  PLAYER_IDS.GABRIEL,
+  PLAYER_IDS.SALAH,
+  PLAYER_IDS.PALMER,
+  PLAYER_IDS.SAKA,
+  PLAYER_IDS.GORDON,
+  PLAYER_IDS.HAALAND,
+  PLAYER_IDS.ISAK,
+  PLAYER_IDS.WATKINS,
+];
+
+function buildManagerData(managerId: number, stats: typeof MANAGER_A_STATS) {
+  const info = MOCK_MANAGER_NAMES[managerId] || { name: 'Unknown', teamName: 'Unknown FC' };
+  return {
+    manager_id: managerId,
+    name: info.name,
+    team_name: info.teamName,
+    total_points: stats.totalPoints,
+    overall_rank: stats.overallRank,
+    league_rank: stats.leagueRank,
+    total_transfers: stats.totalTransfers,
+    total_hits: stats.totalHits,
+    hits_cost: stats.hitsCost,
+    remaining_transfers: stats.remainingTransfers,
+    captain_points: stats.captainPoints,
+    differential_captains: stats.differentialCaptains,
+    chips_used: stats.chipsUsed,
+    chips_remaining: stats.chipsRemaining,
+    best_gameweek: stats.bestGw,
+    worst_gameweek: stats.worstGw,
+    starting_xi: MOCK_STARTING_XI,
+    league_template_overlap: {
+      match_count: stats.leagueOverlap.count,
+      match_percentage: stats.leagueOverlap.pct,
+      matching_player_ids: stats.leagueOverlap.matching,
+      differential_player_ids: stats.leagueOverlap.diff,
+    },
+    world_template_overlap: {
+      match_count: stats.worldOverlap.count,
+      match_percentage: stats.worldOverlap.pct,
+      matching_player_ids: stats.worldOverlap.matching,
+      differential_player_ids: stats.worldOverlap.diff,
+    },
+    consistency_score: stats.consistency,
+    bench_waste_rate: stats.benchWaste,
+    hit_frequency: stats.hitFreq,
+    last_5_average: stats.last5Avg,
+    form_momentum: stats.formMomentum,
+    recovery_rate: stats.recoveryRate,
+  };
+}
+
+export function mockComparisonResponse(managerA: number, managerB: number) {
+  return {
+    season_id: 1,
+    manager_a: buildManagerData(managerA, MANAGER_A_STATS),
+    manager_b: buildManagerData(managerB, MANAGER_B_STATS),
+    common_players: [
+      PLAYER_IDS.SALAH,
+      PLAYER_IDS.HAALAND,
+      PLAYER_IDS.PALMER,
+      PLAYER_IDS.VAN_DIJK,
+      PLAYER_IDS.MARTINEZ,
+      PLAYER_IDS.ALEXANDER_ARNOLD,
+    ],
+    head_to_head: {
+      wins_a: 10,
+      wins_b: 6,
+      draws: 2,
+    },
+  };
+}

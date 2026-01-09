@@ -272,8 +272,8 @@ test.describe('Analytics - Head-to-Head Component', () => {
     const seasonOverview = page.locator('text=Season Overview');
     await expect(seasonOverview).toBeVisible({ timeout: 5000 });
 
-    // Should show Total Points row
-    const totalPoints = page.locator('text=Total Points');
+    // Should show Total Points row (use exact match to avoid tooltip text)
+    const totalPoints = page.getByText('Total Points', { exact: true });
     await expect(totalPoints).toBeVisible();
   });
 
