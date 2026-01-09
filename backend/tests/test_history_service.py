@@ -1721,6 +1721,51 @@ class TestCalculateFormMomentum:
         ]
         assert calculate_form_momentum(history) == "stable"
 
+    def test_returns_stable_at_exactly_5_percent_threshold(self):
+        """Should return 'stable' when change is exactly ±5% (boundary test)."""
+        from app.services.calculations import calculate_form_momentum
+
+        # Previous avg = 100, Recent avg = 105 → exactly +5% → stable (not > 5%)
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=100),
+            _make_history_row(gameweek=2, gameweek_points=100),
+            _make_history_row(gameweek=3, gameweek_points=100),
+            _make_history_row(gameweek=4, gameweek_points=105),
+            _make_history_row(gameweek=5, gameweek_points=105),
+            _make_history_row(gameweek=6, gameweek_points=105),
+        ]
+        assert calculate_form_momentum(history) == "stable"
+
+    def test_returns_improving_just_over_5_percent(self):
+        """Should return 'improving' when change is just over 5% (boundary test)."""
+        from app.services.calculations import calculate_form_momentum
+
+        # Previous avg = 100, Recent avg = 106 → +6% → improving (> 5%)
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=100),
+            _make_history_row(gameweek=2, gameweek_points=100),
+            _make_history_row(gameweek=3, gameweek_points=100),
+            _make_history_row(gameweek=4, gameweek_points=106),
+            _make_history_row(gameweek=5, gameweek_points=106),
+            _make_history_row(gameweek=6, gameweek_points=106),
+        ]
+        assert calculate_form_momentum(history) == "improving"
+
+    def test_returns_declining_just_over_negative_5_percent(self):
+        """Should return 'declining' when change is just over -5% (boundary test)."""
+        from app.services.calculations import calculate_form_momentum
+
+        # Previous avg = 100, Recent avg = 94 → -6% → declining (< -5%)
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, gameweek_points=100),
+            _make_history_row(gameweek=2, gameweek_points=100),
+            _make_history_row(gameweek=3, gameweek_points=100),
+            _make_history_row(gameweek=4, gameweek_points=94),
+            _make_history_row(gameweek=5, gameweek_points=94),
+            _make_history_row(gameweek=6, gameweek_points=94),
+        ]
+        assert calculate_form_momentum(history) == "declining"
+
 
 # =============================================================================
 # Pure Function Tests: Tier 2 Analytics - calculate_recovery_rate

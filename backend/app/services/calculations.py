@@ -10,7 +10,14 @@ for HTTP requests.
 """
 
 from statistics import pstdev
-from typing import TypedDict
+from typing import Literal, TypedDict
+
+# =============================================================================
+# Constants
+# =============================================================================
+
+# Threshold percentage for determining form momentum (improving/declining vs stable)
+MOMENTUM_THRESHOLD_PCT = 5
 
 # =============================================================================
 # TypedDicts for type hints
@@ -476,7 +483,10 @@ def calculate_last_5_average(history: list[ManagerHistoryRow]) -> float:
 # =============================================================================
 
 
-def calculate_form_momentum(history: list[ManagerHistoryRow]) -> str:
+FormMomentum = Literal["improving", "stable", "declining"]
+
+
+def calculate_form_momentum(history: list[ManagerHistoryRow]) -> FormMomentum:
     """Calculate form momentum based on 3-GW rolling average trend.
 
     Compares the most recent 3-GW average to the previous 3-GW average.
@@ -485,8 +495,8 @@ def calculate_form_momentum(history: list[ManagerHistoryRow]) -> str:
         history: List of manager history rows (any order)
 
     Returns:
-        "improving" if recent avg > previous avg by >5%
-        "declining" if recent avg < previous avg by >5%
+        "improving" if recent avg > previous avg by >MOMENTUM_THRESHOLD_PCT%
+        "declining" if recent avg < previous avg by >MOMENTUM_THRESHOLD_PCT%
         "stable" otherwise (or if insufficient data)
     """
     if len(history) < 6:
@@ -510,9 +520,9 @@ def calculate_form_momentum(history: list[ManagerHistoryRow]) -> str:
     # Calculate percentage change
     change_pct = ((recent_avg - previous_avg) / previous_avg) * 100
 
-    if change_pct > 5:
+    if change_pct > MOMENTUM_THRESHOLD_PCT:
         return "improving"
-    elif change_pct < -5:
+    elif change_pct < -MOMENTUM_THRESHOLD_PCT:
         return "declining"
     else:
         return "stable"

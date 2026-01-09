@@ -52,16 +52,27 @@ Added Tier 2 analytics based on manager history data:
 **Skipped metrics:**
 - `captain_vs_best` - Avg diff between captain points and best XI player (user feedback: low value)
 
-**Files modified:**
-- `app/services/calculations.py` - 2 new pure functions
+**Backend files modified:**
+- `app/services/calculations.py` - 2 new pure functions with `Literal` type, `MOMENTUM_THRESHOLD_PCT` constant
 - `app/services/history.py` - Call new functions in `_build_manager_stats()`
 - `app/api/history.py` - Added Tier 2 fields to `ManagerComparisonStats`
-- `tests/test_history_service.py` - 14 new TDD tests
+- `tests/test_history_service.py` - 14 new TDD tests + 3 boundary tests for ±5% threshold
+
+**Frontend files modified:**
 - `frontend/src/services/backendApi.ts` - Added Tier 2 types
 - `frontend/src/services/queries/useHeadToHeadComparison.ts` - Updated types and transformer
+- `frontend/src/features/HeadToHead/HeadToHead.tsx` - Added Tier 2 section with color-coded momentum labels
+- `frontend/src/features/HeadToHead/HeadToHead.module.css` - Tier 2 row styling + mobile layout fixes
+- `frontend/src/components/InfoTooltip/` - New component for metric explanations (accessibility-compliant)
+
+**InfoTooltip Component:**
+- Accessible tooltip using `<button>` element for keyboard/touch support
+- `aria-describedby` + `role="tooltip"` for screen readers
+- CSS module structure following FRONTEND.md conventions
+- Documented in FRONTEND.md Reusable Components section
 
 **Test counts:**
-- Backend: 308 tests pass
+- Backend: 92 history service tests pass (including boundary tests)
 - Frontend: 641 tests pass
 
 ## Problem

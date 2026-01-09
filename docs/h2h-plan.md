@@ -30,11 +30,25 @@ Planning document for the H2H manager comparison feature.
 - Squad Value
 - Bank
 
-**Files Created:**
-- `frontend/src/services/queries/useHeadToHeadComparison.ts` - Core data hook
+**Playstyle (Template Overlap):** ✅
+- League Template overlap score (0-11 players matching)
+- World Template overlap score (global FPL ownership)
+- Playstyle labels: Template / Balanced / Differential / Maverick
+- Progress bar visualization with color coding
+
+**Tier 2 Analytics:** ✅
+- Form Momentum: "Improving" / "Stable" / "Declining" (based on 3-GW trend, ±5% threshold)
+- Recovery Rate: Average points scored after red arrow GWs
+- InfoTooltip component for metric explanations
+
+**Files Created/Modified:**
+- `frontend/src/services/queries/useHeadToHeadComparison.ts` - Core data hook (uses backend API)
 - `frontend/src/features/HeadToHead/HeadToHead.tsx` - UI component
 - `frontend/src/features/HeadToHead/HeadToHead.module.css` - Styling
+- `frontend/src/components/InfoTooltip/` - Accessible tooltip component
 - `frontend/tests/analytics.spec.ts` - E2E tests (11 H2H tests)
+- `backend/app/services/calculations.py` - Pure calculation functions
+- `backend/tests/test_history_service.py` - 92 tests including boundary tests
 
 ---
 
@@ -263,20 +277,22 @@ Keep current view as "Overview" tab, add:
 
 ## Implementation Priority
 
-| Feature | Priority | Complexity | Impact | Phase |
-|---------|----------|------------|--------|-------|
-| Roster comparison | HIGH | LOW | HIGH | 1 |
-| Best/Worst GW | MEDIUM | LOW | MEDIUM | 1 |
-| Points per GW chart | HIGH | MEDIUM | HIGH | 1 |
-| Bench points comparison | LOW | LOW | LOW | 1 |
-| Position breakdown | HIGH | MEDIUM | HIGH | 2 |
-| Template overlap | MEDIUM | LOW | MEDIUM | 2 |
-| Transfer ROI | MEDIUM | HIGH | MEDIUM | 2 |
-| Fixture difficulty | MEDIUM | LOW | MEDIUM | 2 |
-| H2H record | LOW | MEDIUM | MEDIUM | 3 |
-| Manager DNA | LOW | HIGH | MEDIUM | 3 |
-| Rank trajectory chart | MEDIUM | MEDIUM | HIGH | 3 |
-| Share as image | LOW | HIGH | MEDIUM | 3 |
+| Feature | Priority | Complexity | Impact | Phase | Status |
+|---------|----------|------------|--------|-------|--------|
+| Template overlap | MEDIUM | LOW | MEDIUM | 2 | ✅ Done |
+| Form momentum | MEDIUM | LOW | MEDIUM | 2 | ✅ Done |
+| Recovery rate | MEDIUM | LOW | LOW | 2 | ✅ Done |
+| Best/Worst GW | MEDIUM | LOW | MEDIUM | 1 | ✅ Done (backend) |
+| H2H record | LOW | MEDIUM | MEDIUM | 1 | ✅ Done (backend) |
+| Roster comparison | HIGH | LOW | HIGH | 1 | Pending |
+| Points per GW chart | HIGH | MEDIUM | HIGH | 1 | Pending |
+| Bench points comparison | LOW | LOW | LOW | 1 | Pending |
+| Position breakdown | HIGH | MEDIUM | HIGH | 2 | Pending |
+| Transfer ROI | MEDIUM | HIGH | MEDIUM | 2 | Pending |
+| Fixture difficulty | MEDIUM | LOW | MEDIUM | 2 | Pending |
+| Manager DNA | LOW | HIGH | MEDIUM | 3 | Pending |
+| Rank trajectory chart | MEDIUM | MEDIUM | HIGH | 3 | Pending |
+| Share as image | LOW | HIGH | MEDIUM | 3 | Pending |
 
 ---
 

@@ -676,6 +676,25 @@ import { ThemeToggle } from '../components/ThemeToggle'
 <ThemeToggle />
 ```
 
+### InfoTooltip (`components/InfoTooltip/InfoTooltip.tsx`)
+Accessible info icon with tooltip on hover/focus. Works on desktop (hover) and touch devices (tap triggers focus).
+
+```tsx
+import { InfoTooltip } from 'components/InfoTooltip'
+
+<span>
+  Some label <InfoTooltip text="Explanation of this metric" size={14} />
+</span>
+```
+
+**Props:** `text` (tooltip content), `size?` (icon size in px, default 14)
+
+**Accessibility:**
+- Uses `<button>` element for keyboard/touch accessibility
+- `aria-describedby` links icon to tooltip content
+- `role="tooltip"` on tooltip span
+- `aria-hidden="true"` on decorative icon
+
 ## Biome (Formatter)
 
 We use [Biome](https://biomejs.dev/) for code formatting. The project uses a **monorepo setup** with configs at both root and frontend levels.
@@ -951,6 +970,13 @@ Compare any two managers in the league with detailed statistics.
 - **Chips**: Used/remaining chips for current half (2025/26 rules: reset at GW20)
 - **Value**: Squad value, bank balance
 - **Playstyle**: Template overlap scores for both League and World templates
+- **Analytics (Tier 2)**: Form momentum, recovery rate (with InfoTooltip explanations)
+
+**Tier 2 Analytics:**
+| Metric | Calculation | Values |
+|--------|-------------|--------|
+| Form Momentum | Compare last 3 GW avg vs previous 3 GW avg | "Improving" (>5%), "Stable" (±5%), "Declining" (<-5%) |
+| Recovery Rate | Average points in GWs following a red arrow (rank drop) | Number (higher = better bounce-back ability) |
 
 **Template Types:**
 | Type | Source | Description |
