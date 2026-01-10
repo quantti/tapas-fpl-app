@@ -1,3 +1,12 @@
+## [0.25.1](https://github.com/quantti/tapas-fpl-app/compare/v0.25.0...v0.25.1) (2026-01-10)
+
+
+### Bug Fixes
+
+* **tests:** add missing backend API mocks for league stats and positions ([1588b3c](https://github.com/quantti/tapas-fpl-app/commit/1588b3cc386338ae81f053085c6c43e6eddf15ba))
+* **tests:** use deterministic mock data and regenerate snapshots ([236a3b9](https://github.com/quantti/tapas-fpl-app/commit/236a3b95d0861c556b28678b7d8d1b1a9bfa7ab7))
+* **tests:** use production build for E2E tests ([5dcf6a9](https://github.com/quantti/tapas-fpl-app/commit/5dcf6a9618c29858c6cfc100e55421e5999ae933))
+
 # [0.25.0](https://github.com/quantti/tapas-fpl-app/compare/v0.24.1...v0.25.0) (2026-01-09)
 
 
