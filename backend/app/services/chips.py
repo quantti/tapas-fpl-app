@@ -244,17 +244,24 @@ class ChipsService:
                     manager_data,
                 )
 
-                # Batch insert league_manager relationships
+                # Batch insert league_manager relationships with rank and points
                 league_manager_data = [
-                    (league_id, member.manager_id, season_id)
+                    (
+                        league_id,
+                        member.manager_id,
+                        season_id,
+                        member.rank,
+                        member.total_points,
+                    )
                     for member in standings.members
                 ]
 
                 await conn.executemany(
                     """
-                    INSERT INTO league_manager (league_id, manager_id, season_id)
-                    VALUES ($1, $2, $3)
-                    ON CONFLICT DO NOTHING
+                    INSERT INTO league_manager (league_id, manager_id, season_id, rank, total)
+                    VALUES ($1, $2, $3, $4, $5)
+                    ON CONFLICT (league_id, manager_id, season_id)
+                    DO UPDATE SET rank = EXCLUDED.rank, total = EXCLUDED.total, updated_at = NOW()
                     """,
                     league_manager_data,
                 )

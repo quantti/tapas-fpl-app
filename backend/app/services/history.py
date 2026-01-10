@@ -889,8 +889,8 @@ class HistoryService:
         total_points = history_list[-1]["total_points"] if history_list else 0
         overall_rank = history_list[-1]["overall_rank"] if history_list else None
         total_transfers = sum(h["transfers_made"] for h in history_list)
-        total_hits = sum(1 for h in history_list if h["transfers_cost"] > 0)
         hits_cost = sum(h["transfers_cost"] for h in history_list)
+        total_hits = hits_cost // 4  # Each hit costs 4 points
 
         # Best/worst gameweek
         best_gw = max(history_list, key=lambda x: x["gameweek_points"], default=None)
