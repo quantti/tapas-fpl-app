@@ -7,13 +7,15 @@ Only marks gameweek as processed after verifying data was saved correctly.
 
 Updates:
 1. Points Against - FPL points conceded by each team (~2-5 min incremental)
-2. Chips Usage - Manager chip activations for tracked league (~30 sec)
-3. Manager Snapshots - GW-by-GW picks and stats for H2H comparison (~15 sec)
+2. Teams & Players - Sync from bootstrap for world template (~5 sec)
+3. Chips Usage - Manager chip activations for tracked league (~30 sec)
+4. Manager Snapshots - GW-by-GW picks and stats for H2H comparison (~15 sec)
 
 Usage:
-    python -m scripts.scheduled_update           # Run scheduled update
-    python -m scripts.scheduled_update --status  # Show update status
-    python -m scripts.scheduled_update --dry-run # Check without making changes
+    python -m scripts.scheduled_update                 # Run scheduled update
+    python -m scripts.scheduled_update --status        # Show update status
+    python -m scripts.scheduled_update --dry-run       # Check without making changes
+    python -m scripts.scheduled_update --sync-bootstrap # Sync teams/players only
 
 If collection fails or verification fails, the gameweek is NOT marked as processed.
 Next run will attempt to process it again. Manual intervention required if repeated failures.
@@ -141,6 +143,154 @@ async def update_collection_status(
         season_id,
         gameweek,
     )
+
+
+async def sync_teams_from_bootstrap(
+    conn: asyncpg.Connection, teams: list[dict], season_id: int
+) -> int:
+    """Sync team data from FPL bootstrap to database.
+
+    Teams must be synced before players due to FK constraint.
+
+    Args:
+        conn: Database connection
+        teams: Team list from bootstrap API (bootstrap.teams)
+        season_id: Season ID
+
+    Returns:
+        Number of teams synced
+    """
+    if not teams:
+        logger.warning("No teams to sync")
+        return 0
+
+    await conn.executemany(
+        """
+        INSERT INTO team (id, season_id, name, short_name)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (id, season_id) DO UPDATE SET
+            name = EXCLUDED.name,
+            short_name = EXCLUDED.short_name,
+            updated_at = NOW()
+        """,
+        [
+            (
+                t["id"],
+                season_id,
+                t.get("name", "Unknown"),
+                t.get("short_name", "UNK"),
+            )
+            for t in teams
+        ],
+    )
+
+    return len(teams)
+
+
+async def sync_players_from_bootstrap(
+    conn: asyncpg.Connection, players: list[dict], season_id: int
+) -> int:
+    """Sync player data from FPL bootstrap to database.
+
+    This is required for world template calculations which need selected_by_percent.
+    NOTE: Teams must be synced first (FK constraint).
+
+    Args:
+        conn: Database connection
+        players: Player list from bootstrap API (bootstrap.players)
+        season_id: Season ID
+
+    Returns:
+        Number of players synced
+    """
+    if not players:
+        logger.warning("No players to sync")
+        return 0
+
+    # Upsert player data - include all required fields from player table
+    await conn.executemany(
+        """
+        INSERT INTO player (
+            id, season_id, team_id, web_name, element_type, now_cost,
+            selected_by_percent, total_points, form
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT (id, season_id) DO UPDATE SET
+            team_id = EXCLUDED.team_id,
+            web_name = EXCLUDED.web_name,
+            element_type = EXCLUDED.element_type,
+            now_cost = EXCLUDED.now_cost,
+            selected_by_percent = EXCLUDED.selected_by_percent,
+            total_points = EXCLUDED.total_points,
+            form = EXCLUDED.form,
+            updated_at = NOW()
+        """,
+        [
+            (
+                p["id"],
+                season_id,
+                p.get("team", 0),
+                p.get("web_name", "Unknown"),
+                p.get("element_type", 1),
+                p.get("now_cost", 0),
+                float(p.get("selected_by_percent", "0")),  # FPL API returns string
+                p.get("total_points", 0),
+                float(p.get("form", "0")),  # FPL API returns string
+            )
+            for p in players
+        ],
+    )
+
+    return len(players)
+
+
+async def verify_player_sync(
+    conn: asyncpg.Connection, season_id: int, expected_count: int
+) -> bool:
+    """Verify player data was synced correctly.
+
+    Checks:
+    1. Player count matches expected (within tolerance)
+    2. Players have valid selected_by_percent values (not all NULL/zero)
+
+    Returns:
+        True if verification passes, False otherwise
+    """
+    # Check actual count in database
+    actual_count = await conn.fetchval(
+        "SELECT COUNT(*) FROM player WHERE season_id = $1", season_id
+    )
+
+    if actual_count == 0:
+        logger.error(f"Player sync verification failed: no players found for season {season_id}")
+        return False
+
+    # Allow small tolerance (some players may be filtered)
+    tolerance = 0.95
+    if actual_count < expected_count * tolerance:
+        logger.error(
+            f"Player sync verification failed: expected ~{expected_count} players, "
+            f"found {actual_count} (< {tolerance*100}% threshold)"
+        )
+        return False
+
+    # Check that selected_by_percent has valid data (at least some non-zero values)
+    non_zero_count = await conn.fetchval(
+        """
+        SELECT COUNT(*) FROM player
+        WHERE season_id = $1 AND selected_by_percent > 0
+        """,
+        season_id,
+    )
+
+    if non_zero_count == 0:
+        logger.error("Player sync verification failed: all selected_by_percent values are 0")
+        return False
+
+    logger.debug(
+        f"Player sync verified: {actual_count} players, {non_zero_count} with ownership > 0%"
+    )
+    return True
 
 
 async def verify_points_against_data(
@@ -627,6 +777,29 @@ async def run_scheduled_update(dry_run: bool = False) -> None:
                         f"Points Against verification failed for GW{latest_finalized}"
                     )
 
+                # 7.5 Sync teams and players (needed for world template calculations)
+                # Teams: sync only if not already present (they don't change mid-season)
+                team_count = await conn.fetchval(
+                    "SELECT COUNT(*) FROM team WHERE season_id = $1", season_id
+                )
+                if team_count == 0:
+                    teams_synced = await sync_teams_from_bootstrap(
+                        conn, bootstrap.teams, season_id
+                    )
+                    logger.info(f"Team sync complete: {teams_synced} teams")
+                else:
+                    logger.debug(f"Teams already present ({team_count}), skipping sync")
+
+                # Players: sync every time as selected_by_percent changes weekly
+                players_synced = await sync_players_from_bootstrap(
+                    conn, bootstrap.players, season_id
+                )
+                logger.info(f"Player sync complete: {players_synced} players")
+
+                # 7.6 Verify player sync
+                if not await verify_player_sync(conn, season_id, len(bootstrap.players)):
+                    raise RuntimeError("Player sync verification failed")
+
                 # 8. Update Chips for tracked league (fast operation)
                 _, failed_count, total_members = await run_chips_update(fpl_client, season_id)
 
@@ -722,6 +895,56 @@ async def show_status() -> None:
             await pool.close()
 
 
+async def sync_bootstrap_only() -> None:
+    """Sync only teams and players from FPL bootstrap.
+
+    This is a one-time operation to populate the database with team and player data
+    required for world template calculations. Runs independently of scheduled updates.
+    """
+    pool = None
+    fpl_client = FplApiClient(requests_per_second=1.0, max_concurrent=5)
+
+    try:
+        logger.info("Fetching FPL bootstrap data...")
+        bootstrap = await fpl_client.get_bootstrap()
+
+        if not bootstrap.teams:
+            raise RuntimeError("No teams in bootstrap data")
+        if not bootstrap.players:
+            raise RuntimeError("No players in bootstrap data")
+
+        pool = await create_pool()
+        async with pool.acquire() as conn:
+            season_id = await get_or_create_season(conn)
+            logger.info(f"Season ID: {season_id}")
+
+            # Sync teams
+            teams_synced = await sync_teams_from_bootstrap(
+                conn, bootstrap.teams, season_id
+            )
+            logger.info(f"Teams synced: {teams_synced}")
+
+            # Sync players
+            players_synced = await sync_players_from_bootstrap(
+                conn, bootstrap.players, season_id
+            )
+            logger.info(f"Players synced: {players_synced}")
+
+            # Verify player sync
+            if not await verify_player_sync(conn, season_id, len(bootstrap.players)):
+                raise RuntimeError("Player sync verification failed")
+
+            print(f"\n✓ Synced {teams_synced} teams and {players_synced} players")
+
+    except Exception as e:
+        logger.error(f"Bootstrap sync failed: {e}", exc_info=True)
+        raise
+    finally:
+        await fpl_client.close()
+        if pool:
+            await pool.close()
+
+
 async def main() -> None:
     """Main entry point with argument parsing."""
     parser = argparse.ArgumentParser(description="Scheduled data updates")
@@ -733,11 +956,18 @@ async def main() -> None:
         action="store_true",
         help="Check what would be updated without making changes",
     )
+    parser.add_argument(
+        "--sync-bootstrap",
+        action="store_true",
+        help="Sync only teams and players from FPL bootstrap (one-time operation)",
+    )
 
     args = parser.parse_args()
 
     if args.status:
         await show_status()
+    elif args.sync_bootstrap:
+        await sync_bootstrap_only()
     else:
         try:
             await asyncio.wait_for(

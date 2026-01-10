@@ -226,10 +226,31 @@ _SINGLE_MANAGER_CHIPS_SQL = """
 """
 
 # Get league standings (rank within league) for specific managers
+# Note: league_manager.rank may be NULL if not synced from FPL API
 _LEAGUE_STANDINGS_SQL = """
     SELECT manager_id, rank
     FROM league_manager
     WHERE league_id = $1 AND season_id = $2 AND manager_id = ANY($3)
+"""
+
+# Calculate league rank dynamically from manager points
+# This is a fallback when league_manager.rank is not populated
+_LEAGUE_RANK_DYNAMIC_SQL = """
+    WITH latest_snapshots AS (
+        SELECT mgs.manager_id, mgs.total_points
+        FROM manager_gw_snapshot mgs
+        JOIN league_manager lm ON lm.manager_id = mgs.manager_id AND lm.season_id = mgs.season_id
+        WHERE lm.league_id = $1 AND mgs.season_id = $2
+          AND mgs.gameweek = $3
+    ),
+    ranked AS (
+        SELECT manager_id, total_points,
+               RANK() OVER (ORDER BY total_points DESC) as rank
+        FROM latest_snapshots
+    )
+    SELECT manager_id, rank::int
+    FROM ranked
+    WHERE manager_id = ANY($4)
 """
 
 # Get league template: most owned players in starting XI across league managers
@@ -799,9 +820,26 @@ class HistoryService:
             gameweeks = await conn.fetch(_GAMEWEEKS_SQL, season_id)
 
             # Fetch league standings (ranks for both managers)
+            # First try static rank from league_manager table
             league_standings = await conn.fetch(
                 _LEAGUE_STANDINGS_SQL, league_id, season_id, manager_ids
             )
+
+            # If static ranks are NULL, calculate dynamically from total_points
+            has_null_ranks = any(r["rank"] is None for r in league_standings)
+            if has_null_ranks and max_gw:
+                logger.info(
+                    f"Static league ranks contain NULL values, calculating dynamically "
+                    f"from GW{max_gw} snapshots for managers {manager_ids}"
+                )
+                league_standings = await conn.fetch(
+                    _LEAGUE_RANK_DYNAMIC_SQL, league_id, season_id, max_gw, manager_ids
+                )
+                if len(league_standings) < len(manager_ids):
+                    logger.warning(
+                        f"Dynamic rank calculation returned {len(league_standings)} results "
+                        f"for {len(manager_ids)} managers - some snapshot data may be missing"
+                    )
 
             # Fetch league template (most owned players in this league)
             league_template = await conn.fetch(_LEAGUE_TEMPLATE_SQL, league_id, season_id, max_gw)
