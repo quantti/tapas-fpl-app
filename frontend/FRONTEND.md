@@ -1111,6 +1111,13 @@ npm run test:e2e:docker -- --update-snapshots
 
 **Docker image:** `mcr.microsoft.com/playwright:v1.57.0-jammy` (must match `@playwright/test` version)
 
+**Why production build (preview mode):**
+The Playwright config uses `npm run build && npm run preview` instead of `npm run dev`:
+- Dev mode conditionally loads TanStack Query Devtools (when `import.meta.env.DEV`)
+- Devtools lazy-load with timing inconsistencies, causing snapshot differences
+- Production build ensures `DEV=false`, so devtools never render
+- This matches what users see in production
+
 ### Test Files
 
 **Unit tests:** `src/hooks/*.test.ts`, `src/utils/*.test.ts`, `src/components/*.test.tsx`
