@@ -1,3 +1,20 @@
+# [0.26.0](https://github.com/quantti/tapas-fpl-app/compare/v0.25.1...v0.26.0) (2026-01-10)
+
+
+### Bug Fixes
+
+* **backend:** correct default league ID in collect_manager_snapshots ([80fceb7](https://github.com/quantti/tapas-fpl-app/commit/80fceb7f38b67315034b6d5e1baa5fdd02b909a6))
+* **backend:** correct hits count and add league rank to sync ([d7b91e8](https://github.com/quantti/tapas-fpl-app/commit/d7b91e82121880400e030303848d98ca0fedda45))
+* **backend:** correct transfers_cost sign check for hits detection ([eedfad5](https://github.com/quantti/tapas-fpl-app/commit/eedfad551c8251d25cdf07fc56171c989b2539d3))
+* **backend:** get captain points from player_fixture_stats ([884ea47](https://github.com/quantti/tapas-fpl-app/commit/884ea47a1cc19061461bb24cea0ba28cddce5ff9))
+* **InfoTooltip:** add button reset styles for production build ([0d32782](https://github.com/quantti/tapas-fpl-app/commit/0d327820bf75e741bc7808764501e37c2945e9cb))
+
+
+### Features
+
+* **backend:** add bulk manager snapshot collection script ([7bfc928](https://github.com/quantti/tapas-fpl-app/commit/7bfc9286a9eca622ec38032dd8bbe09960ed9c19))
+* **backend:** add manager snapshots to scheduled updates ([5931418](https://github.com/quantti/tapas-fpl-app/commit/593141846701b54c0238496249c381e66d308b56))
+
 ## [0.25.1](https://github.com/quantti/tapas-fpl-app/compare/v0.25.0...v0.25.1) (2026-01-10)
 
 
