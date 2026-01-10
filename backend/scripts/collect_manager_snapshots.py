@@ -33,7 +33,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.services.fpl_client import FplApiClient
 
 # Configuration constants
-DEFAULT_LEAGUE_ID = 979420  # Tapas and Tackles league
+DEFAULT_LEAGUE_ID = 242017  # Tapas and Tackles league
 MAX_FAILURE_RATE = 0.10  # Abort if >10% of requests fail
 RATE_LIMIT_DELAY = 0.3  # 0.3s between requests = ~3.3 req/s
 
