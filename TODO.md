@@ -81,6 +81,12 @@
   - [ ] Update Roadmap to use Layout
   - [ ] Remove duplicated width/padding styles from individual view CSS modules
 
+### Performance
+- [ ] H2H comparison API response time (~884ms) - investigate optimization:
+  - [ ] Profile backend endpoint `/api/v1/history/comparison`
+  - [ ] Consider caching comparison results
+  - [ ] Check if parallel FPL API calls can be optimized
+
 ### Polish
 - [x] Error boundaries for graceful failure handling (503 "FPL is updating" message)
 - [ ] Mobile responsiveness audit (touch targets, responsive tables)
