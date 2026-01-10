@@ -9,16 +9,17 @@ export default defineConfig({
   reporter: 'html',
 
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:4173',
     trace: 'on-first-retry',
     // Use Chromium for all tests
     ...devices['Desktop Chrome'],
   },
 
-  // Run local dev server before tests
+  // Build and serve production bundle for tests
+  // This ensures no dev-only features (like React Query Devtools) appear in screenshots
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
+    command: 'npm run build && npm run preview',
+    url: 'http://localhost:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },
