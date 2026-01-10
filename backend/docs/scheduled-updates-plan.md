@@ -6,7 +6,8 @@ Automatically update backend data when a new gameweek is finalized (all games fi
 
 **Data sources updated:**
 1. **Points Against** - FPL points conceded by each team (~5-65 min)
-2. **Chips Usage** - Manager chip activations per league (~30 sec)
+2. **Manager Snapshots** - Manager GW history and picks for H2H (~1-2 min)
+3. **Chips Usage** - Manager chip activations per league (~30 sec)
 
 ## Trigger Condition
 
@@ -215,6 +216,23 @@ fly scale show --app tapas-fpl-backend
 2. Only fetch element-summary for those players
 3. Process only fixtures from the new gameweek
 4. Upsert to `points_against_by_fixture` table
+
+### Manager Snapshots Collection
+
+| Type | When | Duration | API Calls |
+|------|------|----------|-----------|
+| Full | Initial setup, season start | ~10 min | ~40 per manager × 21 GWs |
+| Incremental | After each GW finalized | ~1-2 min | 2 per manager (history + picks) |
+
+**Incremental approach:**
+1. Fetch league standings to get manager IDs
+2. For each manager, fetch `/entry/{id}/history/` and `/entry/{id}/event/{gw}/picks/`
+3. Extract gameweek data (points, rank, transfers, bank)
+4. Extract picks for the specific gameweek
+5. Upsert to `manager_gw_snapshot` and `manager_pick` tables
+
+**Data used by:**
+- H2H comparison (captain points, hits taken, league rank history)
 
 ### Chips Collection
 

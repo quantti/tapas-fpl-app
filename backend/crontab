@@ -5,6 +5,7 @@
 #
 # Updates:
 # - Points Against: FPL points conceded by each team (~5-10 min incremental)
+# - Manager Snapshots: GW history and picks for H2H comparison (~1-2 min)
 # - Chips Usage: Manager chip activations for tracked league (~30 sec)
 #
 # Idempotent - safe to run multiple times (skips if no new finalized GW)

@@ -290,11 +290,12 @@ backend/
 │   ├── 010_collection_status.sql
 │   └── 011_pfs_captain_lookup_index.sql
 ├── scripts/
-│   ├── migrate.py               # Database migration runner
-│   ├── collect_points_against.py # Full Points Against data collector (~66 min)
-│   ├── scheduled_update.py      # Combined scheduled update (daily via Supercronic)
-│   ├── test_small_collection.py # Test collection with 5 players (~2 min)
-│   └── seed_test_data.py        # Test data seeder
+│   ├── migrate.py                    # Database migration runner
+│   ├── collect_points_against.py     # Full Points Against data collector (~66 min)
+│   ├── collect_manager_snapshots.py  # Manager GW snapshots + picks (~10 min)
+│   ├── scheduled_update.py           # Combined scheduled update (daily via Supercronic)
+│   ├── test_small_collection.py      # Test collection with 5 players (~2 min)
+│   └── seed_test_data.py             # Test data seeder
 ├── tests/
 │   ├── conftest.py           # Test fixtures (MockDB, async_client)
 │   ├── test_api.py           # API endpoint tests
@@ -562,6 +563,36 @@ python -m scripts.collect_points_against --reset
 - ETA calculation
 - Final summary: players processed, errors, fixtures saved
 
+### collect_manager_snapshots.py
+
+Bulk collection script for manager gameweek snapshots and picks. Required for H2H comparison feature.
+
+```bash
+# Full collection for default league (242017)
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_manager_snapshots"
+
+# Check status
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_manager_snapshots --status"
+
+# Single manager (for testing)
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_manager_snapshots --manager 91555"
+
+# Specific league
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_manager_snapshots --league 123456"
+```
+
+**Options:**
+- `--status` - Show collection status (managers, GWs, picks)
+- `--manager <id>` - Collect single manager only
+- `--league <id>` - Use specific league (default: 242017)
+- `--reset` - Clear all data and re-run (requires confirmation)
+
+**Data Saved:**
+- `manager_gw_snapshot` - Manager state per gameweek (points, rank, transfers, bank)
+- `manager_pick` - Squad picks per GW (15 players with position, captain, multiplier)
+
+**Runtime:** ~10 minutes for 20 managers × 21 GWs
+
 ### test_small_collection.py
 
 Test script for verifying collection logic with a small sample (5 players).
@@ -601,7 +632,7 @@ fly ssh console --app tapas-fpl-backend -C "python -m scripts.seed_test_data"
 
 ### scheduled_update.py
 
-Combined scheduled update that runs daily via Supercronic. Updates both Points Against and Chips data.
+Combined scheduled update that runs daily via Supercronic. Updates Points Against, Manager Snapshots, and Chips data.
 
 ```bash
 # Run scheduled update
@@ -634,10 +665,12 @@ fly ssh console --app tapas-fpl-backend -C "python -m scripts.scheduled_update -
 4. Acquire advisory lock (prevents concurrent runs)
 5. Run Points Against incremental update (~2-5 min)
 6. Verify Points Against data via `points_against_collection_status` table
-7. Run Chips sync for tracked league (~30 sec)
-8. Verify Chips data (failure rate < 10%, members > 0)
-9. Mark gameweek as processed
-10. Release advisory lock
+7. Run Manager Snapshots incremental update (~1-2 min)
+8. Verify Manager Snapshots data (snapshots and picks saved)
+9. Run Chips sync for tracked league (~30 sec)
+10. Verify Chips data (failure rate < 10%, members > 0)
+11. Mark gameweek as processed
+12. Release advisory lock
 
 **Robustness Features:**
 - **Advisory locks**: `pg_try_advisory_lock` prevents race conditions from cron overlap or manual runs
@@ -652,6 +685,40 @@ fly ssh console --app tapas-fpl-backend -C "python -m scripts.scheduled_update -
 - Advisory lock is always released (via `finally` block)
 - Next run will retry automatically
 - Manual intervention required if repeated failures
+
+## Data Collection Status
+
+Current production data status (as of GW21, 2025-26 season):
+
+| Table | Rows | Coverage | Updated By |
+|-------|------|----------|------------|
+| `player_fixture_stats` | 15,760 | GW1-21 | Points Against collection |
+| `points_against_by_fixture` | 420 | GW1-21 | Points Against collection |
+| `manager_gw_snapshot` | 377 | GW1-21, 18 managers | Manager Snapshots collection |
+| `manager_pick` | 5,655 | GW1-21, 18 managers | Manager Snapshots collection |
+| `chip_usage` | 65 | GW1-21 | Chips sync |
+
+**Initial Setup (one-time):**
+
+Before scheduled updates can work, you must run bulk collection for historical data:
+
+```bash
+# 1. Points Against (~66 min) - required for captain points calculation
+fly ssh console --app tapas-fpl-backend -C "nohup python -m scripts.collect_points_against > /tmp/pa.log 2>&1 &"
+
+# 2. Manager Snapshots (~10 min) - required for H2H comparison
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_manager_snapshots"
+
+# 3. Chips sync (~30 sec) - handled by scheduled update
+# No manual run needed
+```
+
+**Ongoing Updates:**
+
+The `scheduled_update.py` script handles all three data types incrementally:
+- Runs daily at 06:00 UTC via Supercronic
+- Only processes new finalized gameweeks
+- Tracks progress in `collection_status` table
 
 ## Deployment (Fly.io)
 
