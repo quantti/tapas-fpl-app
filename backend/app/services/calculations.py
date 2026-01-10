@@ -130,7 +130,7 @@ def calculate_free_transfers(
     Rules:
     - Start with 1 FT at GW1
     - Unused FT carries forward (max 5 for 2024/25+, max 2 for older seasons)
-    - Taking a hit (transfers_cost < 0) resets to 1 FT
+    - Taking a hit (transfers_cost > 0) resets to 1 FT
     - Wildcard resets to 1 FT
     - Free hit doesn't affect FT count (team reverts)
 
@@ -172,11 +172,11 @@ def calculate_free_transfers(
         if chip in REVERT_CHIPS:
             continue
 
-        # Check for hit (transfers_cost is negative when taking hits)
+        # Check for hit (FPL API returns positive transfers_cost when taking hits)
         transfers_cost = row.get("transfers_cost", 0)
         transfers_made = row.get("transfers_made", 0)
 
-        if transfers_cost < 0:
+        if transfers_cost > 0:
             # Took a hit - reset to 1
             ft = 1
         else:
@@ -450,12 +450,12 @@ def calculate_hit_frequency(history: list[ManagerHistoryRow]) -> float:
         history: List of manager history rows with transfers_cost field
 
     Returns:
-        Percentage (0-100) of gameweeks with hits (transfers_cost < 0)
+        Percentage (0-100) of gameweeks with hits (transfers_cost > 0)
     """
     if not history:
         return 0.0
 
-    hits_count = sum(1 for row in history if row["transfers_cost"] < 0)
+    hits_count = sum(1 for row in history if row["transfers_cost"] > 0)
     return (hits_count / len(history)) * 100
 
 

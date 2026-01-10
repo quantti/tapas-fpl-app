@@ -189,10 +189,11 @@ class TestCalculateFreeTransfers:
         """Taking a hit should reset to 1 FT next week."""
         from app.services.history import calculate_free_transfers
 
+        # FPL API returns positive transfers_cost for hits
         history: list[ManagerHistoryRow] = [
             _make_history_row(gameweek=1, transfers_made=0),  # Bank 1
             _make_history_row(gameweek=2, transfers_made=0),  # Bank 2
-            _make_history_row(gameweek=3, transfers_made=3, transfers_cost=-8),  # Hit!
+            _make_history_row(gameweek=3, transfers_made=3, transfers_cost=8),  # Hit!
         ]
         # After hit, reset to 1
         result = calculate_free_transfers(history, current_gameweek=4)
@@ -673,9 +674,7 @@ class TestHistoryServiceGetLeaguePositions:
         mock_history_db.conn.fetch.side_effect = [mock_managers, mock_history]
 
         with mock_history_db:
-            result = await history_service.get_league_positions(
-                league_id=98765, season_id=1
-            )
+            result = await history_service.get_league_positions(league_id=98765, season_id=1)
 
         assert result["league_id"] == 98765
         assert len(result["positions"]) == 2  # 2 gameweeks
@@ -702,9 +701,7 @@ class TestHistoryServiceGetLeaguePositions:
         mock_history_db.conn.fetch.side_effect = [mock_managers, mock_history]
 
         with mock_history_db:
-            result = await history_service.get_league_positions(
-                league_id=98765, season_id=1
-            )
+            result = await history_service.get_league_positions(league_id=98765, season_id=1)
 
         assert len(result["managers"]) == 1
         manager = result["managers"][0]
@@ -1018,27 +1015,20 @@ class TestHistoryServiceGetManagerComparison:
         mock_manager_b: ManagerRow = {"id": 456, "player_name": "Jane", "team_name": "FC Jane"}
         # Multi-gameweek history for meaningful analytics
         mock_history_a: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=123, gameweek=1, gameweek_points=50, points_on_bench=5),
             _make_history_row(
-                manager_id=123, gameweek=1, gameweek_points=50, points_on_bench=5
+                manager_id=123,
+                gameweek=2,
+                gameweek_points=60,
+                points_on_bench=8,
+                transfers_cost=4,  # FPL API returns positive for hits
             ),
-            _make_history_row(
-                manager_id=123, gameweek=2, gameweek_points=60,
-                points_on_bench=8, transfers_cost=-4,
-            ),
-            _make_history_row(
-                manager_id=123, gameweek=3, gameweek_points=70, points_on_bench=3
-            ),
+            _make_history_row(manager_id=123, gameweek=3, gameweek_points=70, points_on_bench=3),
         ]
         mock_history_b: list[ManagerHistoryRow] = [
-            _make_history_row(
-                manager_id=456, gameweek=1, gameweek_points=45, points_on_bench=2
-            ),
-            _make_history_row(
-                manager_id=456, gameweek=2, gameweek_points=55, points_on_bench=4
-            ),
-            _make_history_row(
-                manager_id=456, gameweek=3, gameweek_points=65, points_on_bench=6
-            ),
+            _make_history_row(manager_id=456, gameweek=1, gameweek_points=45, points_on_bench=2),
+            _make_history_row(manager_id=456, gameweek=2, gameweek_points=55, points_on_bench=4),
+            _make_history_row(manager_id=456, gameweek=3, gameweek_points=65, points_on_bench=6),
         ]
 
         # 13 fetch calls including new template queries
@@ -1134,9 +1124,7 @@ class TestHistoryServiceErrorHandling:
         ]
 
         with mock_history_db, pytest.raises(Exception, match="History query failed"):
-            await history_service.get_league_stats(
-                league_id=98765, season_id=1, current_gameweek=1
-            )
+            await history_service.get_league_stats(league_id=98765, season_id=1, current_gameweek=1)
 
     async def test_comparison_gather_propagates_manager_lookup_failure(
         self, history_service: "HistoryService", mock_history_db: MockDB
@@ -1178,17 +1166,13 @@ class TestHistoryServiceCacheBehavior:
 
         with mock_history_db:
             # First call - hits database
-            result1 = await history_service.get_league_history(
-                league_id=98765, season_id=1
-            )
+            result1 = await history_service.get_league_history(league_id=98765, season_id=1)
 
             # Reset side_effect - second call should NOT hit database
             mock_history_db.conn.fetch.side_effect = Exception("Should not be called")
 
             # Second call - should return cached data
-            result2 = await history_service.get_league_history(
-                league_id=98765, season_id=1
-            )
+            result2 = await history_service.get_league_history(league_id=98765, season_id=1)
 
         assert result1 == result2
         assert result1["managers"][0]["manager_id"] == 123
@@ -1200,9 +1184,7 @@ class TestHistoryServiceCacheBehavior:
         mock_managers: list[ManagerRow] = [
             {"id": 123, "player_name": "John", "team_name": "FC John"}
         ]
-        mock_history: list[ManagerHistoryRow] = [
-            _make_history_row(manager_id=123, gameweek=1)
-        ]
+        mock_history: list[ManagerHistoryRow] = [_make_history_row(manager_id=123, gameweek=1)]
         mock_chips: list[ChipRow] = []
         mock_picks: list[PickRow] = []
 
@@ -1253,12 +1235,8 @@ class TestHistoryServiceCacheBehavior:
         ]
 
         with mock_history_db:
-            result_a = await history_service.get_league_history(
-                league_id=11111, season_id=1
-            )
-            result_b = await history_service.get_league_history(
-                league_id=22222, season_id=1
-            )
+            result_a = await history_service.get_league_history(league_id=11111, season_id=1)
+            result_b = await history_service.get_league_history(league_id=22222, season_id=1)
 
         assert result_a["managers"][0]["manager_id"] == 123
         assert result_b["managers"][0]["manager_id"] == 456
@@ -1295,9 +1273,7 @@ class TestCalculateConsistencyScore:
         """Should return 0 when only one gameweek (no variance possible)."""
         from app.services.calculations import calculate_consistency_score
 
-        history: list[ManagerHistoryRow] = [
-            _make_history_row(gameweek=1, gameweek_points=50)
-        ]
+        history: list[ManagerHistoryRow] = [_make_history_row(gameweek=1, gameweek_points=50)]
         assert calculate_consistency_score(history) == 0.0
 
     def test_high_variance_manager(self):
@@ -1376,8 +1352,8 @@ class TestCalculateBenchWasteRate:
         # GW2 has 0 total points, should be skipped
         history: list[ManagerHistoryRow] = [
             _make_history_row(gameweek=1, gameweek_points=50, points_on_bench=5),  # 10%
-            _make_history_row(gameweek=2, gameweek_points=0, points_on_bench=0),   # Skip
-            _make_history_row(gameweek=3, gameweek_points=60, points_on_bench=12), # 20%
+            _make_history_row(gameweek=2, gameweek_points=0, points_on_bench=0),  # Skip
+            _make_history_row(gameweek=3, gameweek_points=60, points_on_bench=12),  # 20%
         ]
         result = calculate_bench_waste_rate(history)
         # Average of 10% and 20% = 15%
@@ -1397,11 +1373,12 @@ class TestCalculateHitFrequency:
         from app.services.calculations import calculate_hit_frequency
 
         # 2 out of 4 GWs had hits = 50%
+        # FPL API returns positive values for transfers_cost (4 = -4 point hit)
         history: list[ManagerHistoryRow] = [
             _make_history_row(gameweek=1, transfers_cost=0),
-            _make_history_row(gameweek=2, transfers_cost=-4),  # Hit
+            _make_history_row(gameweek=2, transfers_cost=4),  # Hit
             _make_history_row(gameweek=3, transfers_cost=0),
-            _make_history_row(gameweek=4, transfers_cost=-8),  # Hit
+            _make_history_row(gameweek=4, transfers_cost=8),  # Hit
         ]
         result = calculate_hit_frequency(history)
         assert result == 50.0
@@ -1427,10 +1404,11 @@ class TestCalculateHitFrequency:
         """Should return 100 when hits taken every gameweek."""
         from app.services.calculations import calculate_hit_frequency
 
+        # FPL API returns positive values for transfers_cost
         history: list[ManagerHistoryRow] = [
-            _make_history_row(gameweek=1, transfers_cost=-4),
-            _make_history_row(gameweek=2, transfers_cost=-8),
-            _make_history_row(gameweek=3, transfers_cost=-4),
+            _make_history_row(gameweek=1, transfers_cost=4),
+            _make_history_row(gameweek=2, transfers_cost=8),
+            _make_history_row(gameweek=3, transfers_cost=4),
         ]
         assert calculate_hit_frequency(history) == 100.0
 
@@ -1835,7 +1813,9 @@ class TestCalculateRecoveryRate:
 
         history: list[ManagerHistoryRow] = [
             _make_history_row(gameweek=1, gameweek_points=50, overall_rank=1000),
-            _make_history_row(gameweek=2, gameweek_points=40, overall_rank=1500),  # Red arrow, no recovery after
+            _make_history_row(
+                gameweek=2, gameweek_points=40, overall_rank=1500
+            ),  # Red arrow, no recovery after
         ]
         assert calculate_recovery_rate(history) == 0.0
 

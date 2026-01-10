@@ -641,9 +641,7 @@ class HistoryService:
             gameweek_rows = await conn.fetch(_GAMEWEEKS_SQL, season_id)
 
             # Group data by manager (in-memory, fast)
-            history_by_manager: dict[int, list[ManagerHistoryRow]] = {
-                m["id"]: [] for m in members
-            }
+            history_by_manager: dict[int, list[ManagerHistoryRow]] = {m["id"]: [] for m in members}
             for row in history_rows:
                 history_by_manager[row["manager_id"]].append(dict(row))
 
@@ -668,9 +666,7 @@ class HistoryService:
             if all_player_ids:
                 player_ids_list = list(all_player_ids)
                 name_rows = await conn.fetch(_PLAYER_NAMES_SQL, player_ids_list, season_id)
-                points_rows = await conn.fetch(
-                    _PLAYER_GW_POINTS_SQL, player_ids_list, season_id
-                )
+                points_rows = await conn.fetch(_PLAYER_GW_POINTS_SQL, player_ids_list, season_id)
 
         # Build lookups (outside connection block)
         player_names: dict[int, str] = {}
@@ -716,9 +712,9 @@ class HistoryService:
 
             # Free transfers (now uses int season_id)
             ft_remaining = calculate_free_transfers(history, current_gameweek, season_id)
-            free_transfers_list.append({
-                "manager_id": mid, "name": name, "free_transfers": ft_remaining
-            })
+            free_transfers_list.append(
+                {"manager_id": mid, "name": name, "free_transfers": ft_remaining}
+            )
 
         result = {
             "league_id": league_id,
@@ -796,9 +792,7 @@ class HistoryService:
             )
 
             # Fetch league template (most owned players in this league)
-            league_template = await conn.fetch(
-                _LEAGUE_TEMPLATE_SQL, league_id, season_id, max_gw
-            )
+            league_template = await conn.fetch(_LEAGUE_TEMPLATE_SQL, league_id, season_id, max_gw)
 
             # Fetch world template (globally most owned players)
             world_template = await conn.fetch(_WORLD_TEMPLATE_SQL, season_id)
@@ -895,7 +889,7 @@ class HistoryService:
         total_points = history_list[-1]["total_points"] if history_list else 0
         overall_rank = history_list[-1]["overall_rank"] if history_list else None
         total_transfers = sum(h["transfers_made"] for h in history_list)
-        total_hits = sum(1 for h in history_list if h["transfers_cost"] < 0)
+        total_hits = sum(1 for h in history_list if h["transfers_cost"] > 0)
         hits_cost = sum(h["transfers_cost"] for h in history_list)
 
         # Best/worst gameweek
@@ -904,9 +898,7 @@ class HistoryService:
 
         # 2025/26 rules: ALL 4 chips reset at GW20 (season_half 1 = GW1-19, 2 = GW20-38)
         current_half = 1 if current_gameweek <= 19 else 2
-        chips_used = [
-            r["chip_type"] for r in chips if r["season_half"] == current_half
-        ]
+        chips_used = [r["chip_type"] for r in chips if r["season_half"] == current_half]
         all_chips = ["wildcard", "bboost", "3xc", "freehit"]
         chips_remaining = [c for c in all_chips if c not in chips_used]
 
@@ -916,16 +908,12 @@ class HistoryService:
         )
 
         # Captain points (total with multiplier)
-        captain_points = sum(
-            p["points"] * p["multiplier"] for p in captain_picks
-        )
+        captain_points = sum(p["points"] * p["multiplier"] for p in captain_picks)
 
         # Differential captains (different from template)
         template_by_gw = {gw["id"]: gw["most_captained"] for gw in gameweeks}
         differential_captains = sum(
-            1
-            for p in captain_picks
-            if p["player_id"] != template_by_gw.get(p["gameweek"])
+            1 for p in captain_picks if p["player_id"] != template_by_gw.get(p["gameweek"])
         )
 
         # Starting XI player IDs
