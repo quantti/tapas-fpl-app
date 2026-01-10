@@ -109,7 +109,7 @@ Ensure these settings in Supabase Dashboard → Settings → Database:
    from scripts.collect_points_against import collect_points_against, get_or_create_season
 
    # Configuration
-   LEAGUE_ID = 620837  # Tapas and Tackles league
+   LEAGUE_ID = 242017  # Tapas and Tackles league
 
    # Main flow:
    # 1. Fetch FPL bootstrap, validate response

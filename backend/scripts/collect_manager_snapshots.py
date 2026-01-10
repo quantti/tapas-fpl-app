@@ -6,11 +6,11 @@ This script populates the manager_gw_snapshot and manager_pick tables
 which are required for the Head-to-Head comparison feature.
 
 Usage:
-    python -m scripts.collect_manager_snapshots                    # Run collection for league 979420
-    python -m scripts.collect_manager_snapshots --league 123456    # Run for specific league
-    python -m scripts.collect_manager_snapshots --manager 2724410  # Run for single manager
-    python -m scripts.collect_manager_snapshots --status           # Show collection status
-    python -m scripts.collect_manager_snapshots --reset            # Clear and re-collect
+    python -m scripts.collect_manager_snapshots                   # Default league (242017)
+    python -m scripts.collect_manager_snapshots --league 123456   # Specific league
+    python -m scripts.collect_manager_snapshots --manager 2724410 # Single manager
+    python -m scripts.collect_manager_snapshots --status          # Show status
+    python -m scripts.collect_manager_snapshots --reset           # Clear and re-collect
 """
 
 import argparse

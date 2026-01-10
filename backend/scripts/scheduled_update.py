@@ -8,6 +8,7 @@ Only marks gameweek as processed after verifying data was saved correctly.
 Updates:
 1. Points Against - FPL points conceded by each team (~2-5 min incremental)
 2. Chips Usage - Manager chip activations for tracked league (~30 sec)
+3. Manager Snapshots - GW-by-GW picks and stats for H2H comparison (~15 sec)
 
 Usage:
     python -m scripts.scheduled_update           # Run scheduled update
@@ -27,6 +28,7 @@ import time
 from datetime import UTC, datetime
 
 import asyncpg
+import httpx
 from dotenv import load_dotenv
 
 # Add parent directory to path for imports
@@ -34,6 +36,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.services.chips import ChipsService
 from app.services.fpl_client import FplApiClient
+from scripts.collect_manager_snapshots import (
+    ensure_manager_exists,
+    fetch_manager_history,
+    fetch_manager_info,
+    fetch_manager_picks,
+    save_snapshot_and_picks,
+    sync_gameweeks_from_bootstrap,
+)
 from scripts.collect_points_against import (
     collect_points_against,
     get_or_create_season,
@@ -54,7 +64,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configuration (can be overridden via environment variables)
-LEAGUE_ID = int(os.getenv("SCHEDULED_UPDATE_LEAGUE_ID", "620837"))  # Tapas and Tackles
+LEAGUE_ID = int(os.getenv("SCHEDULED_UPDATE_LEAGUE_ID", "242017"))  # Tapas and Tackles
 MAX_RUNTIME_SECONDS = int(os.getenv("SCHEDULED_UPDATE_TIMEOUT", "1800"))  # 30 min
 MAX_FAILURE_RATE = 0.1  # 10% - fail if more than this ratio of managers fail to sync
 
@@ -325,6 +335,192 @@ async def run_chips_update(
     return (synced, failed, total)
 
 
+async def run_manager_snapshots_update(
+    conn: asyncpg.Connection,
+    fpl_client: FplApiClient,
+    season_id: int,
+    gameweek: int,
+) -> tuple[int, int, int]:
+    """Run incremental Manager Snapshots update for the tracked league.
+
+    Only fetches and saves data for the specified gameweek (typically the
+    latest finalized GW). This is much faster than bulk collection since
+    we only make 2 API calls per manager (history + picks) instead of
+    21+ calls for full history.
+
+    Args:
+        conn: Database connection
+        fpl_client: FPL API client
+        season_id: Season ID
+        gameweek: The specific gameweek to collect
+
+    Returns:
+        Tuple of (managers_processed, failed_count, total_members)
+    """
+    logger.info(
+        f"Starting Manager Snapshots update for league {LEAGUE_ID}, GW{gameweek}..."
+    )
+    start = time.monotonic()
+
+    # Get league members
+    standings = await fpl_client.get_league_standings(LEAGUE_ID)
+    members = standings.members
+    total_members = len(members)
+    logger.info(f"Found {total_members} members in {standings.league_name}")
+
+    # Sync gameweeks first (needed for FK constraint)
+    async with httpx.AsyncClient(timeout=30.0) as http_client:
+        await sync_gameweeks_from_bootstrap(conn, http_client, season_id)
+
+        managers_processed = 0
+        failed_count = 0
+
+        for i, member in enumerate(members):
+            manager_id = member.manager_id
+
+            try:
+                # Rate limiting - be gentle with FPL API
+                await asyncio.sleep(0.5)
+
+                # Fetch manager info (needed for FK constraint)
+                manager_info = await fetch_manager_info(http_client, manager_id)
+                await ensure_manager_exists(conn, manager_id, season_id, manager_info)
+
+                # Fetch history to get GW stats
+                history, _ = await fetch_manager_history(http_client, manager_id)
+
+                # Find the specific gameweek in history
+                gw_data = None
+                for h in history:
+                    if h.gameweek == gameweek:
+                        gw_data = h
+                        break
+
+                if not gw_data:
+                    logger.warning(
+                        f"Manager {manager_id} has no data for GW{gameweek} - skipping"
+                    )
+                    continue
+
+                # Fetch picks for this GW
+                await asyncio.sleep(0.5)
+                picks, chip_used = await fetch_manager_picks(
+                    http_client, manager_id, gameweek
+                )
+
+                # Save snapshot and picks
+                await save_snapshot_and_picks(
+                    conn, manager_id, season_id, gw_data, picks, chip_used
+                )
+
+                managers_processed += 1
+                logger.debug(
+                    f"Saved GW{gameweek} snapshot for manager {manager_id} "
+                    f"({i + 1}/{total_members})"
+                )
+
+            except (httpx.HTTPError, RuntimeError) as e:
+                logger.warning(f"Failed to process manager {manager_id}: {e}")
+                failed_count += 1
+                continue
+
+    elapsed = time.monotonic() - start
+    logger.info(
+        f"Manager Snapshots update complete in {elapsed:.1f}s - "
+        f"{managers_processed}/{total_members} managers, {failed_count} failed"
+    )
+    return (managers_processed, failed_count, total_members)
+
+
+async def verify_manager_snapshots_data(
+    conn: asyncpg.Connection,
+    season_id: int,
+    gameweek: int,
+    expected_members: int,
+    failed_count: int,
+) -> bool:
+    """Verify Manager Snapshots data was saved correctly for the gameweek.
+
+    Checks:
+    - Snapshots exist for the gameweek
+    - Snapshot count is reasonable (within failure tolerance)
+    - Picks exist for the snapshots
+
+    Args:
+        conn: Database connection
+        season_id: Season ID
+        gameweek: Gameweek that was collected
+        expected_members: Number of managers that should have been processed
+        failed_count: Number of managers that failed to sync
+
+    Returns:
+        True if verification passes, False otherwise
+    """
+    # Check failure rate threshold
+    if expected_members > 0:
+        failure_rate = failed_count / expected_members
+        if failure_rate > MAX_FAILURE_RATE:
+            logger.error(
+                f"Manager Snapshots sync failure rate too high: "
+                f"{failed_count}/{expected_members} ({failure_rate:.1%}) "
+                f"> {MAX_FAILURE_RATE:.0%} threshold"
+            )
+            return False
+
+    # Check snapshot count
+    row = await conn.fetchrow(
+        """
+        SELECT
+            COUNT(*) as snapshot_count,
+            COUNT(DISTINCT manager_id) as manager_count
+        FROM manager_gw_snapshot
+        WHERE season_id = $1 AND gameweek = $2
+        """,
+        season_id,
+        gameweek,
+    )
+
+    if not row or row["snapshot_count"] == 0:
+        logger.error(f"No Manager Snapshots found for GW{gameweek}")
+        return False
+
+    # Should have at least some snapshots (accounting for failures)
+    min_expected = expected_members - failed_count
+    if row["snapshot_count"] < min_expected:
+        logger.error(
+            f"Snapshot count mismatch: expected at least {min_expected}, "
+            f"found {row['snapshot_count']}"
+        )
+        return False
+
+    # Check that picks exist for the snapshots
+    picks_row = await conn.fetchrow(
+        """
+        SELECT COUNT(*) as pick_count
+        FROM manager_pick mp
+        JOIN manager_gw_snapshot mgs ON mp.snapshot_id = mgs.id
+        WHERE mgs.season_id = $1 AND mgs.gameweek = $2
+        """,
+        season_id,
+        gameweek,
+    )
+
+    # Each manager should have ~15 picks (11 starting + 4 bench)
+    expected_picks = row["snapshot_count"] * 15
+    if not picks_row or picks_row["pick_count"] < expected_picks * 0.9:
+        logger.error(
+            f"Pick count too low: expected ~{expected_picks}, "
+            f"found {picks_row['pick_count'] if picks_row else 0}"
+        )
+        return False
+
+    logger.info(
+        f"Manager Snapshots verification passed: GW{gameweek}, "
+        f"{row['snapshot_count']} snapshots, {picks_row['pick_count']} picks"
+    )
+    return True
+
+
 async def run_scheduled_update(dry_run: bool = False) -> None:
     """Main entry point for scheduled updates.
 
@@ -402,6 +598,7 @@ async def run_scheduled_update(dry_run: bool = False) -> None:
             if dry_run:
                 logger.info("[DRY RUN] Would update Points Against data")
                 logger.info("[DRY RUN] Would update Chips data")
+                logger.info("[DRY RUN] Would update Manager Snapshots data")
                 logger.info(
                     f"[DRY RUN] Would mark GW{latest_finalized} as processed"
                 )
@@ -445,7 +642,24 @@ async def run_scheduled_update(dry_run: bool = False) -> None:
                 ):
                     raise RuntimeError(f"Chips verification failed for league {LEAGUE_ID}")
 
-                # 11. All verified - mark gameweek as processed
+                # 11. Update Manager Snapshots for tracked league
+                (
+                    snapshots_processed,
+                    snapshots_failed,
+                    snapshots_total,
+                ) = await run_manager_snapshots_update(
+                    conn, fpl_client, season_id, latest_finalized
+                )
+
+                # 12. Verify Manager Snapshots data
+                if not await verify_manager_snapshots_data(
+                    conn, season_id, latest_finalized, snapshots_total, snapshots_failed
+                ):
+                    raise RuntimeError(
+                        f"Manager Snapshots verification failed for GW{latest_finalized}"
+                    )
+
+                # 13. All verified - mark gameweek as processed
                 await update_collection_status(conn, season_id, latest_finalized)
                 logger.info(f"Scheduled update complete for GW{latest_finalized}")
             finally:

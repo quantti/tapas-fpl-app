@@ -619,7 +619,7 @@ fly ssh console --app tapas-fpl-backend -C "python -m scripts.scheduled_update -
 - `--dry-run` - Check for new gameweek without making changes
 
 **Environment Variables:**
-- `SCHEDULED_UPDATE_LEAGUE_ID` - League to sync chips for (default: 620837)
+- `SCHEDULED_UPDATE_LEAGUE_ID` - League to sync chips for (default: 242017)
 - `SCHEDULED_UPDATE_TIMEOUT` - Maximum runtime in seconds (default: 1800)
 
 **Automatic Scheduling:**

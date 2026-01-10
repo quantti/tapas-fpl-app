@@ -2,9 +2,12 @@
 
 Planning document for the H2H manager comparison feature.
 
+**Last Updated:** 2026-01-10
+**Status:** Phase 1 + Tier 2 Complete
+
 ## Current Implementation Status
 
-### Completed Features
+### ✅ Completed Features
 
 **Season Overview:**
 - Total Points (with point difference display)
@@ -30,25 +33,40 @@ Planning document for the H2H manager comparison feature.
 - Squad Value
 - Bank
 
-**Playstyle (Template Overlap):** ✅
+**Playstyle (Template Overlap):**
 - League Template overlap score (0-11 players matching)
 - World Template overlap score (global FPL ownership)
 - Playstyle labels: Template / Balanced / Differential / Maverick
 - Progress bar visualization with color coding
 
-**Tier 2 Analytics:** ✅
-- Form Momentum: "Improving" / "Stable" / "Declining" (based on 3-GW trend, ±5% threshold)
+**Squad (Roster Comparison):**
+- Shared players (dimmed display)
+- Manager A only (highlighted)
+- Manager B only (highlighted)
+- Player positions shown via position badges
+
+**Head-to-Head Record:**
+- Wins / Losses / Draws GW-by-GW record
+- Best GW (gameweek + points)
+- Worst GW (gameweek + points)
+
+**Analytics (Tier 1 + 2):**
+- Consistency Score: StdDev of GW points (lower = more consistent)
+- Bench Waste Rate: Avg bench points as % of total
+- Hit Frequency: % of GWs with hits taken
+- Form Momentum: "Improving" / "Stable" / "Declining" (3-GW trend, ±5% threshold)
 - Recovery Rate: Average points scored after red arrow GWs
 - InfoTooltip component for metric explanations
 
-**Files Created/Modified:**
-- `frontend/src/services/queries/useHeadToHeadComparison.ts` - Core data hook (uses backend API)
-- `frontend/src/features/HeadToHead/HeadToHead.tsx` - UI component
+**Files:**
+- `frontend/src/services/queries/useHeadToHeadComparison.ts` - Core data hook (backend API)
+- `frontend/src/features/HeadToHead/HeadToHead.tsx` - UI component (~540 lines)
 - `frontend/src/features/HeadToHead/HeadToHead.module.css` - Styling
 - `frontend/src/components/InfoTooltip/` - Accessible tooltip component
 - `frontend/tests/analytics.spec.ts` - E2E tests (11 H2H tests)
 - `backend/app/services/calculations.py` - Pure calculation functions
 - `backend/tests/test_history_service.py` - 92 tests including boundary tests
+- `backend/docs/head-to-head-enhancement-plan.md` - Detailed backend plan
 
 ---
 
@@ -92,42 +110,17 @@ Based on analysis of FPL tools (LiveFPL, FPL Review, Fantasy Football Hub) and o
 
 ## Future Enhancements
 
-### Phase 1: Quick Wins (Frontend Only)
+### Phase 3: Visual Enhancements
 
-#### 1.1 Roster Comparison
-Show which players each manager owns with differential highlighting:
-```
-Shared Players: Salah, Haaland, TAA (dimmed)
-Manager A only: Palmer, Isak, Gabriel
-Manager B only: Saka, Watkins, Van Dijk
-```
-
-#### 1.2 Best/Worst Gameweeks
-```typescript
-interface GameweekExtremes {
-  bestGW: { gw: number; points: number }
-  worstGW: { gw: number; points: number }
-  highestRank: { gw: number; rank: number }
-  lowestRank: { gw: number; rank: number }
-}
-```
-
-#### 1.3 Points Per Gameweek Chart
+#### 3.1 Points Per Gameweek Chart
 Line chart showing both managers' points per GW overlaid:
 - X-axis: Gameweeks
 - Y-axis: Points
 - Two lines (one per manager)
 - Hover for details
+- Use Recharts (already in project dependencies)
 
-#### 1.4 Bench Points Comparison
-Total bench points wasted per manager (data already available from useBenchPoints)
-
-#### 1.5 Captain Success Rate
-Percentage of optimal captain picks (when their captain was the highest scorer in their team)
-
-### Phase 2: Enhanced Analytics
-
-#### 2.1 Position Breakdown
+#### 3.2 Position Breakdown
 Points by position with color indicators:
 ```
          Manager A    Manager B
@@ -137,54 +130,12 @@ MID:        312    ◄   298
 FWD:        189    ►   195
 ```
 
-#### 2.2 Template Overlap Score (League Template)
-How "template" each manager is compared to the league's most-owned starting XI.
+#### 3.3 Fixture Difficulty Comparison
+Next 5 GWs average fixture difficulty for each manager's squad
 
-**Implementation Details:**
+### Phase 3 (continued): Transfer Analytics
 
-**Data Sources:**
-- League template: `buildTemplateTeam()` from `utils/templateTeam.ts` (already exists)
-- Manager picks: `managerDetails[].picks` with `multiplier > 0` (starting XI only)
-
-**Calculation:**
-```typescript
-interface TemplateOverlap {
-  matchCount: number           // Players matching template (0-11)
-  matchPercentage: number      // matchCount / 11 * 100
-  matchingPlayerIds: number[]  // Which players match
-  differentialPlayerIds: number[]  // Which players don't match
-  playstyleLabel: string       // "Template" | "Balanced" | "Differential" | "Maverick"
-}
-```
-
-**Playstyle Labels (based on match count):**
-| Match Count | Label | Description |
-|-------------|-------|-------------|
-| 9-11 | Template | Follows the consensus |
-| 6-8 | Balanced | Mix of template and differentials |
-| 3-5 | Differential | Mostly unique picks |
-| 0-2 | Maverick | Highly contrarian |
-
-**UI Display:**
-```
-         Manager A         Manager B
-Template: 8/11 (73%)  ►    5/11 (45%)
-          Balanced         Differential
-```
-
-**Progress Bar Visualization:**
-- 11 segments (one per player)
-- Filled segments = matching players
-- Color coding: green for high overlap, amber for mid, red for low
-
-**Files to Create/Modify:**
-- Add `calculateTemplateOverlap()` to `useHeadToHeadComparison.ts`
-- Add new section in `HeadToHead.tsx` for Template Overlap display
-- Add CSS for progress bar visualization
-
-**Future Enhancement:** Add global FPL template comparison (using `bootstrap.elements` most selected players)
-
-#### 2.3 Transfer ROI
+#### 3.4 Transfer ROI
 Points gained/lost from transfers:
 ```typescript
 interface TransferROI {
@@ -194,18 +145,15 @@ interface TransferROI {
 }
 ```
 
-#### 2.4 Fixture Difficulty Comparison
-Next 5 GWs average fixture difficulty for each manager's squad
+### Phase 4: Advanced Features
 
-### Phase 3: Advanced Features
+#### 4.1 Rank Trajectory Chart
+Bump chart showing both managers' overall rank over the season:
+- Divergence points highlighted
+- Key events annotated (chips, hits)
+- Use Recharts AreaChart or LineChart
 
-#### 3.1 Historical H2H Record
-If managers are in same H2H league:
-- Win/Loss/Draw record
-- Points scored vs each other
-- Head-to-head streak
-
-#### 3.2 Manager DNA Profile
+#### 4.2 Manager DNA Profile
 Categorize managers by behavior patterns:
 - **Template Player**: >70% template ownership
 - **Differential Hunter**: <50% template, many punts
@@ -213,18 +161,13 @@ Categorize managers by behavior patterns:
 - **Set and Forget**: Low transfer count
 - **Hit Taker**: High hit count for short-term gains
 
-#### 3.3 Rank Trajectory Chart
-Bump chart showing both managers' overall rank over the season:
-- Divergence points highlighted
-- Key events annotated (chips, hits)
-
-#### 3.4 "Key Differential" Highlight
+#### 4.3 "Key Differential" Highlight
 The player most likely to decide the matchup:
 - Owned by one manager only
 - High expected points for upcoming GW
 - Could swing the H2H result
 
-#### 3.5 Share as Image
+#### 4.4 Share as Image
 Generate shareable comparison graphic for social media
 
 ---
@@ -279,20 +222,22 @@ Keep current view as "Overview" tab, add:
 
 | Feature | Priority | Complexity | Impact | Phase | Status |
 |---------|----------|------------|--------|-------|--------|
-| Template overlap | MEDIUM | LOW | MEDIUM | 2 | ✅ Done |
+| Template overlap | MEDIUM | LOW | MEDIUM | 1 | ✅ Done |
+| Roster comparison | HIGH | LOW | HIGH | 1 | ✅ Done |
+| H2H record | LOW | MEDIUM | MEDIUM | 1 | ✅ Done |
+| Best/Worst GW | MEDIUM | LOW | MEDIUM | 1 | ✅ Done |
+| Consistency score | MEDIUM | LOW | MEDIUM | 1 | ✅ Done |
+| Bench waste rate | LOW | LOW | LOW | 1 | ✅ Done |
+| Hit frequency | LOW | LOW | LOW | 1 | ✅ Done |
 | Form momentum | MEDIUM | LOW | MEDIUM | 2 | ✅ Done |
 | Recovery rate | MEDIUM | LOW | LOW | 2 | ✅ Done |
-| Best/Worst GW | MEDIUM | LOW | MEDIUM | 1 | ✅ Done (backend) |
-| H2H record | LOW | MEDIUM | MEDIUM | 1 | ✅ Done (backend) |
-| Roster comparison | HIGH | LOW | HIGH | 1 | Pending |
-| Points per GW chart | HIGH | MEDIUM | HIGH | 1 | Pending |
-| Bench points comparison | LOW | LOW | LOW | 1 | Pending |
-| Position breakdown | HIGH | MEDIUM | HIGH | 2 | Pending |
-| Transfer ROI | MEDIUM | HIGH | MEDIUM | 2 | Pending |
-| Fixture difficulty | MEDIUM | LOW | MEDIUM | 2 | Pending |
-| Manager DNA | LOW | HIGH | MEDIUM | 3 | Pending |
+| **Points per GW chart** | HIGH | MEDIUM | HIGH | 3 | Pending |
+| **Position breakdown** | HIGH | MEDIUM | HIGH | 3 | Pending |
+| Fixture difficulty | MEDIUM | LOW | MEDIUM | 3 | Pending |
+| Transfer ROI | MEDIUM | HIGH | MEDIUM | 3 | Pending |
 | Rank trajectory chart | MEDIUM | MEDIUM | HIGH | 3 | Pending |
-| Share as image | LOW | HIGH | MEDIUM | 3 | Pending |
+| Manager DNA | LOW | HIGH | MEDIUM | 4 | Pending |
+| Share as image | LOW | HIGH | MEDIUM | 4 | Pending |
 
 ---
 
