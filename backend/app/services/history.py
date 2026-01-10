@@ -155,7 +155,8 @@ _MANAGER_CHIPS_SQL = """
     ORDER BY cu.manager_id, cu.gameweek
 """
 
-# Get captain picks
+# Get captain picks (joins player_fixture_stats for actual points)
+# SUM handles DGWs where a player has multiple fixtures
 _CAPTAIN_PICKS_SQL = """
     SELECT mgs.manager_id,
            mgs.gameweek,
@@ -163,16 +164,22 @@ _CAPTAIN_PICKS_SQL = """
            mp.position,
            mp.multiplier,
            mp.is_captain,
-           mp.points
+           COALESCE(SUM(pfs.total_points), 0) AS points
     FROM manager_pick mp
     JOIN manager_gw_snapshot mgs ON mgs.id = mp.snapshot_id
+    LEFT JOIN player_fixture_stats pfs
+        ON pfs.player_id = mp.player_id
+        AND pfs.gameweek = mgs.gameweek
+        AND pfs.season_id = mgs.season_id
     WHERE mgs.manager_id = ANY($1)
       AND mgs.season_id = $2
       AND mp.is_captain = true
+    GROUP BY mgs.manager_id, mgs.gameweek, mp.player_id, mp.position, mp.multiplier, mp.is_captain
     ORDER BY mgs.manager_id, mgs.gameweek
 """
 
 # Get full picks (for include_picks option)
+# Joins player_fixture_stats for actual points, SUM handles DGWs
 _FULL_PICKS_SQL = """
     SELECT mgs.manager_id,
            mgs.gameweek,
@@ -180,10 +187,15 @@ _FULL_PICKS_SQL = """
            mp.position,
            mp.multiplier,
            mp.is_captain,
-           mp.points
+           COALESCE(SUM(pfs.total_points), 0) AS points
     FROM manager_pick mp
     JOIN manager_gw_snapshot mgs ON mgs.id = mp.snapshot_id
+    LEFT JOIN player_fixture_stats pfs
+        ON pfs.player_id = mp.player_id
+        AND pfs.gameweek = mgs.gameweek
+        AND pfs.season_id = mgs.season_id
     WHERE mgs.manager_id = ANY($1) AND mgs.season_id = $2
+    GROUP BY mgs.manager_id, mgs.gameweek, mp.player_id, mp.position, mp.multiplier, mp.is_captain
     ORDER BY mgs.manager_id, mgs.gameweek, mp.position
 """
 
@@ -907,8 +919,8 @@ class HistoryService:
             history_list, current_gameweek + 1, season_id
         )
 
-        # Captain points (total with multiplier)
-        captain_points = sum(p["points"] * p["multiplier"] for p in captain_picks)
+        # Captain points (raw points scored by captains, not multiplied)
+        captain_points = sum(p["points"] for p in captain_picks)
 
         # Differential captains (different from template)
         template_by_gw = {gw["id"]: gw["most_captained"] for gw in gameweeks}
