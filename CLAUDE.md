@@ -168,7 +168,9 @@ python -m pytest               # Run tests
 
 **Deploy process:**
 - Frontend + API: Push to `main` → GitHub Actions → Vercel auto-deploys
-- Backend: `cd backend && fly deploy`
+- Backend: Push to `main` → GitHub Actions → Fly.io auto-deploys
+
+**⚠️ NEVER deploy directly with `fly deploy`. Always push to git and let CI/CD handle deployment.**
 
 ## Environment Variables
 

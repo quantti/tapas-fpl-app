@@ -54,18 +54,18 @@ uvicorn app.main:app --reload
 
 ## Deploy to Fly.io
 
-```bash
-# First time
-fly launch --no-deploy
+**⚠️ NEVER deploy directly with `fly deploy`. Always push to git and let CI/CD handle deployment.**
 
-# Set CORS origins (include BOTH www and non-www if using redirects!)
+```bash
+# Deploy: Push to main branch, GitHub Actions deploys automatically
+
+# First time setup (one-time only):
+fly launch --no-deploy
 fly secrets set CORS_ORIGINS="https://tapas-and-tackles.live,https://www.tapas-and-tackles.live,http://localhost:5173"
 
-# Deploy
-fly deploy
-
-# Logs
+# Monitoring commands (safe to run manually):
 fly logs
+fly status
 ```
 
 ## Testing

@@ -657,9 +657,11 @@ fly ssh console --app tapas-fpl-backend -C "python -m scripts.scheduled_update -
 
 - **App name**: tapas-fpl-backend
 - **URL**: https://tapas-fpl-backend.fly.dev
-- **Deploy**: `fly deploy` from this directory
+- **Deploy**: Push to `main` → GitHub Actions auto-deploys
 
-### Fly CLI Setup
+**⚠️ NEVER deploy directly with `fly deploy`. Always push to git and let CI/CD handle deployment.**
+
+### Fly CLI Setup (for debugging/monitoring only)
 
 ```bash
 # Add to PATH (required if not already set)
@@ -673,22 +675,18 @@ fly auth login
 fly auth whoami
 ```
 
-### Deployment
+### Deployment Commands (CI/CD reference only)
+
+These commands are used by GitHub Actions CI/CD. **Do not run manually.**
 
 ```bash
-cd backend
+# CI/CD uses these commands - DO NOT RUN MANUALLY
+# fly deploy
+# fly deploy --local-only
 
-# Standard deploy (uses Fly.io's Depot builder - can be slow)
-fly deploy
-
-# Local Docker build (faster, use when Depot is slow)
-fly deploy --local-only
-
-# Deploy with verbose output
-fly deploy --verbose
-
-# Check deployment status
+# These monitoring commands ARE safe to run:
 fly status --app tapas-fpl-backend
+fly logs --app tapas-fpl-backend
 ```
 
 ### Machine Management

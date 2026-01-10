@@ -188,15 +188,15 @@ Ensure these settings in Supabase Dashboard → Settings → Database:
 
 ### Deployment
 
+**⚠️ NEVER deploy directly with `fly deploy`. Always push to git and let CI/CD handle deployment.**
+
 ```bash
-# Deploy with both processes
-fly deploy
+# Deploy: Push to main branch, GitHub Actions deploys automatically
 
-# Scale: 1 cron instance (always running), 1-2 API instances
-fly scale count cron=1 api=1
-
-# View cron logs
+# These monitoring commands ARE safe to run manually:
+fly status --app tapas-fpl-backend
 fly logs --app tapas-fpl-backend | grep -i cron
+fly scale show --app tapas-fpl-backend
 ```
 
 ---
