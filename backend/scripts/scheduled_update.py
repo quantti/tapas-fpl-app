@@ -29,6 +29,7 @@ import logging
 import os
 import sys
 import time
+import json
 from datetime import UTC, datetime
 
 import asyncpg
@@ -214,7 +215,7 @@ async def sync_fixtures_from_api(
                 f.get("finished", False),
                 f.get("finished_provisional", False),
                 f.get("minutes", 0),
-                f.get("stats") or [],  # JSONB - asyncpg handles list->JSON
+                json.dumps(f.get("stats") or []),  # JSONB requires JSON string
             )
             for f in fixtures
         ],
