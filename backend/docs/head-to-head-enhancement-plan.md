@@ -1,8 +1,8 @@
 # Head-to-Head Comparison API Enhancement Plan
 
-**Status:** Tier 2 Analytics Complete ✅
+**Status:** Tier 2 Complete ✅ | Tier 3 Data Ready 🟡
 **Created:** 2026-01-09
-**Updated:** 2026-01-09
+**Updated:** 2026-01-11
 **Backend Commit:** e692acf
 **Frontend Commit:** 3e03801
 **Goal:** Extend existing comparison endpoint to eliminate ~600 frontend API calls
@@ -314,13 +314,25 @@ Add high-value, low-effort metrics calculable from existing snapshots:
 | Update tests | Low |
 | **Phase 1b Total** | ~0.5 session |
 
-### Future Phases (Deferred)
+### Future Phases
 
-| Phase | Scope | Prerequisite |
-|-------|-------|--------------|
-| Tier 2 | Captain hit rate, transfer ROI, form momentum | `player_gw_stats` populated |
-| Tier 3 | Luck index, xP delta, squad xGI | `player_fixture_stats` populated |
-| Tier 4 | H2H record, differential points breakdown | Tier 1 complete |
+| Phase | Scope | Prerequisite | Status |
+|-------|-------|--------------|--------|
+| Tier 2 | Form momentum, recovery rate | `manager_gw_snapshot` | ✅ Complete |
+| Tier 3 | Luck index, captain xP delta, squad xP | `player_fixture_stats` | 🟡 Data Ready |
+| Tier 4 | H2H record, differential points breakdown | Tier 1 complete | Deferred |
+
+### Tier 3 Data Availability ✅
+
+Verified 2026-01-11. All required data is populated:
+
+| Table | Rows | Purpose |
+|-------|------|---------|
+| `player_fixture_stats` | 15,760 | xG, xA, xGA per player per fixture |
+| `player` | 795 | `element_type` for position (GK/DEF/MID/FWD) |
+| `manager_pick` | 5,655 | Squad selections per gameweek |
+
+**Join test:** 5,655 picks successfully matched to xG data.
 
 ## Additional Metrics (from research)
 
@@ -392,9 +404,281 @@ These metrics answer "who's actually playing better FPL?" by separating skill fr
 **Data required:**
 - `manager_pick` for current GW starting XI (`multiplier > 0`)
 - `player.expected_goal_involvements` or sum of recent `player_fixture_stats.xg + xa`
-- `team.xga` or `player_fixture_stats` defensive metrics for defenders/GKs
+- `player_fixture_stats.expected_goals_conceded` for defenders/GKs
 
 ---
+
+## Tier 3 Implementation Plan
+
+### TDD Test Cases
+
+Write tests first in `tests/test_calculations.py`.
+
+**FPL Scoring Rules Reference:**
+| Position | Goal | Assist | Clean Sheet | Goals Conceded |
+|----------|------|--------|-------------|----------------|
+| GK (1)   | 6    | 3      | 4           | -1 per 2       |
+| DEF (2)  | 6    | 3      | 4           | -1 per 2       |
+| MID (3)  | 5    | 3      | 1           | 0              |
+| FWD (4)  | 4    | 3      | 0           | 0              |
+
+#### 3.1 Luck Index Tests
+
+**Core Calculation Tests:**
+```python
+# test_luck_index_forward_scores_goal_from_low_xg
+# FWD with xG=0.1, xA=0.0 scores 1 goal (4pts from goal)
+# xP = 0.1*4 + 0*3 = 0.4
+# Luck = 4 - 0.4 = +3.6 (lucky goal)
+
+# test_luck_index_forward_blanks_despite_high_xg
+# FWD with xG=1.5, xA=0.3 scores 0 goals
+# xP = 1.5*4 + 0.3*3 = 6.9
+# Actual = 2 (appearance only)
+# Luck = 2 - 6.9 = -4.9 (unlucky blank)
+
+# test_luck_index_midfielder_scores_uses_5pts_per_goal
+# MID with xG=0.5, xA=0.2 scores 1 goal
+# xP = 0.5*5 + 0.2*3 = 3.1
+# Actual = 5 (goal)
+# Luck = 5 - 3.1 = +1.9
+
+# test_luck_index_defender_includes_clean_sheet_bonus
+# DEF with xG=0.1, xA=0.0, xGA=0.8 keeps clean sheet
+# xCS probability = max(0, 1 - xGA/2.5) = 0.68
+# xP = 0.1*6 + 0*3 + 0.68*4 = 3.32
+# Actual = 6 (appearance + CS)
+# Luck = 6 - 3.32 = +2.68
+
+# test_luck_index_goalkeeper_concedes_despite_low_xga
+# GK with xGA=0.5 concedes 3 goals
+# xP for CS = (1 - 0.5/2.5)*4 = 3.2 expected CS points
+# Actual = -1 (goals conceded penalty)
+# Negative luck from conceding vs expected CS
+```
+
+**Aggregation Tests:**
+```python
+# test_luck_index_sums_across_all_starting_players
+# 11 players each with luck_delta → sum all
+
+# test_luck_index_sums_across_multiple_gameweeks
+# Same player across GW1-5 → cumulative season luck
+
+# test_luck_index_excludes_bench_players
+# multiplier=0 players not counted
+
+# test_luck_index_includes_bench_boost_players
+# When bench_boost chip active (multiplier=1 for bench)
+```
+
+**Edge Cases:**
+```python
+# test_luck_index_returns_none_for_empty_input
+# Input: [] → None
+
+# test_luck_index_skips_players_with_zero_minutes
+# Player didn't play (minutes=0) → skip, don't include in calculation
+
+# test_luck_index_handles_null_xg_values
+# Some fixtures missing xG data → skip those fixtures
+
+# test_luck_index_handles_double_gameweek
+# Player has 2 fixtures in same GW → sum both fixture deltas
+
+# test_luck_index_rounds_to_two_decimal_places
+# Precision handling for display
+```
+
+#### 3.2 Captain xP Delta Tests
+
+**Core Calculation Tests:**
+```python
+# test_captain_delta_positive_when_captain_overperforms
+# Captain (FWD) with xG=0.5, xA=0.1 scores 2 goals
+# xP = 0.5*4 + 0.1*3 = 2.3
+# Actual = 8pts (2 goals)
+# Delta = 8 - 2.3 = +5.7
+
+# test_captain_delta_negative_when_captain_blanks
+# Captain (MID) with xG=1.2, xA=0.5 scores 0
+# xP = 1.2*5 + 0.5*3 = 7.5
+# Actual = 2pts (appearance)
+# Delta = 2 - 7.5 = -5.5
+
+# test_captain_delta_uses_base_points_not_doubled
+# Captain's 2x multiplier applies to actual points only
+# We compare actual/multiplier vs xP (not doubled xP)
+# This measures captain SELECTION skill, not multiplier effect
+```
+
+**Multiplier Handling:**
+```python
+# test_captain_delta_normal_captain_uses_multiplier_2
+# Standard captain: actual_pts / 2 vs xP
+
+# test_captain_delta_triple_captain_uses_multiplier_3
+# TC chip active: actual_pts / 3 vs xP
+
+# test_captain_delta_vice_captain_activated
+# Captain got 0 mins, VC played
+# Use VC's stats with multiplier=2 (VC becomes captain)
+```
+
+**Aggregation Tests:**
+```python
+# test_captain_delta_cumulative_across_season
+# Sum delta for all GWs where captain data exists
+
+# test_captain_delta_handles_dgw_captain
+# Captain played twice in DGW → sum both fixtures
+```
+
+**Edge Cases:**
+```python
+# test_captain_delta_returns_none_for_empty_input
+
+# test_captain_delta_returns_none_when_no_captain_played
+# Captain and VC both got 0 mins in a GW
+
+# test_captain_delta_handles_captain_null_xg
+# Captain's fixture missing xG → skip that GW
+
+# test_captain_delta_handles_single_gameweek_data
+# Only 1 GW of data → still returns value (not None)
+```
+
+#### 3.3 Squad xP Tests
+
+**Position-Based Calculation Tests:**
+```python
+# test_squad_xp_forward_uses_xgi_only
+# FWD: xP = xG + xA (raw xGI, not multiplied by points)
+# We return xGI as "expected involvement" metric
+
+# test_squad_xp_midfielder_uses_xgi_only
+# MID: xP = xG + xA
+
+# test_squad_xp_defender_uses_xgi_plus_xcs
+# DEF: xP = xG + xA + xCS_probability
+# xCS = max(0, 1 - opponent_xG/2.5)
+
+# test_squad_xp_goalkeeper_uses_xgi_plus_xcs
+# GK: same as DEF (xG + xA + xCS)
+```
+
+**Formation Tests:**
+```python
+# test_squad_xp_standard_442_formation
+# 1 GK, 4 DEF, 4 MID, 2 FWD → calculate each correctly
+
+# test_squad_xp_343_formation
+# 1 GK, 3 DEF, 4 MID, 3 FWD
+
+# test_squad_xp_532_formation
+# 1 GK, 5 DEF, 3 MID, 2 FWD
+
+# test_squad_xp_541_formation
+# 1 GK, 5 DEF, 4 MID, 1 FWD (defensive setup)
+```
+
+**Filtering Tests:**
+```python
+# test_squad_xp_excludes_bench_players
+# multiplier=0 → not in starting XI
+
+# test_squad_xp_includes_all_players_during_bench_boost
+# Bench Boost chip: all 15 players have multiplier >= 1
+
+# test_squad_xp_counts_captain_once_not_doubled
+# Captain's xP not multiplied (we measure squad quality, not captain bonus)
+```
+
+**Edge Cases:**
+```python
+# test_squad_xp_returns_none_for_empty_squad
+
+# test_squad_xp_returns_none_when_all_xg_null
+# All players missing xG data
+
+# test_squad_xp_handles_partial_xg_data
+# Some players have xG, others don't → use available data
+
+# test_squad_xp_handles_player_with_multiple_fixtures
+# DGW: player has 2 fixtures → sum xGI from both
+
+# test_squad_xp_uses_current_gw_data_only
+# Only current GW fixtures, not historical
+```
+
+**Boundary Tests:**
+```python
+# test_squad_xp_zero_xg_returns_zero_not_none
+# All players with xG=0, xA=0 → returns 0.0, not None
+
+# test_squad_xp_very_high_xg_values
+# Edge case: total xGI > 10 (unlikely but valid)
+
+# test_squad_xp_negative_xcs_clamped_to_zero
+# opponent_xG very high → xCS = max(0, ...) not negative
+```
+
+### Implementation Steps
+
+1. **Write TDD tests** (`tests/test_calculations.py`)
+   - Pure function tests for each metric
+   - Edge cases: missing data, empty inputs, boundary values
+
+2. **Implement pure functions** (`app/services/calculations.py`)
+   ```python
+   def calculate_luck_index(picks_with_xp: list[dict]) -> float | None
+   def calculate_captain_xp_delta(captain_picks: list[dict]) -> float | None
+   def calculate_squad_xp(current_xi: list[dict]) -> float | None
+   ```
+
+3. **Add SQL query for xG data** (`app/services/history.py`)
+   ```sql
+   SELECT mp.player_id, mp.is_captain, mp.multiplier,
+          pfs.expected_goals, pfs.expected_assists,
+          pfs.expected_goals_conceded, pfs.total_points,
+          p.element_type
+   FROM manager_pick mp
+   JOIN manager_gw_snapshot mgs ON mp.snapshot_id = mgs.id
+   JOIN player_fixture_stats pfs ON mp.player_id = pfs.player_id
+       AND mgs.gameweek = pfs.gameweek AND mgs.season_id = pfs.season_id
+   JOIN player p ON mp.player_id = p.id AND mgs.season_id = p.season_id
+   WHERE mgs.manager_id = $1 AND mgs.season_id = $2
+   ```
+
+4. **Extend `_build_manager_stats()`** to call new functions
+
+5. **Update Pydantic model** (`app/api/history.py`)
+   - Add `luck_index`, `captain_xp_delta`, `squad_xp` fields
+
+6. **Frontend integration**
+   - Update `backendApi.ts` types
+   - Add Tier 3 section to `HeadToHead.tsx`
+   - Add tooltips explaining each metric
+
+### xP Calculation Formula
+
+**Expected Points (xP) approximation:**
+```python
+# For attackers/midfielders:
+xP = (xG * 4) + (xA * 3) + base_points  # FWD: 4pts/goal
+xP = (xG * 5) + (xA * 3) + base_points  # MID: 5pts/goal
+
+# For defenders/goalkeepers:
+xP = (xG * 6) + (xA * 3) + cs_probability * 4 + base_points
+# cs_probability ≈ 1 - (opponent_xG / 2.5) for simplicity
+
+# base_points = 2 (appearance) + minutes bonus
+```
+
+**Simplification for MVP:** Use `total_points` from actual data vs `xGI` as proxy:
+```python
+luck_delta = actual_points - (xG * points_per_goal + xA * 3)
+```
 
 **Summary table:**
 
