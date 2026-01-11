@@ -345,6 +345,30 @@ export interface ElementSummary {
 }
 
 /**
+ * A single pick in a manager's squad.
+ * Used across manager lineup displays and point calculations.
+ */
+export interface SquadPick {
+  element: number; // Player ID
+  position: number; // Squad position 1-15 (1-11 starting, 12-15 bench)
+  multiplier: number; // 0=bench, 1=normal, 2=captain, 3=triple-captain
+  is_captain: boolean;
+  is_vice_captain: boolean;
+}
+
+/**
+ * Minimal pick data for points calculation.
+ * Only element ID and multiplier are needed for scoring.
+ */
+export type PickForPoints = Pick<SquadPick, 'element' | 'multiplier'>;
+
+/**
+ * Manager info subset for display purposes.
+ * Extracted from Entry for lighter payloads.
+ */
+export type ManagerInfo = Pick<Entry, 'id' | 'player_first_name' | 'player_last_name' | 'name'>;
+
+/**
  * Response from /entry/{id}/event/{gw}/picks
  */
 export interface EntryPicksResponse {
@@ -366,11 +390,5 @@ export interface EntryPicksResponse {
     event_transfers: number;
     event_transfers_cost: number;
   };
-  picks: {
-    element: number;
-    position: number;
-    multiplier: number;
-    is_captain: boolean;
-    is_vice_captain: boolean;
-  }[];
+  picks: SquadPick[];
 }

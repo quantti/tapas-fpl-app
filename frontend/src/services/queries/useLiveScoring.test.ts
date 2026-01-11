@@ -302,6 +302,143 @@ describe('useLiveScoring - polling', () => {
   });
 });
 
+// Tests for calculateTeamPoints function
+describe('useLiveScoring - calculateTeamPoints', () => {
+  beforeEach(() => {
+    vi.mocked(fplApi.getLiveGameweek).mockResolvedValue(mockLiveData);
+    vi.mocked(fplApi.getFixtures).mockResolvedValue(mockFixtures);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should calculate total points for starting XI with correct multipliers', async () => {
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
+
+    // Wait for actual data to be loaded, not just defined
+    await waitFor(() => {
+      expect(result.current.liveData?.elements?.length).toBeGreaterThan(0);
+    });
+
+    // Player 1 has 18 points, Player 2 has 12 points
+    const picks = [
+      { element: 1, multiplier: 1 }, // 18 * 1 = 18
+      { element: 2, multiplier: 1 }, // 12 * 1 = 12
+    ];
+
+    const total = result.current.calculateTeamPoints(picks);
+    expect(total).toBe(30);
+  });
+
+  it('should apply 2x multiplier for captain', async () => {
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.liveData?.elements?.length).toBeGreaterThan(0);
+    });
+
+    // Player 1 (18 pts) as captain
+    const picks = [
+      { element: 1, multiplier: 2 }, // 18 * 2 = 36
+      { element: 2, multiplier: 1 }, // 12 * 1 = 12
+    ];
+
+    const total = result.current.calculateTeamPoints(picks);
+    expect(total).toBe(48);
+  });
+
+  it('should apply 0x multiplier for bench players', async () => {
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.liveData?.elements?.length).toBeGreaterThan(0);
+    });
+
+    // Player 2 is on bench (multiplier 0)
+    const picks = [
+      { element: 1, multiplier: 1 }, // 18 * 1 = 18
+      { element: 2, multiplier: 0 }, // 12 * 0 = 0 (bench)
+    ];
+
+    const total = result.current.calculateTeamPoints(picks);
+    expect(total).toBe(18);
+  });
+
+  it('should apply 3x multiplier for triple captain', async () => {
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.liveData?.elements?.length).toBeGreaterThan(0);
+    });
+
+    // Player 1 as triple captain
+    const picks = [
+      { element: 1, multiplier: 3 }, // 18 * 3 = 54
+    ];
+
+    const total = result.current.calculateTeamPoints(picks);
+    expect(total).toBe(54);
+  });
+
+  it('should return 0 for players not in live data', async () => {
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.liveData?.elements?.length).toBeGreaterThan(0);
+    });
+
+    const picks = [
+      { element: 999, multiplier: 2 }, // Player not in live data
+    ];
+
+    const total = result.current.calculateTeamPoints(picks);
+    expect(total).toBe(0);
+  });
+
+  it('should handle empty picks array', async () => {
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.liveData?.elements?.length).toBeGreaterThan(0);
+    });
+
+    const total = result.current.calculateTeamPoints([]);
+    expect(total).toBe(0);
+  });
+
+  it('should handle mixed found/not-found players', async () => {
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.liveData?.elements?.length).toBeGreaterThan(0);
+    });
+
+    const picks = [
+      { element: 1, multiplier: 1 }, // 18 points
+      { element: 999, multiplier: 1 }, // Not found = 0
+      { element: 2, multiplier: 1 }, // 12 points
+    ];
+
+    const total = result.current.calculateTeamPoints(picks);
+    expect(total).toBe(30); // 18 + 0 + 12
+  });
+});
+
 // Tests for provisional bonus calculation
 describe('useLiveScoring - provisional bonus', () => {
   beforeEach(() => {

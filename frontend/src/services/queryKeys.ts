@@ -21,6 +21,7 @@ export const queryKeys = {
   standings: (leagueId: number) => ['standings', leagueId] as const,
 
   // Manager data
+  entry: (managerId: number) => ['entry', managerId] as const,
   managerDetails: (managerId: number, gameweekId: number | undefined) =>
     ['managerDetails', managerId, gameweekId] as const,
   entryHistory: (managerId: number) => ['entryHistory', managerId] as const,

@@ -3,36 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { fplApi } from '../api';
 import { queryKeys } from '../queryKeys';
 
-interface Pick {
-  element: number;
-  position: number;
-  multiplier: number;
-  is_captain: boolean;
-  is_vice_captain: boolean;
-}
-
-interface PicksResponse {
-  picks: Pick[];
-  active_chip: string | null;
-  entry_history: {
-    event: number;
-    points: number;
-    total_points: number;
-    rank: number;
-    event_transfers: number;
-    event_transfers_cost: number;
-  };
-}
-
-interface ManagerInfo {
-  id: number;
-  player_first_name: string;
-  player_last_name: string;
-  name: string;
-}
+import type { EntryPicksResponse, Entry, ManagerInfo } from 'types/fpl';
 
 interface UseManagerPicksReturn {
-  picks: PicksResponse | null;
+  picks: EntryPicksResponse | null;
   managerInfo: ManagerInfo | null;
   loading: boolean;
   error: string | null;
@@ -44,21 +18,21 @@ interface UseManagerPicksReturn {
  * so re-opening a modal for the same manager is instant.
  */
 export function useManagerPicks(managerId: number | null, gameweek: number): UseManagerPicksReturn {
-  const picksQuery = useQuery({
+  const picksQuery = useQuery<EntryPicksResponse, Error>({
     queryKey: queryKeys.entryPicks(managerId ?? 0, gameweek),
     queryFn: () => fplApi.getEntryPicks(managerId!, gameweek),
     enabled: managerId !== null && gameweek > 0,
     staleTime: 30 * 1000, // 30 seconds - picks might update during live GW
   });
 
-  const managerQuery = useQuery({
-    queryKey: ['manager-info', managerId],
+  const managerQuery = useQuery<Entry, Error>({
+    queryKey: queryKeys.entry(managerId ?? 0),
     queryFn: () => fplApi.getEntry(managerId!),
     enabled: managerId !== null,
     staleTime: 5 * 60 * 1000, // 5 minutes - manager info rarely changes
   });
 
-  // Combine errors
+  // Combine errors - prioritize picks error
   const error = picksQuery.error || managerQuery.error;
   const getErrorMessage = (): string | null => {
     if (!error) return null;
@@ -66,9 +40,20 @@ export function useManagerPicks(managerId: number | null, gameweek: number): Use
     return String(error);
   };
 
+  // Extract only the fields we need from Entry (ManagerInfo type)
+  const extractManagerInfo = (entry: Entry | undefined): ManagerInfo | null => {
+    if (!entry) return null;
+    return {
+      id: entry.id,
+      player_first_name: entry.player_first_name,
+      player_last_name: entry.player_last_name,
+      name: entry.name,
+    };
+  };
+
   return {
-    picks: (picksQuery.data as PicksResponse) ?? null,
-    managerInfo: (managerQuery.data as ManagerInfo) ?? null,
+    picks: picksQuery.data ?? null,
+    managerInfo: extractManagerInfo(managerQuery.data),
     loading: picksQuery.isLoading || managerQuery.isLoading,
     error: getErrorMessage(),
   };

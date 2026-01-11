@@ -6,12 +6,7 @@ import { calculateProvisionalBonus, shouldShowProvisionalBonus } from 'utils/liv
 import { fplApi } from '../api';
 import { queryKeys } from '../queryKeys';
 
-import type { LiveGameweek, Fixture, LivePlayer } from 'types/fpl';
-
-interface Pick {
-  element: number;
-  multiplier: number;
-}
+import type { LiveGameweek, Fixture, LivePlayer, PickForPoints } from 'types/fpl';
 
 interface UseLiveScoringReturn {
   liveData: LiveGameweek | null;
@@ -21,7 +16,7 @@ interface UseLiveScoringReturn {
   lastUpdated: Date | null;
   getPlayerLivePoints: (playerId: number) => number;
   getProvisionalBonus: (playerId: number, fixtureId: number) => number;
-  calculateTeamPoints: (picks: Pick[]) => number;
+  calculateTeamPoints: (picks: PickForPoints[]) => number;
   refresh: () => Promise<void>;
 }
 
@@ -101,7 +96,7 @@ export function useLiveScoring(
   );
 
   const calculateTeamPoints = useCallback(
-    (picks: Pick[]): number => {
+    (picks: PickForPoints[]): number => {
       return picks.reduce((total, pick) => {
         const player = livePlayersMap.get(pick.element);
         const basePoints = player?.stats.total_points ?? 0;
