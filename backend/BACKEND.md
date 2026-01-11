@@ -206,8 +206,118 @@ Before writing any code, run these verification steps:
 | Response keys are integers | Keys are strings in JSON | KeyError in tests |
 | All fields are required | Many fields nullable | NoneType errors |
 | API structure matches docs | API may have changed | Wrong field access |
+| `DECIMAL` columns return `float` | PostgreSQL returns `decimal.Decimal` | TypeError on arithmetic |
+| `dict.get(key, default)` handles None | Default only applies when key missing | TypeError: float(None) |
+
+### Database Type Safety (Critical for TDD!)
+
+**Learned from Tier 3 xG metrics feature:** Despite having 92 TDD tests, production bugs escaped because mock data didn't match actual database types.
+
+#### PostgreSQL → Python Type Mapping
+
+| PostgreSQL Type | Python Type | Gotcha |
+|-----------------|-------------|--------|
+| `INTEGER` | `int` | Safe |
+| `TEXT`, `VARCHAR` | `str` | Safe |
+| `BOOLEAN` | `bool` | Safe |
+| `NUMERIC`, `DECIMAL` | `decimal.Decimal` | **Won't mix with `float`!** |
+| `REAL`, `DOUBLE PRECISION` | `float` | Safe |
+| `JSONB` | `dict` | Keys are strings |
+| Nullable columns | `None` or value | Must check explicitly |
+
+#### The Decimal/Float Problem
+
+```python
+# PostgreSQL NUMERIC/DECIMAL columns return decimal.Decimal
+row = await conn.fetchrow("SELECT expected_goals FROM player_fixture_stats LIMIT 1")
+xg = row["expected_goals"]  # type: decimal.Decimal, NOT float!
+
+# This CRASHES in production:
+result = xg / 2.0  # TypeError: unsupported operand type(s) for /: 'decimal.Decimal' and 'float'
+
+# Fix: Convert at function entry
+xg = float(xg) if xg is not None else 0.0
+```
+
+#### The dict.get() Pitfall
+
+```python
+# dict.get(key, default) only applies when key is MISSING
+# If key exists with None value, you get None back!
+
+pick = {"total_points": None}  # Key exists, value is None
+
+# WRONG - crashes with TypeError: float(None)
+total_points = float(pick.get("total_points", 0))
+
+# CORRECT - explicit None check
+total_points_raw = pick.get("total_points")
+total_points = 0.0 if total_points_raw is None else float(total_points_raw)
+```
+
+#### TDD Planning Checklist for Database Code
+
+Before writing TDD tests, run these verification steps:
+
+1. **Check column types in database:**
+   ```sql
+   SELECT column_name, data_type, is_nullable
+   FROM information_schema.columns
+   WHERE table_name = 'your_table';
+   ```
+
+2. **Print actual Python types from production:**
+   ```python
+   row = await conn.fetchrow("SELECT * FROM your_table LIMIT 1")
+   for key, value in dict(row).items():
+       print(f"{key}: {type(value).__name__} = {value}")
+   ```
+
+3. **Create mock data that matches actual types:**
+   ```python
+   from decimal import Decimal
+
+   # BAD - uses Python native types
+   mock_row = {"expected_goals": 0.5, "total_points": 10}
+
+   # GOOD - matches actual database types
+   mock_row = {"expected_goals": Decimal("0.5"), "total_points": 10}
+
+   # ALSO TEST - nullable columns with None
+   mock_row_null = {"expected_goals": None, "total_points": None}
+   ```
+
+4. **Test both key-missing and key-with-None scenarios:**
+   ```python
+   @pytest.mark.parametrize("pick,expected", [
+       ({}, 0.0),                      # Key missing
+       ({"total_points": None}, 0.0),  # Key exists, value None
+       ({"total_points": 10}, 10.0),   # Normal case
+   ])
+   def test_handles_total_points_variants(pick, expected):
+       result = extract_total_points(pick)
+       assert result == expected
+   ```
+
+5. **Use grep to find ALL usages before claiming "done":**
+   ```bash
+   # Find all functions using a field
+   grep -n "expected_goals\|xg" backend/app/services/*.py
+   ```
 
 #### Example: What We Got Wrong
+
+Tier 3 xG feature had 92 TDD tests but missed 3 production bugs:
+
+| Bug | Mock Data | Production Data | Fix |
+|-----|-----------|-----------------|-----|
+| Decimal/float | `0.5` (float) | `Decimal("0.5")` | `float(xg)` |
+| Incomplete fix | Fixed 1 function | 3 functions used xG | Grep all usages |
+| None handling | `0` (int) | `None` (nullable) | Explicit None check |
+
+**See:** `docs/features/tier3-xg-metrics-feature.md` for full postmortem.
+
+#### Previous Example: API Response Structure
 
 ```python
 # WRONG - Based on assumptions

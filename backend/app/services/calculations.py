@@ -713,7 +713,8 @@ def calculate_luck_index(picks: list[PickWithXg]) -> float | None:
         xga = 0.0 if xga_raw is None else float(xga_raw)
 
         element_type = pick.get("element_type", FWD)
-        total_points = float(pick.get("total_points", 0))
+        total_points_raw = pick.get("total_points")
+        total_points = 0.0 if total_points_raw is None else float(total_points_raw)
         minutes = pick.get("minutes", 90)
 
         xp = _calculate_expected_points(xg, xa, xga, element_type)
@@ -773,7 +774,8 @@ def calculate_captain_xp_delta(picks: list[PickWithXg]) -> float | None:
         xga = 0.0 if xga_raw is None else float(xga_raw)
 
         element_type = pick.get("element_type", FWD)
-        total_points = float(pick.get("total_points", 0))
+        total_points_raw = pick.get("total_points")
+        total_points = 0.0 if total_points_raw is None else float(total_points_raw)
         minutes = pick.get("minutes", 90)
 
         # Calculate base points (before captain multiplier)

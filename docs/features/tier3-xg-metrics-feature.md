@@ -97,9 +97,119 @@ squadXp: 45.2,
 
 **Commit:** `c852af5 test(e2e): add Tier 3 xG metrics to mock data`
 
+### 3. Incomplete Decimal Conversion (Production Bug)
+
+**Symptom:** 500 error persisted after initial fix
+```
+TypeError: unsupported operand type(s) for /: 'decimal.Decimal' and 'float'
+File "calculations.py", line 840, in calculate_squad_xp
+```
+
+**Cause:** Initial fix only addressed `_calculate_expected_points()` but THREE functions used xG fields:
+- `calculate_luck_index()` - **MISSED**
+- `calculate_captain_xp_delta()` - **MISSED**
+- `calculate_squad_xp()` - **MISSED**
+
+**Fix:** Grep for all usages of `XCS_DIVISOR` and xG field access, apply conversion to ALL functions:
+```python
+# Each function needs explicit conversion
+xg = 0.0 if xg is None else float(xg)
+xa = 0.0 if xa is None else float(xa)
+xga = 0.0 if xga_raw is None else float(xga_raw)
+```
+
+**Commit:** `797bb10 fix(backend): convert all Decimal fields to float in xG calculations`
+
+### 4. dict.get() None Value Bug (Discovered in PR Review)
+
+**Symptom:** Would crash if `total_points` key exists but value is `None`
+```python
+# BUG: dict.get() default only applies when key is MISSING
+total_points = float(pick.get("total_points", 0))  # Crashes if value is None!
+```
+
+**Cause:** Python's `dict.get(key, default)` returns the default ONLY when the key doesn't exist. If the key exists with a `None` value, you get `None` back—not the default.
+
+**Fix:** Use explicit None check pattern:
+```python
+total_points_raw = pick.get("total_points")
+total_points = 0.0 if total_points_raw is None else float(total_points_raw)
+```
+
+**Commit:** `2f67c90 fix(backend): handle None values in total_points field`
+
+## Lessons Learned: TDD Gaps
+
+Despite having 92 TDD tests for this feature, several production bugs escaped testing. This section documents what we learned.
+
+### Why TDD Didn't Catch These Bugs
+
+| Bug | Root Cause | Why TDD Missed It |
+|-----|------------|-------------------|
+| Decimal/float mismatch | PostgreSQL returns `DECIMAL` as Python `decimal.Decimal` | Mock data used Python `float` literals, not actual DB types |
+| Incomplete conversion | Only checked one function | Tests didn't cover all code paths using xG fields |
+| None value handling | `dict.get()` behavior misunderstood | Mock data never had `None` values for existing keys |
+
+### Planning Phase Improvements
+
+**Before writing TDD tests, verify actual data types:**
+
+1. **Query actual database** to see real column types:
+   ```sql
+   SELECT column_name, data_type FROM information_schema.columns
+   WHERE table_name = 'player_fixture_stats';
+   -- expected_goals: numeric (returns Decimal in Python!)
+   ```
+
+2. **Print actual values** from production:
+   ```python
+   row = await conn.fetchrow("SELECT expected_goals FROM player_fixture_stats LIMIT 1")
+   print(type(row["expected_goals"]))  # <class 'decimal.Decimal'>
+   ```
+
+3. **Check for nullable columns**:
+   ```sql
+   SELECT column_name, is_nullable FROM information_schema.columns
+   WHERE table_name = 'player_fixture_stats' AND is_nullable = 'YES';
+   ```
+
+### Mock Data Best Practices
+
+```python
+# BAD: Using Python native types
+mock_pick = {
+    "expected_goals": 0.5,      # float - doesn't match DB
+    "total_points": 0,          # int - masks None handling bugs
+}
+
+# GOOD: Use Decimal to match PostgreSQL behavior
+from decimal import Decimal
+mock_pick = {
+    "expected_goals": Decimal("0.5"),  # Matches DB type!
+    "total_points": None,              # Tests None handling
+}
+
+# ALSO TEST: Key exists with None value vs key missing
+mock_with_none = {"total_points": None}  # Key exists, value None
+mock_without_key = {}                     # Key missing entirely
+```
+
+### TDD Test Checklist for Database Code
+
+Add these tests to your TDD suite when working with database data:
+
+- [ ] Test with `decimal.Decimal` input values (not just `float`)
+- [ ] Test with `None` values for nullable columns
+- [ ] Test with key missing vs key present with `None` value
+- [ ] Test ALL functions that access the same data fields
+- [ ] Use `grep` to find all usages of a field before claiming "done"
+
 ## Commit History
 
 ```
+2f67c90 fix(backend): handle None values in total_points field
+797bb10 fix(backend): convert all Decimal fields to float in xG calculations
+dd44480 docs: add Tier 3 xG metrics feature documentation
 d58b6c2 fix(backend): convert Decimal to float in xG calculations
 bfae27e chore(release): 0.27.0 [skip ci]
 c852af5 test(e2e): add Tier 3 xG metrics to mock data
