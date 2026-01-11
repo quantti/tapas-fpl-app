@@ -347,11 +347,62 @@ Based on web research of FPL analytics tools (FPL Review, LiveFPL, Fantasy Footb
 
 ### Tier 3: xG-Based Advanced Stats (Requires player_fixture_stats)
 
+These metrics answer "who's actually playing better FPL?" by separating skill from luck.
+
+#### 3.1 Luck Index
+**User question:** "Am I making good decisions, or just getting lucky/unlucky?"
+
+| Aspect | Description |
+|--------|-------------|
+| **What it shows** | Season total: actual FPL points minus expected points |
+| **Positive value** | Manager has been lucky (players overperforming xG/xA) |
+| **Negative value** | Manager has been unlucky (players underperforming) |
+| **Comparison insight** | Identifies if a rival's lead is sustainable or variance-based |
+
+**Data required:**
+- `player_fixture_stats.xg`, `player_fixture_stats.xa` per gameweek
+- `manager_pick` to know which players were in squad
+- Actual points from `player_gw_stats.total_points`
+
+#### 3.2 Captain xP Delta
+**User question:** "Are my captain choices working out?"
+
+| Aspect | Description |
+|--------|-------------|
+| **What it shows** | Cumulative difference between captain's actual points and expected points |
+| **Positive value** | Captain picks beating expectations |
+| **Negative value** | Bad luck on captains (e.g., Haaland blanks despite high xG) |
+| **Comparison insight** | Separates skill from luck in highest-impact weekly decision |
+
+**Data required:**
+- `manager_pick` where `is_captain = true`
+- `player_fixture_stats.xg`, `player_fixture_stats.xa` for captain's fixtures
+- Captain's actual points (with 2x multiplier applied)
+
+#### 3.3 Squad xP (Expected Performance)
+**User question:** "Is my squad actually good, or have I just been unlucky?"
+
+| Aspect | Description |
+|--------|-------------|
+| **What it shows** | Combined expected performance of current starting XI |
+| **For attackers/mids** | xGI (xG + xA) - expected goals and assists |
+| **For defenders/GKs** | xGA (expected goals against) - clean sheet likelihood |
+| **Comparison insight** | "Whose squad has more firepower and defensive solidity?" |
+
+**Data required:**
+- `manager_pick` for current GW starting XI (`multiplier > 0`)
+- `player.expected_goal_involvements` or sum of recent `player_fixture_stats.xg + xa`
+- `team.xga` or `player_fixture_stats` defensive metrics for defenders/GKs
+
+---
+
+**Summary table:**
+
 | Metric | Description | Data Source |
 |--------|-------------|-------------|
-| **luck_index** | Season total: actual points - expected points | `player_fixture_stats` xG/xA + picks |
-| **captain_xp_delta** | Captain's actual vs expected (over/underperforming) | `manager_pick` + `player_fixture_stats` |
-| **squad_xgi** | Total expected goal involvement of current squad | `player.expected_goal_involvements` |
+| **luck_index** | Actual points - expected points (season total) | `player_fixture_stats` + `manager_pick` |
+| **captain_xp_delta** | Captain actual vs expected (cumulative) | `manager_pick` + `player_fixture_stats` |
+| **squad_xp** | Squad expected performance (xGI for attackers, xGA for defenders) | `player_fixture_stats` + `player.element_type` |
 
 ### Tier 4: Comparative Metrics (Cross-Manager)
 
@@ -378,9 +429,10 @@ class ManagerComparisonStatsV2(BaseModel):
     best_streak: int  # Consecutive green arrows
     worst_streak: int  # Consecutive red arrows
 
-    # NEW: Advanced (optional, if player_fixture_stats populated)
-    luck_index: float | None  # Actual - Expected points
-    squad_xgi: float | None  # Total xGI of current squad
+    # NEW: Tier 3 Advanced (optional, requires player_fixture_stats)
+    luck_index: float | None  # Actual - Expected points (season total)
+    captain_xp_delta: float | None  # Captain actual vs expected (cumulative)
+    squad_xp: float | None  # Squad expected performance (xGI for attackers, xGA for defenders)
 ```
 
 ### Database Queries for New Metrics
@@ -430,7 +482,7 @@ SELECT SUM(points_in - points_out) as transfer_roi FROM transfers;
 ## Success Criteria
 
 - [x] Endpoint returns all fields needed by frontend (Phase 1 complete)
-- [ ] Response time < 500ms (needs production measurement)
+- [ ] Response time < 500ms (measured: **850ms** - needs optimization)
 - [x] Frontend uses single API call instead of 87 (Phase 2 complete)
 - [x] All existing comparison tests pass (138 backend + 641 frontend tests)
 - [x] New fields have test coverage (34 new tests for Phase 1)
