@@ -631,6 +631,11 @@ def _calculate_expected_points(
     Returns:
         Expected FPL points (excluding appearance bonus)
     """
+    # Convert from Decimal (database) to float for arithmetic
+    xg = float(xg)
+    xa = float(xa)
+    xga = float(xga)
+
     goal_pts = POINTS_PER_GOAL.get(element_type, 4)
     xp = xg * goal_pts + xa * POINTS_PER_ASSIST
 
