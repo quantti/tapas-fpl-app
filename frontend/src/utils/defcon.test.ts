@@ -255,7 +255,10 @@ describe('calculatePlayerSeasonDefCon', () => {
 
     it('handles undefined defensive_contribution as 0', () => {
       const history = [
-        createMockHistory({ round: 1, defensive_contribution: undefined as unknown as number }),
+        createMockHistory({
+          round: 1,
+          defensive_contribution: undefined as unknown as number,
+        }),
         createMockHistory({ round: 2, defensive_contribution: 10 }),
       ];
 

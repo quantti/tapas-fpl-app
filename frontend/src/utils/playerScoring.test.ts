@@ -79,12 +79,20 @@ describe('isEligibleOutfieldPlayer', () => {
   });
 
   it('returns true for available defender with enough minutes', () => {
-    const player = makePlayer({ element_type: POSITION_TYPES.DEFENDER, status: 'a', minutes: 900 });
+    const player = makePlayer({
+      element_type: POSITION_TYPES.DEFENDER,
+      status: 'a',
+      minutes: 900,
+    });
     expect(isEligibleOutfieldPlayer(player)).toBe(true);
   });
 
   it('returns true for available forward with enough minutes', () => {
-    const player = makePlayer({ element_type: POSITION_TYPES.FORWARD, status: 'a', minutes: 500 });
+    const player = makePlayer({
+      element_type: POSITION_TYPES.FORWARD,
+      status: 'a',
+      minutes: 500,
+    });
     expect(isEligibleOutfieldPlayer(player)).toBe(true);
   });
 

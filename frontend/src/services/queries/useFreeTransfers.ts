@@ -57,7 +57,11 @@ export function useFreeTransfers(
 
       // Default to 1 FT if no data
       if (!historyQuery.data) {
-        return { managerId: manager.id, teamName: manager.teamName, freeTransfers: 1 };
+        return {
+          managerId: manager.id,
+          teamName: manager.teamName,
+          freeTransfers: 1,
+        };
       }
 
       const ft = calculateFreeTransfers(

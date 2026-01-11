@@ -197,7 +197,10 @@ describe('hasContribution', () => {
 
   it('should return true when player has yellow card but 0 minutes (bench card)', () => {
     const player = createLivePlayer(1, { minutes: 0, yellow_cards: 1, total_points: -1 }, [
-      { fixture: 1, stats: [{ identifier: 'yellow_cards', points: -1, value: 1 }] },
+      {
+        fixture: 1,
+        stats: [{ identifier: 'yellow_cards', points: -1, value: 1 }],
+      },
     ]);
     expect(hasContribution(player)).toBe(true);
   });
@@ -218,7 +221,14 @@ describe('hasContribution', () => {
     const player = createLivePlayer(1, { minutes: 0 }, [
       {
         fixture: 1,
-        stats: [{ identifier: 'minutes', points: 0, value: 0, points_modification: 0 }],
+        stats: [
+          {
+            identifier: 'minutes',
+            points: 0,
+            value: 0,
+            points_modification: 0,
+          },
+        ],
       },
     ]);
     expect(hasContribution(player)).toBe(false);
@@ -392,7 +402,10 @@ describe('calculateAutoSubs', () => {
     const liveData: LiveGameweek = {
       elements: picks.map((p) =>
         createLivePlayer(p.playerId, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ])
       ),
     };
@@ -414,45 +427,84 @@ describe('calculateAutoSubs', () => {
     const liveData: LiveGameweek = {
       elements: [
         createLivePlayer(1, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]),
         createLivePlayer(2, { minutes: 0 }, []), // No contribution
         createLivePlayer(3, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]),
         createLivePlayer(4, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]),
         createLivePlayer(5, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]),
         createLivePlayer(6, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]),
         createLivePlayer(7, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]),
         createLivePlayer(8, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]),
         createLivePlayer(9, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]),
         createLivePlayer(10, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]),
         createLivePlayer(11, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]),
         createLivePlayer(12, { minutes: 0 }, []), // Bench GK didn't play
         createLivePlayer(13, { minutes: 90 }, [
-          { fixture: 2, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 2,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]), // Bench DEF played
         createLivePlayer(14, { minutes: 90 }, [
-          { fixture: 2, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 2,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]),
         createLivePlayer(15, { minutes: 90 }, [
-          { fixture: 2, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 2,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]),
       ],
     };
@@ -485,7 +537,10 @@ describe('calculateAutoSubs', () => {
           return createLivePlayer(12, { minutes: 0 }, []); // Bench GK no play
         }
         return createLivePlayer(p.playerId, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]);
       }),
     };
@@ -506,11 +561,17 @@ describe('calculateAutoSubs', () => {
       elements: picks.map((p) => {
         if (p.playerId === 2) {
           return createLivePlayer(2, { minutes: 0, yellow_cards: 1, total_points: -1 }, [
-            { fixture: 1, stats: [{ identifier: 'yellow_cards', points: -1, value: 1 }] },
+            {
+              fixture: 1,
+              stats: [{ identifier: 'yellow_cards', points: -1, value: 1 }],
+            },
           ]);
         }
         return createLivePlayer(p.playerId, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]);
       }),
     };
@@ -532,7 +593,10 @@ describe('calculateAutoSubs', () => {
           return createLivePlayer(p.playerId, { minutes: 0 }, []); // No contribution
         }
         return createLivePlayer(p.playerId, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]);
       }),
     };
@@ -554,7 +618,10 @@ describe('calculateAutoSubs', () => {
           return createLivePlayer(1, { minutes: 0 }, []); // GK no contribution
         }
         return createLivePlayer(p.playerId, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]);
       }),
     };
@@ -578,7 +645,10 @@ describe('calculateAutoSubs', () => {
           return createLivePlayer(p.playerId, { minutes: 0 }, []); // No contribution
         }
         return createLivePlayer(p.playerId, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]);
       }),
     };
@@ -599,7 +669,10 @@ describe('calculateAutoSubs', () => {
           return createLivePlayer(10, { minutes: 0 }, []); // Captain no contribution
         }
         return createLivePlayer(p.playerId, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]);
       }),
     };
@@ -629,7 +702,10 @@ describe('calculateAutoSubs', () => {
           return createLivePlayer(p.playerId, { minutes: 0 }, []); // No contribution
         }
         return createLivePlayer(p.playerId, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]);
       }),
     };
@@ -653,7 +729,10 @@ describe('calculateAutoSubs', () => {
           return createLivePlayer(10, { minutes: 0 }, []);
         }
         return createLivePlayer(p.playerId, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]);
       }),
     };
@@ -684,7 +763,10 @@ describe('calculateAutoSubs', () => {
           return createLivePlayer(p.playerId, { minutes: 0 }, []); // No contribution
         }
         return createLivePlayer(p.playerId, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]);
       }),
     };
@@ -740,7 +822,10 @@ describe('calculateAutoSubs', () => {
           return createLivePlayer(2, { minutes: 0 }, []);
         }
         return createLivePlayer(p.playerId, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]);
       }),
     };
@@ -762,7 +847,10 @@ describe('calculateAutoSubs', () => {
           return createLivePlayer(p.playerId, { minutes: 0 }, []);
         }
         return createLivePlayer(p.playerId, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]);
       }),
     };
@@ -791,7 +879,10 @@ describe('calculateAutoSubs', () => {
           return createLivePlayer(p.playerId, { minutes: 0 }, []);
         }
         return createLivePlayer(p.playerId, { minutes: 90 }, [
-          { fixture: 1, stats: [{ identifier: 'minutes', points: 2, value: 90 }] },
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
         ]);
       }),
     };

@@ -126,7 +126,13 @@ export function useRecommendedPlayers(
       const weights = PUNT_WEIGHTS[player.element_type] ?? PUNT_WEIGHTS[3];
       const score = calculateBuyScore(pct, weights, fixtureScore);
 
-      candidates.push({ player, team, score, fixtureScore, leagueOwnership: ownership });
+      candidates.push({
+        player,
+        team,
+        score,
+        fixtureScore,
+        leagueOwnership: ownership,
+      });
     }
 
     return candidates.sort((a, b) => b.score - a.score).slice(0, 20);
@@ -151,7 +157,13 @@ export function useRecommendedPlayers(
       const weights = DEFENSIVE_WEIGHTS[player.element_type] ?? DEFENSIVE_WEIGHTS[3];
       const score = calculateBuyScore(pct, weights, fixtureScore);
 
-      candidates.push({ player, team, score, fixtureScore, leagueOwnership: ownership });
+      candidates.push({
+        player,
+        team,
+        score,
+        fixtureScore,
+        leagueOwnership: ownership,
+      });
     }
 
     return candidates.sort((a, b) => b.score - a.score).slice(0, 10);
@@ -180,7 +192,13 @@ export function useRecommendedPlayers(
       // Only include if genuinely bad (score > 0.5 = worse than average)
       if (score <= 0.5) continue;
 
-      candidates.push({ player, team, score, fixtureScore, leagueOwnership: ownership });
+      candidates.push({
+        player,
+        team,
+        score,
+        fixtureScore,
+        leagueOwnership: ownership,
+      });
     }
 
     return candidates.sort((a, b) => b.score - a.score).slice(0, 10);

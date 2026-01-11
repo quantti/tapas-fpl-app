@@ -297,9 +297,21 @@ describe('fixtureRewards', () => {
       const result = extractFixtureRewards(fixture, playersMap, createTeamsMap());
 
       expect(result.bonus).toHaveLength(3);
-      expect(result.bonus[0]).toEqual({ playerId: 200, webName: 'Saka', points: 3 });
-      expect(result.bonus[1]).toEqual({ playerId: 201, webName: 'Havertz', points: 2 });
-      expect(result.bonus[2]).toEqual({ playerId: 202, webName: 'Martinelli', points: 1 });
+      expect(result.bonus[0]).toEqual({
+        playerId: 200,
+        webName: 'Saka',
+        points: 3,
+      });
+      expect(result.bonus[1]).toEqual({
+        playerId: 201,
+        webName: 'Havertz',
+        points: 2,
+      });
+      expect(result.bonus[2]).toEqual({
+        playerId: 202,
+        webName: 'Martinelli',
+        points: 1,
+      });
     });
 
     it('should sort bonus by points descending', () => {
@@ -557,9 +569,21 @@ describe('fixtureRewards', () => {
 
       expect(result.status).toBe('rewards_available');
       expect(result.bonus).toHaveLength(3);
-      expect(result.bonus[0]).toEqual({ playerId: 200, webName: 'Saka', points: 3 });
-      expect(result.bonus[1]).toEqual({ playerId: 201, webName: 'Havertz', points: 2 });
-      expect(result.bonus[2]).toEqual({ playerId: 202, webName: 'Martinelli', points: 1 });
+      expect(result.bonus[0]).toEqual({
+        playerId: 200,
+        webName: 'Saka',
+        points: 3,
+      });
+      expect(result.bonus[1]).toEqual({
+        playerId: 201,
+        webName: 'Havertz',
+        points: 2,
+      });
+      expect(result.bonus[2]).toEqual({
+        playerId: 202,
+        webName: 'Martinelli',
+        points: 1,
+      });
     });
 
     it('should handle BPS ties (same bonus for tied players, skip tiers)', () => {
@@ -636,8 +660,16 @@ describe('fixtureRewards', () => {
       const result = extractFixtureRewards(fixture, playersMap, createTeamsMap(), liveData);
 
       // Should use confirmed bonus (Saka=3, Havertz=2), not provisional (Havertz=3, Saka=2)
-      expect(result.bonus[0]).toEqual({ playerId: 200, webName: 'Saka', points: 3 });
-      expect(result.bonus[1]).toEqual({ playerId: 201, webName: 'Havertz', points: 2 });
+      expect(result.bonus[0]).toEqual({
+        playerId: 200,
+        webName: 'Saka',
+        points: 3,
+      });
+      expect(result.bonus[1]).toEqual({
+        playerId: 201,
+        webName: 'Havertz',
+        points: 2,
+      });
     });
 
     it('should not calculate provisional bonus for fixture under 60 minutes', () => {

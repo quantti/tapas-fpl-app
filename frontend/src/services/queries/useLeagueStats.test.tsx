@@ -195,7 +195,9 @@ describe('useLeagueStats', () => {
       });
 
       // Longer timeout needed because hook has its own retry config (2 retries with exponential backoff)
-      await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
+      await waitFor(() => expect(result.current.isLoading).toBe(false), {
+        timeout: 5000,
+      });
 
       expect(result.current.error).toBe('Network error');
       expect(result.current.isBackendUnavailable).toBe(false);

@@ -385,7 +385,10 @@ describe('PlayerDetails', () => {
 
     render(
       <PlayerDetails
-        player={mockPlayer({ status: 'd', news: 'Hamstring - 75% chance of playing' })}
+        player={mockPlayer({
+          status: 'd',
+          news: 'Hamstring - 75% chance of playing',
+        })}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}
@@ -415,7 +418,10 @@ describe('PlayerDetails', () => {
 
     render(
       <PlayerDetails
-        player={mockPlayer({ status: 'i', news: 'Knee injury - Expected back January' })}
+        player={mockPlayer({
+          status: 'i',
+          news: 'Knee injury - Expected back January',
+        })}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}

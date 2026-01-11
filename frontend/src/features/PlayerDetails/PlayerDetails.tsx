@@ -43,14 +43,30 @@ function StatusBadge({ status, news }: { status: string; news: string }) {
   const getStatusInfo = () => {
     switch (status) {
       case 'a':
-        return { icon: CheckCircle, color: 'var(--color-success)', label: 'Available' };
+        return {
+          icon: CheckCircle,
+          color: 'var(--color-success)',
+          label: 'Available',
+        };
       case 'd':
-        return { icon: AlertCircle, color: 'var(--color-warning)', label: 'Doubtful' };
+        return {
+          icon: AlertCircle,
+          color: 'var(--color-warning)',
+          label: 'Doubtful',
+        };
       case 'i':
       case 'u':
-        return { icon: XCircle, color: 'var(--color-error)', label: 'Unavailable' };
+        return {
+          icon: XCircle,
+          color: 'var(--color-error)',
+          label: 'Unavailable',
+        };
       default:
-        return { icon: AlertCircle, color: 'var(--color-text-muted)', label: 'Unknown' };
+        return {
+          icon: AlertCircle,
+          color: 'var(--color-text-muted)',
+          label: 'Unknown',
+        };
     }
   };
 

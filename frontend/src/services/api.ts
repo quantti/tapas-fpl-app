@@ -94,7 +94,12 @@ export const fplApi = {
   getEntryPicks: (teamId: number, gameweek: number) =>
     fetchApi<{
       active_chip: string | null;
-      automatic_subs: { entry: number; element_in: number; element_out: number; event: number }[];
+      automatic_subs: {
+        entry: number;
+        element_in: number;
+        element_out: number;
+        event: number;
+      }[];
       entry_history: {
         event: number;
         points: number;
@@ -153,7 +158,12 @@ export const fplApi = {
    */
   getEventStatus: () =>
     fetchApi<{
-      status: { bonus_added: boolean; date: string; event: number; points: string }[];
+      status: {
+        bonus_added: boolean;
+        date: string;
+        event: number;
+        points: string;
+      }[];
       leagues: string;
     }>('/event-status'),
 };

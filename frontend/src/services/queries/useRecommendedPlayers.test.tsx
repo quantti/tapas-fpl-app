@@ -365,11 +365,31 @@ describe('useRecommendedPlayers', () => {
     // Player 1: excellent form (should NOT be in toSell)
     // Player 2: poor form (should be in toSell)
     const players = [
-      makePlayer(1, 3, { form: '8.0', expected_goals: '5.0', expected_assists: '3.0' }), // great
-      makePlayer(2, 3, { form: '1.0', expected_goals: '0.5', expected_assists: '0.2' }), // poor
-      makePlayer(3, 3, { form: '5.0', expected_goals: '2.0', expected_assists: '1.0' }), // avg
-      makePlayer(4, 3, { form: '6.0', expected_goals: '3.0', expected_assists: '2.0' }), // good
-      makePlayer(5, 3, { form: '3.0', expected_goals: '1.0', expected_assists: '0.5' }), // below avg
+      makePlayer(1, 3, {
+        form: '8.0',
+        expected_goals: '5.0',
+        expected_assists: '3.0',
+      }), // great
+      makePlayer(2, 3, {
+        form: '1.0',
+        expected_goals: '0.5',
+        expected_assists: '0.2',
+      }), // poor
+      makePlayer(3, 3, {
+        form: '5.0',
+        expected_goals: '2.0',
+        expected_assists: '1.0',
+      }), // avg
+      makePlayer(4, 3, {
+        form: '6.0',
+        expected_goals: '3.0',
+        expected_assists: '2.0',
+      }), // good
+      makePlayer(5, 3, {
+        form: '3.0',
+        expected_goals: '1.0',
+        expected_assists: '0.5',
+      }), // below avg
     ];
     const teamsMap = new Map([[1, makeTeam(1)]]);
     // All managers own player 1 (great player) - should NOT be in toSell

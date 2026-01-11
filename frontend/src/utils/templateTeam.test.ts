@@ -198,7 +198,12 @@ describe('templateTeam utilities', () => {
     });
 
     it('includes team information in ownership data', () => {
-      const player = createPlayer({ id: 1, element_type: 3, team: 5, selected_by_percent: '30.0' });
+      const player = createPlayer({
+        id: 1,
+        element_type: 3,
+        team: 5,
+        selected_by_percent: '30.0',
+      });
       const team = createTeam(5);
       const players = [player];
       const teams = new Map<number, Team>([[5, team]]);
@@ -211,7 +216,11 @@ describe('templateTeam utilities', () => {
 
     it('handles invalid selected_by_percent gracefully', () => {
       const players = [
-        createPlayer({ id: 1, element_type: 3, selected_by_percent: 'invalid' }),
+        createPlayer({
+          id: 1,
+          element_type: 3,
+          selected_by_percent: 'invalid',
+        }),
         createPlayer({ id: 2, element_type: 3, selected_by_percent: '' }),
       ];
       const teams = new Map<number, Team>([[1, createTeam(1)]]);
@@ -245,7 +254,11 @@ describe('templateTeam utilities', () => {
       // 5 DEFs
       for (let i = 3; i <= 7; i++) {
         ownership.set(i, {
-          player: createPlayer({ id: i, element_type: 2, total_points: 100 - i * 5 }),
+          player: createPlayer({
+            id: i,
+            element_type: 2,
+            total_points: 100 - i * 5,
+          }),
           team: createTeam(1),
           ownershipCount: 8 - i,
           ownershipPercentage: (8 - i) * 25, // 125, 100, 75, 50, 25
@@ -255,7 +268,11 @@ describe('templateTeam utilities', () => {
       // 5 MIDs
       for (let i = 8; i <= 12; i++) {
         ownership.set(i, {
-          player: createPlayer({ id: i, element_type: 3, total_points: 150 - i * 5 }),
+          player: createPlayer({
+            id: i,
+            element_type: 3,
+            total_points: 150 - i * 5,
+          }),
           team: createTeam(2),
           ownershipCount: 13 - i,
           ownershipPercentage: (13 - i) * 20, // 100, 80, 60, 40, 20
@@ -265,7 +282,11 @@ describe('templateTeam utilities', () => {
       // 3 FWDs
       for (let i = 13; i <= 15; i++) {
         ownership.set(i, {
-          player: createPlayer({ id: i, element_type: 4, total_points: 200 - i * 10 }),
+          player: createPlayer({
+            id: i,
+            element_type: 4,
+            total_points: 200 - i * 10,
+          }),
           team: createTeam(3),
           ownershipCount: 16 - i,
           ownershipPercentage: (16 - i) * 33.33, // ~100, ~67, ~33

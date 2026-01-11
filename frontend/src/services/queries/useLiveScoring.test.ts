@@ -57,7 +57,12 @@ const mockLiveData: LiveGameweek = {
         total_points: 18,
         in_dreamteam: true,
       },
-      explain: [{ fixture: 1, stats: [{ identifier: 'goals_scored', points: 10, value: 2 }] }],
+      explain: [
+        {
+          fixture: 1,
+          stats: [{ identifier: 'goals_scored', points: 10, value: 2 }],
+        },
+      ],
     },
     {
       id: 2,
@@ -121,7 +126,9 @@ describe('useLiveScoring - basic functionality', () => {
   });
 
   it('should fetch live data on mount when isLive is true', async () => {
-    const { result } = renderHook(() => useLiveScoring(17, true), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(result.current.liveData).toBeDefined();
@@ -131,7 +138,9 @@ describe('useLiveScoring - basic functionality', () => {
   });
 
   it('should fetch once even when isLive is false (for countdown)', async () => {
-    const { result } = renderHook(() => useLiveScoring(17, false), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useLiveScoring(17, false), {
+      wrapper: createWrapper(),
+    });
 
     // Should still fetch once to get fixture status for countdown
     await waitFor(() => {
@@ -143,7 +152,9 @@ describe('useLiveScoring - basic functionality', () => {
   });
 
   it('should provide player live points map', async () => {
-    const { result } = renderHook(() => useLiveScoring(17, true), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
 
     // Wait for actual data to be loaded, not just defined
     await waitFor(() => {
@@ -155,7 +166,9 @@ describe('useLiveScoring - basic functionality', () => {
   });
 
   it('should return 0 for players not in live data', async () => {
-    const { result } = renderHook(() => useLiveScoring(17, true), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(result.current.liveData).toBeDefined();
@@ -166,7 +179,9 @@ describe('useLiveScoring - basic functionality', () => {
   });
 
   it('should track loading state', async () => {
-    const { result } = renderHook(() => useLiveScoring(17, true), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
 
     // Initially loading
     expect(result.current.loading).toBe(true);
@@ -179,7 +194,9 @@ describe('useLiveScoring - basic functionality', () => {
   it('should handle API errors gracefully', async () => {
     vi.mocked(fplApi.getLiveGameweek).mockRejectedValueOnce(new Error('API Error'));
 
-    const { result } = renderHook(() => useLiveScoring(17, true), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(result.current.error).toBe('API Error');
@@ -189,7 +206,9 @@ describe('useLiveScoring - basic functionality', () => {
   });
 
   it('should provide last updated timestamp', async () => {
-    const { result } = renderHook(() => useLiveScoring(17, true), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
 
     // Wait for lastUpdated to actually be a Date (not null/undefined)
     await waitFor(() => {
@@ -198,7 +217,9 @@ describe('useLiveScoring - basic functionality', () => {
   });
 
   it('should allow manual refresh', async () => {
-    const { result } = renderHook(() => useLiveScoring(17, true), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(result.current.liveData).toBeDefined();
@@ -228,7 +249,9 @@ describe('useLiveScoring - polling', () => {
   });
 
   it('should poll at specified interval when isLive is true', async () => {
-    renderHook(() => useLiveScoring(17, true, 30000), { wrapper: createWrapper() }); // 30 second interval
+    renderHook(() => useLiveScoring(17, true, 30000), {
+      wrapper: createWrapper(),
+    }); // 30 second interval
 
     // Initial fetch happens immediately on mount - flush promises with advanceTimersByTimeAsync(0)
     await act(async () => {
@@ -291,7 +314,9 @@ describe('useLiveScoring - provisional bonus', () => {
   });
 
   it('should calculate provisional bonus from BPS when fixture >= 60 minutes', async () => {
-    const { result } = renderHook(() => useLiveScoring(17, true), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
 
     // Wait for both liveData AND fixtures to be populated (they fetch in parallel)
     await waitFor(() => {
@@ -317,7 +342,9 @@ describe('useLiveScoring - provisional bonus', () => {
     ];
     vi.mocked(fplApi.getFixtures).mockResolvedValue(earlyFixtures);
 
-    const { result } = renderHook(() => useLiveScoring(17, true), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useLiveScoring(17, true), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(result.current.liveData).toBeDefined();

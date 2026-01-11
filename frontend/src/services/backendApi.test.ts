@@ -82,7 +82,10 @@ describe('validateTeamsResponse', () => {
   });
 
   it('returns false when avg_per_match is not a number', () => {
-    const data = { season_id: 1, teams: [{ team_id: 1, avg_per_match: 'ten' }] };
+    const data = {
+      season_id: 1,
+      teams: [{ team_id: 1, avg_per_match: 'ten' }],
+    };
     expect(validateTeamsResponse(data)).toBe(false);
   });
 });
@@ -135,7 +138,11 @@ describe('validateLeagueChipsResponse', () => {
   });
 
   it('returns false when managers is not an array', () => {
-    const data = { league_id: 123, current_gameweek: 10, managers: 'not array' };
+    const data = {
+      league_id: 123,
+      current_gameweek: 10,
+      managers: 'not array',
+    };
     expect(validateLeagueChipsResponse(data)).toBe(false);
   });
 

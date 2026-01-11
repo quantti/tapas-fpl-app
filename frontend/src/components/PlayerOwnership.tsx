@@ -47,7 +47,10 @@ export function PlayerOwnership({ managerDetails, playersMap, teamsMap }: Props)
 
     for (const manager of managerDetails) {
       for (const pick of manager.picks) {
-        const current = ownershipMap.get(pick.playerId) || { count: 0, teamNames: [] };
+        const current = ownershipMap.get(pick.playerId) || {
+          count: 0,
+          teamNames: [],
+        };
         ownershipMap.set(pick.playerId, {
           count: current.count + 1,
           teamNames: [...current.teamNames, manager.teamName],
