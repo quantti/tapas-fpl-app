@@ -1,3 +1,19 @@
+# [0.29.0](https://github.com/quantti/tapas-fpl-app/compare/v0.28.0...v0.29.0) (2026-01-11)
+
+
+### Bug Fixes
+
+* **backend:** JSON-encode stats field for asyncpg JSONB insert ([23d0924](https://github.com/quantti/tapas-fpl-app/commit/23d0924e6d2d806b346c3c031c23af5a22e4cd85))
+* **backend:** use composite PK for fixture table multi-season support ([d8990c9](https://github.com/quantti/tapas-fpl-app/commit/d8990c98f34e06beadcb78245ec4016e24b83eb8))
+
+
+### Features
+
+* **backend:** add fixture difficulty rating to recommendations ([7886ceb](https://github.com/quantti/tapas-fpl-app/commit/7886ceb40e91dd990cb398af878b9f2917dafa32))
+* **backend:** add fixture sync to scheduled updates ([4304fcf](https://github.com/quantti/tapas-fpl-app/commit/4304fcf58a0e0a7ef7db31be013a156e6eb560f0))
+* **backend:** add recommendations API endpoint ([3719172](https://github.com/quantti/tapas-fpl-app/commit/37191724fec1f63d4c1c395560dea9189a33a953))
+* **backend:** implement recommendations scoring service ([8e08659](https://github.com/quantti/tapas-fpl-app/commit/8e0865943ff68d4132dda358e56ca108228789f8))
+
 # [0.28.0](https://github.com/quantti/tapas-fpl-app/compare/v0.27.2...v0.28.0) (2026-01-11)
 
 
