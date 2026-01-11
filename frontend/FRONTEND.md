@@ -50,6 +50,96 @@ src/
 
 **Architecture Principle:** Features have domain logic and may use queries; Components are pure UI (no data fetching).
 
+## Architecture: Hooks vs Components
+
+**Core principle:** Separate logic from presentation. Components receive data through props; hooks handle all computation and state management.
+
+### Pattern
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  MyFeature.tsx (container)                                  │
+│    └── useMyFeature() hook                                  │
+│          ├── useQuery() for data fetching                   │
+│          ├── useMemo() for computed values                  │
+│          └── pure utils for calculations                    │
+│    └── <MyComponent data={computedData} />                  │
+│                                                             │
+│  MyComponent.tsx (presentation)                             │
+│    └── Receives props only, no hooks except UI state        │
+│    └── Renders based on props                               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Why This Pattern?
+
+| Benefit | Explanation |
+|---------|-------------|
+| **Testability** | Hook logic tested without rendering; component tested with mock props |
+| **Reusability** | Same hook can power multiple components; same component can display different data |
+| **Maintainability** | Logic changes don't affect rendering; UI changes don't affect logic |
+| **Mocking** | Single hook mock instead of mocking multiple internal hooks |
+
+### Example
+
+```typescript
+// ❌ BAD: Logic mixed into component
+function PlayerCard({ playerId }: Props) {
+  const { data: liveData } = useLiveScoring();
+  const { data: fixtures } = useFixtures();
+  const player = liveData?.elements.find(p => p.id === playerId);
+  const fixture = fixtures?.find(f => f.team_h === player?.team || f.team_a === player?.team);
+  const bonus = calculateBonus(player, fixture);
+  // ... more inline calculations
+  return <div>{bonus}</div>;
+}
+
+// ✅ GOOD: Logic in hook, component is pure presentation
+function usePlayerLiveStats(playerId: number, liveContext: LiveContext) {
+  const player = useMemo(() => findPlayer(liveContext, playerId), [liveContext, playerId]);
+  const fixture = useMemo(() => findFixture(liveContext, player), [liveContext, player]);
+  const bonus = useMemo(() => calculateBonus(player, fixture), [player, fixture]);
+  return { player, fixture, bonus, isLive: !!player };
+}
+
+function PlayerCard({ stats }: { stats: PlayerLiveStats }) {
+  return <div>{stats.bonus}</div>;  // Pure presentation
+}
+
+// Container composes them
+function PlayerCardContainer({ playerId, liveContext }: Props) {
+  const stats = usePlayerLiveStats(playerId, liveContext);
+  return stats.isLive ? <PlayerCard stats={stats} /> : null;
+}
+```
+
+### Guidelines
+
+1. **Hooks handle:**
+   - Data fetching (TanStack Query)
+   - Computed/derived values (`useMemo`)
+   - Business logic (via pure utility functions)
+   - State transformations
+
+2. **Components handle:**
+   - Rendering JSX
+   - Local UI state (`useState` for open/closed, hover, etc.)
+   - Event handlers that call hook callbacks
+   - Styling and layout
+
+3. **Pure utilities (`utils/`) handle:**
+   - Calculations that don't need React state
+   - Data transformations
+   - Algorithms (sorting, filtering, scoring)
+
+### Hook Location
+
+| Type | Location | Examples |
+|------|----------|----------|
+| Data fetching | `services/queries/` | `useFplData`, `useLiveScoring`, `usePlayerDetails` |
+| Feature logic | `hooks/` or co-located | `usePlayerLiveStats`, `useTheme` |
+| UI-only | `hooks/` | `useReleaseNotification` |
+
 ## Path Aliases
 
 Cleaner imports using absolute paths instead of `../../`:

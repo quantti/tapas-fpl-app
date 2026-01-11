@@ -70,6 +70,12 @@ export function ManagerModal({
     return buildTeamFixtureMap(gwFixtures);
   }, [fixtures, gameweek]);
 
+  // Memoize liveContext to prevent infinite re-renders in PlayerDetails
+  const liveContext = useMemo(
+    () => ({ gameweek, liveData, fixtures }),
+    [gameweek, liveData, fixtures]
+  );
+
   if (!managerId) return null;
 
   const isOpen = managerId !== null;
@@ -201,6 +207,7 @@ export function ManagerModal({
         teams={bootstrap?.teams ?? []}
         elementTypes={bootstrap?.element_types ?? []}
         onClose={() => setSelectedPlayer(null)}
+        liveContext={liveContext}
       />
     </>
   );

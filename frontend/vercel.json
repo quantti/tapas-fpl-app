@@ -6,6 +6,6 @@
   "installCommand": "npm install",
   "rewrites": [
     { "source": "/api/fpl/:path*", "destination": "/api/fpl/[...path]" },
-    { "source": "/((?!api/|@|src/|node_modules/).+)", "destination": "/" }
+    { "source": "/:path([^.]+)", "destination": "/" }
   ]
 }

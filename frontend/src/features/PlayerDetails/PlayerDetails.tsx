@@ -6,6 +6,8 @@ import { Modal } from 'components/Modal';
 
 import { getPositionLabel, getPositionColor, POSITION_TYPES } from 'constants/positions';
 
+import { usePlayerLiveStats } from 'hooks/usePlayerLiveStats';
+
 import {
   usePlayerDetails,
   getFdrColor,
@@ -28,15 +30,25 @@ import {
 } from 'utils/playerStats';
 
 import { HistoryTable } from './components/HistoryTable';
+import { LiveMatchSection } from './components/LiveMatchSection';
 import * as styles from './PlayerDetails.module.css';
 
-import type { Player, Team, ElementType } from 'types/fpl';
+import type { Player, Team, ElementType, LiveGameweek, Fixture } from 'types/fpl';
+
+/** Live context passed from ManagerModal for in-match stats display */
+export interface LiveContext {
+  gameweek: number;
+  liveData: LiveGameweek | null;
+  fixtures: Fixture[];
+}
 
 interface Props {
   player: Player | null;
   teams: Team[];
   elementTypes: ElementType[];
   onClose: () => void;
+  /** Optional live context - only passed from ManagerModal during live gameweeks */
+  liveContext?: LiveContext;
 }
 
 function StatusBadge({ status, news }: { status: string; news: string }) {
@@ -459,13 +471,21 @@ function TabContent({
   );
 }
 
-export function PlayerDetails({ player, teams, elementTypes, onClose }: Props) {
+export function PlayerDetails({ player, teams, elementTypes, onClose, liveContext }: Props) {
   const details = usePlayerDetails({
     player,
     teams,
     elementTypes,
     enabled: player !== null,
   });
+
+  // Live stats for in-match display (only when liveContext is provided)
+  const liveStats = usePlayerLiveStats(
+    player?.id ?? null,
+    player?.element_type ?? 0,
+    player?.team ?? 0,
+    liveContext
+  );
 
   const isOpen = player !== null;
 
@@ -518,6 +538,9 @@ export function PlayerDetails({ player, teams, elementTypes, onClose }: Props) {
           priceChange={priceChange}
           priceChangeFormatted={priceChangeFormatted}
         />
+
+        {/* Live match stats - only shown when player's match has started */}
+        <LiveMatchSection stats={liveStats} />
 
         <PlayerStatsGrid
           player={player}
