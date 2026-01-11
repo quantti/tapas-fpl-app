@@ -8,14 +8,16 @@ Only marks gameweek as processed after verifying data was saved correctly.
 Updates:
 1. Points Against - FPL points conceded by each team (~2-5 min incremental)
 2. Teams & Players - Sync from bootstrap for world template (~5 sec)
-3. Chips Usage - Manager chip activations for tracked league (~30 sec)
-4. Manager Snapshots - GW-by-GW picks and stats for H2H comparison (~15 sec)
+3. Fixtures - Match schedule, FDR ratings, scores (~2 sec)
+4. Chips Usage - Manager chip activations for tracked league (~30 sec)
+5. Manager Snapshots - GW-by-GW picks and stats for H2H comparison (~15 sec)
 
 Usage:
     python -m scripts.scheduled_update                 # Run scheduled update
     python -m scripts.scheduled_update --status        # Show update status
     python -m scripts.scheduled_update --dry-run       # Check without making changes
     python -m scripts.scheduled_update --sync-bootstrap # Sync teams/players only
+    python -m scripts.scheduled_update --sync-fixtures  # Sync fixtures only
 
 If collection fails or verification fails, the gameweek is NOT marked as processed.
 Next run will attempt to process it again. Manual intervention required if repeated failures.
@@ -143,6 +145,136 @@ async def update_collection_status(
         season_id,
         gameweek,
     )
+
+
+async def sync_fixtures_from_api(
+    conn: asyncpg.Connection, fixtures: list[dict], season_id: int
+) -> int:
+    """Sync fixture data from FPL API to database.
+
+    Fixtures include both static data (teams, FDR, kickoff) and dynamic data
+    (scores, started/finished, stats) that changes during gameweeks.
+
+    Args:
+        conn: Database connection
+        fixtures: Fixture list from FPL API (fpl_client.get_fixtures())
+        season_id: Season ID
+
+    Returns:
+        Number of fixtures synced
+    """
+    if not fixtures:
+        logger.warning("No fixtures to sync")
+        return 0
+
+    # Parse kickoff_time strings to datetime objects
+    from datetime import datetime
+
+    def parse_kickoff(kickoff_str: str | None) -> datetime | None:
+        if not kickoff_str:
+            return None
+        try:
+            return datetime.fromisoformat(kickoff_str.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+
+    await conn.executemany(
+        """
+        INSERT INTO fixture (
+            id, season_id, gameweek, code, team_h, team_a,
+            team_h_score, team_a_score, team_h_difficulty, team_a_difficulty,
+            kickoff_time, started, finished, finished_provisional, minutes, stats
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        ON CONFLICT (id) DO UPDATE SET
+            gameweek = EXCLUDED.gameweek,
+            team_h_score = EXCLUDED.team_h_score,
+            team_a_score = EXCLUDED.team_a_score,
+            team_h_difficulty = EXCLUDED.team_h_difficulty,
+            team_a_difficulty = EXCLUDED.team_a_difficulty,
+            kickoff_time = EXCLUDED.kickoff_time,
+            started = EXCLUDED.started,
+            finished = EXCLUDED.finished,
+            finished_provisional = EXCLUDED.finished_provisional,
+            minutes = EXCLUDED.minutes,
+            stats = EXCLUDED.stats,
+            updated_at = NOW()
+        """,
+        [
+            (
+                f["id"],
+                season_id,
+                f.get("event"),  # gameweek - can be NULL if postponed
+                f["code"],
+                f["team_h"],
+                f["team_a"],
+                f.get("team_h_score"),
+                f.get("team_a_score"),
+                f.get("team_h_difficulty"),
+                f.get("team_a_difficulty"),
+                parse_kickoff(f.get("kickoff_time")),
+                f.get("started", False),
+                f.get("finished", False),
+                f.get("finished_provisional", False),
+                f.get("minutes", 0),
+                f.get("stats", []),  # JSONB - asyncpg handles list->JSON
+            )
+            for f in fixtures
+        ],
+    )
+
+    return len(fixtures)
+
+
+async def verify_fixtures_data(
+    conn: asyncpg.Connection, season_id: int, expected_count: int
+) -> bool:
+    """Verify fixture data was synced correctly.
+
+    Checks:
+    1. Fixture count matches expected (within tolerance)
+    2. Fixtures have valid team references
+    3. FDR values are present (1-5 range)
+
+    Returns:
+        True if verification passes, False otherwise
+    """
+    actual_count = await conn.fetchval(
+        "SELECT COUNT(*) FROM fixture WHERE season_id = $1", season_id
+    )
+
+    if actual_count == 0:
+        logger.error(f"Fixture sync verification failed: no fixtures found for season {season_id}")
+        return False
+
+    # Allow small tolerance (some fixtures may be filtered)
+    tolerance = 0.95
+    if actual_count < expected_count * tolerance:
+        logger.error(
+            f"Fixture sync verification failed: expected ~{expected_count} fixtures, "
+            f"found {actual_count} (< {tolerance*100}% threshold)"
+        )
+        return False
+
+    # Check that FDR values are present (at least some fixtures have them)
+    fdr_count = await conn.fetchval(
+        """
+        SELECT COUNT(*) FROM fixture
+        WHERE season_id = $1
+          AND team_h_difficulty IS NOT NULL
+          AND team_a_difficulty IS NOT NULL
+        """,
+        season_id,
+    )
+
+    if fdr_count == 0:
+        logger.error("Fixture sync verification failed: no fixtures have FDR values")
+        return False
+
+    logger.debug(
+        f"Fixture sync verified: {actual_count} fixtures, {fdr_count} with FDR values"
+    )
+    return True
 
 
 async def sync_teams_from_bootstrap(
@@ -760,6 +892,8 @@ async def run_scheduled_update(dry_run: bool = False) -> None:
 
             if dry_run:
                 logger.info("[DRY RUN] Would update Points Against data")
+                logger.info("[DRY RUN] Would sync teams and players")
+                logger.info("[DRY RUN] Would sync fixtures")
                 logger.info("[DRY RUN] Would update Chips data")
                 logger.info("[DRY RUN] Would update Manager Snapshots data")
                 logger.info(
@@ -812,6 +946,15 @@ async def run_scheduled_update(dry_run: bool = False) -> None:
                 # 7.6 Verify player sync
                 if not await verify_player_sync(conn, season_id, len(bootstrap.players)):
                     raise RuntimeError("Player sync verification failed")
+
+                # 7.7 Sync fixtures (updates every GW: scores, stats, rescheduling)
+                fixtures = await fpl_client.get_fixtures()
+                fixtures_synced = await sync_fixtures_from_api(conn, fixtures, season_id)
+                logger.info(f"Fixture sync complete: {fixtures_synced} fixtures")
+
+                # 7.8 Verify fixture sync
+                if not await verify_fixtures_data(conn, season_id, len(fixtures)):
+                    raise RuntimeError("Fixture sync verification failed")
 
                 # 8. Update Chips for tracked league (fast operation)
                 _, failed_count, total_members = await run_chips_update(fpl_client, season_id)
@@ -952,6 +1095,72 @@ async def sync_bootstrap_only() -> None:
             await pool.close()
 
 
+async def sync_fixtures_only() -> None:
+    """Sync all fixtures from FPL API.
+
+    This syncs fixture data including:
+    - Static: teams, kickoff times, FDR ratings
+    - Dynamic: scores, started/finished status, stats
+
+    Use this for initial population or to update fixture data outside scheduled runs.
+    """
+    pool = None
+    fpl_client = FplApiClient(requests_per_second=1.0, max_concurrent=5)
+
+    try:
+        logger.info("Fetching FPL fixtures data...")
+        fixtures = await fpl_client.get_fixtures()
+
+        if not fixtures:
+            raise RuntimeError("No fixtures returned from FPL API")
+
+        logger.info(f"Got {len(fixtures)} fixtures from FPL API")
+
+        pool = await create_pool()
+        async with pool.acquire() as conn:
+            season_id = await get_or_create_season(conn)
+            logger.info(f"Season ID: {season_id}")
+
+            # Ensure teams exist (FK constraint)
+            team_count = await conn.fetchval(
+                "SELECT COUNT(*) FROM team WHERE season_id = $1", season_id
+            )
+            if team_count == 0:
+                logger.info("No teams found - syncing teams from bootstrap first...")
+                bootstrap = await fpl_client.get_bootstrap()
+                teams_synced = await sync_teams_from_bootstrap(
+                    conn, bootstrap.teams, season_id
+                )
+                logger.info(f"Teams synced: {teams_synced}")
+
+            # Sync fixtures
+            fixtures_synced = await sync_fixtures_from_api(conn, fixtures, season_id)
+            logger.info(f"Fixtures synced: {fixtures_synced}")
+
+            # Verify fixture sync
+            if not await verify_fixtures_data(conn, season_id, len(fixtures)):
+                raise RuntimeError("Fixture sync verification failed")
+
+            # Show summary
+            finished_count = await conn.fetchval(
+                "SELECT COUNT(*) FROM fixture WHERE season_id = $1 AND finished = true",
+                season_id,
+            )
+            upcoming_count = fixtures_synced - finished_count
+
+            print(f"\n✓ Synced {fixtures_synced} fixtures")
+            print(f"  - Finished: {finished_count}")
+            print(f"  - Upcoming: {upcoming_count}")
+
+    except Exception as e:
+        logger.error(f"Fixture sync failed: {e}", exc_info=True)
+        raise
+    finally:
+        await fpl_client.close()
+        if pool:
+            await pool.close()
+
+
 async def main() -> None:
     """Main entry point with argument parsing."""
     parser = argparse.ArgumentParser(description="Scheduled data updates")
@@ -968,6 +1177,11 @@ async def main() -> None:
         action="store_true",
         help="Sync only teams and players from FPL bootstrap (one-time operation)",
     )
+    parser.add_argument(
+        "--sync-fixtures",
+        action="store_true",
+        help="Sync all fixtures from FPL API (initial population or manual update)",
+    )
 
     args = parser.parse_args()
 
@@ -975,6 +1189,8 @@ async def main() -> None:
         await show_status()
     elif args.sync_bootstrap:
         await sync_bootstrap_only()
+    elif args.sync_fixtures:
+        await sync_fixtures_only()
     else:
         try:
             await asyncio.wait_for(
