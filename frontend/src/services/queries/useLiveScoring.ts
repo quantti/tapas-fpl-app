@@ -1,12 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { calculateProvisionalBonus, shouldShowProvisionalBonus } from 'utils/liveScoring';
 
 import { fplApi } from '../api';
 import { queryKeys } from '../queryKeys';
 
-import type { LiveGameweek, Fixture } from 'types/fpl';
+import type { LiveGameweek, Fixture, LivePlayer } from 'types/fpl';
+
+interface Pick {
+  element: number;
+  multiplier: number;
+}
 
 interface UseLiveScoringReturn {
   liveData: LiveGameweek | null;
@@ -16,6 +21,7 @@ interface UseLiveScoringReturn {
   lastUpdated: Date | null;
   getPlayerLivePoints: (playerId: number) => number;
   getProvisionalBonus: (playerId: number, fixtureId: number) => number;
+  calculateTeamPoints: (picks: Pick[]) => number;
   refresh: () => Promise<void>;
 }
 
@@ -48,20 +54,25 @@ export function useLiveScoring(
     isLoading: fixturesLoading,
     refetch: refetchFixtures,
   } = useQuery({
-    queryKey: ['fixtures', gameweek],
+    queryKey: queryKeys.fixtures(gameweek),
     queryFn: () => fplApi.getFixtures(gameweek),
     enabled: gameweek > 0,
     refetchInterval: isLive ? pollInterval : false,
     staleTime: isLive ? 0 : 5 * 60 * 1000,
   });
 
+  // Memoized Map for O(1) player lookups instead of O(n) array.find()
+  const livePlayersMap = useMemo<Map<number, LivePlayer>>(
+    () => (liveData ? new Map(liveData.elements.map((p) => [p.id, p])) : new Map()),
+    [liveData]
+  );
+
   const getPlayerLivePoints = useCallback(
     (playerId: number): number => {
-      if (!liveData) return 0;
-      const player = liveData.elements.find((p) => p.id === playerId);
+      const player = livePlayersMap.get(playerId);
       return player?.stats.total_points ?? 0;
     },
-    [liveData]
+    [livePlayersMap]
   );
 
   const getProvisionalBonus = useCallback(
@@ -89,6 +100,17 @@ export function useLiveScoring(
     [liveData, fixtures]
   );
 
+  const calculateTeamPoints = useCallback(
+    (picks: Pick[]): number => {
+      return picks.reduce((total, pick) => {
+        const player = livePlayersMap.get(pick.element);
+        const basePoints = player?.stats.total_points ?? 0;
+        return total + pick.multiplier * basePoints;
+      }, 0);
+    },
+    [livePlayersMap]
+  );
+
   const refresh = useCallback(async () => {
     await Promise.all([refetchLive(), refetchFixtures()]);
   }, [refetchLive, refetchFixtures]);
@@ -110,6 +132,7 @@ export function useLiveScoring(
     lastUpdated: liveUpdatedAt ? new Date(liveUpdatedAt) : null,
     getPlayerLivePoints,
     getProvisionalBonus,
+    calculateTeamPoints,
     refresh,
   };
 }

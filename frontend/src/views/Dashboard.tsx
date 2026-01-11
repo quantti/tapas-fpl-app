@@ -35,7 +35,10 @@ export function Dashboard() {
   } = useFplData();
 
   // Fetch live scoring data when games are in progress
-  const { liveData, fixtures } = useLiveScoring(currentGameweek?.id ?? 0, isLive);
+  const { liveData, fixtures, calculateTeamPoints } = useLiveScoring(
+    currentGameweek?.id ?? 0,
+    isLive
+  );
 
   // Check if any games are actually in progress (not just deadline passed)
   const gamesInProgress = hasGamesInProgress(fixtures);
@@ -205,6 +208,7 @@ export function Dashboard() {
         bootstrap={bootstrap}
         liveData={liveData}
         fixtures={fixtures}
+        calculateTeamPoints={calculateTeamPoints}
       />
     </div>
   );

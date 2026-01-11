@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { STARTING_XI_MAX_POSITION } from 'constants/positions';
 
@@ -45,6 +45,11 @@ interface ManagerInfo {
   name: string;
 }
 
+interface PickForPoints {
+  element: number;
+  multiplier: number;
+}
+
 interface Props {
   managerId: number | null;
   gameweek: number;
@@ -53,6 +58,7 @@ interface Props {
   bootstrap?: BootstrapStatic | null;
   liveData?: LiveGameweek | null;
   fixtures?: Fixture[];
+  calculateTeamPoints?: (picks: PickForPoints[]) => number;
 }
 
 export function ManagerModal({
@@ -62,6 +68,7 @@ export function ManagerModal({
   bootstrap: preloadedBootstrap,
   liveData: preloadedLiveData,
   fixtures: preloadedFixtures,
+  calculateTeamPoints,
 }: Props) {
   const [picks, setPicks] = useState<PicksResponse | null>(null);
   const [bootstrap, setBootstrap] = useState<BootstrapStatic | null>(preloadedBootstrap ?? null);
@@ -77,6 +84,27 @@ export function ManagerModal({
   // Use preloaded data if available, otherwise fall back to fetched data
   const liveData = preloadedLiveData ?? fetchedLiveData;
   const fixtures = preloadedFixtures ?? fetchedFixtures;
+
+  // Memoized maps - avoid recreating on every render (O(n) → O(1) lookups)
+  const playersMap = useMemo(
+    () => (bootstrap ? createPlayersMap(bootstrap.elements) : new Map()),
+    [bootstrap]
+  );
+
+  const teamsMap = useMemo(
+    () => (bootstrap ? createTeamsMap(bootstrap.teams) : new Map()),
+    [bootstrap]
+  );
+
+  const liveMap = useMemo(
+    () => (liveData ? createLivePlayersMap(liveData.elements) : new Map()),
+    [liveData]
+  );
+
+  const teamFixtureMap = useMemo(() => {
+    const gwFixtures = fixtures.filter((f) => f.event === gameweek);
+    return buildTeamFixtureMap(gwFixtures);
+  }, [fixtures, gameweek]);
 
   useEffect(() => {
     if (!managerId) {
@@ -94,13 +122,14 @@ export function ManagerModal({
         const needsLiveData = !preloadedLiveData;
         const needsFixtures = !preloadedFixtures;
 
-        // Build parallel fetch array based on what we need
+        // Build parallel fetch array - ALL fetches run concurrently
         const fetches: Promise<unknown>[] = [
           fplApi.getEntryPicks(managerId!, gameweek),
           fplApi.getEntry(managerId!),
         ];
 
-        // Add optional fetches
+        // Add optional fetches to run in parallel (not sequential)
+        if (needsBootstrap) fetches.push(fplApi.getBootstrapStatic());
         if (needsLiveData) fetches.push(fplApi.getLiveGameweek(gameweek));
         if (needsFixtures) fetches.push(fplApi.getFixtures(gameweek));
 
@@ -111,19 +140,16 @@ export function ManagerModal({
         setPicks(picksData as PicksResponse);
         setManagerInfo(managerData as ManagerInfo);
 
-        // Extract optional results if we fetched them
+        // Extract optional results in order they were added
         let resultIndex = 0;
+        if (needsBootstrap) {
+          setBootstrap(optionalResults[resultIndex++] as BootstrapStatic);
+        }
         if (needsLiveData) {
           setFetchedLiveData(optionalResults[resultIndex++] as LiveGameweek);
         }
         if (needsFixtures) {
           setFetchedFixtures(optionalResults[resultIndex++] as Fixture[]);
-        }
-
-        // Fetch bootstrap separately if needed
-        if (needsBootstrap) {
-          const bootstrapData = await fplApi.getBootstrapStatic();
-          setBootstrap(bootstrapData);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load lineup');
@@ -139,6 +165,18 @@ export function ManagerModal({
 
   const isOpen = managerId !== null;
 
+  // Get live points - use hook's calculation if available, fallback to API response
+  const getLivePoints = (): number => {
+    if (!picks) return 0;
+
+    if (calculateTeamPoints) {
+      const startingPicks = picks.picks.filter((p) => p.position <= STARTING_XI_MAX_POSITION);
+      return calculateTeamPoints(startingPicks);
+    }
+
+    return picks.entry_history.points;
+  };
+
   // Compute modal title - show team name and points when data is loaded
   const getModalTitle = () => {
     if (!picks || !managerInfo) {
@@ -148,7 +186,7 @@ export function ManagerModal({
       <span className={styles.headerContent} data-testid="modal-header">
         <span className={styles.teamName}>{managerInfo.name}</span>
         <span className={styles.headerPoints}>
-          <strong>{picks.entry_history.points}</strong> pts
+          <strong>{getLivePoints()}</strong> pts
           {picks.active_chip && <span className={styles.chip}>{picks.active_chip}</span>}
         </span>
       </span>
@@ -168,15 +206,7 @@ export function ManagerModal({
       return null;
     }
 
-    const playersMap = createPlayersMap(bootstrap.elements);
-    const teamsMap = createTeamsMap(bootstrap.teams);
-    const liveMap = liveData ? createLivePlayersMap(liveData.elements) : new Map();
-
-    // Filter fixtures to only current gameweek and build lookup map
-    const gwFixtures = fixtures.filter((f) => f.event === gameweek);
-    const teamFixtureMap = buildTeamFixtureMap(gwFixtures);
-
-    // Build player data for PitchLayout
+    // Build player data for PitchLayout (maps are memoized above)
     interface ManagerPitchPlayer extends BasePitchPlayer {
       pick: Pick;
       player: Player;

@@ -28,6 +28,7 @@ export const queryKeys = {
 
   // Gameweek data
   liveGameweek: (gameweek: number) => ['liveGameweek', gameweek] as const,
+  fixtures: (gameweek: number) => ['fixtures', gameweek] as const,
 
   // Player data
   playerSummary: (playerId: number | undefined) => ['playerSummary', playerId] as const,
