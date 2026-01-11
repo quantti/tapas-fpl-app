@@ -2,8 +2,8 @@
 
 Planning document for the H2H manager comparison feature.
 
-**Last Updated:** 2026-01-10
-**Status:** Phase 1 + Tier 2 Complete
+**Last Updated:** 2026-01-11
+**Status:** Phase 1 + Tier 2 + Tier 3 Complete
 
 ## Current Implementation Status
 
@@ -50,12 +50,15 @@ Planning document for the H2H manager comparison feature.
 - Best GW (gameweek + points)
 - Worst GW (gameweek + points)
 
-**Analytics (Tier 1 + 2):**
+**Analytics (Tier 1 + 2 + 3):**
 - Consistency Score: StdDev of GW points (lower = more consistent)
 - Bench Waste Rate: Avg bench points as % of total
 - Hit Frequency: % of GWs with hits taken
 - Form Momentum: "Improving" / "Stable" / "Declining" (3-GW trend, ±5% threshold)
 - Recovery Rate: Average points scored after red arrow GWs
+- **Luck Index:** Actual vs expected points (xG-based, positive = lucky)
+- **Captain xP Delta:** Captain actual vs expected points
+- **Squad xP:** Total expected points from starting XI
 - InfoTooltip component for metric explanations
 
 **Files:**
