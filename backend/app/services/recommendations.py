@@ -12,8 +12,88 @@ Recommendation categories:
 - Time to Sell: Owned players with declining metrics
 """
 
+import asyncio
+import logging
+from collections import Counter
 from decimal import Decimal
-from typing import Any
+from typing import Any, Protocol, TypedDict
+
+logger = logging.getLogger(__name__)
+
+# =============================================================================
+# Type Definitions
+# =============================================================================
+
+
+class FplClientProtocol(Protocol):
+    """Protocol for FPL API client dependency injection."""
+
+    async def get_bootstrap_static(self) -> dict[str, Any]: ...
+    async def get_league_standings(self, league_id: int) -> dict[str, Any]: ...
+    async def get_manager_picks(self, manager_id: int) -> dict[str, Any]: ...
+
+
+class PlayerPercentiles(TypedDict, total=False):
+    """Percentile rankings for player stats (all values 0.0 to 1.0)."""
+
+    xg90: float
+    xa90: float
+    xgc90: float
+    cs90: float
+    form: float
+
+
+# =============================================================================
+# Public API
+# =============================================================================
+
+__all__ = [
+    # Types
+    "PlayerPercentiles",
+    "FplClientProtocol",
+    # Constants
+    "MIN_MINUTES_THRESHOLD",
+    "POSITION_GKP",
+    "POSITION_DEF",
+    "POSITION_MID",
+    "POSITION_FWD",
+    "PUNTS_OWNERSHIP_THRESHOLD",
+    "DEFENSIVE_OWNERSHIP_MIN",
+    "DEFENSIVE_OWNERSHIP_MAX",
+    "SELL_SCORE_THRESHOLD",
+    "PUNT_WEIGHTS",
+    "DEFENSIVE_WEIGHTS",
+    "SELL_WEIGHTS",
+    # Eligibility
+    "is_eligible_player",
+    # Per-90 calculations
+    "calculate_per90",
+    "calculate_xg90",
+    "calculate_xa90",
+    "calculate_xgc90",
+    "calculate_cs90",
+    "calculate_per90_from_fixtures",
+    # Percentile ranking
+    "get_percentile",
+    # Form calculation
+    "calculate_form",
+    # Ownership calculation
+    "calculate_ownership",
+    # Score calculations
+    "invert_xgc_percentile",
+    "calculate_buy_score",
+    "calculate_sell_score",
+    "should_include_in_sell_list",
+    # Filtering and sorting
+    "filter_for_punts",
+    "filter_for_defensive",
+    "filter_for_sell",
+    "get_top_punts",
+    "get_top_defensive",
+    "get_top_sell",
+    # Service class
+    "RecommendationsService",
+]
 
 # =============================================================================
 # Constants
@@ -21,6 +101,12 @@ from typing import Any
 
 # Minimum minutes threshold for eligibility
 MIN_MINUTES_THRESHOLD = 450
+
+# Position constants (FPL element_type)
+POSITION_GKP = 1
+POSITION_DEF = 2
+POSITION_MID = 3
+POSITION_FWD = 4
 
 # Ownership thresholds
 PUNTS_OWNERSHIP_THRESHOLD = 0.40
@@ -115,6 +201,27 @@ SELL_WEIGHTS: dict[int, dict[str, float]] = {
 }
 
 
+def _validate_weights() -> None:
+    """Validate all weight configurations sum to 1.0.
+
+    Raises:
+        ValueError: If any weight set doesn't sum to 1.0
+    """
+    for name, weights_dict in [
+        ("PUNT_WEIGHTS", PUNT_WEIGHTS),
+        ("DEFENSIVE_WEIGHTS", DEFENSIVE_WEIGHTS),
+        ("SELL_WEIGHTS", SELL_WEIGHTS),
+    ]:
+        for pos, weights in weights_dict.items():
+            total = sum(weights.values())
+            if abs(total - 1.0) >= 1e-9:
+                raise ValueError(f"{name}[{pos}] sums to {total}, not 1.0")
+
+
+# Validate at module load to catch config errors early
+_validate_weights()
+
+
 # =============================================================================
 # 1. Eligibility Functions
 # =============================================================================
@@ -135,7 +242,7 @@ def is_eligible_player(player: dict[str, Any]) -> bool:
         True if player meets all eligibility criteria
     """
     # Exclude goalkeepers
-    if player.get("element_type") == 1:
+    if player.get("element_type") == POSITION_GKP:
         return False
 
     # Only available players
@@ -152,6 +259,24 @@ def is_eligible_player(player: dict[str, Any]) -> bool:
 # =============================================================================
 
 
+def calculate_per90(value: Decimal | int | None, minutes: int) -> float:
+    """Calculate any stat per 90 minutes.
+
+    Generic function for per-90 stat calculation. Handles None values
+    and invalid minutes safely.
+
+    Args:
+        value: Total stat value (Decimal/int from PostgreSQL, or None)
+        minutes: Total minutes played
+
+    Returns:
+        Value per 90 minutes, or 0.0 if invalid input
+    """
+    if value is None or minutes <= 0:
+        return 0.0
+    return (float(value) / minutes) * 90
+
+
 def calculate_xg90(xg: Decimal | None, minutes: int) -> float:
     """Calculate expected goals per 90 minutes.
 
@@ -162,9 +287,7 @@ def calculate_xg90(xg: Decimal | None, minutes: int) -> float:
     Returns:
         xG per 90 minutes, or 0.0 if invalid input
     """
-    if xg is None or minutes <= 0:
-        return 0.0
-    return (float(xg) / minutes) * 90
+    return calculate_per90(xg, minutes)
 
 
 def calculate_xa90(xa: Decimal | None, minutes: int) -> float:
@@ -177,9 +300,7 @@ def calculate_xa90(xa: Decimal | None, minutes: int) -> float:
     Returns:
         xA per 90 minutes, or 0.0 if invalid input
     """
-    if xa is None or minutes <= 0:
-        return 0.0
-    return (float(xa) / minutes) * 90
+    return calculate_per90(xa, minutes)
 
 
 def calculate_xgc90(xgc: Decimal | None, minutes: int) -> float:
@@ -192,9 +313,7 @@ def calculate_xgc90(xgc: Decimal | None, minutes: int) -> float:
     Returns:
         xGC per 90 minutes, or 0.0 if invalid input
     """
-    if xgc is None or minutes <= 0:
-        return 0.0
-    return (float(xgc) / minutes) * 90
+    return calculate_per90(xgc, minutes)
 
 
 def calculate_cs90(cs: int | None, minutes: int) -> float:
@@ -207,9 +326,7 @@ def calculate_cs90(cs: int | None, minutes: int) -> float:
     Returns:
         CS per 90 minutes, or 0.0 if invalid input
     """
-    if cs is None or minutes <= 0:
-        return 0.0
-    return (float(cs) / minutes) * 90
+    return calculate_per90(cs, minutes)
 
 
 def calculate_per90_from_fixtures(stats: list[dict[str, Any]]) -> dict[str, float]:
@@ -376,30 +493,6 @@ def calculate_ownership(
             owning_snapshots.add(pick.get("snapshot_id"))
 
     return len(owning_snapshots) / num_managers
-
-
-def calculate_ownership_for_season(
-    player_id: int,
-    picks: list[dict[str, Any]],
-    num_managers: int,
-    season_id: int,
-) -> float:
-    """Calculate ownership for a specific season.
-
-    This is a convenience wrapper - season filtering should
-    happen at the query level, but this documents the contract.
-
-    Args:
-        player_id: The player's ID
-        picks: List of manager pick rows (already filtered by season)
-        num_managers: Total managers in the league for this season
-        season_id: Season ID (for documentation, filtering at query level)
-
-    Returns:
-        Ownership as fraction (0.0 to 1.0)
-    """
-    _ = season_id  # Filtering should be done at query level
-    return calculate_ownership(player_id, picks, num_managers)
 
 
 # =============================================================================
@@ -624,3 +717,288 @@ def get_top_sell(players: list[dict[str, Any]], limit: int = 10) -> list[dict[st
         key=lambda p: (-p.get("sell_score", 0), p.get("id", 0)),
     )
     return sorted_players[:limit]
+
+
+# =============================================================================
+# 9. Recommendations Service (API Orchestration)
+# =============================================================================
+
+
+# Max concurrent manager API requests (avoid rate limiting)
+MAX_CONCURRENT_MANAGER_REQUESTS = 10
+MAX_MANAGERS_TO_FETCH = 50
+
+
+class RecommendationsService:
+    """Orchestrates player recommendations by fetching data and calculating scores.
+
+    This service:
+    1. Fetches player data from FPL bootstrap-static API
+    2. Fetches league ownership from manager picks
+    3. Calculates per-90 stats and percentiles
+    4. Calculates buy/sell scores
+    5. Returns categorized recommendations (punts, defensive, time_to_sell)
+    """
+
+    def __init__(self, fpl_client: FplClientProtocol) -> None:
+        """Initialize with an FPL API client.
+
+        Args:
+            fpl_client: FplApiClient instance for API calls
+        """
+        self.fpl_client = fpl_client
+
+    async def get_league_recommendations(
+        self,
+        league_id: int,
+        limit: int = 10,
+        season_id: int = 1,
+    ) -> dict[str, Any]:
+        """Get player recommendations for a league.
+
+        Args:
+            league_id: FPL league ID
+            limit: Maximum number of players per category
+            season_id: Season ID for filtering (default 1 for 2024-25)
+
+        Returns:
+            Dict with punts, defensive, and time_to_sell lists
+        """
+        # Note: season_id is currently unused as FPL API data is season-implicit
+        # Will be used when querying from database for historical data
+        _ = season_id  # Mark as intentionally unused for now
+        # 1. Fetch bootstrap data (all players)
+        bootstrap = await self.fpl_client.get_bootstrap_static()
+        elements = bootstrap.get("elements", [])
+
+        # 2. Filter for eligible players
+        eligible_players = [p for p in elements if is_eligible_player(p)]
+
+        if not eligible_players:
+            return {"punts": [], "defensive": [], "time_to_sell": []}
+
+        # 3. Calculate per-90 stats for all eligible players
+        players_with_stats = self._calculate_per90_stats(eligible_players)
+
+        # 4. Calculate percentiles across all eligible players
+        players_with_percentiles = self._calculate_percentiles(players_with_stats)
+
+        # 5. Fetch league ownership
+        league_ownership = await self._fetch_league_ownership(league_id)
+        num_managers = len(league_ownership.get("manager_ids", []))
+
+        # 6. Apply ownership and calculate scores
+        scored_players = self._calculate_scores(
+            players_with_percentiles, league_ownership, num_managers
+        )
+
+        # 7. Filter and sort into categories
+        punts_candidates = filter_for_punts(scored_players)
+        defensive_candidates = filter_for_defensive(scored_players)
+        sell_candidates = filter_for_sell(scored_players)
+
+        return {
+            "punts": get_top_punts(punts_candidates, limit),
+            "defensive": get_top_defensive(defensive_candidates, limit),
+            "time_to_sell": get_top_sell(sell_candidates, limit),
+        }
+
+    def _calculate_per90_stats(
+        self, players: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Calculate per-90 stats for all players.
+
+        Args:
+            players: List of FPL player elements
+
+        Returns:
+            Players with xg90, xa90, xgc90, cs90 added
+        """
+        result = []
+        for p in players:
+            minutes = p.get("minutes", 0)
+
+            # Parse decimal strings from FPL API
+            xg = Decimal(p.get("expected_goals", "0") or "0")
+            xa = Decimal(p.get("expected_assists", "0") or "0")
+            xgc = Decimal(p.get("expected_goals_conceded", "0") or "0")
+            cs = p.get("clean_sheets", 0) or 0
+
+            player_copy = dict(p)
+            player_copy["xg90"] = calculate_xg90(xg, minutes)
+            player_copy["xa90"] = calculate_xa90(xa, minutes)
+            player_copy["xgc90"] = calculate_xgc90(xgc, minutes)
+            player_copy["cs90"] = calculate_cs90(cs, minutes)
+            result.append(player_copy)
+
+        return result
+
+    def _calculate_percentiles(
+        self, players: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Calculate percentile rankings for all players.
+
+        Args:
+            players: List of players with per-90 stats
+
+        Returns:
+            Players with percentile rankings added
+        """
+        # Collect all values for percentile calculation
+        all_xg90 = [p["xg90"] for p in players]
+        all_xa90 = [p["xa90"] for p in players]
+        all_xgc90 = [p["xgc90"] for p in players]
+        all_cs90 = [p["cs90"] for p in players]
+        all_form = [float(p.get("form", "0") or "0") for p in players]
+
+        result = []
+        for p in players:
+            player_copy = dict(p)
+            player_copy["percentiles"] = {
+                "xg90": get_percentile(p["xg90"], all_xg90),
+                "xa90": get_percentile(p["xa90"], all_xa90),
+                "xgc90": get_percentile(p["xgc90"], all_xgc90),
+                "cs90": get_percentile(p["cs90"], all_cs90),
+                "form": get_percentile(float(p.get("form", "0") or "0"), all_form),
+            }
+            result.append(player_copy)
+
+        return result
+
+    async def _fetch_league_ownership(self, league_id: int) -> dict[str, Any]:
+        """Fetch which players are owned by managers in the league.
+
+        Uses parallel requests with semaphore to avoid rate limiting while
+        improving response times compared to sequential calls.
+
+        Args:
+            league_id: FPL league ID
+
+        Returns:
+            Dict with manager_ids, player_counts, and failed_count
+
+        Raises:
+            Exception: Propagates errors from league standings fetch
+        """
+        # Fetch league standings - let errors propagate (critical failure)
+        standings = await self.fpl_client.get_league_standings(league_id)
+        managers = standings.get("standings", {}).get("results", [])
+
+        manager_ids = [m["entry"] for m in managers]
+
+        if not manager_ids:
+            logger.info(f"No managers found for league {league_id}")
+            return {"manager_ids": [], "player_counts": Counter(), "failed_count": 0}
+
+        # Limit managers to fetch
+        managers_to_fetch = manager_ids[:MAX_MANAGERS_TO_FETCH]
+        failed_count = 0
+
+        # Fetch picks in parallel with controlled concurrency
+        semaphore = asyncio.Semaphore(MAX_CONCURRENT_MANAGER_REQUESTS)
+
+        async def fetch_manager_picks(
+            manager_id: int,
+        ) -> tuple[list[dict[str, Any]], bool]:
+            """Returns (picks, success) tuple."""
+            nonlocal failed_count
+            async with semaphore:
+                try:
+                    picks_data = await self.fpl_client.get_manager_picks(manager_id)
+                    return (picks_data.get("picks", []), True)
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to fetch picks for manager {manager_id}: "
+                        f"{type(e).__name__}: {e}"
+                    )
+                    failed_count += 1
+                    return ([], False)
+
+        # Gather all manager picks in parallel
+        results = await asyncio.gather(
+            *[fetch_manager_picks(m) for m in managers_to_fetch]
+        )
+
+        # Count player ownership using Counter
+        player_counts: Counter[int] = Counter()
+        for picks, _success in results:
+            for pick in picks:
+                player_id = pick.get("element")
+                if player_id:
+                    player_counts[player_id] += 1
+
+        # Log if too many failures (> 50%)
+        if failed_count > len(managers_to_fetch) * 0.5:
+            logger.warning(
+                f"High failure rate fetching manager picks for league {league_id}: "
+                f"{failed_count}/{len(managers_to_fetch)} failed"
+            )
+
+        return {
+            "manager_ids": manager_ids,
+            "player_counts": player_counts,
+            "failed_count": failed_count,
+        }
+
+    def _calculate_scores(
+        self,
+        players: list[dict[str, Any]],
+        league_ownership: dict[str, Any],
+        num_managers: int,
+    ) -> list[dict[str, Any]]:
+        """Calculate buy/sell scores for all players.
+
+        Args:
+            players: Players with percentiles
+            league_ownership: League ownership data
+            num_managers: Total managers in league
+
+        Returns:
+            Players with ownership, score, and sell_score
+        """
+        player_counts = league_ownership.get("player_counts", {})
+
+        result = []
+        for p in players:
+            player_copy = dict(p)
+            player_id = p.get("id")
+            position = p.get("element_type", 3)
+
+            # Calculate league ownership
+            owned_count = player_counts.get(player_id, 0)
+            ownership = owned_count / num_managers if num_managers > 0 else 0.0
+            player_copy["ownership"] = ownership
+
+            percentiles = p.get("percentiles", {})
+
+            # For buy score, invert xGC for defenders
+            buy_percentiles = dict(percentiles)
+            if position == POSITION_DEF:
+                buy_percentiles["xgc90"] = invert_xgc_percentile(
+                    percentiles.get("xgc90", 0.5)
+                )
+
+            # Calculate both scores and let filtering determine category
+            fixture_score = 0.5  # Placeholder until fixture difficulty implemented
+
+            if ownership < PUNTS_OWNERSHIP_THRESHOLD:
+                player_copy["score"] = calculate_buy_score(
+                    buy_percentiles, fixture_score, position, PUNT_WEIGHTS
+                )
+            else:
+                player_copy["score"] = calculate_buy_score(
+                    buy_percentiles, fixture_score, position, DEFENSIVE_WEIGHTS
+                )
+
+            player_copy["sell_score"] = calculate_sell_score(
+                percentiles, fixture_score, position, SELL_WEIGHTS
+            )
+
+            # Add display fields
+            player_copy["name"] = p.get("web_name", "Unknown")
+            player_copy["team"] = p.get("team", 0)
+            player_copy["price"] = p.get("now_cost", 0) / 10
+
+            result.append(player_copy)
+
+        return result

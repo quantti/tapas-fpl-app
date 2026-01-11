@@ -113,7 +113,7 @@ async def main() -> None:
                             not h.was_home,  # opponent was home if player was away
                             player["team"],
                         )
-                        logger.info(f"    ✓ Saved to database")
+                        logger.info("    ✓ Saved to database")
                 except Exception as e:
                     logger.error(f"    ✗ Failed: {e}")
 

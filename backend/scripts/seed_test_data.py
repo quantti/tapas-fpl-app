@@ -13,7 +13,6 @@ import argparse
 import asyncio
 import os
 import random
-from datetime import datetime
 
 import asyncpg
 from dotenv import load_dotenv
@@ -290,7 +289,7 @@ async def seed_league(conn: asyncpg.Connection, season_id: int) -> None:
         VALUES ($1, $2, 'Tapas & Tackles', 'x', 'c', 1)
         ON CONFLICT (id, season_id) DO NOTHING
     """, TEST_LEAGUE_ID, season_id)
-    print(f"  \u2713 Seeded league")
+    print("  \u2713 Seeded league")
 
 
 async def seed_managers(conn: asyncpg.Connection, season_id: int) -> None:

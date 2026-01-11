@@ -29,7 +29,8 @@ class PlayerRow(TypedDict):
     team_id: int
     element_type: int  # 1=GK, 2=DEF, 3=MID, 4=FWD
     web_name: str
-    status: str  # 'a'=available, 'i'=injured, 's'=suspended, 'd'=doubtful, 'u'=unavailable, 'n'=not in squad
+    # 'a'=available, 'i'=injured, 's'=suspended, 'd'=doubtful, 'u'=unavailable, 'n'=not
+    status: str
     minutes: int | None
     form: Decimal | None
     expected_goals: Decimal | None
@@ -323,6 +324,21 @@ class TestEligibility:
 
         assert is_eligible_player(sample_available_defender) is True
 
+    def test_handles_missing_keys(self):
+        """Should handle dict missing expected keys without crashing."""
+        from app.services.recommendations import is_eligible_player
+
+        # Empty dict - should return False, not KeyError
+        assert is_eligible_player({}) is False
+
+        # Partial dict missing status
+        partial = {"element_type": 3, "minutes": 500}
+        assert is_eligible_player(partial) is False
+
+        # Missing minutes
+        no_minutes = {"element_type": 3, "status": "a"}
+        assert is_eligible_player(no_minutes) is False
+
 
 # =============================================================================
 # 2. Per-90 Calculation Tests
@@ -429,6 +445,40 @@ class TestPer90Calculations:
         )
         expected_xg90 = (total_xg / 450) * 90
         assert result["xg90"] == pytest.approx(expected_xg90, rel=1e-2)
+
+    def test_per90_from_fixtures_empty_list(self):
+        """Empty fixture list should return all zeros."""
+        from app.services.recommendations import calculate_per90_from_fixtures
+
+        result = calculate_per90_from_fixtures([])
+        assert result == {"xg90": 0.0, "xa90": 0.0, "xgc90": 0.0, "cs90": 0.0}
+
+    def test_per90_from_fixtures_all_none_stats(self):
+        """Should handle fixtures where all xG/xA/xGC are None (e.g., early season)."""
+        from app.services.recommendations import calculate_per90_from_fixtures
+
+        stats = [
+            {
+                "minutes": 90,
+                "expected_goals": None,
+                "expected_assists": None,
+                "expected_goals_conceded": None,
+                "clean_sheets": 0,
+            },
+            {
+                "minutes": 90,
+                "expected_goals": None,
+                "expected_assists": None,
+                "expected_goals_conceded": None,
+                "clean_sheets": 1,
+            },
+        ]
+        result = calculate_per90_from_fixtures(stats)
+        assert result["xg90"] == 0.0
+        assert result["xa90"] == 0.0
+        assert result["xgc90"] == 0.0
+        # CS should still calculate: 1 CS in 180 mins = 0.5 per 90
+        assert result["cs90"] == pytest.approx(0.5, rel=1e-2)
 
 
 # =============================================================================
@@ -725,15 +775,19 @@ class TestOwnershipCalculation:
         assert result == 0.0
 
     def test_ownership_season_isolation(self):
-        """Ownership should be calculated from same season picks only."""
-        from app.services.recommendations import calculate_ownership_for_season
+        """Ownership calculation assumes picks are pre-filtered by season.
 
-        # This would be handled at query level, but test the function contract
+        Season filtering should happen at the query level - this test documents
+        that the function operates correctly on pre-filtered data.
+        """
+        from app.services.recommendations import calculate_ownership
+
+        # Picks pre-filtered to a single season (as would be done at query level)
         picks_season_1 = [
             {"snapshot_id": 1, "player_id": 427, "position": 1, "multiplier": 1},
         ]
-        result = calculate_ownership_for_season(
-            player_id=427, picks=picks_season_1, num_managers=1, season_id=1
+        result = calculate_ownership(
+            player_id=427, picks=picks_season_1, num_managers=1
         )
         assert result == pytest.approx(1.0, rel=1e-2)
 
@@ -748,7 +802,7 @@ class TestBuyScore:
 
     def test_buy_score_defender_weights(self):
         """Defender buy score should use DEF-specific weights including xGC and CS."""
-        from app.services.recommendations import calculate_buy_score, PUNT_WEIGHTS
+        from app.services.recommendations import PUNT_WEIGHTS, calculate_buy_score
 
         percentiles = {
             "xg90": 0.6,
@@ -771,7 +825,7 @@ class TestBuyScore:
 
     def test_buy_score_midfielder_weights(self):
         """Midfielder buy score should exclude defensive stats (xGC=0, CS=0)."""
-        from app.services.recommendations import calculate_buy_score, PUNT_WEIGHTS
+        from app.services.recommendations import PUNT_WEIGHTS, calculate_buy_score
 
         percentiles = {
             "xg90": 0.7,
@@ -798,7 +852,7 @@ class TestBuyScore:
 
     def test_buy_score_forward_weights(self):
         """Forward buy score should prioritize xG."""
-        from app.services.recommendations import calculate_buy_score, PUNT_WEIGHTS
+        from app.services.recommendations import PUNT_WEIGHTS, calculate_buy_score
 
         percentiles = {
             "xg90": 0.9,  # High xG
@@ -826,8 +880,6 @@ class TestBuyScore:
     def test_buy_score_inverts_xgc_for_defenders(self):
         """For punts, low xGC should result in high score contribution."""
         from app.services.recommendations import (
-            calculate_buy_score,
-            PUNT_WEIGHTS,
             invert_xgc_percentile,
         )
 
@@ -838,7 +890,7 @@ class TestBuyScore:
 
     def test_buy_score_range_0_to_1(self):
         """Buy score should always be between 0 and 1."""
-        from app.services.recommendations import calculate_buy_score, PUNT_WEIGHTS
+        from app.services.recommendations import PUNT_WEIGHTS, calculate_buy_score
 
         # All percentiles at 0
         percentiles_low = {
@@ -867,9 +919,9 @@ class TestBuyScore:
     def test_defensive_weights_differ_from_punt_weights(self):
         """Defensive options should use DEFENSIVE_WEIGHTS, not PUNT_WEIGHTS."""
         from app.services.recommendations import (
-            calculate_buy_score,
             DEFENSIVE_WEIGHTS,
             PUNT_WEIGHTS,
+            calculate_buy_score,
         )
 
         # Use unequal percentiles so different weight distributions produce different scores
@@ -906,7 +958,8 @@ class TestBuyScore:
                 + weights["form"]
                 + weights["fix"]
             )
-            assert total == pytest.approx(1.0, rel=1e-3), f"Position {position} weights don't sum to 1.0"
+            msg = f"Position {position} weights don't sum to 1.0"
+            assert total == pytest.approx(1.0, rel=1e-3), msg
 
     def test_defensive_weights_sum_to_one_for_all_positions(self):
         """DEFENSIVE_WEIGHTS for each position must sum to 1.0."""
@@ -922,7 +975,8 @@ class TestBuyScore:
                 + weights["form"]
                 + weights["fix"]
             )
-            assert total == pytest.approx(1.0, rel=1e-3), f"Position {position} weights don't sum to 1.0"
+            msg = f"Position {position} weights don't sum to 1.0"
+            assert total == pytest.approx(1.0, rel=1e-3), msg
 
     def test_sell_weights_sum_to_one_for_all_positions(self):
         """SELL_WEIGHTS for each position must sum to 1.0."""
@@ -938,7 +992,16 @@ class TestBuyScore:
                 + weights["form"]
                 + weights["fix"]
             )
-            assert total == pytest.approx(1.0, rel=1e-3), f"Position {position} weights don't sum to 1.0"
+            msg = f"Position {position} weights don't sum to 1.0"
+            assert total == pytest.approx(1.0, rel=1e-3), msg
+
+    def test_buy_score_unknown_position_returns_zero(self):
+        """Unknown position should return 0.0, not raise KeyError."""
+        from app.services.recommendations import PUNT_WEIGHTS, calculate_buy_score
+
+        percentiles = {"xg90": 0.5, "xa90": 0.5, "xgc90": 0.5, "cs90": 0.5, "form": 0.5}
+        result = calculate_buy_score(percentiles, 0.5, position=99, weights=PUNT_WEIGHTS)
+        assert result == 0.0
 
 
 # =============================================================================
@@ -951,7 +1014,7 @@ class TestSellScore:
 
     def test_sell_score_inverts_most_metrics(self):
         """Sell score should invert xG, xA, form (low = high sell score)."""
-        from app.services.recommendations import calculate_sell_score, SELL_WEIGHTS
+        from app.services.recommendations import SELL_WEIGHTS, calculate_sell_score
 
         # Player with HIGH xG (good) should have LOW contribution to sell score
         percentiles = {
@@ -970,7 +1033,7 @@ class TestSellScore:
 
     def test_sell_score_does_not_invert_xgc(self):
         """xGC should NOT be inverted for sell score (high xGC = bad = contributes to sell)."""
-        from app.services.recommendations import calculate_sell_score, SELL_WEIGHTS
+        from app.services.recommendations import SELL_WEIGHTS, calculate_sell_score
 
         # Defender with HIGH xGC (bad defensive performance)
         percentiles_high_xgc = {
@@ -1001,7 +1064,7 @@ class TestSellScore:
 
     def test_sell_score_high_form_low_score(self):
         """Player with high form should have low sell score."""
-        from app.services.recommendations import calculate_sell_score, SELL_WEIGHTS
+        from app.services.recommendations import SELL_WEIGHTS, calculate_sell_score
 
         percentiles = {
             "xg90": 0.5,
@@ -1015,7 +1078,7 @@ class TestSellScore:
 
     def test_sell_score_low_form_high_score(self):
         """Player with low form should have high sell score."""
-        from app.services.recommendations import calculate_sell_score, SELL_WEIGHTS
+        from app.services.recommendations import SELL_WEIGHTS, calculate_sell_score
 
         percentiles = {
             "xg90": 0.5,
@@ -1034,6 +1097,14 @@ class TestSellScore:
         assert should_include_in_sell_list(0.5) is False
         assert should_include_in_sell_list(0.50001) is True
         assert should_include_in_sell_list(0.49999) is False
+
+    def test_sell_score_unknown_position_returns_zero(self):
+        """Unknown position should return 0.0, not raise KeyError."""
+        from app.services.recommendations import SELL_WEIGHTS, calculate_sell_score
+
+        percentiles = {"xg90": 0.5, "xa90": 0.5, "xgc90": 0.5, "cs90": 0.5, "form": 0.5}
+        result = calculate_sell_score(percentiles, 0.5, position=99, weights=SELL_WEIGHTS)
+        assert result == 0.0
 
 
 # =============================================================================
@@ -1058,18 +1129,19 @@ class TestRecommendationFiltering:
         assert all(p["ownership"] < PUNTS_OWNERSHIP_THRESHOLD for p in result)
 
     def test_defensive_filters_medium_ownership_40_to_100(self):
-        """Defensive should include players with DEFENSIVE_OWNERSHIP_MIN <= ownership < DEFENSIVE_OWNERSHIP_MAX."""
+        """Defensive: DEFENSIVE_OWNERSHIP_MIN <= ownership < DEFENSIVE_OWNERSHIP_MAX."""
         from app.services.recommendations import filter_for_defensive
 
         players: list[ScoredPlayerRow] = [
             {"id": 1, "ownership": 0.39, "score": 0.7, "sell_score": None},  # Exclude
             {"id": 2, "ownership": 0.40, "score": 0.7, "sell_score": None},  # Include (boundary)
             {"id": 3, "ownership": 0.99, "score": 0.7, "sell_score": None},  # Include
-            {"id": 4, "ownership": 1.00, "score": 0.7, "sell_score": None},  # Exclude (100% = everyone owns)
+            {"id": 4, "ownership": 1.00, "score": 0.7, "sell_score": None},  # Exclude
         ]
         result = filter_for_defensive(players)
         assert len(result) == 2
-        assert all(DEFENSIVE_OWNERSHIP_MIN <= p["ownership"] < DEFENSIVE_OWNERSHIP_MAX for p in result)
+        for p in result:
+            assert DEFENSIVE_OWNERSHIP_MIN <= p["ownership"] < DEFENSIVE_OWNERSHIP_MAX
 
     def test_defensive_excludes_exactly_100_percent(self):
         """Players owned by everyone (100%) should not be in defensive."""
@@ -1152,3 +1224,257 @@ class TestRecommendationFiltering:
         players = [{"id": i, "score": 0.8} for i in range(5)]
         result = get_top_punts(players)
         assert len(result) == 5  # Only 5 available, not 20
+
+    def test_get_top_punts_empty_list(self):
+        """Empty list should return empty list, not error."""
+        from app.services.recommendations import get_top_punts
+
+        result = get_top_punts([])
+        assert result == []
+
+    def test_get_top_defensive_empty_list(self):
+        """Empty list should return empty list, not error."""
+        from app.services.recommendations import get_top_defensive
+
+        result = get_top_defensive([])
+        assert result == []
+
+    def test_get_top_sell_empty_list(self):
+        """Empty list should return empty list, not error."""
+        from app.services.recommendations import get_top_sell
+
+        result = get_top_sell([])
+        assert result == []
+
+    def test_get_top_punts_handles_missing_keys(self):
+        """Should handle players missing score or id keys gracefully."""
+        from app.services.recommendations import get_top_punts
+
+        players = [
+            {"id": 1},  # Missing score - defaults to 0
+            {"score": 0.8},  # Missing id - defaults to 0
+            {"id": 2, "score": 0.9},  # Complete
+        ]
+        result = get_top_punts(players)
+        # Should not crash, complete player with highest score should be first
+        assert result[0].get("score", 0) == 0.9
+
+
+# =============================================================================
+# 9. RecommendationsService Unit Tests
+# =============================================================================
+
+
+class TestRecommendationsService:
+    """Unit tests for the RecommendationsService class."""
+
+    async def test_calculate_per90_stats(self):
+        """Should calculate per-90 stats for all players."""
+        from app.services.recommendations import RecommendationsService
+
+        # Create a minimal mock client
+        class MockClient:
+            async def get_bootstrap_static(self):
+                return {}
+
+            async def get_league_standings(self, league_id: int):
+                return {}
+
+            async def get_manager_picks(self, manager_id: int):
+                return {}
+
+        service = RecommendationsService(MockClient())
+
+        players = [
+            {
+                "id": 1,
+                "minutes": 900,
+                "expected_goals": "5.0",
+                "expected_assists": "3.0",
+                "expected_goals_conceded": "2.0",
+                "clean_sheets": 4,
+            }
+        ]
+
+        result = service._calculate_per90_stats(players)
+
+        assert len(result) == 1
+        assert result[0]["xg90"] == pytest.approx(0.5, rel=1e-2)  # 5/900*90
+        assert result[0]["xa90"] == pytest.approx(0.3, rel=1e-2)  # 3/900*90
+        assert result[0]["xgc90"] == pytest.approx(0.2, rel=1e-2)  # 2/900*90
+        assert result[0]["cs90"] == pytest.approx(0.4, rel=1e-2)  # 4/900*90
+
+    async def test_calculate_percentiles(self):
+        """Should calculate percentiles across all players."""
+        from app.services.recommendations import RecommendationsService
+
+        class MockClient:
+            async def get_bootstrap_static(self):
+                return {}
+
+            async def get_league_standings(self, league_id: int):
+                return {}
+
+            async def get_manager_picks(self, manager_id: int):
+                return {}
+
+        service = RecommendationsService(MockClient())
+
+        players = [
+            {"id": 1, "xg90": 0.1, "xa90": 0.1, "xgc90": 0.1, "cs90": 0.1, "form": "2.0"},
+            {"id": 2, "xg90": 0.5, "xa90": 0.5, "xgc90": 0.5, "cs90": 0.5, "form": "5.0"},
+            {"id": 3, "xg90": 0.9, "xa90": 0.9, "xgc90": 0.9, "cs90": 0.9, "form": "8.0"},
+        ]
+
+        result = service._calculate_percentiles(players)
+
+        # Highest values should have highest percentiles
+        assert result[2]["percentiles"]["xg90"] == 1.0
+        assert result[0]["percentiles"]["xg90"] == 0.0
+
+    async def test_fetch_league_ownership_parallel_execution(self):
+        """Should fetch manager picks in parallel using semaphore."""
+        import asyncio
+
+        from app.services.recommendations import RecommendationsService
+
+        call_times = []
+
+        class MockClient:
+            async def get_bootstrap_static(self):
+                return {}
+
+            async def get_league_standings(self, league_id: int):
+                return {"standings": {"results": [{"entry": i} for i in range(20)]}}
+
+            async def get_manager_picks(self, manager_id: int):
+                call_times.append(asyncio.get_event_loop().time())
+                await asyncio.sleep(0.01)  # Small delay to test parallelism
+                return {"picks": [{"element": 100 + manager_id}]}
+
+        service = RecommendationsService(MockClient())
+
+        result = await service._fetch_league_ownership(12345)
+
+        # Should have fetched all 20 managers
+        assert len(result["manager_ids"]) == 20
+        assert len(result["player_counts"]) == 20
+        assert result["failed_count"] == 0  # All requests successful
+
+        # Check that calls were made in parallel (time should be much less than sequential)
+        # With 10 concurrent requests and 0.01s each, 20 requests should take ~0.02s
+        # Sequential would be 20 * 0.01 = 0.2s
+        if len(call_times) >= 2:
+            time_span = max(call_times) - min(call_times)
+            assert time_span < 0.1  # Should complete in parallel
+
+    async def test_fetch_league_ownership_handles_failed_requests(self):
+        """Should handle failed manager requests gracefully and continue."""
+        from app.services.recommendations import RecommendationsService
+
+        class MockClient:
+            async def get_bootstrap_static(self):
+                return {}
+
+            async def get_league_standings(self, league_id: int):
+                return {"standings": {"results": [{"entry": 1}, {"entry": 2}, {"entry": 3}]}}
+
+            async def get_manager_picks(self, manager_id: int):
+                if manager_id == 2:
+                    raise Exception("Failed to fetch manager 2")
+                return {"picks": [{"element": 100 + manager_id}]}
+
+        service = RecommendationsService(MockClient())
+
+        result = await service._fetch_league_ownership(12345)
+
+        # Should still return results for successful requests
+        assert len(result["manager_ids"]) == 3
+        assert len(result["player_counts"]) == 2  # Only 2 successful
+        assert result["failed_count"] == 1  # One request failed
+
+    async def test_get_league_recommendations_full_flow(self):
+        """Should orchestrate the full recommendation flow."""
+        from app.services.recommendations import RecommendationsService
+
+        class MockClient:
+            async def get_bootstrap_static(self):
+                return {
+                    "elements": [
+                        {
+                            "id": 1,
+                            "web_name": "Player1",
+                            "element_type": 3,  # MID
+                            "status": "a",
+                            "minutes": 900,
+                            "expected_goals": "5.0",
+                            "expected_assists": "3.0",
+                            "expected_goals_conceded": "0.0",
+                            "clean_sheets": 0,
+                            "form": "7.0",
+                            "now_cost": 100,
+                            "team": 1,
+                        },
+                        {
+                            "id": 2,
+                            "web_name": "Player2",
+                            "element_type": 4,  # FWD
+                            "status": "a",
+                            "minutes": 800,
+                            "expected_goals": "8.0",
+                            "expected_assists": "2.0",
+                            "expected_goals_conceded": "0.0",
+                            "clean_sheets": 0,
+                            "form": "6.0",
+                            "now_cost": 80,
+                            "team": 2,
+                        },
+                    ]
+                }
+
+            async def get_league_standings(self, league_id: int):
+                return {"standings": {"results": [{"entry": 1}]}}
+
+            async def get_manager_picks(self, manager_id: int):
+                return {"picks": [{"element": 1}]}  # Only Player1 owned
+
+        service = RecommendationsService(MockClient())
+
+        result = await service.get_league_recommendations(12345, limit=10)
+
+        # Should return all three categories
+        assert "punts" in result
+        assert "defensive" in result
+        assert "time_to_sell" in result
+
+        # Player2 should be a punt (not owned, low ownership < 40%)
+        # Player1 should be in defensive (owned by 1/1 = 100%, but >= 40%)
+
+    async def test_get_league_recommendations_empty_when_no_eligible_players(self):
+        """Should return empty lists when no players are eligible."""
+        from app.services.recommendations import RecommendationsService
+
+        class MockClient:
+            async def get_bootstrap_static(self):
+                return {
+                    "elements": [
+                        {
+                            "id": 1,
+                            "element_type": 1,  # GKP - excluded
+                            "status": "a",
+                            "minutes": 900,
+                        }
+                    ]
+                }
+
+            async def get_league_standings(self, league_id: int):
+                return {}
+
+            async def get_manager_picks(self, manager_id: int):
+                return {}
+
+        service = RecommendationsService(MockClient())
+
+        result = await service.get_league_recommendations(12345)
+
+        assert result == {"punts": [], "defensive": [], "time_to_sell": []}

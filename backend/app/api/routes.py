@@ -12,6 +12,7 @@ from app.dependencies import require_db
 from app.services.chips import ChipsService
 from app.services.fpl_client import FplApiClient
 from app.services.points_against import PointsAgainstService
+from app.services.recommendations import RecommendationsService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -417,4 +418,100 @@ async def get_manager_chips(
         logger.exception(f"Failed to get manager chips: {e}")
         raise HTTPException(
             status_code=500, detail="Internal server error while fetching manager chips"
+        ) from e
+
+
+# =============================================================================
+# Player Recommendations Endpoints
+# =============================================================================
+
+
+def _format_recommendation_player(p: dict[str, Any]) -> dict[str, Any]:
+    """Format a player dict for recommendation API response."""
+    return {
+        "id": p.get("id"),
+        "name": p.get("name"),
+        "team": p.get("team"),
+        "position": p.get("element_type"),
+        "price": p.get("price"),
+        "ownership": round((p.get("ownership") or 0) * 100, 1),
+        "score": round(p.get("score") or 0, 3),
+        "xg90": round(p.get("xg90") or 0, 2),
+        "xa90": round(p.get("xa90") or 0, 2),
+        "form": p.get("form"),
+    }
+
+
+def _format_sell_player(p: dict[str, Any]) -> dict[str, Any]:
+    """Format a player dict for sell recommendation API response."""
+    result = _format_recommendation_player(p)
+    result["sell_score"] = round(p.get("sell_score") or 0, 3)
+    return result
+
+
+@router.get("/api/v1/recommendations/league/{league_id}")
+async def get_league_recommendations(
+    league_id: int,
+    limit: int = Query(
+        default=10, ge=1, le=50, description="Max players per category (1-50)"
+    ),
+    season_id: int = Query(
+        default=1, ge=1, le=100, description="Season ID (default: 1 for 2024-25)"
+    ),
+    _: None = Depends(require_db),
+) -> dict[str, Any]:
+    """
+    Get player recommendations for a league.
+
+    Returns three categories:
+    - **punts**: Low ownership (<40%) players with high potential
+    - **defensive**: Medium ownership (40-100%) form-based picks
+    - **time_to_sell**: Owned players with declining metrics
+
+    Scores are based on per-90 xG/xA/xGC stats, form, and fixture difficulty.
+    """
+    # Validate league_id (must be positive)
+    if league_id < 1:
+        raise HTTPException(status_code=422, detail="league_id must be >= 1")
+
+    try:
+        async with FplApiClient() as fpl_client:
+            service = RecommendationsService(fpl_client)
+            recommendations = await service.get_league_recommendations(
+                league_id, limit=limit, season_id=season_id
+            )
+
+        return {
+            "league_id": league_id,
+            "season_id": season_id,
+            "punts": [_format_recommendation_player(p) for p in recommendations["punts"]],
+            "defensive": [_format_recommendation_player(p) for p in recommendations["defensive"]],
+            "time_to_sell": [_format_sell_player(p) for p in recommendations["time_to_sell"]],
+        }
+
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 429:
+            raise HTTPException(
+                status_code=429, detail="FPL API rate limited. Please try again later."
+            ) from e
+        if e.response.status_code >= 500:
+            raise HTTPException(
+                status_code=502, detail="FPL API is currently unavailable."
+            ) from e
+        # Wrap all other HTTP errors (4xx) as 502 upstream error
+        logger.warning("FPL API returned %s: %s", e.response.status_code, e)
+        raise HTTPException(
+            status_code=502,
+            detail=f"FPL API error: {e.response.status_code}",
+        ) from e
+    except httpx.TimeoutException as e:
+        raise HTTPException(
+            status_code=504, detail="FPL API request timed out. Please try again."
+        ) from e
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to get recommendations: %s", e)
+        raise HTTPException(
+            status_code=500, detail="Internal server error while fetching recommendations"
         ) from e
