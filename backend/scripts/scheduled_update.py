@@ -166,8 +166,13 @@ async def sync_teams_from_bootstrap(
 
     await conn.executemany(
         """
-        INSERT INTO team (id, season_id, name, short_name)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO team (
+            id, season_id, code, name, short_name,
+            strength, strength_overall_home, strength_overall_away,
+            strength_attack_home, strength_attack_away,
+            strength_defence_home, strength_defence_away
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         ON CONFLICT (id, season_id) DO UPDATE SET
             name = EXCLUDED.name,
             short_name = EXCLUDED.short_name,
@@ -177,8 +182,16 @@ async def sync_teams_from_bootstrap(
             (
                 t["id"],
                 season_id,
+                t["code"],
                 t.get("name", "Unknown"),
                 t.get("short_name", "UNK"),
+                t.get("strength"),
+                t.get("strength_overall_home"),
+                t.get("strength_overall_away"),
+                t.get("strength_attack_home"),
+                t.get("strength_attack_away"),
+                t.get("strength_defence_home"),
+                t.get("strength_defence_away"),
             )
             for t in teams
         ],
@@ -918,13 +931,7 @@ async def sync_bootstrap_only() -> None:
             season_id = await get_or_create_season(conn)
             logger.info(f"Season ID: {season_id}")
 
-            # Sync teams
-            teams_synced = await sync_teams_from_bootstrap(
-                conn, bootstrap.teams, season_id
-            )
-            logger.info(f"Teams synced: {teams_synced}")
-
-            # Sync players
+            # Sync players (teams already populated at season start)
             players_synced = await sync_players_from_bootstrap(
                 conn, bootstrap.players, season_id
             )
@@ -934,7 +941,7 @@ async def sync_bootstrap_only() -> None:
             if not await verify_player_sync(conn, season_id, len(bootstrap.players)):
                 raise RuntimeError("Player sync verification failed")
 
-            print(f"\n✓ Synced {teams_synced} teams and {players_synced} players")
+            print(f"\n✓ Synced {players_synced} players")
 
     except Exception as e:
         logger.error(f"Bootstrap sync failed: {e}", exc_info=True)
