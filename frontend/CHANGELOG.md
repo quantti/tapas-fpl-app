@@ -1,3 +1,20 @@
+# [0.28.0](https://github.com/quantti/tapas-fpl-app/compare/v0.27.2...v0.28.0) (2026-01-11)
+
+
+### Bug Fixes
+
+* **frontend:** fix SPA routing and apply code review feedback ([189f99b](https://github.com/quantti/tapas-fpl-app/commit/189f99b75b0bf7354eacb9d79f1765602f04d4d6))
+
+
+### Features
+
+* **frontend:** add live match stats to PlayerDetails modal ([4b39f40](https://github.com/quantti/tapas-fpl-app/commit/4b39f40d877ac485817ac47585400e90917f4507))
+
+
+### Performance Improvements
+
+* **frontend:** fix live points update and optimize ManagerModal ([f4d3906](https://github.com/quantti/tapas-fpl-app/commit/f4d3906518e1b071e4c70e7638ec1ed43d211ae8))
+
 ## [0.27.2](https://github.com/quantti/tapas-fpl-app/compare/v0.27.1...v0.27.2) (2026-01-11)
 
 
