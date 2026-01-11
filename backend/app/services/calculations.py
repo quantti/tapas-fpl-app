@@ -706,14 +706,14 @@ def calculate_luck_index(picks: list[PickWithXg]) -> float | None:
         if xg is None and xa is None:
             continue
 
-        # Explicit None checks to avoid masking type errors
-        xg = 0.0 if xg is None else xg
-        xa = 0.0 if xa is None else xa
+        # Convert Decimal (from DB) to float for arithmetic
+        xg = 0.0 if xg is None else float(xg)
+        xa = 0.0 if xa is None else float(xa)
         xga_raw = pick.get("expected_goals_conceded")
-        xga = 0.0 if xga_raw is None else xga_raw
+        xga = 0.0 if xga_raw is None else float(xga_raw)
 
         element_type = pick.get("element_type", FWD)
-        total_points = pick.get("total_points", 0)
+        total_points = float(pick.get("total_points", 0))
         minutes = pick.get("minutes", 90)
 
         xp = _calculate_expected_points(xg, xa, xga, element_type)
@@ -765,14 +765,15 @@ def calculate_captain_xp_delta(picks: list[PickWithXg]) -> float | None:
         if xg is None:
             continue
 
-        # Explicit None checks to avoid masking type errors
+        # Convert Decimal (from DB) to float for arithmetic
+        xg = float(xg)  # Already checked not None above
         xa_raw = pick.get("expected_assists")
-        xa = 0.0 if xa_raw is None else xa_raw
+        xa = 0.0 if xa_raw is None else float(xa_raw)
         xga_raw = pick.get("expected_goals_conceded")
-        xga = 0.0 if xga_raw is None else xga_raw
+        xga = 0.0 if xga_raw is None else float(xga_raw)
 
         element_type = pick.get("element_type", FWD)
-        total_points = pick.get("total_points", 0)
+        total_points = float(pick.get("total_points", 0))
         minutes = pick.get("minutes", 90)
 
         # Calculate base points (before captain multiplier)
@@ -825,9 +826,9 @@ def calculate_squad_xp(picks: list[PickWithXg]) -> float | None:
         if xg is None and xa is None:
             continue
 
-        # Explicit None checks to avoid masking type errors
-        xg = 0.0 if xg is None else xg
-        xa = 0.0 if xa is None else xa
+        # Convert Decimal (from DB) to float for arithmetic
+        xg = 0.0 if xg is None else float(xg)
+        xa = 0.0 if xa is None else float(xa)
 
         # Base xGI for all positions
         xp = xg + xa
@@ -836,7 +837,7 @@ def calculate_squad_xp(picks: list[PickWithXg]) -> float | None:
         element_type = pick.get("element_type", FWD)
         if element_type in (GK, DEF):
             xga_raw = pick.get("expected_goals_conceded")
-            xga = 0.0 if xga_raw is None else xga_raw
+            xga = 0.0 if xga_raw is None else float(xga_raw)
             xcs = max(0.0, 1.0 - xga / XCS_DIVISOR)
             xp += xcs
 
