@@ -8,6 +8,7 @@ Automatically update backend data when a new gameweek is finalized (all games fi
 1. **Points Against** - FPL points conceded by each team (~5-65 min)
 2. **Manager Snapshots** - Manager GW history and picks for H2H (~1-2 min)
 3. **Chips Usage** - Manager chip activations per league (~30 sec)
+4. **Bootstrap Sync** - Teams (once) and players (weekly) for world template (~5 sec)
 
 ## Trigger Condition
 
@@ -246,6 +247,29 @@ fly scale show --app tapas-fpl-backend
 3. Extract `chips` array
 4. Upsert to `chip_usage` table
 
+### Bootstrap Sync (Teams & Players)
+
+| Type | When | Duration | API Calls |
+|------|------|----------|-----------|
+| Teams | Once per season (if table empty) | ~1 sec | 0 (from bootstrap) |
+| Players | Every scheduled update | ~5 sec | 0 (from bootstrap) |
+
+**Data used by:**
+- World template (requires `selected_by_percent` from player table)
+- Player lookups (web_name, team_id, element_type)
+
+**Sync approach:**
+1. Teams: Sync only if `team` table is empty for the season (teams don't change mid-season)
+2. Players: Sync every time as `selected_by_percent` changes weekly
+3. Verification: Check player count and ensure `selected_by_percent` has non-zero values
+
+**Manual sync:**
+```bash
+python -m scripts.scheduled_update --sync-bootstrap
+```
+
+Use this for one-time bootstrap population or to refresh player data outside scheduled runs.
+
 ---
 
 ## Schedule
@@ -355,6 +379,9 @@ if failed:
 - [x] Test locally with `python -m scripts.scheduled_update`
 - [x] Deploy to Fly.io
 - [x] Verify cron runs with `fly logs`
+- [x] Add bootstrap sync (teams & players) for world template
+- [x] Add `--sync-bootstrap` CLI option for manual sync
+- [x] Add `verify_player_sync()` for data integrity
 - [ ] Add status endpoints (optional - `show_status()` already provides CLI status)
 
 ---
