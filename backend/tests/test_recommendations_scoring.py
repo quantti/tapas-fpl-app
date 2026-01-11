@@ -1261,7 +1261,158 @@ class TestRecommendationFiltering:
 
 
 # =============================================================================
-# 9. RecommendationsService Unit Tests
+# 9. Fixture Difficulty Calculation Tests
+# =============================================================================
+
+
+class TestFixtureDifficultyCalculation:
+    """Unit tests for calculate_fixture_scores function."""
+
+    def test_easy_fixtures_high_score(self):
+        """Teams with low FDR should get high fixture scores."""
+        from app.services.recommendations import calculate_fixture_scores
+
+        fixtures = [
+            {"event": 10, "team_h": 1, "team_a": 2, "team_h_difficulty": 1, "team_a_difficulty": 5},
+        ]
+        result = calculate_fixture_scores(fixtures, current_gameweek=10)
+
+        # Team 1 at home vs easy opponent (FDR 1) -> high score
+        assert result[1] == pytest.approx(1.0, rel=1e-2)
+        # Team 2 away vs hard opponent (FDR 5) -> low score
+        assert result[2] == pytest.approx(0.0, rel=1e-2)
+
+    def test_medium_fixtures_neutral_score(self):
+        """Teams with FDR 3 should get ~0.5 fixture scores."""
+        from app.services.recommendations import calculate_fixture_scores
+
+        fixtures = [
+            {"event": 10, "team_h": 1, "team_a": 2, "team_h_difficulty": 3, "team_a_difficulty": 3},
+        ]
+        result = calculate_fixture_scores(fixtures, current_gameweek=10)
+
+        assert result[1] == pytest.approx(0.5, rel=1e-2)
+        assert result[2] == pytest.approx(0.5, rel=1e-2)
+
+    def test_ignores_past_fixtures(self):
+        """Should only consider fixtures from current gameweek onwards."""
+        from app.services.recommendations import calculate_fixture_scores
+
+        fixtures = [
+            {"event": 5, "team_h": 1, "team_a": 2, "team_h_difficulty": 1, "team_a_difficulty": 5},
+            {"event": 10, "team_h": 1, "team_a": 3, "team_h_difficulty": 4, "team_a_difficulty": 2},
+        ]
+        result = calculate_fixture_scores(fixtures, current_gameweek=10)
+
+        # Should only consider GW10 fixture, not GW5
+        # Team 1 has FDR 4 -> score (5-4)/(5-1) = 0.25
+        assert result[1] == pytest.approx(0.25, rel=1e-2)
+
+    def test_ignores_fixtures_beyond_horizon(self):
+        """Should only consider fixtures within FIXTURE_HORIZON gameweeks."""
+        from app.services.recommendations import (
+            FIXTURE_HORIZON,
+            calculate_fixture_scores,
+        )
+
+        fixtures = [
+            {"event": 10, "team_h": 1, "team_a": 2, "team_h_difficulty": 1, "team_a_difficulty": 5},
+            {"event": 10 + FIXTURE_HORIZON, "team_h": 1, "team_a": 3, "team_h_difficulty": 5, "team_a_difficulty": 1},
+        ]
+        result = calculate_fixture_scores(fixtures, current_gameweek=10)
+
+        # Only GW10 fixture counts (within horizon), GW10+5=15 is outside
+        assert result[1] == pytest.approx(1.0, rel=1e-2)
+
+    def test_weighted_average_favors_closer_fixtures(self):
+        """Closer fixtures should have more weight than distant ones."""
+        from app.services.recommendations import calculate_fixture_scores
+
+        fixtures = [
+            {"event": 10, "team_h": 1, "team_a": 2, "team_h_difficulty": 1, "team_a_difficulty": 3},
+            {"event": 11, "team_h": 1, "team_a": 3, "team_h_difficulty": 5, "team_a_difficulty": 2},
+        ]
+        result = calculate_fixture_scores(fixtures, current_gameweek=10)
+
+        # Team 1: GW10 FDR=1 (weight 1.0), GW11 FDR=5 (weight 0.5)
+        # Weighted avg = (1*1 + 5*0.5) / 1.5 = 3.5/1.5 = 2.33
+        # Score = (5 - 2.33) / 4 = 0.67
+        assert result[1] == pytest.approx(0.67, rel=0.05)
+
+    def test_empty_fixtures_returns_empty_dict(self):
+        """Empty fixtures list should return empty dict."""
+        from app.services.recommendations import calculate_fixture_scores
+
+        result = calculate_fixture_scores([], current_gameweek=10)
+        assert result == {}
+
+    def test_blank_gameweek_fixtures_skipped(self):
+        """Fixtures with event=None should be skipped."""
+        from app.services.recommendations import calculate_fixture_scores
+
+        fixtures = [
+            {"event": None, "team_h": 1, "team_a": 2, "team_h_difficulty": 1, "team_a_difficulty": 5},
+            {"event": 10, "team_h": 3, "team_a": 4, "team_h_difficulty": 3, "team_a_difficulty": 3},
+        ]
+        result = calculate_fixture_scores(fixtures, current_gameweek=10)
+
+        # Teams 1 and 2 should not be in result (blank GW)
+        assert 1 not in result
+        assert 2 not in result
+        # Teams 3 and 4 should be present
+        assert 3 in result
+        assert 4 in result
+
+    def test_double_gameweek_both_fixtures_counted(self):
+        """Teams with DGW should have both fixtures factored in."""
+        from app.services.recommendations import calculate_fixture_scores
+
+        # Team 1 has two home fixtures in same gameweek (Double Gameweek)
+        fixtures = [
+            {"event": 10, "team_h": 1, "team_a": 2, "team_h_difficulty": 2, "team_a_difficulty": 3},
+            {"event": 10, "team_h": 1, "team_a": 3, "team_h_difficulty": 2, "team_a_difficulty": 4},
+        ]
+        result = calculate_fixture_scores(fixtures, current_gameweek=10)
+
+        # Team 1 has two fixtures with FDR 2 each (both weighted equally as first fixtures)
+        # Weighted avg = (2*1 + 2*0.5) / 1.5 = 2.0
+        # Score = (5 - 2) / 4 = 0.75
+        assert result[1] == pytest.approx(0.75, rel=0.05)
+
+    def test_none_difficulty_defaults_to_neutral(self):
+        """Should handle None difficulty values gracefully."""
+        from app.services.recommendations import calculate_fixture_scores
+
+        fixtures = [
+            {"event": 10, "team_h": 1, "team_a": 2, "team_h_difficulty": None, "team_a_difficulty": 3},
+        ]
+        result = calculate_fixture_scores(fixtures, current_gameweek=10)
+
+        # Team 1 has None FDR -> defaults to 3 -> score 0.5
+        assert result[1] == pytest.approx(0.5, rel=1e-2)
+        # Team 2 has FDR 3 -> score 0.5
+        assert result[2] == pytest.approx(0.5, rel=1e-2)
+
+    def test_includes_fixture_at_exact_horizon_boundary(self):
+        """Should include fixtures at exactly FIXTURE_HORIZON-1 gameweeks ahead."""
+        from app.services.recommendations import (
+            FIXTURE_HORIZON,
+            calculate_fixture_scores,
+        )
+
+        # GW14 = GW10 + 4 (FIXTURE_HORIZON - 1), should be included
+        fixtures = [
+            {"event": 10 + FIXTURE_HORIZON - 1, "team_h": 1, "team_a": 2, "team_h_difficulty": 5, "team_a_difficulty": 1},
+        ]
+        result = calculate_fixture_scores(fixtures, current_gameweek=10)
+
+        # GW14 should be included (exactly at boundary)
+        assert 1 in result
+        assert result[1] == pytest.approx(0.0, rel=1e-2)  # FDR 5 -> score 0
+
+
+# =============================================================================
+# 10. RecommendationsService Unit Tests
 # =============================================================================
 
 
@@ -1400,6 +1551,7 @@ class TestRecommendationsService:
         class MockClient:
             async def get_bootstrap_static(self):
                 return {
+                    "events": [{"id": 10, "is_current": True}],
                     "elements": [
                         {
                             "id": 1,
@@ -1429,8 +1581,15 @@ class TestRecommendationsService:
                             "now_cost": 80,
                             "team": 2,
                         },
-                    ]
+                    ],
                 }
+
+            async def get_fixtures(self):
+                # Team 1 has easy fixtures (FDR 2), Team 2 has hard fixtures (FDR 4)
+                return [
+                    {"event": 10, "team_h": 1, "team_a": 3, "team_h_difficulty": 2, "team_a_difficulty": 3},
+                    {"event": 10, "team_h": 4, "team_a": 2, "team_h_difficulty": 3, "team_a_difficulty": 4},
+                ]
 
             async def get_league_standings(self, league_id: int):
                 return {"standings": {"results": [{"entry": 1}]}}
@@ -1457,6 +1616,7 @@ class TestRecommendationsService:
         class MockClient:
             async def get_bootstrap_static(self):
                 return {
+                    "events": [{"id": 10, "is_current": True}],
                     "elements": [
                         {
                             "id": 1,
@@ -1464,8 +1624,11 @@ class TestRecommendationsService:
                             "status": "a",
                             "minutes": 900,
                         }
-                    ]
+                    ],
                 }
+
+            async def get_fixtures(self):
+                return []
 
             async def get_league_standings(self, league_id: int):
                 return {}

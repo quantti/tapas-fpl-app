@@ -29,6 +29,7 @@ class FplClientProtocol(Protocol):
     """Protocol for FPL API client dependency injection."""
 
     async def get_bootstrap_static(self) -> dict[str, Any]: ...
+    async def get_fixtures(self) -> list[dict[str, Any]]: ...
     async def get_league_standings(self, league_id: int) -> dict[str, Any]: ...
     async def get_manager_picks(self, manager_id: int) -> dict[str, Any]: ...
 
@@ -64,6 +65,9 @@ __all__ = [
     "PUNT_WEIGHTS",
     "DEFENSIVE_WEIGHTS",
     "SELL_WEIGHTS",
+    "FIXTURE_HORIZON",
+    "FDR_MIN",
+    "FDR_MAX",
     # Eligibility
     "is_eligible_player",
     # Per-90 calculations
@@ -79,6 +83,8 @@ __all__ = [
     "calculate_form",
     # Ownership calculation
     "calculate_ownership",
+    # Fixture difficulty
+    "calculate_fixture_scores",
     # Score calculations
     "invert_xgc_percentile",
     "calculate_buy_score",
@@ -113,6 +119,11 @@ PUNTS_OWNERSHIP_THRESHOLD = 0.40
 DEFENSIVE_OWNERSHIP_MIN = 0.40
 DEFENSIVE_OWNERSHIP_MAX = 1.00
 SELL_SCORE_THRESHOLD = 0.5
+
+# Fixture difficulty settings
+FIXTURE_HORIZON = 5  # Number of gameweeks to consider for fixture difficulty
+FDR_MIN = 1  # FPL's minimum FDR rating
+FDR_MAX = 5  # FPL's maximum FDR rating
 
 # Position-specific weights for buy score
 # Keys: xG, xA, xGC, CS, form, fix (fixture difficulty)
@@ -496,7 +507,74 @@ def calculate_ownership(
 
 
 # =============================================================================
-# 6. Buy Score Calculation
+# 6. Fixture Difficulty Calculation
+# =============================================================================
+
+
+def calculate_fixture_scores(
+    fixtures: list[dict[str, Any]],
+    current_gameweek: int,
+) -> dict[int, float]:
+    """Calculate fixture difficulty score for each team.
+
+    Uses FPL's Fixture Difficulty Rating (FDR) for upcoming fixtures.
+    Lower FDR = easier opponent, so we invert to get higher score = better fixtures.
+
+    Args:
+        fixtures: List of fixture dicts from FPL API
+        current_gameweek: Current gameweek number
+
+    Returns:
+        Dict mapping team_id to fixture_score (0.0 to 1.0, higher = easier fixtures)
+    """
+    # Build upcoming fixtures by team
+    team_fixtures: dict[int, list[int]] = {}  # team_id -> list of FDR values
+
+    for fixture in fixtures:
+        gw = fixture.get("event")
+        if gw is None:
+            continue  # Blank gameweek fixture
+
+        # Only consider upcoming fixtures within horizon
+        if gw < current_gameweek or gw > current_gameweek + FIXTURE_HORIZON - 1:
+            continue
+
+        home_team = fixture.get("team_h")
+        away_team = fixture.get("team_a")
+        # Default to neutral FDR (3) if missing or None
+        home_difficulty = fixture.get("team_h_difficulty") or 3
+        away_difficulty = fixture.get("team_a_difficulty") or 3
+
+        if home_team is not None:
+            team_fixtures.setdefault(home_team, []).append(home_difficulty)
+        if away_team is not None:
+            team_fixtures.setdefault(away_team, []).append(away_difficulty)
+
+    # Calculate weighted average FDR for each team
+    # Closer gameweeks weighted more heavily (exponential decay)
+    fixture_scores: dict[int, float] = {}
+
+    for team_id, fdr_list in team_fixtures.items():
+        # Note: fdr_list is never empty here because teams are only added
+        # when a fixture is found. Teams with no fixtures simply won't appear
+        # in team_fixtures dict (handled by caller with .get(team_id, 0.5))
+
+        # Weight by position (first fixture = highest weight)
+        weights = [0.5 ** i for i in range(len(fdr_list))]
+        total_weight = sum(weights)
+
+        weighted_fdr = sum(fdr * w for fdr, w in zip(fdr_list, weights)) / total_weight
+
+        # Normalize FDR (1-5) to 0-1 scale, then invert (lower FDR = higher score)
+        # FDR 1 -> score 1.0 (easy), FDR 5 -> score 0.0 (hard)
+        normalized = (weighted_fdr - FDR_MIN) / (FDR_MAX - FDR_MIN)
+        fixture_scores[team_id] = 1.0 - normalized
+
+    return fixture_scores
+
+
+# =============================================================================
+# 7. Buy Score Calculation
 # =============================================================================
 
 
@@ -767,9 +845,21 @@ class RecommendationsService:
         # Note: season_id is currently unused as FPL API data is season-implicit
         # Will be used when querying from database for historical data
         _ = season_id  # Mark as intentionally unused for now
-        # 1. Fetch bootstrap data (all players)
-        bootstrap = await self.fpl_client.get_bootstrap_static()
+
+        # 1. Fetch all external data in parallel (independent API calls)
+        bootstrap, fixtures, league_ownership = await asyncio.gather(
+            self.fpl_client.get_bootstrap_static(),
+            self.fpl_client.get_fixtures(),
+            self._fetch_league_ownership(league_id),
+        )
         elements = bootstrap.get("elements", [])
+
+        # Get current gameweek from events
+        current_gameweek = 1  # Default to GW1
+        for event in bootstrap.get("events", []):
+            if event.get("is_current"):
+                current_gameweek = event.get("id", 1)
+                break
 
         # 2. Filter for eligible players
         eligible_players = [p for p in elements if is_eligible_player(p)]
@@ -783,16 +873,18 @@ class RecommendationsService:
         # 4. Calculate percentiles across all eligible players
         players_with_percentiles = self._calculate_percentiles(players_with_stats)
 
-        # 5. Fetch league ownership
-        league_ownership = await self._fetch_league_ownership(league_id)
+        # 5. Calculate fixture difficulty scores
+        fixture_scores = calculate_fixture_scores(fixtures, current_gameweek)
+
+        # 6. Calculate league ownership stats
         num_managers = len(league_ownership.get("manager_ids", []))
 
-        # 6. Apply ownership and calculate scores
+        # 7. Apply ownership and calculate scores
         scored_players = self._calculate_scores(
-            players_with_percentiles, league_ownership, num_managers
+            players_with_percentiles, league_ownership, num_managers, fixture_scores
         )
 
-        # 7. Filter and sort into categories
+        # 8. Filter and sort into categories
         punts_candidates = filter_for_punts(scored_players)
         defensive_candidates = filter_for_defensive(scored_players)
         sell_candidates = filter_for_sell(scored_players)
@@ -945,6 +1037,7 @@ class RecommendationsService:
         players: list[dict[str, Any]],
         league_ownership: dict[str, Any],
         num_managers: int,
+        fixture_scores: dict[int, float],
     ) -> list[dict[str, Any]]:
         """Calculate buy/sell scores for all players.
 
@@ -952,6 +1045,7 @@ class RecommendationsService:
             players: Players with percentiles
             league_ownership: League ownership data
             num_managers: Total managers in league
+            fixture_scores: Dict mapping team_id to fixture difficulty score
 
         Returns:
             Players with ownership, score, and sell_score
@@ -963,6 +1057,7 @@ class RecommendationsService:
             player_copy = dict(p)
             player_id = p.get("id")
             position = p.get("element_type", 3)
+            team_id = p.get("team", 0)
 
             # Calculate league ownership
             owned_count = player_counts.get(player_id, 0)
@@ -978,8 +1073,8 @@ class RecommendationsService:
                     percentiles.get("xgc90", 0.5)
                 )
 
-            # Calculate both scores and let filtering determine category
-            fixture_score = 0.5  # Placeholder until fixture difficulty implemented
+            # Get fixture difficulty score for player's team (0.5 neutral if unknown)
+            fixture_score = fixture_scores.get(team_id, 0.5)
 
             if ownership < PUNTS_OWNERSHIP_THRESHOLD:
                 player_copy["score"] = calculate_buy_score(
