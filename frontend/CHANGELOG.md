@@ -1,3 +1,10 @@
+## [0.26.1](https://github.com/quantti/tapas-fpl-app/compare/v0.26.0...v0.26.1) (2026-01-11)
+
+
+### Bug Fixes
+
+* **backend:** fix League Rank and World Template in H2H comparison ([8b13664](https://github.com/quantti/tapas-fpl-app/commit/8b13664c860c1c8a9cb7357322a9e226fe71c191))
+
 # [0.26.0](https://github.com/quantti/tapas-fpl-app/compare/v0.25.1...v0.26.0) (2026-01-10)
 
 
