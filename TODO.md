@@ -2,21 +2,19 @@
 
 ## Immediate Tasks
 
-### 1. Frontend: Integrate Chips Backend API
-- [ ] Update `ChipsRemaining` component to call backend API instead of direct FPL calls
-- [ ] Use `GET /api/v1/chips/league/{league_id}?current_gameweek=N&sync=true`
-- [ ] Remove direct FPL API calls (fixes "chips spam" issue)
-- [ ] Test locally before deploying
+### 1. Frontend: Integrate Chips Backend API ✅
+- [x] Update `ChipsRemaining` component to call backend API instead of direct FPL calls
+- [x] Use `GET /api/v1/chips/league/{league_id}?current_gameweek=N&sync=true`
+- [x] Remove direct FPL API calls (fixes "chips spam" issue)
+- [x] Test locally before deploying
 
-### 2. Frontend: Activate Points Against Feature
-- [ ] Unhide Points Against card on Statistics page
-- [ ] Connect to backend API `GET /api/v1/points-against`
-- [ ] Test locally before deploying
+### 2. Frontend: Activate Points Against Feature ✅
+- [x] Unhide Points Against card on Statistics page
+- [x] Connect to backend API `GET /api/v1/points-against`
+- [x] Test locally before deploying
 
-### 3. Fix Flaky E2E Tests
-- [ ] Investigate why 47 tests fail intermittently (element not found errors)
-- [ ] Increase timeouts or add better wait conditions
-- [ ] Consider mocking FPL API responses for stability
+### 3. Fix Flaky E2E Tests ✅
+- [x] No longer experiencing flaky test failures
 
 ---
 
@@ -41,14 +39,13 @@
   - [ ] Show highest individual player benched during the season (player name + points)
 
 ### Player Modal Improvements
-- [ ] Per-game expected stats table in History tab:
-  - [ ] Show xG, xA, xGI per fixture (data already in `PlayerHistory`)
-  - [ ] Add xGC for defenders/goalkeepers
-  - [ ] Visual delta: actual vs expected (green/red indicators)
-- [ ] Per-90 stats section in Overview tab:
-  - [ ] Already calculated in `usePlayerDetails.ts` (xG90, xA90, xGI90, xGC90)
-  - [ ] Display in a clear stat row with labels
-- [ ] Form trend mini-chart (sparkline of last 5 GWs)
+- [x] Per-game expected stats table in History tab:
+  - [x] Show xG, xA, xGI per fixture (data already in `PlayerHistory`)
+  - [x] Add xGC for defenders/goalkeepers
+  - [x] Visual delta: actual vs expected (green/red indicators)
+- [x] Per-90 stats section in Overview tab:
+  - [x] Already calculated in `usePlayerDetails.ts` (xG90, xA90, xGI90, xGC90)
+  - [x] Display in a clear stat row with labels
 - [ ] Price change history from `history_past`
 
 ### Player Recommendations Improvements

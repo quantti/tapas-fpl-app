@@ -635,7 +635,7 @@ These metrics answer "who's actually playing better FPL?" by separating skill fr
    - `calculate_captain_xp_delta()` - Captain selection skill measurement
    - `calculate_squad_xp()` - Squad quality via raw xGI (not FPL points)
 
-3. **Add SQL query for xG data** (`app/services/history.py`)
+3. ✅ **Add SQL query for xG data** (`app/services/history.py`)
    ```sql
    SELECT mp.player_id, mp.is_captain, mp.multiplier,
           pfs.expected_goals, pfs.expected_assists,
@@ -649,12 +649,12 @@ These metrics answer "who's actually playing better FPL?" by separating skill fr
    WHERE mgs.manager_id = $1 AND mgs.season_id = $2
    ```
 
-4. **Extend `_build_manager_stats()`** to call new functions
+4. ✅ **Extend `_build_manager_stats()`** to call new functions
 
-5. **Update Pydantic model** (`app/api/history.py`)
+5. ✅ **Update Pydantic model** (`app/api/history.py`)
    - Add `luck_index`, `captain_xp_delta`, `squad_xp` fields
 
-6. **Frontend integration**
+6. ✅ **Frontend integration**
    - Update `backendApi.ts` types
    - Add Tier 3 section to `HeadToHead.tsx`
    - Add tooltips explaining each metric
