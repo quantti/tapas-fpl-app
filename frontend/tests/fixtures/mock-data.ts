@@ -1457,6 +1457,10 @@ const MANAGER_A_STATS = {
   last5Avg: 52.4,
   formMomentum: 'improving',
   recoveryRate: 58.5,
+  // Tier 3 xG-based metrics
+  luckIndex: 12.5,
+  captainXpDelta: 8.3,
+  squadXp: 45.2,
 };
 
 const MANAGER_B_STATS = {
@@ -1481,6 +1485,10 @@ const MANAGER_B_STATS = {
   last5Avg: 48.2,
   formMomentum: 'stable',
   recoveryRate: 52.0,
+  // Tier 3 xG-based metrics
+  luckIndex: -5.2,
+  captainXpDelta: -3.1,
+  squadXp: 38.7,
 };
 
 const MOCK_STARTING_XI = [
@@ -1535,6 +1543,10 @@ function buildManagerData(managerId: number, stats: typeof MANAGER_A_STATS) {
     last_5_average: stats.last5Avg,
     form_momentum: stats.formMomentum,
     recovery_rate: stats.recoveryRate,
+    // Tier 3 xG-based metrics
+    luck_index: stats.luckIndex,
+    captain_xp_delta: stats.captainXpDelta,
+    squad_xp: stats.squadXp,
   };
 }
 
