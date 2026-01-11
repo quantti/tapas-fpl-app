@@ -881,7 +881,7 @@ class TestHistoryServiceGetManagerComparison:
             _make_history_row(manager_id=456, gameweek=1, total_points=90)
         ]
 
-        # 13 fetch calls including new template queries
+        # 14 fetch calls including new template and xG picks queries
         mock_history_db.conn.fetch.side_effect = [
             [mock_manager_a],
             [mock_manager_b],
@@ -896,6 +896,7 @@ class TestHistoryServiceGetManagerComparison:
             [],  # league_standings
             [],  # league_template
             [],  # world_template
+            [],  # xg_picks
         ]
 
         with mock_history_db:
@@ -932,7 +933,7 @@ class TestHistoryServiceGetManagerComparison:
             _make_pick_row(manager_id=456, gameweek=5, player_id=300, position=3),  # Common
         ]
 
-        # 13 fetch calls including new template queries
+        # 14 fetch calls including new template and xG picks queries
         mock_history_db.conn.fetch.side_effect = [
             [mock_manager_a],
             [mock_manager_b],
@@ -947,6 +948,7 @@ class TestHistoryServiceGetManagerComparison:
             [],  # league_standings
             [],  # league_template
             [],  # world_template
+            [],  # xg_picks
         ]
 
         with mock_history_db:
@@ -964,7 +966,7 @@ class TestHistoryServiceGetManagerComparison:
         mock_manager_a: ManagerRow = {"id": 123, "player_name": "John", "team_name": "FC John"}
         mock_manager_b: ManagerRow = {"id": 456, "player_name": "Jane", "team_name": "FC Jane"}
 
-        # 13 fetch calls including new template queries
+        # 14 fetch calls including new template and xG picks queries
         mock_history_db.conn.fetch.side_effect = [
             [mock_manager_a],
             [mock_manager_b],
@@ -979,6 +981,7 @@ class TestHistoryServiceGetManagerComparison:
             [],  # league_standings
             [],  # league_template
             [],  # world_template
+            [],  # xg_picks
         ]
 
         with mock_history_db:
@@ -1031,7 +1034,7 @@ class TestHistoryServiceGetManagerComparison:
             _make_history_row(manager_id=456, gameweek=3, gameweek_points=65, points_on_bench=6),
         ]
 
-        # 13 fetch calls including new template queries
+        # 14 fetch calls including new template and xG picks queries
         mock_history_db.conn.fetch.side_effect = [
             [mock_manager_a],
             [mock_manager_b],
@@ -1050,6 +1053,7 @@ class TestHistoryServiceGetManagerComparison:
             [],  # league_standings
             [],  # league_template
             [],  # world_template
+            [],  # xg_picks
         ]
 
         with mock_history_db:
@@ -1887,3 +1891,500 @@ def _make_pick_row(
         "is_captain": is_captain,
         "points": points,
     }
+
+
+class XgPickRow(TypedDict):
+    """Database row structure for xG picks query (Tier 3)."""
+
+    manager_id: int
+    gameweek: int
+    player_id: int
+    is_captain: bool
+    multiplier: int
+    element_type: int  # 1=GK, 2=DEF, 3=MID, 4=FWD
+    total_points: int
+    expected_goals: float | None
+    expected_assists: float | None
+    expected_goals_conceded: float | None
+    minutes: int
+
+
+def _make_xg_pick_row(
+    manager_id: int = 123,
+    gameweek: int = 1,
+    player_id: int = 100,
+    is_captain: bool = False,
+    multiplier: int = 1,
+    element_type: int = 4,  # FWD
+    total_points: int = 6,
+    expected_goals: float | None = 0.5,
+    expected_assists: float | None = 0.2,
+    expected_goals_conceded: float | None = None,
+    minutes: int = 90,
+) -> XgPickRow:
+    """Create a mock XgPickRow with defaults for Tier 3 tests."""
+    return {
+        "manager_id": manager_id,
+        "gameweek": gameweek,
+        "player_id": player_id,
+        "is_captain": is_captain,
+        "multiplier": multiplier,
+        "element_type": element_type,
+        "total_points": total_points,
+        "expected_goals": expected_goals,
+        "expected_assists": expected_assists,
+        "expected_goals_conceded": expected_goals_conceded,
+        "minutes": minutes,
+    }
+
+
+# =============================================================================
+# HistoryService.get_manager_comparison - Tier 3 Integration Tests (TDD)
+# =============================================================================
+
+
+class TestHistoryServiceTier3Integration:
+    """TDD tests for Tier 3 xG metrics integration in get_manager_comparison."""
+
+    async def test_returns_tier3_fields_in_response(
+        self, history_service: "HistoryService", mock_history_db: MockDB
+    ):
+        """Should return Tier 3 fields: luck_index, captain_xp_delta, squad_xp."""
+        mock_manager_a: ManagerRow = {"id": 123, "player_name": "John", "team_name": "FC John"}
+        mock_manager_b: ManagerRow = {"id": 456, "player_name": "Jane", "team_name": "FC Jane"}
+        mock_history_a: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=123, gameweek=1, gameweek_points=60)
+        ]
+        mock_history_b: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=456, gameweek=1, gameweek_points=55)
+        ]
+
+        # xG picks for Tier 3 calculations
+        mock_xg_picks: list[XgPickRow] = [
+            # Manager A - FWD captain with xG=0.5, scored 8 points
+            _make_xg_pick_row(
+                manager_id=123,
+                gameweek=1,
+                player_id=100,
+                is_captain=True,
+                multiplier=2,
+                element_type=4,  # FWD
+                total_points=16,  # 8 * 2
+                expected_goals=0.5,
+                expected_assists=0.2,
+            ),
+            # Manager B - MID captain with xG=0.3
+            _make_xg_pick_row(
+                manager_id=456,
+                gameweek=1,
+                player_id=200,
+                is_captain=True,
+                multiplier=2,
+                element_type=3,  # MID
+                total_points=10,
+                expected_goals=0.3,
+                expected_assists=0.1,
+            ),
+        ]
+
+        # 14 fetch calls (13 existing + 1 xG picks query)
+        mock_history_db.conn.fetch.side_effect = [
+            [mock_manager_a],
+            [mock_manager_b],
+            mock_history_a,
+            mock_history_b,
+            [],  # picks_a
+            [],  # picks_b
+            [],  # chips_a
+            [],  # chips_b
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 100}],  # gameweeks
+            [],  # league_standings
+            [],  # league_template
+            [],  # world_template
+            mock_xg_picks,  # xG picks for Tier 3
+        ]
+
+        with mock_history_db:
+            result = await history_service.get_manager_comparison(
+                manager_a=123, manager_b=456, league_id=98765, season_id=1
+            )
+
+        # Verify Tier 3 fields are present
+        assert "luck_index" in result["manager_a"]
+        assert "captain_xp_delta" in result["manager_a"]
+        assert "squad_xp" in result["manager_a"]
+
+        assert "luck_index" in result["manager_b"]
+        assert "captain_xp_delta" in result["manager_b"]
+        assert "squad_xp" in result["manager_b"]
+
+    async def test_luck_index_calculated_from_xg_data(
+        self, history_service: "HistoryService", mock_history_db: MockDB
+    ):
+        """Should calculate luck_index as actual points - expected points."""
+        mock_manager_a: ManagerRow = {"id": 123, "player_name": "John", "team_name": "FC John"}
+        mock_manager_b: ManagerRow = {"id": 456, "player_name": "Jane", "team_name": "FC Jane"}
+        mock_history_a: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=123, gameweek=1)
+        ]
+        mock_history_b: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=456, gameweek=1)
+        ]
+
+        # Manager A: FWD scored 8 points (2 goals) with xG=0.3
+        # xP = 0.3 * 4 (pts/goal) + 0 * 3 (pts/assist) = 1.2
+        # Luck = 8 - 1.2 = +6.8 (lucky!)
+        mock_xg_picks: list[XgPickRow] = [
+            _make_xg_pick_row(
+                manager_id=123,
+                gameweek=1,
+                player_id=100,
+                is_captain=False,
+                multiplier=1,
+                element_type=4,  # FWD
+                total_points=8,  # 2 goals
+                expected_goals=0.3,
+                expected_assists=0.0,
+                minutes=90,
+            ),
+            # Manager B placeholder
+            _make_xg_pick_row(
+                manager_id=456,
+                gameweek=1,
+                player_id=200,
+                multiplier=1,
+                element_type=4,
+                total_points=2,  # blanked
+                expected_goals=0.5,
+                expected_assists=0.2,
+            ),
+        ]
+
+        mock_history_db.conn.fetch.side_effect = [
+            [mock_manager_a],
+            [mock_manager_b],
+            mock_history_a,
+            mock_history_b,
+            [],  # picks_a
+            [],  # picks_b
+            [],  # chips_a
+            [],  # chips_b
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 100}],
+            [],  # league_standings
+            [],  # league_template
+            [],  # world_template
+            mock_xg_picks,
+        ]
+
+        with mock_history_db:
+            result = await history_service.get_manager_comparison(
+                manager_a=123, manager_b=456, league_id=98765, season_id=1
+            )
+
+        # Manager A luck: (8 - 2) - 1.2 = 4.8 (subtract 2pt appearance for FWD)
+        assert result["manager_a"]["luck_index"] == pytest.approx(4.8, rel=0.01)
+
+    async def test_captain_xp_delta_calculated_correctly(
+        self, history_service: "HistoryService", mock_history_db: MockDB
+    ):
+        """Should calculate captain_xp_delta as (actual/multiplier) - expected."""
+        mock_manager_a: ManagerRow = {"id": 123, "player_name": "John", "team_name": "FC John"}
+        mock_manager_b: ManagerRow = {"id": 456, "player_name": "Jane", "team_name": "FC Jane"}
+        mock_history_a: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=123, gameweek=1)
+        ]
+        mock_history_b: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=456, gameweek=1)
+        ]
+
+        # Captain (FWD) scored 16 points (8 base * 2), xG=0.5, xA=0.2
+        # xP = 0.5 * 4 + 0.2 * 3 = 2.6
+        # actual_base = 8 - 2 (appearance) = 6
+        # Delta = 6 - 2.6 = +3.4 (captain overperformed)
+        mock_xg_picks: list[XgPickRow] = [
+            _make_xg_pick_row(
+                manager_id=123,
+                gameweek=1,
+                player_id=100,
+                is_captain=True,
+                multiplier=2,
+                element_type=4,  # FWD
+                total_points=16,  # 8 base * 2
+                expected_goals=0.5,
+                expected_assists=0.2,
+                minutes=90,
+            ),
+            # Manager B - non-captain placeholder
+            _make_xg_pick_row(manager_id=456, gameweek=1, player_id=200, is_captain=False),
+        ]
+
+        mock_history_db.conn.fetch.side_effect = [
+            [mock_manager_a],
+            [mock_manager_b],
+            mock_history_a,
+            mock_history_b,
+            [],  # picks_a
+            [],  # picks_b
+            [],  # chips_a
+            [],  # chips_b
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 100}],
+            [],  # league_standings
+            [],  # league_template
+            [],  # world_template
+            mock_xg_picks,
+        ]
+
+        with mock_history_db:
+            result = await history_service.get_manager_comparison(
+                manager_a=123, manager_b=456, league_id=98765, season_id=1
+            )
+
+        # Captain delta: (8 - 2 appearance) - 2.6 (xP) = 3.4
+        assert result["manager_a"]["captain_xp_delta"] == pytest.approx(3.4, rel=0.01)
+
+    async def test_squad_xp_calculated_from_starting_xi(
+        self, history_service: "HistoryService", mock_history_db: MockDB
+    ):
+        """Should calculate squad_xp as sum of xGI for starting XI only."""
+        mock_manager_a: ManagerRow = {"id": 123, "player_name": "John", "team_name": "FC John"}
+        mock_manager_b: ManagerRow = {"id": 456, "player_name": "Jane", "team_name": "FC Jane"}
+        mock_history_a: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=123, gameweek=1)
+        ]
+        mock_history_b: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=456, gameweek=1)
+        ]
+
+        # Manager A: 2 starting players (multiplier=1), 1 bench (multiplier=0)
+        # FWD: xG=0.5, xA=0.2 → xGI = 0.7
+        # MID: xG=0.3, xA=0.3 → xGI = 0.6
+        # Bench FWD: xG=0.8 → should be excluded
+        # Squad xP = 0.7 + 0.6 = 1.3
+        mock_xg_picks: list[XgPickRow] = [
+            _make_xg_pick_row(
+                manager_id=123,
+                gameweek=1,
+                player_id=100,
+                multiplier=1,  # Starting
+                element_type=4,  # FWD
+                expected_goals=0.5,
+                expected_assists=0.2,
+            ),
+            _make_xg_pick_row(
+                manager_id=123,
+                gameweek=1,
+                player_id=101,
+                multiplier=1,  # Starting
+                element_type=3,  # MID
+                expected_goals=0.3,
+                expected_assists=0.3,
+            ),
+            _make_xg_pick_row(
+                manager_id=123,
+                gameweek=1,
+                player_id=102,
+                multiplier=0,  # Bench - excluded
+                element_type=4,  # FWD
+                expected_goals=0.8,
+                expected_assists=0.1,
+            ),
+            # Manager B placeholder
+            _make_xg_pick_row(manager_id=456, gameweek=1, player_id=200),
+        ]
+
+        mock_history_db.conn.fetch.side_effect = [
+            [mock_manager_a],
+            [mock_manager_b],
+            mock_history_a,
+            mock_history_b,
+            [],  # picks_a
+            [],  # picks_b
+            [],  # chips_a
+            [],  # chips_b
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 100}],
+            [],  # league_standings
+            [],  # league_template
+            [],  # world_template
+            mock_xg_picks,
+        ]
+
+        with mock_history_db:
+            result = await history_service.get_manager_comparison(
+                manager_a=123, manager_b=456, league_id=98765, season_id=1
+            )
+
+        # Squad xP = 0.7 (FWD) + 0.6 (MID) = 1.3
+        assert result["manager_a"]["squad_xp"] == pytest.approx(1.3, rel=0.01)
+
+    async def test_squad_xp_includes_xcs_for_defenders(
+        self, history_service: "HistoryService", mock_history_db: MockDB
+    ):
+        """Should include xCS contribution for DEF/GK positions."""
+        mock_manager_a: ManagerRow = {"id": 123, "player_name": "John", "team_name": "FC John"}
+        mock_manager_b: ManagerRow = {"id": 456, "player_name": "Jane", "team_name": "FC Jane"}
+        mock_history_a: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=123, gameweek=1)
+        ]
+        mock_history_b: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=456, gameweek=1)
+        ]
+
+        # DEF: xG=0.1, xA=0.2, xGA=0.5
+        # xCS = max(0, 1 - 0.5/2.5) = 0.8
+        # xGI = 0.1 + 0.2 + 0.8 = 1.1
+        mock_xg_picks: list[XgPickRow] = [
+            _make_xg_pick_row(
+                manager_id=123,
+                gameweek=1,
+                player_id=100,
+                multiplier=1,
+                element_type=2,  # DEF
+                expected_goals=0.1,
+                expected_assists=0.2,
+                expected_goals_conceded=0.5,
+            ),
+            # Manager B placeholder
+            _make_xg_pick_row(manager_id=456, gameweek=1, player_id=200),
+        ]
+
+        mock_history_db.conn.fetch.side_effect = [
+            [mock_manager_a],
+            [mock_manager_b],
+            mock_history_a,
+            mock_history_b,
+            [],  # picks_a
+            [],  # picks_b
+            [],  # chips_a
+            [],  # chips_b
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 100}],
+            [],  # league_standings
+            [],  # league_template
+            [],  # world_template
+            mock_xg_picks,
+        ]
+
+        with mock_history_db:
+            result = await history_service.get_manager_comparison(
+                manager_a=123, manager_b=456, league_id=98765, season_id=1
+            )
+
+        # DEF xGI = 0.1 + 0.2 + 0.8 (xCS) = 1.1
+        assert result["manager_a"]["squad_xp"] == pytest.approx(1.1, rel=0.01)
+
+    async def test_tier3_returns_none_when_no_xg_data(
+        self, history_service: "HistoryService", mock_history_db: MockDB
+    ):
+        """Should return None for Tier 3 metrics when xG data unavailable."""
+        mock_manager_a: ManagerRow = {"id": 123, "player_name": "John", "team_name": "FC John"}
+        mock_manager_b: ManagerRow = {"id": 456, "player_name": "Jane", "team_name": "FC Jane"}
+        mock_history_a: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=123, gameweek=1)
+        ]
+        mock_history_b: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=456, gameweek=1)
+        ]
+
+        # Empty xG picks - no xG data available
+        mock_xg_picks: list[XgPickRow] = []
+
+        mock_history_db.conn.fetch.side_effect = [
+            [mock_manager_a],
+            [mock_manager_b],
+            mock_history_a,
+            mock_history_b,
+            [],  # picks_a
+            [],  # picks_b
+            [],  # chips_a
+            [],  # chips_b
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 100}],
+            [],  # league_standings
+            [],  # league_template
+            [],  # world_template
+            mock_xg_picks,
+        ]
+
+        with mock_history_db:
+            result = await history_service.get_manager_comparison(
+                manager_a=123, manager_b=456, league_id=98765, season_id=1
+            )
+
+        # Should return None when no data
+        assert result["manager_a"]["luck_index"] is None
+        assert result["manager_a"]["captain_xp_delta"] is None
+        assert result["manager_a"]["squad_xp"] is None
+
+    async def test_tier3_aggregates_across_multiple_gameweeks(
+        self, history_service: "HistoryService", mock_history_db: MockDB
+    ):
+        """Should aggregate Tier 3 metrics across all gameweeks."""
+        mock_manager_a: ManagerRow = {"id": 123, "player_name": "John", "team_name": "FC John"}
+        mock_manager_b: ManagerRow = {"id": 456, "player_name": "Jane", "team_name": "FC Jane"}
+        mock_history_a: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=123, gameweek=1),
+            _make_history_row(manager_id=123, gameweek=2),
+        ]
+        mock_history_b: list[ManagerHistoryRow] = [
+            _make_history_row(manager_id=456, gameweek=1),
+            _make_history_row(manager_id=456, gameweek=2),
+        ]
+
+        # Manager A: 2 gameweeks of data (FWD: subtract 2pt appearance each GW)
+        # GW1: FWD, 6pts, xG=0.5 → luck = (6-2) - (0.5*4) = 4 - 2.0 = 2.0
+        # GW2: FWD, 4pts, xG=0.8 → luck = (4-2) - (0.8*4) = 2 - 3.2 = -1.2
+        # Total luck = 2.0 + (-1.2) = 0.8
+        mock_xg_picks: list[XgPickRow] = [
+            _make_xg_pick_row(
+                manager_id=123,
+                gameweek=1,
+                player_id=100,
+                multiplier=1,
+                element_type=4,
+                total_points=6,
+                expected_goals=0.5,
+                expected_assists=0.0,
+            ),
+            _make_xg_pick_row(
+                manager_id=123,
+                gameweek=2,
+                player_id=100,
+                multiplier=1,
+                element_type=4,
+                total_points=4,
+                expected_goals=0.8,
+                expected_assists=0.0,
+            ),
+            # Manager B placeholders
+            _make_xg_pick_row(manager_id=456, gameweek=1, player_id=200),
+            _make_xg_pick_row(manager_id=456, gameweek=2, player_id=200),
+        ]
+
+        mock_history_db.conn.fetch.side_effect = [
+            [mock_manager_a],
+            [mock_manager_b],
+            mock_history_a,
+            mock_history_b,
+            [],  # picks_a
+            [],  # picks_b
+            [],  # chips_a
+            [],  # chips_b
+            [],  # captain_picks
+            [{"id": 1, "most_captained": 100}, {"id": 2, "most_captained": 100}],
+            [],  # league_standings
+            [],  # league_template
+            [],  # world_template
+            mock_xg_picks,
+        ]
+
+        with mock_history_db:
+            result = await history_service.get_manager_comparison(
+                manager_a=123, manager_b=456, league_id=98765, season_id=1
+            )
+
+        # Total luck = 2.0 + (-1.2) = 0.8
+        assert result["manager_a"]["luck_index"] == pytest.approx(0.8, rel=0.01)

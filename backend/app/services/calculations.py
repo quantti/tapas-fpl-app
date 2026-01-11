@@ -19,6 +19,17 @@ from typing import Literal, TypedDict
 # Threshold percentage for determining form momentum (improving/declining vs stable)
 MOMENTUM_THRESHOLD_PCT = 5
 
+# FPL Position element_type values
+GK, DEF, MID, FWD = 1, 2, 3, 4
+
+# FPL points per action by position
+POINTS_PER_GOAL = {GK: 6, DEF: 6, MID: 5, FWD: 4}
+POINTS_PER_ASSIST = 3
+POINTS_PER_CS = 4
+
+# xCS approximation: teams conceding ~2.5 xGA have near-zero CS probability
+XCS_DIVISOR = 2.5
+
 # =============================================================================
 # TypedDicts for type hints
 # =============================================================================
@@ -57,6 +68,23 @@ class GameweekRow(TypedDict):
 
     id: int
     most_captained: int | None
+
+
+class PickWithXg(TypedDict, total=False):
+    """Pick data with xG metrics for Tier 3 calculations.
+
+    All xG fields are optional (total=False) as they may not be available
+    for all fixtures.
+    """
+
+    element_type: int  # Position: 1=GK, 2=DEF, 3=MID, 4=FWD
+    multiplier: int  # 0=bench, 1=playing, 2=captain, 3=TC
+    is_captain: bool
+    total_points: int  # Actual FPL points (multiplied for captain)
+    expected_goals: float | None
+    expected_assists: float | None
+    expected_goals_conceded: float | None  # For GK/DEF
+    minutes: int
 
 
 # =============================================================================
@@ -561,11 +589,10 @@ def calculate_recovery_rate(history: list[ManagerHistoryRow]) -> float:
             continue
 
         # Check if previous GW was a red arrow (rank got worse = number increased)
-        if current_rank > prev_rank:
-            # This is a red arrow GW - look at NEXT GW for recovery
-            if i + 1 < len(sorted_history):
-                next_gw = sorted_history[i + 1]
-                recovery_points.append(next_gw["gameweek_points"])
+        # and there's a next GW to check recovery
+        if current_rank > prev_rank and i + 1 < len(sorted_history):
+            next_gw = sorted_history[i + 1]
+            recovery_points.append(next_gw["gameweek_points"])
 
     if not recovery_points:
         return 0.0
@@ -574,29 +601,244 @@ def calculate_recovery_rate(history: list[ManagerHistoryRow]) -> float:
 
 
 # =============================================================================
-# Tier 3: xG-Based Metrics (TDD stubs - not yet implemented)
+# Tier 3: xG-Based Metrics
 # =============================================================================
 
 
-def calculate_luck_index(picks: list[dict]) -> float | None:
+def _calculate_appearance_bonus(minutes: int) -> int:
+    """Calculate FPL appearance bonus based on minutes played.
+
+    FPL awards: 1pt for 1-59 mins, 2pts for 60+ mins, 0pts for 0 mins.
+    """
+    if minutes >= 60:
+        return 2
+    if minutes > 0:
+        return 1
+    return 0
+
+
+def _calculate_expected_points(
+    xg: float, xa: float, xga: float, element_type: int
+) -> float:
+    """Calculate expected FPL points from xG/xA/xGA.
+
+    Args:
+        xg: Expected goals
+        xa: Expected assists
+        xga: Expected goals against (for CS calculation)
+        element_type: Player position (GK=1, DEF=2, MID=3, FWD=4)
+
+    Returns:
+        Expected FPL points (excluding appearance bonus)
+    """
+    goal_pts = POINTS_PER_GOAL.get(element_type, 4)
+    xp = xg * goal_pts + xa * POINTS_PER_ASSIST
+
+    # For GK/DEF, add expected clean sheet contribution
+    if element_type in (GK, DEF):
+        xcs = max(0.0, 1.0 - xga / XCS_DIVISOR)
+        xp += xcs * POINTS_PER_CS
+
+    return xp
+
+
+def _get_actual_points(
+    total_points: float, appearance_bonus: int, element_type: int
+) -> float:
+    """Get actual FPL points excluding appearance bonus.
+
+    For GK/DEF with clean sheet (total >= 6), we don't subtract appearance
+    because CS bonus contextually includes defensive performance.
+
+    Args:
+        total_points: Raw points (or base points after dividing by multiplier)
+        appearance_bonus: Points to subtract (0, 1, or 2)
+        element_type: Player position
+
+    Returns:
+        Actual points excluding appearance bonus
+    """
+    if element_type in (GK, DEF) and total_points >= 6:
+        return float(total_points)
+    return float(total_points - appearance_bonus)
+
+
+def calculate_luck_index(picks: list[PickWithXg]) -> float | None:
     """Calculate luck index: sum of (actual - expected) across all picks.
 
-    TODO: Implement in TDD green phase.
+    Measures whether players over/underperformed their xG/xA expectations.
+    Positive = lucky (players scored more than expected)
+    Negative = unlucky (players scored less than expected)
+
+    Note: For GK/DEF, we use a heuristic (total_points >= 6) to infer clean sheet.
+    This may misclassify edge cases like a defender who scored but conceded.
+
+    Args:
+        picks: List of PickWithXg dicts (see TypedDict definition).
+
+    Returns:
+        Sum of luck deltas rounded to 2 decimals, or None if no valid picks.
     """
-    raise NotImplementedError("TDD stub - implement in green phase")
+    if not picks:
+        return None
+
+    total_luck = 0.0
+    valid_picks = 0
+
+    for pick in picks:
+        # Skip bench players (multiplier=0)
+        if pick.get("multiplier", 1) == 0:
+            continue
+
+        # Skip players who didn't play (minutes=0)
+        if pick.get("minutes", 90) == 0:
+            continue
+
+        # Skip if xG data is missing (both xG and xA are None)
+        # Note: We include assists-only players as they contribute to luck
+        xg = pick.get("expected_goals")
+        xa = pick.get("expected_assists")
+        if xg is None and xa is None:
+            continue
+
+        # Explicit None checks to avoid masking type errors
+        xg = 0.0 if xg is None else xg
+        xa = 0.0 if xa is None else xa
+        xga_raw = pick.get("expected_goals_conceded")
+        xga = 0.0 if xga_raw is None else xga_raw
+
+        element_type = pick.get("element_type", FWD)
+        total_points = pick.get("total_points", 0)
+        minutes = pick.get("minutes", 90)
+
+        xp = _calculate_expected_points(xg, xa, xga, element_type)
+        appearance_bonus = _calculate_appearance_bonus(minutes)
+        actual = _get_actual_points(total_points, appearance_bonus, element_type)
+
+        luck_delta = actual - xp
+        total_luck += luck_delta
+        valid_picks += 1
+
+    if valid_picks == 0:
+        return None
+
+    return round(total_luck, 2)
 
 
-def calculate_captain_xp_delta(picks: list[dict]) -> float | None:
+def calculate_captain_xp_delta(picks: list[PickWithXg]) -> float | None:
     """Calculate captain performance vs expectation.
 
-    TODO: Implement in TDD green phase.
+    Measures whether captain picks overperformed or underperformed xG expectations.
+    Positive = captain beat expectations
+    Negative = captain underperformed expectations
+
+    Args:
+        picks: List of PickWithXg dicts (see TypedDict definition).
+
+    Returns:
+        Sum of captain deltas rounded to 2 decimals, or None if no valid captain picks.
     """
-    raise NotImplementedError("TDD stub - implement in green phase")
+    if not picks:
+        return None
+
+    total_delta = 0.0
+    valid_picks = 0
+
+    for pick in picks:
+        # Only consider effective captains (multiplier >= 2)
+        # This also handles bench players (multiplier=0) since 0 < 2
+        multiplier = pick.get("multiplier", 1)
+        if multiplier < 2:
+            continue
+
+        # Skip captains who didn't play
+        if pick.get("minutes", 90) == 0:
+            continue
+
+        # Skip if xG data is missing (xG is the primary metric for captaincy skill)
+        xg = pick.get("expected_goals")
+        if xg is None:
+            continue
+
+        # Explicit None checks to avoid masking type errors
+        xa_raw = pick.get("expected_assists")
+        xa = 0.0 if xa_raw is None else xa_raw
+        xga_raw = pick.get("expected_goals_conceded")
+        xga = 0.0 if xga_raw is None else xga_raw
+
+        element_type = pick.get("element_type", FWD)
+        total_points = pick.get("total_points", 0)
+        minutes = pick.get("minutes", 90)
+
+        # Calculate base points (before captain multiplier)
+        base_points = total_points / multiplier
+
+        xp = _calculate_expected_points(xg, xa, xga, element_type)
+        appearance_bonus = _calculate_appearance_bonus(minutes)
+        actual_base = _get_actual_points(base_points, appearance_bonus, element_type)
+
+        delta = actual_base - xp
+        total_delta += delta
+        valid_picks += 1
+
+    if valid_picks == 0:
+        return None
+
+    return round(total_delta, 2)
 
 
-def calculate_squad_xp(picks: list[dict]) -> float | None:
+def calculate_squad_xp(picks: list[PickWithXg]) -> float | None:
     """Calculate squad expected performance (xGI sum).
 
-    TODO: Implement in TDD green phase.
+    Measures squad quality using raw xGI values (not FPL points):
+    - FWD/MID: xP = xG + xA
+    - DEF/GK: xP = xG + xA + xCS (where xCS = max(0, 1 - xGA/2.5))
+
+    Captain's xP is NOT doubled (we measure squad composition, not captain bonus).
+    Bench players (multiplier=0) are excluded.
+
+    Args:
+        picks: List of PickWithXg dicts (see TypedDict definition).
+
+    Returns:
+        Total squad xP, or None if no valid data
     """
-    raise NotImplementedError("TDD stub - implement in green phase")
+    if not picks:
+        return None
+
+    total_xp = 0.0
+    valid_picks = 0
+
+    for pick in picks:
+        # Exclude bench players
+        if pick.get("multiplier", 1) == 0:
+            continue
+
+        # Skip players with no xG data
+        xg = pick.get("expected_goals")
+        xa = pick.get("expected_assists")
+        if xg is None and xa is None:
+            continue
+
+        # Explicit None checks to avoid masking type errors
+        xg = 0.0 if xg is None else xg
+        xa = 0.0 if xa is None else xa
+
+        # Base xGI for all positions
+        xp = xg + xa
+
+        # Add xCS for DEF/GK
+        element_type = pick.get("element_type", FWD)
+        if element_type in (GK, DEF):
+            xga_raw = pick.get("expected_goals_conceded")
+            xga = 0.0 if xga_raw is None else xga_raw
+            xcs = max(0.0, 1.0 - xga / XCS_DIVISOR)
+            xp += xcs
+
+        total_xp += xp
+        valid_picks += 1
+
+    if valid_picks == 0:
+        return None
+
+    return round(total_xp, 2)

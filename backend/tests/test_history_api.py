@@ -1006,9 +1006,9 @@ class TestHistoryComparisonResponseFormat:
         mock_chips_a = [{"chip_type": "wildcard", "season_half": 1}]
         mock_chips_b = []
 
-        # 13 fetch calls: manager_a, manager_b, history_a, history_b,
+        # 14 fetch calls: manager_a, manager_b, history_a, history_b,
         # picks_a, picks_b, chips_a, chips_b, captain_picks, gameweeks,
-        # league_standings, league_template, world_template
+        # league_standings, league_template, world_template, xg_picks
         mock_api_db.conn.fetch.side_effect = [
             mock_manager_a,
             mock_manager_b,
@@ -1023,6 +1023,7 @@ class TestHistoryComparisonResponseFormat:
             [],  # league_standings
             [],  # league_template
             [],  # world_template
+            [],  # xg_picks
         ]
 
         with mock_api_db:
@@ -1070,6 +1071,13 @@ class TestHistoryComparisonResponseFormat:
             assert "bench_waste_rate" in manager
             assert "hit_frequency" in manager
             assert "last_5_average" in manager
+            # Tier 2 analytics
+            assert "form_momentum" in manager
+            assert "recovery_rate" in manager
+            # Tier 3 analytics (xG-based)
+            assert "luck_index" in manager
+            assert "captain_xp_delta" in manager
+            assert "squad_xp" in manager
 
 
 class TestHistoryComparisonBusinessLogic:
@@ -1117,7 +1125,7 @@ class TestHistoryComparisonBusinessLogic:
         mock_chips_a = []
         mock_chips_b = []
 
-        # 13 fetch calls including new template queries
+        # 14 fetch calls including new template and xG picks queries
         mock_api_db.conn.fetch.side_effect = [
             mock_manager_a,
             mock_manager_b,
@@ -1132,6 +1140,7 @@ class TestHistoryComparisonBusinessLogic:
             [],  # league_standings
             [],  # league_template
             [],  # world_template
+            [],  # xg_picks
         ]
 
         with mock_api_db:
@@ -1240,7 +1249,7 @@ class TestHistoryComparisonBusinessLogic:
         mock_chips_a = []
         mock_chips_b = []
 
-        # 13 fetch calls including new template queries
+        # 14 fetch calls including new template and xG picks queries
         mock_api_db.conn.fetch.side_effect = [
             mock_manager_a,
             mock_manager_b,
@@ -1259,6 +1268,7 @@ class TestHistoryComparisonBusinessLogic:
             [],  # league_standings
             [],  # league_template
             [],  # world_template
+            [],  # xg_picks
         ]
 
         with mock_api_db:
@@ -1365,6 +1375,7 @@ class TestHistoryComparisonBusinessLogic:
             mock_league_standings,  # league standings query
             [],  # league_template query
             [],  # world_template query
+            [],  # xg_picks
         ]
 
         with mock_api_db:
@@ -1447,6 +1458,7 @@ class TestHistoryComparisonBusinessLogic:
             [],  # league_standings
             mock_league_template,  # league template query
             [],  # world_template query
+            [],  # xg_picks
         ]
 
         with mock_api_db:
@@ -1539,6 +1551,7 @@ class TestHistoryComparisonBusinessLogic:
             [],  # league_standings
             [],  # league_template
             mock_world_template,  # world template query (top owned players)
+            [],  # xg_picks
         ]
 
         with mock_api_db:
@@ -1627,6 +1640,7 @@ class TestHistoryComparisonBusinessLogic:
             [],  # league_standings
             [],  # league_template
             mock_world_template,  # world template query
+            [],  # xg_picks
         ]
 
         with mock_api_db:
@@ -1697,6 +1711,7 @@ class TestHistoryComparisonBusinessLogic:
             [],  # league_standings - empty, managers not in this league's standings
             [],  # league_template
             [],  # world_template
+            [],  # xg_picks
         ]
 
         with mock_api_db:

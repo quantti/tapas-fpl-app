@@ -162,7 +162,7 @@ class TemplateOverlap(BaseModel):
     matching_player_ids: list[int] = Field(description="Player IDs that match template")
     differential_player_ids: list[int] = Field(description="Player IDs not in template")
     playstyle_label: str = Field(
-        description="Playstyle label: Template (9-11), Balanced (5-8), Differential (2-4), Maverick (0-1)"
+        description="Playstyle: Template (9-11), Balanced (5-8), Differential (2-4), Maverick (0-1)"
     )
 
 
@@ -225,6 +225,21 @@ class ManagerComparisonStats(BaseModel):
     )
     recovery_rate: float = Field(
         ge=0, default=0.0, description="Avg points after red arrow GWs"
+    )
+
+    # Tier 3 analytics (xG-based)
+    luck_index: float | None = Field(
+        default=None,
+        description="Sum of (actual - appearance - expected) across all picks; positive=lucky",
+    )
+    captain_xp_delta: float | None = Field(
+        default=None,
+        description="Sum of (captain actual - expected) points; positive=good captain picks",
+    )
+    squad_xp: float | None = Field(
+        default=None,
+        ge=0,
+        description="Raw expected goal involvement (xG + xA + xCS) for starting XI",
     )
 
 

@@ -1,6 +1,6 @@
 # Head-to-Head Comparison API Enhancement Plan
 
-**Status:** Tier 2 Complete ✅ | Tier 3 Data Ready 🟡
+**Status:** Tier 2 Complete ✅ | Tier 3 Implementation Complete ✅
 **Created:** 2026-01-09
 **Updated:** 2026-01-11
 **Backend Commit:** e692acf
@@ -319,7 +319,7 @@ Add high-value, low-effort metrics calculable from existing snapshots:
 | Phase | Scope | Prerequisite | Status |
 |-------|-------|--------------|--------|
 | Tier 2 | Form momentum, recovery rate | `manager_gw_snapshot` | ✅ Complete |
-| Tier 3 | Luck index, captain xP delta, squad xP | `player_fixture_stats` | 🟡 Data Ready |
+| Tier 3 | Luck index, captain xP delta, squad xP | `player_fixture_stats` | ✅ Implementation Complete |
 | Tier 4 | H2H record, differential points breakdown | Tier 1 complete | Deferred |
 
 ### Tier 3 Data Availability ✅
@@ -410,9 +410,9 @@ These metrics answer "who's actually playing better FPL?" by separating skill fr
 
 ## Tier 3 Implementation Plan
 
-### TDD Test Cases
+### TDD Test Cases ✅
 
-Write tests first in `tests/test_calculations.py`.
+**Implemented:** 2026-01-11 in `tests/test_calculations.py` (47 tests total for Tier 3)
 
 **FPL Scoring Rules Reference:**
 | Position | Goal | Assist | Clean Sheet | Goals Conceded |
@@ -625,16 +625,15 @@ Write tests first in `tests/test_calculations.py`.
 
 ### Implementation Steps
 
-1. **Write TDD tests** (`tests/test_calculations.py`)
-   - Pure function tests for each metric
-   - Edge cases: missing data, empty inputs, boundary values
+1. ✅ **Write TDD tests** (`tests/test_calculations.py`)
+   - 15 Luck Index tests (core + aggregation + edge cases)
+   - 13 Captain xP Delta tests (core + multiplier + edge cases)
+   - 19 Squad xP tests (position + formation + edge cases)
 
-2. **Implement pure functions** (`app/services/calculations.py`)
-   ```python
-   def calculate_luck_index(picks_with_xp: list[dict]) -> float | None
-   def calculate_captain_xp_delta(captain_picks: list[dict]) -> float | None
-   def calculate_squad_xp(current_xi: list[dict]) -> float | None
-   ```
+2. ✅ **Implement pure functions** (`app/services/calculations.py`)
+   - `calculate_luck_index()` - Actual vs expected points (luck measurement)
+   - `calculate_captain_xp_delta()` - Captain selection skill measurement
+   - `calculate_squad_xp()` - Squad quality via raw xGI (not FPL points)
 
 3. **Add SQL query for xG data** (`app/services/history.py`)
    ```sql

@@ -19,16 +19,20 @@ from app.services.calculations import (
     GameweekRow,
     ManagerHistoryRow,
     PickRow,
+    PickWithXg,
     calculate_bench_points,
     calculate_bench_waste_rate,
     calculate_captain_differential_with_details,
+    calculate_captain_xp_delta,
     calculate_consistency_score,
     calculate_form_momentum,
     calculate_free_transfers,
     calculate_hit_frequency,
     calculate_last_5_average,
     calculate_league_positions,
+    calculate_luck_index,
     calculate_recovery_rate,
+    calculate_squad_xp,
 )
 
 logger = logging.getLogger(__name__)
@@ -197,6 +201,33 @@ _FULL_PICKS_SQL = """
     WHERE mgs.manager_id = ANY($1) AND mgs.season_id = $2
     GROUP BY mgs.manager_id, mgs.gameweek, mp.player_id, mp.position, mp.multiplier, mp.is_captain
     ORDER BY mgs.manager_id, mgs.gameweek, mp.position
+"""
+
+# Get picks with xG data for Tier 3 metrics (luck_index, captain_xp_delta, squad_xp)
+# SUM handles DGWs where a player has multiple fixtures in same gameweek
+_XG_PICKS_SQL = """
+    SELECT mgs.manager_id,
+           mgs.gameweek,
+           mp.player_id,
+           mp.is_captain,
+           mp.multiplier,
+           p.element_type,
+           COALESCE(SUM(pfs.total_points), 0) AS total_points,
+           SUM(pfs.expected_goals) AS expected_goals,
+           SUM(pfs.expected_assists) AS expected_assists,
+           SUM(pfs.expected_goals_conceded) AS expected_goals_conceded,
+           COALESCE(SUM(pfs.minutes), 0) AS minutes
+    FROM manager_pick mp
+    JOIN manager_gw_snapshot mgs ON mgs.id = mp.snapshot_id
+    LEFT JOIN player_fixture_stats pfs
+        ON pfs.player_id = mp.player_id
+        AND pfs.gameweek = mgs.gameweek
+        AND pfs.season_id = mgs.season_id
+    JOIN player p ON p.id = mp.player_id AND p.season_id = mgs.season_id
+    WHERE mgs.manager_id = ANY($1) AND mgs.season_id = $2
+    GROUP BY mgs.manager_id, mgs.gameweek, mp.player_id,
+             mp.is_captain, mp.multiplier, p.element_type
+    ORDER BY mgs.manager_id, mgs.gameweek, mp.player_id
 """
 
 # Get gameweeks (for template captain)
@@ -847,6 +878,9 @@ class HistoryService:
             # Fetch world template (globally most owned players)
             world_template = await conn.fetch(_WORLD_TEMPLATE_SQL, season_id)
 
+            # Fetch xG picks for Tier 3 metrics (luck_index, captain_xp_delta, squad_xp)
+            xg_picks_raw = await conn.fetch(_XG_PICKS_SQL, manager_ids, season_id)
+
         # Build lookup for league ranks
         league_rank_lookup = {r["manager_id"]: r["rank"] for r in league_standings}
 
@@ -857,6 +891,10 @@ class HistoryService:
         # Group captain picks by manager
         captain_picks_a = [p for p in captain_picks if p["manager_id"] == manager_a]
         captain_picks_b = [p for p in captain_picks if p["manager_id"] == manager_b]
+
+        # Group xG picks by manager for Tier 3 metrics
+        xg_picks_a = [dict(r) for r in xg_picks_raw if r["manager_id"] == manager_a]
+        xg_picks_b = [dict(r) for r in xg_picks_raw if r["manager_id"] == manager_b]
 
         # Build gameweek lookup for template captain
         gameweeks_list: list[GameweekRow] = [dict(r) for r in gameweeks]
@@ -874,6 +912,7 @@ class HistoryService:
             league_rank=league_rank_lookup.get(manager_a),
             league_template_ids=league_template_ids,
             world_template_ids=world_template_ids,
+            xg_picks=xg_picks_a,
         )
         stats_b = self._build_manager_stats(
             manager_row=manager_b_rows[0],
@@ -887,6 +926,7 @@ class HistoryService:
             league_rank=league_rank_lookup.get(manager_b),
             league_template_ids=league_template_ids,
             world_template_ids=world_template_ids,
+            xg_picks=xg_picks_b,
         )
 
         # Find common players
@@ -915,6 +955,7 @@ class HistoryService:
         league_rank: int | None = None,
         league_template_ids: list[int] | None = None,
         world_template_ids: list[int] | None = None,
+        xg_picks: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Build stats dict for a single manager.
 
@@ -930,6 +971,7 @@ class HistoryService:
             league_rank: Manager's rank within the league
             league_template_ids: Player IDs in league template (most owned)
             world_template_ids: Player IDs in world template (globally most owned)
+            xg_picks: xG data for picks across all gameweeks (for Tier 3 metrics)
 
         Returns:
             Dict with manager stats
@@ -978,6 +1020,26 @@ class HistoryService:
         # Tier 2 analytics
         form_momentum = calculate_form_momentum(history_list)
         recovery_rate = calculate_recovery_rate(history_list)
+
+        # Tier 3 analytics (xG-based metrics)
+        # Convert DB rows to PickWithXg format for calculation functions
+        xg_picks_typed: list[PickWithXg] = [
+            PickWithXg(
+                element_type=row["element_type"],
+                multiplier=row["multiplier"],
+                is_captain=row["is_captain"],
+                total_points=row["total_points"],
+                expected_goals=row["expected_goals"],
+                expected_assists=row["expected_assists"],
+                expected_goals_conceded=row["expected_goals_conceded"],
+                minutes=row["minutes"],
+            )
+            for row in (xg_picks or [])
+        ]
+
+        luck_index = calculate_luck_index(xg_picks_typed)
+        captain_xp_delta = calculate_captain_xp_delta(xg_picks_typed)
+        squad_xp = calculate_squad_xp(xg_picks_typed)
 
         # Template overlap calculations
         league_template_overlap = (
@@ -1028,6 +1090,10 @@ class HistoryService:
             # Tier 2 analytics
             "form_momentum": form_momentum,
             "recovery_rate": round(recovery_rate, 2),
+            # Tier 3 analytics (xG-based)
+            "luck_index": luck_index,
+            "captain_xp_delta": captain_xp_delta,
+            "squad_xp": squad_xp,
         }
 
     def _calculate_head_to_head(

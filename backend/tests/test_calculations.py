@@ -26,11 +26,10 @@ from typing import TypedDict
 import pytest
 
 from app.services.calculations import (
-    calculate_luck_index,
     calculate_captain_xp_delta,
+    calculate_luck_index,
     calculate_squad_xp,
 )
-
 
 # =============================================================================
 # TypedDict for pick structure
@@ -297,6 +296,35 @@ class TestLuckIndexEdgeCases:
         # Should be rounded to 2 decimal places
         assert result == round(result, 2)
 
+    def test_luck_index_substitute_short_playing_time(self):
+        """Player who played 1-59 mins gets 1pt appearance bonus (not 2pt).
+
+        FWD sub plays 45 mins, scores (4pt) with low xG (0.1).
+        Total points = 1 (appearance) + 4 (goal) = 5
+        Actual (excl appearance) = 5 - 1 = 4
+        Expected = 0.1 * 4 = 0.4
+        Luck = 4 - 0.4 = +3.6 (lucky sub goal)
+        """
+        picks = [make_pick(element_type=FWD, minutes=45, xg=0.1, total_points=5)]
+        result = calculate_luck_index(picks)
+        assert result == pytest.approx(3.6, rel=0.01)
+
+    def test_luck_index_negative_total_points(self):
+        """GK with negative points from heavy goals conceded.
+
+        GK concedes 5 goals: 2 (appearance) - 5 (goals conceded) = -3 total.
+        With high xGA (5.0), xCS = max(0, 1 - 5/2.5) = 0.
+        Expected = 0 * 6 + 0 * 3 + 0 * 4 = 0
+        Since total_points < 6, not clean sheet heuristic.
+        Actual = -3 - 2 = -5
+        Luck = -5 - 0 = -5 (very unlucky, heavily conceded)
+        """
+        picks = [
+            make_pick(element_type=GK, xg=0.0, xa=0.0, xga=5.0, total_points=-3)
+        ]
+        result = calculate_luck_index(picks)
+        assert result == pytest.approx(-5.0, rel=0.01)
+
 
 # =============================================================================
 # 3.2 Captain xP Delta Tests
@@ -310,44 +338,44 @@ class TestCaptainDeltaCoreCalculation:
         """Captain (FWD) with xG=0.5, xA=0.1 scores 2 goals.
 
         xP = 0.5*4 + 0.1*3 = 2.3
-        Actual = 8pts (2 goals)
-        Delta = 8 - 2.3 = +5.7
+        Actual base = 8pts, minus 2pt appearance = 6pts
+        Delta = 6 - 2.3 = +3.7
         """
         picks = [
             make_pick(is_captain=True, multiplier=2, xg=0.5, xa=0.1, total_points=16)
         ]
-        # 16 doubled = 8 base, 8 - 2.3 = 5.7
+        # 16 doubled = 8 base, 8 - 2 appearance = 6, 6 - 2.3 = 3.7
         result = calculate_captain_xp_delta(picks)
-        assert result == pytest.approx(5.7, rel=0.01)
+        assert result == pytest.approx(3.7, rel=0.01)
 
     def test_captain_delta_negative_when_captain_blanks(self):
         """Captain (MID) with xG=1.2, xA=0.5 scores 0.
 
         xP = 1.2*5 + 0.5*3 = 7.5
-        Actual = 2pts (appearance)
-        Delta = 2 - 7.5 = -5.5
+        Actual base = 2pts, minus 2pt appearance = 0pts
+        Delta = 0 - 7.5 = -7.5
         """
         picks = [
             make_pick(
                 element_type=MID, is_captain=True, multiplier=2, xg=1.2, xa=0.5, total_points=4
             )
         ]
-        # 4 doubled = 2 base
+        # 4 doubled = 2 base, 2 - 2 appearance = 0, 0 - 7.5 = -7.5
         result = calculate_captain_xp_delta(picks)
-        assert result == pytest.approx(-5.5, rel=0.01)
+        assert result == pytest.approx(-7.5, rel=0.01)
 
     def test_captain_delta_uses_base_points_not_doubled(self):
         """Captain's 2x multiplier applies to actual points only.
 
-        We compare actual/multiplier vs xP (not doubled xP).
+        We compare (actual/multiplier - appearance) vs xP.
         This measures captain SELECTION skill, not multiplier effect.
         """
         picks = [
             make_pick(is_captain=True, multiplier=2, xg=0.5, total_points=12)
         ]
-        # 12 doubled = 6 base, xP = 2, delta = 6 - 2 = 4
+        # 12 doubled = 6 base, 6 - 2 appearance = 4, xP = 2, delta = 4 - 2 = 2
         result = calculate_captain_xp_delta(picks)
-        assert result == pytest.approx(4.0, rel=0.01)
+        assert result == pytest.approx(2.0, rel=0.01)
 
     def test_captain_delta_defender_includes_clean_sheet_in_xp(self):
         """DEF captain: xP should include xCS probability.
@@ -376,22 +404,22 @@ class TestCaptainDeltaMultiplierHandling:
     """Multiplier handling tests for captain_xp_delta."""
 
     def test_captain_delta_normal_captain_uses_multiplier_2(self):
-        """Standard captain: actual_pts / 2 vs xP."""
+        """Standard captain: (actual_pts / 2 - appearance) vs xP."""
         picks = [
             make_pick(is_captain=True, multiplier=2, xg=0.5, total_points=10)
         ]
-        # 10/2 = 5 base, xP = 2, delta = 3
+        # 10/2 = 5 base, 5 - 2 appearance = 3, xP = 2, delta = 1
         result = calculate_captain_xp_delta(picks)
-        assert result == pytest.approx(3.0, rel=0.01)
+        assert result == pytest.approx(1.0, rel=0.01)
 
     def test_captain_delta_triple_captain_uses_multiplier_3(self):
-        """TC chip active: actual_pts / 3 vs xP."""
+        """TC chip active: (actual_pts / 3 - appearance) vs xP."""
         picks = [
             make_pick(is_captain=True, multiplier=3, xg=0.5, total_points=15)
         ]
-        # 15/3 = 5 base, xP = 2, delta = 3
+        # 15/3 = 5 base, 5 - 2 appearance = 3, xP = 2, delta = 1
         result = calculate_captain_xp_delta(picks)
-        assert result == pytest.approx(3.0, rel=0.01)
+        assert result == pytest.approx(1.0, rel=0.01)
 
     def test_captain_delta_vice_captain_activated(self):
         """Captain got 0 mins, VC played - VC becomes captain with multiplier=2."""
@@ -401,9 +429,9 @@ class TestCaptainDeltaMultiplierHandling:
             # VC played and became effective captain
             make_pick(player_id=2, is_captain=False, multiplier=2, xg=0.5, total_points=10),
         ]
-        # VC's stats: 10/2 = 5 base, xP = 2, delta = 3
+        # VC's stats: 10/2 = 5 base, 5 - 2 appearance = 3, xP = 2, delta = 1
         result = calculate_captain_xp_delta(picks)
-        assert result == pytest.approx(3.0, rel=0.01)
+        assert result == pytest.approx(1.0, rel=0.01)
 
 
 class TestCaptainDeltaAggregation:
@@ -415,21 +443,26 @@ class TestCaptainDeltaAggregation:
             make_pick(gameweek=gw, is_captain=True, multiplier=2, xg=0.5, total_points=10)
             for gw in range(1, 6)
         ]
-        # Each GW: 5 - 2 = 3, 5 GWs = 15
+        # Each GW: 5 base - 2 appearance = 3, 3 - 2 xP = 1, 5 GWs = 5
         result = calculate_captain_xp_delta(picks)
-        assert result == pytest.approx(15.0, rel=0.01)
+        assert result == pytest.approx(5.0, rel=0.01)
 
     def test_captain_delta_handles_dgw_captain(self):
         """Captain played twice in DGW should sum both fixtures."""
         picks = [
             # Same captain, same GW, two fixtures
-            make_pick(player_id=1, gameweek=1, is_captain=True, multiplier=2, xg=0.5, total_points=10),
-            make_pick(player_id=1, gameweek=1, is_captain=True, multiplier=2, xg=0.3, total_points=6),
+            make_pick(
+                player_id=1, gameweek=1, is_captain=True, multiplier=2, xg=0.5, total_points=10
+            ),
+            make_pick(
+                player_id=1, gameweek=1, is_captain=True, multiplier=2, xg=0.3, total_points=6
+            ),
         ]
-        # First: 5 - 2 = 3, Second: 3 - 1.2 = 1.8
-        # Total: 4.8
+        # First: 5 base - 2 appearance = 3, 3 - 2 = 1
+        # Second: 3 base - 2 appearance = 1, 1 - 1.2 = -0.2
+        # Total: 0.8
         result = calculate_captain_xp_delta(picks)
-        assert result == pytest.approx(4.8, rel=0.01)
+        assert result == pytest.approx(0.8, rel=0.01)
 
 
 class TestCaptainDeltaEdgeCases:
@@ -455,17 +488,18 @@ class TestCaptainDeltaEdgeCases:
             make_pick(gameweek=1, is_captain=True, multiplier=2, xg=0.5, total_points=10),
             make_pick(gameweek=2, is_captain=True, multiplier=2, xg=None, total_points=8),
         ]
-        # Only GW1 counted: 5 - 2 = 3
+        # Only GW1 counted: 5 base - 2 appearance = 3, 3 - 2 = 1
         result = calculate_captain_xp_delta(picks)
-        assert result == pytest.approx(3.0, rel=0.01)
+        assert result == pytest.approx(1.0, rel=0.01)
 
     def test_captain_delta_handles_single_gameweek_data(self):
         """Only 1 GW of data should still return a value."""
         picks = [
             make_pick(gameweek=1, is_captain=True, multiplier=2, xg=0.5, total_points=10)
         ]
+        # 5 base - 2 appearance = 3, 3 - 2 = 1
         result = calculate_captain_xp_delta(picks)
-        assert result == pytest.approx(3.0, rel=0.01)
+        assert result == pytest.approx(1.0, rel=0.01)
 
 
 # =============================================================================
@@ -515,7 +549,10 @@ class TestSquadXpFormation:
         """1 GK, 4 DEF, 4 MID, 2 FWD should calculate each correctly."""
         picks = (
             [make_pick(player_id=0, element_type=GK, xg=0.0, xa=0.0, xga=1.0)]
-            + [make_pick(player_id=i, element_type=DEF, xg=0.1, xa=0.1, xga=1.0) for i in range(1, 5)]
+            + [
+                make_pick(player_id=i, element_type=DEF, xg=0.1, xa=0.1, xga=1.0)
+                for i in range(1, 5)
+            ]
             + [make_pick(player_id=i, element_type=MID, xg=0.3, xa=0.2) for i in range(5, 9)]
             + [make_pick(player_id=i, element_type=FWD, xg=0.5, xa=0.2) for i in range(9, 11)]
         )
@@ -531,7 +568,10 @@ class TestSquadXpFormation:
         """1 GK, 3 DEF, 4 MID, 3 FWD."""
         picks = (
             [make_pick(player_id=0, element_type=GK, xg=0.0, xa=0.0, xga=1.0)]
-            + [make_pick(player_id=i, element_type=DEF, xg=0.1, xa=0.1, xga=1.0) for i in range(1, 4)]
+            + [
+                make_pick(player_id=i, element_type=DEF, xg=0.1, xa=0.1, xga=1.0)
+                for i in range(1, 4)
+            ]
             + [make_pick(player_id=i, element_type=MID, xg=0.3, xa=0.2) for i in range(4, 8)]
             + [make_pick(player_id=i, element_type=FWD, xg=0.5, xa=0.2) for i in range(8, 11)]
         )
@@ -544,7 +584,10 @@ class TestSquadXpFormation:
         """1 GK, 5 DEF, 3 MID, 2 FWD."""
         picks = (
             [make_pick(player_id=0, element_type=GK, xg=0.0, xa=0.0, xga=1.0)]
-            + [make_pick(player_id=i, element_type=DEF, xg=0.1, xa=0.1, xga=1.0) for i in range(1, 6)]
+            + [
+                make_pick(player_id=i, element_type=DEF, xg=0.1, xa=0.1, xga=1.0)
+                for i in range(1, 6)
+            ]
             + [make_pick(player_id=i, element_type=MID, xg=0.3, xa=0.2) for i in range(6, 9)]
             + [make_pick(player_id=i, element_type=FWD, xg=0.5, xa=0.2) for i in range(9, 11)]
         )
@@ -557,7 +600,10 @@ class TestSquadXpFormation:
         """1 GK, 5 DEF, 4 MID, 1 FWD (defensive setup)."""
         picks = (
             [make_pick(player_id=0, element_type=GK, xg=0.0, xa=0.0, xga=1.0)]
-            + [make_pick(player_id=i, element_type=DEF, xg=0.1, xa=0.1, xga=1.0) for i in range(1, 6)]
+            + [
+                make_pick(player_id=i, element_type=DEF, xg=0.1, xa=0.1, xga=1.0)
+                for i in range(1, 6)
+            ]
             + [make_pick(player_id=i, element_type=MID, xg=0.3, xa=0.2) for i in range(6, 10)]
             + [make_pick(player_id=10, element_type=FWD, xg=0.5, xa=0.2)]
         )
