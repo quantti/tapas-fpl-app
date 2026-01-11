@@ -1,3 +1,16 @@
+# [0.27.0](https://github.com/quantti/tapas-fpl-app/compare/v0.26.1...v0.27.0) (2026-01-11)
+
+
+### Bug Fixes
+
+* **backend:** skip team sync in bootstrap-only mode ([fd63dee](https://github.com/quantti/tapas-fpl-app/commit/fd63dee5ab9ef2e3c0667f04573217b0454bb2bf))
+
+
+### Features
+
+* **backend:** implement and integrate Tier 3 xG metrics ([15de2a8](https://github.com/quantti/tapas-fpl-app/commit/15de2a893f5eb5225d2bf966d181b1b0d296a536))
+* **frontend:** integrate Tier 3 xG metrics in H2H comparison ([0ab502b](https://github.com/quantti/tapas-fpl-app/commit/0ab502b16a665745b856b9835225277c85b8bdaa))
+
 ## [0.26.1](https://github.com/quantti/tapas-fpl-app/compare/v0.26.0...v0.26.1) (2026-01-11)
 
 
