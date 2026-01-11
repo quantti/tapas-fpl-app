@@ -50,6 +50,10 @@ function getErrorMessage(error: Error): string {
       return 'Manager data not found. They may have joined the league recently.';
     }
     if (error.status === 400) {
+      // Check if it's a "not found" error from the detail message
+      if (error.message.toLowerCase().includes('not found')) {
+        return 'Manager data not found. They may not be synced yet.';
+      }
       return 'Invalid comparison request. Please select different managers.';
     }
     if (error.status >= 500) {
@@ -71,12 +75,34 @@ function formatFormMomentum(momentum: string): string {
 }
 
 /**
+ * Format a nullable number with sign prefix (+/-) and fixed decimals.
+ * Returns '—' for null values.
+ */
+function formatSignedValue(value: number | null, decimals: number = 1): string {
+  if (value === null) return '—';
+  const sign = value >= 0 ? '+' : '';
+  return `${sign}${value.toFixed(decimals)}`;
+}
+
+/**
  * Get comparison class for form momentum
  */
 function getFormCompareClass(momentum: string): CompareResult {
   if (momentum === 'improving') return 'better';
   if (momentum === 'declining') return 'worse';
   return 'neutral';
+}
+
+/**
+ * Get comparison class for nullable values. Returns 'neutral' if either value is null.
+ */
+function getNullableComparisonClass(
+  valueA: number | null,
+  valueB: number | null,
+  lowerIsBetter = false
+): CompareResult {
+  if (valueA === null || valueB === null) return 'neutral';
+  return getComparisonClass(valueA, valueB, lowerIsBetter);
 }
 
 // Analytics metric descriptions for tooltips
@@ -86,6 +112,13 @@ const ANALYTICS_INFO = {
   hitFrequency: '% of gameweeks with transfer hits taken. Lower = better planning.',
   form: 'Trend based on last 3 GWs vs previous 3 GWs. >5% change = improving/declining.',
   recovery: 'Average points scored in GWs after a rank drop. Higher = better bounce-back.',
+  // Tier 3 xG-based metrics
+  captainXp:
+    'Difference between actual captain points and expected (xG/xA for attackers, xCS for GK/DEF). Positive = captains outperformed expectations.',
+  luckIndex:
+    'Sum of (actual − expected) points across all picks. Positive = lucky, negative = unlucky.',
+  squadXp:
+    'Total expected goal involvement (xG + xA + xCS) for starting XI. Higher = stronger squad.',
 } as const;
 
 interface ComparisonContentProps {
@@ -241,7 +274,12 @@ function ComparisonGrid({
   const getPlayerPosition = (id: number): string => {
     const player = playersMap.get(id);
     if (!player) return '';
-    const positions: Record<number, string> = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' };
+    const positions: Record<number, string> = {
+      1: 'GK',
+      2: 'DEF',
+      3: 'MID',
+      4: 'FWD',
+    };
     return positions[player.element_type] ?? '';
   };
 
@@ -347,6 +385,17 @@ function ComparisonGrid({
         valueB={managerB.differentialCaptains}
         compareA="neutral"
         compareB="neutral"
+      />
+      <StatRow
+        label={
+          <>
+            xP Delta <InfoTooltip text={ANALYTICS_INFO.captainXp} />
+          </>
+        }
+        valueA={formatSignedValue(managerA.captainXpDelta)}
+        valueB={formatSignedValue(managerB.captainXpDelta)}
+        compareA={getNullableComparisonClass(managerA.captainXpDelta, managerB.captainXpDelta)}
+        compareB={getNullableComparisonClass(managerB.captainXpDelta, managerA.captainXpDelta)}
       />
 
       {/* Chips */}
@@ -530,6 +579,28 @@ function ComparisonGrid({
         compareA={getComparisonClass(managerA.recoveryRate, managerB.recoveryRate)}
         compareB={getComparisonClass(managerB.recoveryRate, managerA.recoveryRate)}
       />
+      <StatRow
+        label={
+          <>
+            Luck Index <InfoTooltip text={ANALYTICS_INFO.luckIndex} />
+          </>
+        }
+        valueA={formatSignedValue(managerA.luckIndex)}
+        valueB={formatSignedValue(managerB.luckIndex)}
+        compareA={getNullableComparisonClass(managerA.luckIndex, managerB.luckIndex)}
+        compareB={getNullableComparisonClass(managerB.luckIndex, managerA.luckIndex)}
+      />
+      <StatRow
+        label={
+          <>
+            Squad xP <InfoTooltip text={ANALYTICS_INFO.squadXp} />
+          </>
+        }
+        valueA={managerA.squadXp?.toFixed(1) ?? '—'}
+        valueB={managerB.squadXp?.toFixed(1) ?? '—'}
+        compareA={getNullableComparisonClass(managerA.squadXp, managerB.squadXp)}
+        compareB={getNullableComparisonClass(managerB.squadXp, managerA.squadXp)}
+      />
     </div>
   );
 }
@@ -592,7 +663,11 @@ export function HeadToHead({ leagueId, managerDetails, playersMap }: Props) {
     if (lastScrolledPairRef.current === currentPair) return;
 
     lastScrolledPairRef.current = currentPair;
-    contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+    contentRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+      inline: 'nearest',
+    });
   }, [managerAId, managerBId, managerA, managerB, loading]);
 
   const handleManagerAChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

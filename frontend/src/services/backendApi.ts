@@ -182,6 +182,10 @@ export interface BackendManagerComparisonStats {
   // Tier 2 analytics
   form_momentum: string; // "improving", "stable", "declining"
   recovery_rate: number;
+  // Tier 3 analytics (xG-based)
+  luck_index: number | null;
+  captain_xp_delta: number | null;
+  squad_xp: number | null;
 }
 
 export interface BackendHeadToHead {

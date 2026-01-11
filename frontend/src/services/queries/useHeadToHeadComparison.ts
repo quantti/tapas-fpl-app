@@ -62,6 +62,10 @@ export interface ComparisonStats {
   // Tier 2 analytics
   formMomentum: string; // "improving", "stable", "declining"
   recoveryRate: number;
+  // Tier 3 analytics (xG-based)
+  luckIndex: number | null; // positive = lucky, negative = unlucky
+  captainXpDelta: number | null; // actual - expected captain points
+  squadXp: number | null; // raw expected points from xG/xA/xCS
 }
 
 export interface UseHeadToHeadComparisonParams {
@@ -172,6 +176,10 @@ function transformManagerStats(backend: BackendManagerComparisonStats): Comparis
     // Tier 2 analytics
     formMomentum: backend.form_momentum,
     recoveryRate: backend.recovery_rate,
+    // Tier 3 analytics (xG-based) - use nullish coalescing for backwards compatibility
+    luckIndex: backend.luck_index ?? null,
+    captainXpDelta: backend.captain_xp_delta ?? null,
+    squadXp: backend.squad_xp ?? null,
   };
 }
 

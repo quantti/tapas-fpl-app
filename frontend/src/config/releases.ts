@@ -12,6 +12,18 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: '0.27.0',
+    date: 'January 11, 2026',
+    items: [
+      {
+        title: 'xG-Based Analytics in Head-to-Head',
+        description:
+          'Added Luck Index (actual vs expected points), Captain xP Delta (captain performance vs expectations), and Squad xP (total expected points). These metrics use xG, xA, and xCS data to show how much luck vs skill contributed to your points.',
+        type: 'feature',
+      },
+    ],
+  },
+  {
     version: '0.25.0',
     date: 'January 9, 2026',
     items: [

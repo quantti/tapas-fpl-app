@@ -81,20 +81,18 @@ async def get_connection() -> asyncpg.Connection:
 
 
 async def get_season_id(conn: asyncpg.Connection) -> int:
-    """Get the current season ID, creating one if needed."""
-    row = await conn.fetchrow(
-        "SELECT id FROM season WHERE code = '2024-25'"
-    )
+    """Get or create season with ID=1 (matches frontend CURRENT_SEASON_ID)."""
+    row = await conn.fetchrow("SELECT id FROM season WHERE id = 1")
     if row:
         return row["id"]
 
-    # Create season if it doesn't exist
-    row = await conn.fetchrow("""
-        INSERT INTO season (code, name, start_date, is_current)
-        VALUES ('2024-25', 'Season 2024/25', '2024-08-16', true)
-        RETURNING id
+    # Create season with id=1 if it doesn't exist (use unique code)
+    await conn.execute("""
+        INSERT INTO season (id, code, name, start_date, is_current)
+        VALUES (1, 'test-2025-26', 'Test Season 2025/26', '2025-08-16', true)
+        ON CONFLICT (id) DO NOTHING
     """)
-    return row["id"]
+    return 1
 
 
 async def seed_teams(conn: asyncpg.Connection, season_id: int) -> None:
@@ -203,13 +201,188 @@ async def seed_collection_status(
 async def clear_all(conn: asyncpg.Connection, season_id: int) -> None:
     """Clear all seeded data for this season."""
     print("Clearing existing data...")
-    await conn.execute(
-        "DELETE FROM points_against_by_fixture WHERE season_id = $1", season_id
-    )
-    await conn.execute(
-        "DELETE FROM points_against_collection_status WHERE season_id = $1", season_id
-    )
+    # Clear in correct order for FK constraints
+    await conn.execute("DELETE FROM manager_pick WHERE snapshot_id IN (SELECT id FROM manager_gw_snapshot WHERE season_id = $1)", season_id)
+    await conn.execute("DELETE FROM manager_gw_snapshot WHERE season_id = $1", season_id)
+    await conn.execute("DELETE FROM chip_usage WHERE season_id = $1", season_id)
+    await conn.execute("DELETE FROM league_manager WHERE season_id = $1", season_id)
+    await conn.execute("DELETE FROM manager WHERE season_id = $1", season_id)
+    await conn.execute("DELETE FROM league WHERE season_id = $1", season_id)
+    await conn.execute("DELETE FROM player WHERE season_id = $1", season_id)
+    await conn.execute("DELETE FROM gameweek WHERE season_id = $1", season_id)
+    await conn.execute("DELETE FROM points_against_by_fixture WHERE season_id = $1", season_id)
+    await conn.execute("DELETE FROM points_against_collection_status WHERE season_id = $1", season_id)
     print("  \u2713 Cleared")
+
+
+# =============================================================================
+# MANAGER DATA SEEDING (for Head-to-Head comparison)
+# =============================================================================
+
+# Test league ID (same as frontend config)
+TEST_LEAGUE_ID = 242017
+
+# Actual managers from league 242017 (fetched from FPL API)
+# Format: (manager_id, team_name, first_name, last_name)
+TEST_MANAGERS = [
+    (1763747, "Not Last?", "Erick", "Venegas Quijada"),
+    (2724410, "Del río al mar", "Matt", "Miles"),
+    (2346868, "Fochez Athletic", "William", "Forrest"),
+    (10519805, "Soccerballers", "Kevin", "Jeffery"),
+    (91555, "FC Overthink", "Kari", "Vänttinen"),
+    (577243, "The Fogging Standard", "Adam", "Samuel"),
+    (3557067, "Carlos", "Carlos", "Bennetts"),
+    (1744062, "Bensby Babes", "Ben", "Johnson"),
+    (4300139, "Jerez H", "NiRo", "Roe"),
+    (1653529, "San Miguel Deportivo", "Christopher", "Bennetts"),
+]
+
+# Sample players (id, name, team_id, position 1=GK, 2=DEF, 3=MID, 4=FWD)
+SAMPLE_PLAYERS = [
+    # Goalkeepers
+    (1, "Raya", 1, 1), (2, "Alisson", 12, 1), (3, "Pickford", 8, 1),
+    # Defenders
+    (10, "Gabriel", 1, 2), (11, "Saliba", 1, 2), (12, "Alexander-Arnold", 12, 2),
+    (13, "Van Dijk", 12, 2), (14, "Trippier", 15, 2), (15, "Gvardiol", 13, 2),
+    (16, "Estupinan", 5, 2), (17, "Cucurella", 6, 2),
+    # Midfielders
+    (100, "Salah", 12, 3), (101, "Palmer", 6, 3), (102, "Saka", 1, 3),
+    (103, "Gordon", 15, 3), (104, "Son", 18, 3), (105, "Foden", 13, 3),
+    (106, "Bruno Fernandes", 14, 3), (107, "Eze", 7, 3), (108, "Mbeumo", 4, 3),
+    # Forwards
+    (200, "Haaland", 13, 4), (201, "Isak", 15, 4), (202, "Watkins", 2, 4),
+    (203, "Solanke", 18, 4), (204, "Cunha", 20, 4), (205, "Wood", 16, 4),
+]
+
+
+async def seed_gameweeks(conn: asyncpg.Connection, season_id: int, num_gw: int) -> None:
+    """Seed gameweek records."""
+    print(f"Seeding {num_gw} gameweeks...")
+    for gw in range(1, num_gw + 1):
+        await conn.execute("""
+            INSERT INTO gameweek (id, season_id, name, deadline_time, finished, is_current)
+            VALUES ($1, $2, $3, NOW() - INTERVAL '1 day' * $4, $5, $6)
+            ON CONFLICT (id, season_id) DO NOTHING
+        """, gw, season_id, f"Gameweek {gw}", (num_gw - gw) * 7, gw < num_gw, gw == num_gw)
+    print(f"  \u2713 Seeded {num_gw} gameweeks")
+
+
+async def seed_players(conn: asyncpg.Connection, season_id: int) -> None:
+    """Seed player data."""
+    print(f"Seeding {len(SAMPLE_PLAYERS)} players...")
+    for player_id, name, team_id, pos in SAMPLE_PLAYERS:
+        # now_cost in 0.1m units: 100 = £10.0m
+        base_cost = {1: 50, 2: 50, 3: 80, 4: 80}  # GK/DEF cheaper than MID/FWD
+        now_cost = base_cost.get(pos, 60) + (player_id % 50)
+        await conn.execute("""
+            INSERT INTO player (id, season_id, team_id, web_name, element_type, now_cost)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (id, season_id) DO NOTHING
+        """, player_id, season_id, team_id, name, pos, now_cost)
+    print(f"  \u2713 Seeded {len(SAMPLE_PLAYERS)} players")
+
+
+async def seed_league(conn: asyncpg.Connection, season_id: int) -> None:
+    """Seed league data."""
+    print(f"Seeding league {TEST_LEAGUE_ID}...")
+    await conn.execute("""
+        INSERT INTO league (id, season_id, name, league_type, scoring, start_event)
+        VALUES ($1, $2, 'Tapas & Tackles', 'x', 'c', 1)
+        ON CONFLICT (id, season_id) DO NOTHING
+    """, TEST_LEAGUE_ID, season_id)
+    print(f"  \u2713 Seeded league")
+
+
+async def seed_managers(conn: asyncpg.Connection, season_id: int) -> None:
+    """Seed managers and league membership."""
+    print(f"Seeding {len(TEST_MANAGERS)} managers...")
+    for idx, (manager_id, team_name, first, last) in enumerate(TEST_MANAGERS):
+        await conn.execute("""
+            INSERT INTO manager (id, season_id, player_first_name, player_last_name, name)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (id, season_id) DO NOTHING
+        """, manager_id, season_id, first, last, team_name)
+
+        # Add to league_manager (the join table)
+        await conn.execute("""
+            INSERT INTO league_manager (league_id, manager_id, season_id, rank, last_rank, total, event_total)
+            VALUES ($1, $2, $3, $4, $4, 0, 0)
+            ON CONFLICT (league_id, manager_id, season_id) DO NOTHING
+        """, TEST_LEAGUE_ID, manager_id, season_id, idx + 1)
+    print(f"  \u2713 Seeded {len(TEST_MANAGERS)} managers")
+
+
+async def seed_manager_snapshots(
+    conn: asyncpg.Connection, season_id: int, num_gw: int
+) -> None:
+    """Seed manager gameweek snapshots and picks."""
+    print(f"Seeding manager snapshots for {num_gw} gameweeks...")
+
+    # Player pool for picks
+    gk_ids = [p[0] for p in SAMPLE_PLAYERS if p[3] == 1]
+    def_ids = [p[0] for p in SAMPLE_PLAYERS if p[3] == 2]
+    mid_ids = [p[0] for p in SAMPLE_PLAYERS if p[3] == 3]
+    fwd_ids = [p[0] for p in SAMPLE_PLAYERS if p[3] == 4]
+
+    total_snapshots = 0
+    total_picks = 0
+
+    for manager_id, team_name, _, _ in TEST_MANAGERS:
+        cumulative_points = 0
+
+        for gw in range(1, num_gw + 1):
+            # Random GW points between 30 and 90
+            gw_points = random.randint(30, 90)
+            cumulative_points += gw_points
+            bench_points = random.randint(0, 15)
+
+            # Possible chip use
+            chip_used = None
+            if gw == 1 and random.random() < 0.1:
+                chip_used = "wildcard"
+
+            # Insert snapshot
+            row = await conn.fetchrow("""
+                INSERT INTO manager_gw_snapshot
+                    (manager_id, season_id, gameweek, points, total_points,
+                     points_on_bench, transfers_made, transfers_cost,
+                     bank, value, overall_rank, chip_used, formation)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                ON CONFLICT (manager_id, season_id, gameweek) DO UPDATE SET
+                    points = EXCLUDED.points,
+                    total_points = EXCLUDED.total_points
+                RETURNING id
+            """, manager_id, season_id, gw, gw_points, cumulative_points,
+                bench_points, random.randint(0, 2), -4 if random.random() < 0.15 else 0,
+                random.randint(0, 30), 1000, 100000 + random.randint(-50000, 50000),
+                chip_used, "3-4-3")
+
+            snapshot_id = row["id"]
+            total_snapshots += 1
+
+            # Create picks (2 GK, 5 DEF, 5 MID, 3 FWD)
+            picks = []
+            picks.extend(random.sample(gk_ids, min(2, len(gk_ids))))
+            picks.extend(random.sample(def_ids, min(5, len(def_ids))))
+            picks.extend(random.sample(mid_ids, min(5, len(mid_ids))))
+            picks.extend(random.sample(fwd_ids, min(3, len(fwd_ids))))
+
+            # Pick captain from starting XI (positions 1-11)
+            captain_idx = random.randint(0, 10)
+
+            for pos, player_id in enumerate(picks, start=1):
+                multiplier = 0 if pos > 11 else (2 if pos - 1 == captain_idx else 1)
+                is_captain = (pos - 1 == captain_idx)
+                points = random.randint(1, 15) * multiplier
+
+                await conn.execute("""
+                    INSERT INTO manager_pick
+                        (snapshot_id, player_id, position, multiplier, is_captain, points)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                """, snapshot_id, player_id, pos, multiplier, is_captain, points)
+                total_picks += 1
+
+    print(f"  \u2713 Seeded {total_snapshots} snapshots, {total_picks} picks")
 
 
 async def verify_data(conn: asyncpg.Connection, season_id: int) -> None:
@@ -285,13 +458,32 @@ async def main() -> None:
 
         if args.reset:
             await clear_all(conn, season_id)
+        else:
+            # Check if data already exists - skip seeding if so
+            existing = await conn.fetchval(
+                "SELECT COUNT(*) FROM manager WHERE season_id = $1", season_id
+            )
+            if existing and existing > 0:
+                print(f"✓ Data already exists ({existing} managers). Skipping seed.")
+                print("  Use --reset to clear and re-seed.")
+                return
 
         await seed_teams(conn, season_id)
         await seed_points_against(conn, season_id, args.gameweeks)
         await seed_collection_status(conn, season_id, args.gameweeks)
+
+        # Seed manager data for H2H comparison
+        await seed_gameweeks(conn, season_id, args.gameweeks)
+        await seed_players(conn, season_id)
+        await seed_league(conn, season_id)
+        await seed_managers(conn, season_id)
+        await seed_manager_snapshots(conn, season_id, args.gameweeks)
+
         await verify_data(conn, season_id)
 
         print("\n\u2713 Seeding complete! Ready for local development.")
+        print(f"  Test league ID: {TEST_LEAGUE_ID}")
+        print(f"  Test managers: {[m[0] for m in TEST_MANAGERS]}")
 
     finally:
         await conn.close()
