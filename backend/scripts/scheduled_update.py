@@ -167,9 +167,6 @@ async def sync_fixtures_from_api(
         logger.warning("No fixtures to sync")
         return 0
 
-    # Parse kickoff_time strings to datetime objects
-    from datetime import datetime
-
     def parse_kickoff(kickoff_str: str | None) -> datetime | None:
         if not kickoff_str:
             return None
@@ -186,7 +183,7 @@ async def sync_fixtures_from_api(
             kickoff_time, started, finished, finished_provisional, minutes, stats
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-        ON CONFLICT (id) DO UPDATE SET
+        ON CONFLICT (id, season_id) DO UPDATE SET
             gameweek = EXCLUDED.gameweek,
             team_h_score = EXCLUDED.team_h_score,
             team_a_score = EXCLUDED.team_a_score,
@@ -217,7 +214,7 @@ async def sync_fixtures_from_api(
                 f.get("finished", False),
                 f.get("finished_provisional", False),
                 f.get("minutes", 0),
-                f.get("stats", []),  # JSONB - asyncpg handles list->JSON
+                f.get("stats") or [],  # JSONB - asyncpg handles list->JSON
             )
             for f in fixtures
         ],
@@ -232,9 +229,8 @@ async def verify_fixtures_data(
     """Verify fixture data was synced correctly.
 
     Checks:
-    1. Fixture count matches expected (within tolerance)
-    2. Fixtures have valid team references
-    3. FDR values are present (1-5 range)
+    1. Fixture count matches expected (within 95% tolerance)
+    2. At least some fixtures have FDR values populated
 
     Returns:
         True if verification passes, False otherwise

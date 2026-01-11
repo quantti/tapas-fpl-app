@@ -186,8 +186,9 @@ CREATE INDEX idx_gameweek_current ON gameweek(season_id, is_current) WHERE is_cu
 -- ============================================================================
 
 -- Fixtures (from /fixtures endpoint)
+-- Uses composite PK (id, season_id) because FPL reuses fixture IDs across seasons
 CREATE TABLE fixture (
-    id INTEGER PRIMARY KEY,                -- FPL fixture ID
+    id INTEGER NOT NULL,                   -- FPL fixture ID
     season_id INTEGER NOT NULL REFERENCES season(id),
     gameweek INTEGER,                      -- Can be NULL if postponed
     code INTEGER NOT NULL,                 -- FPL fixture code
@@ -211,9 +212,11 @@ CREATE TABLE fixture (
     -- Raw stats (JSONB for flexibility)
     stats JSONB DEFAULT '[]',
     -- Metadata
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (id, season_id)
 );
 
+CREATE INDEX idx_fixture_season ON fixture(season_id);
 CREATE INDEX idx_fixture_gameweek ON fixture(season_id, gameweek);
 CREATE INDEX idx_fixture_teams ON fixture(team_h, team_a);
 CREATE INDEX idx_fixture_kickoff ON fixture(kickoff_time);
