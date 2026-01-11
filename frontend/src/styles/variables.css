@@ -36,6 +36,12 @@
   --color-info: #1d4ed8; /* blue-700: 6.07:1 */
   --color-gold: #d4a400; /* gold: 4.55:1 - adjusted for WCAG AA */
 
+  /* FPL-specific colors - decorative elements, not for text contrast */
+  --color-card-yellow: #facc15; /* yellow-400: referee yellow card */
+  --color-card-red: #ef4444; /* red-500: referee red card */
+  --color-bonus-gold: #ffd700; /* FPL bonus points gold */
+  --color-defcon: #14b8a6; /* teal-500: defensive contribution */
+
   /* Spacing */
   --space-2: 2px;
   --space-4: 4px;

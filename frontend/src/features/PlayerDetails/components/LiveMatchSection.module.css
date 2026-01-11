@@ -1,40 +1,6 @@
 /* Live Match Section - shows live stats during and after a match */
 
-.liveSection {
-  padding: 0.75rem;
-  margin: 0.75rem 0;
-  background: color-mix(in srgb, var(--color-success) 8%, var(--color-surface));
-  border-left: 3px solid var(--color-success);
-  border-radius: 0 8px 8px 0;
-}
-
-/* Header: Status badge + minutes + points */
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-
-.statusGroup {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.liveBadge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 6px;
-  background: var(--color-success);
-  color: white;
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  border-radius: 4px;
-  animation: pulse 2s infinite;
-}
-
+/* @keyframes must be at top level */
 @keyframes pulse {
   0%,
   100% {
@@ -45,177 +11,211 @@
   }
 }
 
-.ftBadge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 6px;
-  background: var(--color-border);
-  color: var(--color-text);
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  border-radius: 4px;
-}
+.LiveMatchSection {
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+  background: color-mix(in srgb, var(--color-success) 8%, var(--color-surface));
+  border-left: 3px solid var(--color-success);
+  border-radius: 0 8px 8px 0;
 
-.minutes {
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
-}
+  /* Header: Status badge + minutes + points */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
 
-.points {
-  font-size: 1rem;
-  color: var(--color-text-muted);
-}
+  .statusGroup {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 
-.points strong {
-  font-size: 1.25rem;
-  color: var(--color-text);
-}
+  .liveBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    background: var(--color-success);
+    color: white;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    border-radius: 4px;
+    animation: pulse 2s infinite;
+  }
 
-/* Stats row: Events + BPS + Bonus + DefCon */
-.statsRow {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
+  .ftBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    background: var(--color-border);
+    color: var(--color-text);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    border-radius: 4px;
+  }
 
-.events {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
+  .minutes {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
 
-.event {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
+  .points {
+    font-size: 1rem;
+    color: var(--color-text-muted);
 
-.eventIcon {
-  font-size: 1rem;
-}
+    strong {
+      font-size: 1.25rem;
+      color: var(--color-text);
+    }
+  }
 
-.assistIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--color-text);
-  background: var(--color-surface-elevated);
-  border-radius: 50%;
-}
+  /* Stats row: Events + BPS + Bonus + DefCon */
+  .statsRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
 
-.eventCount {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-}
+  .events {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 
-/* Card icons */
-.yellowCard,
-.redCard {
-  display: inline-block;
-  width: 10px;
-  height: 14px;
-  border-radius: 2px;
-}
+  .event {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
 
-.yellowCard {
-  background: #facc15;
-}
+  .eventIcon {
+    font-size: 1rem;
+  }
 
-.redCard {
-  background: #ef4444;
-}
+  .assistIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-text);
+    background: var(--color-surface-elevated);
+    border-radius: 50%;
+  }
 
-/* Bonus badge */
-.bonusBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  background: #ffd700;
-  border-radius: 12px;
-}
+  .eventCount {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text);
+  }
 
-.bonusBadge.provisional {
-  background: color-mix(in srgb, #ffd700 70%, transparent);
-  border: 1px dashed #ffd700;
-}
+  /* Card icons */
+  .yellowCard,
+  .redCard {
+    display: inline-block;
+    width: 10px;
+    height: 14px;
+    border-radius: 2px;
+  }
 
-/* DefCon badge */
-.defconBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 8px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #14b8a6;
-  background: color-mix(in srgb, #14b8a6 15%, var(--color-surface));
-  border: 1px solid color-mix(in srgb, #14b8a6 30%, transparent);
-  border-radius: 4px;
-}
+  .yellowCard {
+    background: var(--color-card-yellow);
+  }
 
-/* Point breakdown */
-.breakdown {
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
-}
+  .redCard {
+    background: var(--color-card-red);
+  }
 
-.expandButton {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0;
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: color 0.15s;
-}
+  /* Bonus badge */
+  .bonusBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    background: var(--color-bonus-gold);
+    border-radius: 50%;
 
-.expandButton:hover {
-  color: var(--color-text);
-}
+    &.provisional {
+      background: color-mix(in srgb, var(--color-bonus-gold) 70%, transparent);
+      border: 1px dashed var(--color-bonus-gold);
+    }
+  }
 
-.breakdownList {
-  margin: 0.5rem 0 0;
-  padding: 0;
-  list-style: none;
-}
+  /* DefCon badge */
+  .defconBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-defcon);
+    background: color-mix(in srgb, var(--color-defcon) 15%, var(--color-surface));
+    border: 1px solid color-mix(in srgb, var(--color-defcon) 30%, transparent);
+    border-radius: 4px;
+  }
 
-.breakdownItem {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.25rem 0;
-  font-size: 0.75rem;
-}
+  /* Point breakdown */
+  .breakdown {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+  }
 
-.breakdownName {
-  color: var(--color-text-muted);
-  text-transform: capitalize;
-}
+  .expandButton {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.15s;
 
-.breakdownValue {
-  color: var(--color-text);
-}
+    &:hover {
+      color: var(--color-text);
+    }
+  }
 
-.positive {
-  color: var(--color-success);
-}
+  .breakdownList {
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
 
-.negative {
-  color: var(--color-danger);
+  .breakdownItem {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    font-size: 0.75rem;
+  }
+
+  .breakdownName {
+    color: var(--color-text-muted);
+    text-transform: capitalize;
+  }
+
+  .breakdownValue {
+    color: var(--color-text);
+  }
+
+  .positive {
+    color: var(--color-success);
+  }
+
+  .negative {
+    color: var(--color-danger);
+  }
 }

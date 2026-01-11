@@ -167,4 +167,4 @@ Returns `null` when `stats.isLive` is false.
    - Fix: Memoized with `useMemo`
 
 4. **pitch.svg returning SPA page**: Vercel rewrite rule caught all paths including static files
-   - Fix: Changed pattern from `/((?!api/|@|src/|node_modules/).+)` to `/:path([^.]+)` which only matches paths without dots
+   - Fix: Changed pattern to `/((?!api/|@|src/|node_modules/)[^.]*)` which excludes Vite dev paths AND paths with dots (file extensions)

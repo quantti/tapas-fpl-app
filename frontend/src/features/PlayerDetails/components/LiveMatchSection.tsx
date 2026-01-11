@@ -82,7 +82,7 @@ export function LiveMatchSection({ stats }: Props) {
   const meaningfulStats = explain.filter((s) => s.points !== 0);
 
   return (
-    <section className={styles.liveSection} data-testid="live-match-section">
+    <section className={styles.LiveMatchSection} data-testid="live-match-section">
       {/* Header row: Status badge + minutes + points */}
       <div className={styles.header}>
         <div className={styles.statusGroup}>

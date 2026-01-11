@@ -15,7 +15,7 @@ export const expandButton: string;
 export const ftBadge: string;
 export const header: string;
 export const liveBadge: string;
-export const liveSection: string;
+export const LiveMatchSection: string;
 export const minutes: string;
 export const negative: string;
 export const points: string;
