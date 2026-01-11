@@ -571,3 +571,32 @@ def calculate_recovery_rate(history: list[ManagerHistoryRow]) -> float:
         return 0.0
 
     return sum(recovery_points) / len(recovery_points)
+
+
+# =============================================================================
+# Tier 3: xG-Based Metrics (TDD stubs - not yet implemented)
+# =============================================================================
+
+
+def calculate_luck_index(picks: list[dict]) -> float | None:
+    """Calculate luck index: sum of (actual - expected) across all picks.
+
+    TODO: Implement in TDD green phase.
+    """
+    raise NotImplementedError("TDD stub - implement in green phase")
+
+
+def calculate_captain_xp_delta(picks: list[dict]) -> float | None:
+    """Calculate captain performance vs expectation.
+
+    TODO: Implement in TDD green phase.
+    """
+    raise NotImplementedError("TDD stub - implement in green phase")
+
+
+def calculate_squad_xp(picks: list[dict]) -> float | None:
+    """Calculate squad expected performance (xGI sum).
+
+    TODO: Implement in TDD green phase.
+    """
+    raise NotImplementedError("TDD stub - implement in green phase")
