@@ -1,3 +1,11 @@
+## [0.27.2](https://github.com/quantti/tapas-fpl-app/compare/v0.27.1...v0.27.2) (2026-01-11)
+
+
+### Bug Fixes
+
+* **backend:** convert all Decimal fields to float in xG calculations ([110d2d0](https://github.com/quantti/tapas-fpl-app/commit/110d2d077a52bd7399b83dd121019b50a55e17e5))
+* **backend:** handle None values in total_points field ([e1659d7](https://github.com/quantti/tapas-fpl-app/commit/e1659d7029545dd957fb9608be272db17bd5207a))
+
 ## [0.27.1](https://github.com/quantti/tapas-fpl-app/compare/v0.27.0...v0.27.1) (2026-01-11)
 
 
