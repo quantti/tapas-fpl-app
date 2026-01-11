@@ -16,7 +16,7 @@
     "setup-hooks": "sh scripts/setup-hooks.sh",
     "release-note": "node scripts/add-release-note.js",
     "preview": "vite preview",
-    "css:types": "tcm src --namedExports && node scripts/fix-css-types.cjs src && biome format --write src",
+    "css:types": "tcm src --namedExports && node scripts/fix-css-types.cjs src",
     "css:types:watch": "tcm src --namedExports --watch",
     "test": "vitest",
     "test:run": "vitest run",
