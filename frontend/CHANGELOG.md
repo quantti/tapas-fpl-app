@@ -1,3 +1,10 @@
+## [0.27.1](https://github.com/quantti/tapas-fpl-app/compare/v0.27.0...v0.27.1) (2026-01-11)
+
+
+### Bug Fixes
+
+* **backend:** convert Decimal to float in xG calculations ([d58b6c2](https://github.com/quantti/tapas-fpl-app/commit/d58b6c2351d2f61c3b0d6c22d3f7ab436eb4ef06))
+
 # [0.27.0](https://github.com/quantti/tapas-fpl-app/compare/v0.26.1...v0.27.0) (2026-01-11)
 
 
