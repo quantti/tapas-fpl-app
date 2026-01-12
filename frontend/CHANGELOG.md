@@ -1,3 +1,10 @@
+## [0.31.2](https://github.com/quantti/tapas-fpl-app/compare/v0.31.1...v0.31.2) (2026-01-12)
+
+
+### Bug Fixes
+
+* **backend:** run DB queries sequentially to avoid asyncpg error ([257e317](https://github.com/quantti/tapas-fpl-app/commit/257e317d1b6ea2d55d316d93ee6dbef37f26aad9))
+
 ## [0.31.1](https://github.com/quantti/tapas-fpl-app/compare/v0.31.0...v0.31.1) (2026-01-12)
 
 
