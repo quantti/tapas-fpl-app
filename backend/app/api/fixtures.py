@@ -1,5 +1,6 @@
 """Fixtures API routes - Match fixtures and results."""
 
+import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
@@ -65,17 +66,15 @@ class FixtureDetailResponse(BaseModel):
 # =============================================================================
 
 
-@router.get("", response_model=FixturesResponse)
-async def get_fixtures(
-    _: None = Depends(require_db),
-    season_id: int = Query(default=1, ge=1, description="Season ID"),
-    gameweek: int | None = Query(default=None, ge=1, le=38, description="Filter by gameweek"),
-    team_id: int | None = Query(default=None, ge=1, description="Filter by team (home or away)"),
-    finished: bool | None = Query(default=None, description="Filter by finished status"),
-    limit: int = Query(default=50, ge=1, le=200, description="Max fixtures to return"),
-    offset: int = Query(default=0, ge=0, description="Offset for pagination"),
+async def _fetch_fixtures(
+    season_id: int,
+    gameweek: int | None = None,
+    team_id: int | None = None,
+    finished: bool | None = None,
+    limit: int = 50,
+    offset: int = 0,
 ) -> FixturesResponse:
-    """Get fixtures with optional filters."""
+    """Core fixture fetching logic - can be called directly."""
     pool = get_pool()
     async with pool.acquire() as conn:
         # Build query with filters
@@ -151,6 +150,27 @@ async def get_fixtures(
         return FixturesResponse(season_id=season_id, fixtures=fixtures, total=total)
 
 
+@router.get("", response_model=FixturesResponse)
+async def get_fixtures(
+    _: None = Depends(require_db),
+    season_id: int = Query(default=1, ge=1, description="Season ID"),
+    gameweek: int | None = Query(default=None, ge=1, le=38, description="Filter by gameweek"),
+    team_id: int | None = Query(default=None, ge=1, description="Filter by team (home or away)"),
+    finished: bool | None = Query(default=None, description="Filter by finished status"),
+    limit: int = Query(default=50, ge=1, le=200, description="Max fixtures to return"),
+    offset: int = Query(default=0, ge=0, description="Offset for pagination"),
+) -> FixturesResponse:
+    """Get fixtures with optional filters."""
+    return await _fetch_fixtures(
+        season_id=season_id,
+        gameweek=gameweek,
+        team_id=team_id,
+        finished=finished,
+        limit=limit,
+        offset=offset,
+    )
+
+
 @router.get("/gameweek/{gameweek}", response_model=FixturesResponse)
 async def get_fixtures_by_gameweek(
     _: None = Depends(require_db),
@@ -158,7 +178,7 @@ async def get_fixtures_by_gameweek(
     season_id: int = Query(default=1, ge=1, description="Season ID"),
 ) -> FixturesResponse:
     """Get all fixtures for a specific gameweek."""
-    return await get_fixtures(season_id=season_id, gameweek=gameweek, limit=20)
+    return await _fetch_fixtures(season_id=season_id, gameweek=gameweek, limit=20)
 
 
 @router.get("/team/{team_id}", response_model=FixturesResponse)
@@ -169,7 +189,7 @@ async def get_fixtures_by_team(
     finished: bool | None = Query(default=None, description="Filter by finished status"),
 ) -> FixturesResponse:
     """Get all fixtures for a specific team."""
-    return await get_fixtures(
+    return await _fetch_fixtures(
         season_id=season_id, team_id=team_id, finished=finished, limit=50
     )
 
@@ -224,4 +244,13 @@ async def get_fixture(
             minutes=row["minutes"],
         )
 
-        return FixtureDetailResponse(fixture=fixture, stats=row["stats"])
+        # Handle stats - asyncpg may return as string or parsed JSONB
+        stats = row["stats"]
+        if isinstance(stats, str):
+            try:
+                stats = json.loads(stats)
+            except json.JSONDecodeError:
+                logger.warning(f"Malformed stats JSON for fixture {fixture_id}")
+                stats = None
+
+        return FixtureDetailResponse(fixture=fixture, stats=stats)
