@@ -1,13 +1,13 @@
 """API route definitions - Analytics endpoints."""
 
 import logging
-import time
-from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
+from cachetools import TTLCache
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from app.db import get_connection
 from app.dependencies import require_db
 from app.services.chips import ChipsService
 from app.services.fpl_client import FplApiClient
@@ -17,22 +17,23 @@ from app.services.recommendations import RecommendationsService
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Simple in-memory cache for points-against data (static within a gameweek)
-CACHE_TTL_SECONDS = 600  # 10 minutes
+# Cache configuration
+CACHE_TTL_SECONDS = 600  # 10 minutes for static API data
+RECOMMENDATIONS_CACHE_TTL_SECONDS = 300  # 5 minutes (shorter since ownership changes)
+CACHE_MAX_SIZE = 100  # Maximum entries per cache
+
+# Thread-safe TTL caches with bounded size
+# Using separate caches for different TTL requirements
+_api_cache: TTLCache[str, Any] = TTLCache(maxsize=CACHE_MAX_SIZE, ttl=CACHE_TTL_SECONDS)
+_recommendations_cache: TTLCache[str, Any] = TTLCache(
+    maxsize=CACHE_MAX_SIZE, ttl=RECOMMENDATIONS_CACHE_TTL_SECONDS
+)
 
 
-@dataclass
-class CacheEntry:
-    """Cache entry with TTL."""
-
-    data: Any
-    expires_at: float = field(default_factory=lambda: time.monotonic())
-
-    def is_valid(self) -> bool:
-        return time.monotonic() < self.expires_at
-
-
-_cache: dict[str, CacheEntry] = {}
+def clear_cache() -> None:
+    """Clear all caches. Used by tests to ensure isolation."""
+    _api_cache.clear()
+    _recommendations_cache.clear()
 
 
 # =============================================================================
@@ -97,9 +98,10 @@ async def get_points_against(
 
     # Check cache first
     cache_key = f"points_against_{season_id}"
-    if cache_key in _cache and _cache[cache_key].is_valid():
-        logger.debug(f"Cache hit for {cache_key}")
-        return _cache[cache_key].data
+    cached = _api_cache.get(cache_key)
+    if cached is not None:
+        logger.debug("Cache hit for %s", cache_key)
+        return cached
 
     try:
         service = PointsAgainstService()
@@ -123,13 +125,11 @@ async def get_points_against(
         }
 
         # Cache the result
-        _cache[cache_key] = CacheEntry(
-            data=result, expires_at=time.monotonic() + CACHE_TTL_SECONDS
-        )
+        _api_cache[cache_key] = result
 
         return result
     except Exception as e:
-        logger.exception(f"Failed to get points against: {e}")
+        logger.exception("Failed to get points against")
         raise HTTPException(
             status_code=500, detail="Internal server error while fetching points against data"
         ) from e
@@ -155,9 +155,10 @@ async def get_team_points_against_history(
 
     # Check cache first
     cache_key = f"team_history_{team_id}_{season_id}"
-    if cache_key in _cache and _cache[cache_key].is_valid():
-        logger.debug(f"Cache hit for {cache_key}")
-        return _cache[cache_key].data
+    cached = _api_cache.get(cache_key)
+    if cached is not None:
+        logger.debug("Cache hit for %s", cache_key)
+        return cached
 
     try:
         service = PointsAgainstService()
@@ -181,13 +182,11 @@ async def get_team_points_against_history(
         }
 
         # Cache the result
-        _cache[cache_key] = CacheEntry(
-            data=result, expires_at=time.monotonic() + CACHE_TTL_SECONDS
-        )
+        _api_cache[cache_key] = result
 
         return result
     except Exception as e:
-        logger.exception(f"Failed to get team history: {e}")
+        logger.exception("Failed to get team history")
         raise HTTPException(
             status_code=500, detail="Internal server error while fetching team history"
         ) from e
@@ -230,7 +229,7 @@ async def get_points_against_status(_: None = Depends(require_db)) -> dict:
             "error_message": status.error_message,
         }
     except Exception as e:
-        logger.exception(f"Failed to get collection status: {e}")
+        logger.exception("Failed to get collection status: %s", e)
         raise HTTPException(
             status_code=500, detail="Internal server error while fetching collection status"
         ) from e
@@ -332,7 +331,7 @@ async def get_league_chips(
     except HTTPException:
         raise  # Re-raise HTTPExceptions (from FPL error handling above)
     except Exception as e:
-        logger.exception(f"Failed to get league chips: {e}")
+        logger.exception("Failed to get league chips: %s", e)
         raise HTTPException(
             status_code=500, detail="Internal server error while fetching league chips"
         ) from e
@@ -458,7 +457,6 @@ async def get_league_recommendations(
     season_id: int = Query(
         default=1, ge=1, le=100, description="Season ID (default: 1 for 2024-25)"
     ),
-    _: None = Depends(require_db),
 ) -> dict[str, Any]:
     """
     Get player recommendations for a league.
@@ -469,25 +467,56 @@ async def get_league_recommendations(
     - **time_to_sell**: Owned players with declining metrics
 
     Scores are based on per-90 xG/xA/xGC stats, form, and fixture difficulty.
+    Results are cached for 5 minutes to improve response times.
     """
     # Validate league_id (must be positive)
     if league_id < 1:
         raise HTTPException(status_code=422, detail="league_id must be >= 1")
 
-    try:
-        async with FplApiClient() as fpl_client:
-            service = RecommendationsService(fpl_client)
-            recommendations = await service.get_league_recommendations(
-                league_id, limit=limit, season_id=season_id
-            )
+    # Check cache first
+    cache_key = f"recommendations_{league_id}_{season_id}_{limit}"
+    cached = _recommendations_cache.get(cache_key)
+    if cached is not None:
+        logger.debug("Cache hit for %s", cache_key)
+        return cached
 
-        return {
+    try:
+        # Try to get DB connection, but fall back to API-only if unavailable
+        conn = None
+        try:
+            from app.db import get_pool
+
+            get_pool()  # Check if pool is initialized
+            conn_context = get_connection()
+        except RuntimeError:
+            # Pool not initialized - will use API fallback
+            conn_context = None
+
+        async with FplApiClient() as fpl_client:
+            if conn_context is not None:
+                async with conn_context as conn:
+                    service = RecommendationsService(fpl_client)
+                    recommendations = await service.get_league_recommendations(
+                        league_id, limit=limit, season_id=season_id, conn=conn
+                    )
+            else:
+                service = RecommendationsService(fpl_client)
+                recommendations = await service.get_league_recommendations(
+                    league_id, limit=limit, season_id=season_id, conn=None
+                )
+
+        result = {
             "league_id": league_id,
             "season_id": season_id,
             "punts": [_format_recommendation_player(p) for p in recommendations["punts"]],
             "defensive": [_format_recommendation_player(p) for p in recommendations["defensive"]],
             "time_to_sell": [_format_sell_player(p) for p in recommendations["time_to_sell"]],
         }
+
+        # Cache the result
+        _recommendations_cache[cache_key] = result
+
+        return result
 
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 429:

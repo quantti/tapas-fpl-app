@@ -11,6 +11,7 @@ Updates:
 3. Fixtures - Match schedule, FDR ratings, scores (~2 sec)
 4. Chips Usage - Manager chip activations for tracked league (~30 sec)
 5. Manager Snapshots - GW-by-GW picks and stats for H2H comparison (~15 sec)
+6. League Ownership - Per-player ownership stats from manager picks (~2 sec)
 
 Usage:
     python -m scripts.scheduled_update                 # Run scheduled update
@@ -55,6 +56,10 @@ from scripts.collect_points_against import (
 )
 from scripts.collect_points_against import (
     show_status as show_pa_status,
+)
+from scripts.compute_league_ownership import (
+    compute_league_ownership,
+    verify_league_ownership_data,
 )
 
 # Load environment
@@ -985,7 +990,28 @@ async def run_scheduled_update(dry_run: bool = False) -> None:
                         f"Manager Snapshots verification failed for GW{latest_finalized}"
                     )
 
-                # 13. All verified - mark gameweek as processed
+                # 13. Compute League Ownership for the processed gameweek
+                logger.info(f"Computing league ownership for GW{latest_finalized}...")
+                ownership_records, ownership_managers = await compute_league_ownership(
+                    conn, LEAGUE_ID, season_id, latest_finalized
+                )
+                logger.info(
+                    f"League ownership computed: {ownership_records} player records"
+                )
+
+                # 14. Verify League Ownership data
+                if not await verify_league_ownership_data(
+                    conn,
+                    LEAGUE_ID,
+                    season_id,
+                    latest_finalized,
+                    expected_members=ownership_managers,
+                ):
+                    raise RuntimeError(
+                        f"League ownership verification failed for GW{latest_finalized}"
+                    )
+
+                # 15. All verified - mark gameweek as processed
                 await update_collection_status(conn, season_id, latest_finalized)
                 logger.info(f"Scheduled update complete for GW{latest_finalized}")
             finally:

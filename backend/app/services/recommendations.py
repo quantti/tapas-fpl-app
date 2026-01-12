@@ -16,7 +16,13 @@ import asyncio
 import logging
 from collections import Counter
 from decimal import Decimal
-from typing import Any, Protocol, TypedDict
+from typing import TYPE_CHECKING, Any, Protocol, TypedDict
+
+import asyncpg
+import httpx
+
+if TYPE_CHECKING:
+    from asyncpg import Connection
 
 logger = logging.getLogger(__name__)
 
@@ -831,6 +837,7 @@ class RecommendationsService:
         league_id: int,
         limit: int = 10,
         season_id: int = 1,
+        conn: "Connection | None" = None,
     ) -> dict[str, Any]:
         """Get player recommendations for a league.
 
@@ -838,19 +845,15 @@ class RecommendationsService:
             league_id: FPL league ID
             limit: Maximum number of players per category
             season_id: Season ID for filtering (default 1 for 2024-25)
+            conn: Optional database connection for DB-first ownership lookup
 
         Returns:
             Dict with punts, defensive, and time_to_sell lists
         """
-        # Note: season_id is currently unused as FPL API data is season-implicit
-        # Will be used when querying from database for historical data
-        _ = season_id  # Mark as intentionally unused for now
-
-        # 1. Fetch all external data in parallel (independent API calls)
-        bootstrap, fixtures, league_ownership = await asyncio.gather(
+        # 1. Fetch bootstrap and fixtures in parallel
+        bootstrap, fixtures = await asyncio.gather(
             self.fpl_client.get_bootstrap_static(),
             self.fpl_client.get_fixtures(),
-            self._fetch_league_ownership(league_id),
         )
         elements = bootstrap.get("elements", [])
 
@@ -861,30 +864,46 @@ class RecommendationsService:
                 current_gameweek = event.get("id", 1)
                 break
 
-        # 2. Filter for eligible players
+        # 2. Fetch ownership (DB-first if connection provided, else API)
+        if conn is not None:
+            league_ownership = await self._get_ownership_data(
+                conn=conn,
+                league_id=league_id,
+                season_id=season_id,
+                gameweek=current_gameweek,
+            )
+        else:
+            league_ownership = await self._fetch_league_ownership(league_id)
+            # Normalize structure to match _get_ownership_data return
+            league_ownership["manager_count"] = len(
+                league_ownership.get("manager_ids", [])
+            )
+            league_ownership["source"] = "api"
+
+        # 3. Filter for eligible players
         eligible_players = [p for p in elements if is_eligible_player(p)]
 
         if not eligible_players:
             return {"punts": [], "defensive": [], "time_to_sell": []}
 
-        # 3. Calculate per-90 stats for all eligible players
+        # 4. Calculate per-90 stats for all eligible players
         players_with_stats = self._calculate_per90_stats(eligible_players)
 
-        # 4. Calculate percentiles across all eligible players
+        # 5. Calculate percentiles across all eligible players
         players_with_percentiles = self._calculate_percentiles(players_with_stats)
 
-        # 5. Calculate fixture difficulty scores
+        # 6. Calculate fixture difficulty scores
         fixture_scores = calculate_fixture_scores(fixtures, current_gameweek)
 
-        # 6. Calculate league ownership stats
-        num_managers = len(league_ownership.get("manager_ids", []))
+        # 7. Get manager count for ownership percentage calculation
+        num_managers = league_ownership.get("manager_count", 0)
 
-        # 7. Apply ownership and calculate scores
+        # 8. Apply ownership and calculate scores
         scored_players = self._calculate_scores(
             players_with_percentiles, league_ownership, num_managers, fixture_scores
         )
 
-        # 8. Filter and sort into categories
+        # 9. Filter and sort into categories
         punts_candidates = filter_for_punts(scored_players)
         defensive_candidates = filter_for_defensive(scored_players)
         sell_candidates = filter_for_sell(scored_players)
@@ -984,8 +1003,6 @@ class RecommendationsService:
 
         # Limit managers to fetch
         managers_to_fetch = manager_ids[:MAX_MANAGERS_TO_FETCH]
-        failed_count = 0
-
         # Fetch picks in parallel with controlled concurrency
         semaphore = asyncio.Semaphore(MAX_CONCURRENT_MANAGER_REQUESTS)
 
@@ -993,27 +1010,30 @@ class RecommendationsService:
             manager_id: int,
         ) -> tuple[list[dict[str, Any]], bool]:
             """Returns (picks, success) tuple."""
-            nonlocal failed_count
             async with semaphore:
                 try:
                     picks_data = await self.fpl_client.get_manager_picks(manager_id)
                     return (picks_data.get("picks", []), True)
-                except Exception as e:
+                except (httpx.HTTPError, asyncio.TimeoutError) as e:
+                    # Expected network errors - log and continue
                     logger.warning(
-                        f"Failed to fetch picks for manager {manager_id}: "
-                        f"{type(e).__name__}: {e}"
+                        f"Failed to fetch picks for manager {manager_id} "
+                        f"(league {league_id}): {type(e).__name__}: {e}"
                     )
-                    failed_count += 1
                     return ([], False)
+                # Let unexpected errors (MemoryError, etc.) propagate
 
         # Gather all manager picks in parallel
         results = await asyncio.gather(
             *[fetch_manager_picks(m) for m in managers_to_fetch]
         )
 
+        # Count failures after gather (avoids race condition with nonlocal)
+        failed_count = sum(1 for _, success in results if not success)
+
         # Count player ownership using Counter
         player_counts: Counter[int] = Counter()
-        for picks, _success in results:
+        for picks, success in results:
             for pick in picks:
                 player_id = pick.get("element")
                 if player_id:
@@ -1030,6 +1050,164 @@ class RecommendationsService:
             "manager_ids": manager_ids,
             "player_counts": player_counts,
             "failed_count": failed_count,
+        }
+
+    async def _get_league_ownership_from_db(
+        self,
+        conn: "Connection",
+        league_id: int,
+        season_id: int,
+        gameweek: int,
+    ) -> Counter[int] | None:
+        """Get ownership counts from pre-computed league_ownership table.
+
+        Args:
+            conn: Database connection
+            league_id: League ID
+            season_id: Season ID
+            gameweek: Gameweek to query
+
+        Returns:
+            Counter mapping player_id to ownership_count, or None on DB error
+        """
+        try:
+            rows = await conn.fetch(
+                """
+                SELECT player_id, ownership_count
+                FROM league_ownership
+                WHERE league_id = $1 AND season_id = $2 AND gameweek = $3
+                """,
+                league_id,
+                season_id,
+                gameweek,
+            )
+        except (asyncpg.PostgresError, asyncpg.InterfaceError) as e:
+            logger.error(
+                f"Database error querying league_ownership for league_id={league_id}, "
+                f"season_id={season_id}, gameweek={gameweek}: {type(e).__name__}: {e}"
+            )
+            return None
+
+        if not rows:
+            logger.debug(
+                f"No ownership records found in DB for league_id={league_id}, "
+                f"season_id={season_id}, gameweek={gameweek}"
+            )
+            return Counter()
+
+        return Counter({row["player_id"]: row["ownership_count"] for row in rows})
+
+    async def _fallback_to_api_ownership(self, league_id: int) -> dict[str, Any]:
+        """Fetch ownership from API and normalize the response structure.
+
+        Helper method to avoid repeating the API fallback logic.
+
+        Returns:
+            Dict with player_counts, manager_ids, manager_count, failed_count, source.
+            On API error, returns empty structure with source="api_error".
+        """
+        try:
+            api_result = await self._fetch_league_ownership(league_id)
+            api_result["manager_count"] = len(api_result.get("manager_ids", []))
+            api_result["source"] = "api"
+            return api_result
+        except (httpx.HTTPError, asyncio.TimeoutError) as e:
+            logger.warning(
+                f"API fallback failed for league {league_id}: {type(e).__name__}: {e}"
+            )
+            return {
+                "player_counts": Counter(),
+                "manager_ids": [],
+                "manager_count": 0,
+                "failed_count": 0,
+                "source": "api_error",
+            }
+
+    async def _get_ownership_data(
+        self,
+        conn: "Connection",
+        league_id: int,
+        season_id: int,
+        gameweek: int,
+    ) -> dict[str, Any]:
+        """Get ownership data, preferring DB with API fallback.
+
+        Attempts to use pre-computed ownership from DB. Falls back to live API
+        if DB query fails or returns no data.
+
+        Args:
+            conn: Database connection
+            league_id: League ID
+            season_id: Season ID
+            gameweek: Gameweek to query
+
+        Returns:
+            Dict with player_counts (Counter), manager_ids (list), manager_count (int),
+            failed_count (int), and source ("db" or "api")
+        """
+        # Try DB first (fast path)
+        player_counts = await self._get_league_ownership_from_db(
+            conn=conn,
+            league_id=league_id,
+            season_id=season_id,
+            gameweek=gameweek,
+        )
+
+        # Handle DB lookup result
+        if player_counts is None:
+            # DB error occurred - already logged in _get_league_ownership_from_db
+            logger.warning(
+                f"DB error for league {league_id} GW{gameweek}, falling back to API"
+            )
+            return await self._fallback_to_api_ownership(league_id)
+
+        if not player_counts:
+            # Empty result - no pre-computed data for this league/gameweek
+            logger.warning(
+                f"No pre-computed ownership for league {league_id} GW{gameweek}, "
+                "falling back to API"
+            )
+            return await self._fallback_to_api_ownership(league_id)
+
+        # DB path: get manager count from manager_gw_snapshot (the source of truth)
+        try:
+            manager_count = await conn.fetchval(
+                """
+                SELECT COUNT(DISTINCT mgs.manager_id)
+                FROM manager_gw_snapshot mgs
+                JOIN league_manager lm ON mgs.manager_id = lm.manager_id
+                    AND mgs.season_id = lm.season_id
+                WHERE lm.league_id = $1 AND mgs.season_id = $2 AND mgs.gameweek = $3
+                """,
+                league_id,
+                season_id,
+                gameweek,
+            )
+        except (asyncpg.PostgresError, asyncpg.InterfaceError) as e:
+            logger.warning(
+                f"Failed to get manager count from DB for league {league_id}: "
+                f"{type(e).__name__}: {e}. Falling back to API."
+            )
+            return await self._fallback_to_api_ownership(league_id)
+
+        if manager_count is None or manager_count == 0:
+            logger.warning(
+                f"manager_count is NULL or 0 for league_id={league_id}, "
+                f"season_id={season_id}, gameweek={gameweek} - falling back to API"
+            )
+            return await self._fallback_to_api_ownership(league_id)
+
+        logger.debug(
+            f"Using DB ownership for league {league_id} GW{gameweek}: "
+            f"{len(player_counts)} players, {manager_count} managers"
+        )
+
+        return {
+            "player_counts": player_counts,
+            "manager_ids": [],  # Not available from DB, but consistent structure
+            "manager_count": manager_count,
+            "failed_count": 0,
+            "source": "db",
         }
 
     def _calculate_scores(

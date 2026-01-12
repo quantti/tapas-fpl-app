@@ -403,6 +403,8 @@ backend/
 │   ├── migrate.py                    # Database migration runner
 │   ├── collect_points_against.py     # Full Points Against data collector (~66 min)
 │   ├── collect_manager_snapshots.py  # Manager GW snapshots + picks (~10 min)
+│   ├── compute_league_ownership.py   # Ownership computation functions (reusable)
+│   ├── backfill_league_ownership.py  # One-time historical ownership backfill
 │   ├── scheduled_update.py           # Combined scheduled update (daily via Supercronic)
 │   ├── test_small_collection.py      # Test collection with 5 players (~2 min)
 │   └── seed_test_data.py             # Test data seeder
@@ -626,6 +628,64 @@ Tracks chip usage per manager with season-half support (FPL 2025-26: all chips r
 - `504` - FPL API timeout
 - `503` - Database unavailable
 
+### Recommendations API
+
+Provides player recommendations based on league ownership, form, and underlying stats (xG, xA).
+
+**Endpoints:**
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/recommendations/league/{league_id}` | Player recommendations for a league |
+
+**Query Parameters:**
+- `season_id` (default: 1) - Season ID
+- `limit` (default: 10, max: 50) - Number of players per category
+
+**Response Format:**
+```json
+{
+  "league_id": 12345,
+  "season_id": 1,
+  "punts": [...],      // Low ownership differentials (<40% in league)
+  "defensive": [...],  // Popular players (>40% ownership) in good form
+  "time_to_sell": [...] // Players with poor form/fixtures
+}
+```
+
+Each player object contains:
+- `id`, `name`, `team`, `position`, `price`
+- `ownership` (percentage in league, 0-100)
+- `score` (recommendation strength, 0-1)
+- `xg90`, `xa90`, `form`
+
+**How It Works:**
+1. Fetches all players from FPL bootstrap-static API
+2. Fetches all manager picks in the league (parallel, rate-limited)
+3. Calculates per-90 stats (xG90, xA90, xGC90, CS90)
+4. Computes percentiles across all players
+5. Scores players based on form, underlying stats, and league ownership
+6. Categorizes into punts/defensive/time_to_sell
+
+**Performance:**
+- First request: **~12 seconds** (limited by FPL API rate limiting)
+- Cached requests: **instant** (5-minute TTL)
+- Bottleneck: Fetching 50 manager picks from FPL API (10 concurrent, rate-limited)
+
+**Caching:**
+- In-memory cache with 5-minute TTL (shorter than other endpoints since ownership changes)
+- Cache key: `recommendations_{league_id}_{season_id}_{limit}`
+- Cache automatically cleared between tests via `conftest.py` autouse fixture
+
+**Future optimization:**
+- Store league ownership in database `league_ownership` table (schema exists in `migrations/003_analytics.sql`)
+- This would eliminate FPL API calls for ownership data, reducing response time to ~2-3s
+
+**Known Limitations:**
+- No fixture difficulty integration yet
+- Relies on FPL API availability (503 if FPL is down)
+- Cold start penalty on Fly.io (~2-3s additional)
+
 ### FPL API Client
 
 Rate-limited async client for FPL API (`app/services/fpl_client.py`).
@@ -702,6 +762,46 @@ fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_manager_sn
 - `manager_pick` - Squad picks per GW (15 players with position, captain, multiplier)
 
 **Runtime:** ~10 minutes for 20 managers × 21 GWs
+
+### compute_league_ownership.py
+
+Reusable module for computing per-gameweek player ownership statistics from `manager_pick` data. Used by both `backfill_league_ownership.py` and `scheduled_update.py`.
+
+**Functions:**
+- `compute_league_ownership()` - Aggregates ownership and upserts to `league_ownership`
+- `verify_league_ownership_data()` - Validates computed ownership data
+- `get_gameweeks_with_picks()` - Lists gameweeks with available pick data
+
+**Not run directly** - imported by other scripts.
+
+### backfill_league_ownership.py
+
+One-time backfill script to populate historical `league_ownership` data from existing `manager_pick` records.
+
+```bash
+# Preview what would be done
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.backfill_league_ownership --dry-run"
+
+# Run backfill for all gameweeks
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.backfill_league_ownership"
+
+# Backfill specific gameweek only
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.backfill_league_ownership --gameweek 20"
+
+# Backfill specific league
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.backfill_league_ownership --league 242017"
+```
+
+**Options:**
+- `--dry-run` - Show what would be done without making changes
+- `--league <id>` - League to backfill (default: 242017)
+- `--season <id>` - Season ID (auto-detected if not provided)
+- `--gameweek <num>` - Single gameweek to backfill (all if not provided)
+
+**Data Saved:**
+- `league_ownership` - Per-player ownership stats (count, percent, captain count)
+
+**Runtime:** ~30 seconds for 21 gameweeks
 
 ### test_small_collection.py
 
@@ -1517,14 +1617,32 @@ def clear_history_cache():
 - Default TTL: 10 minutes (configured in `history.py`)
 - Cache bypassed when `include_picks=True` (picks change frequently)
 
+#### Routes API Cache
+
+The routes module (`app/api/routes.py`) uses `cachetools.TTLCache` for expensive API endpoints. Two separate caches handle different TTL requirements, each with bounded size (maxsize=100) and thread-safety.
+
+This cache is **cleared automatically** by the `clear_api_cache` autouse fixture in `conftest.py` via the public `clear_cache()` function.
+
+**Cached endpoints:**
+- `GET /api/v1/points-against/` - 10-minute TTL (`_api_cache`)
+- `GET /api/v1/points-against/{team_id}/history` - 10-minute TTL (`_api_cache`)
+- `GET /api/v1/recommendations/league/{league_id}` - 5-minute TTL (`_recommendations_cache`)
+
+**Cache keys:**
+- Points against: `points_against_{season_id}`
+- Team history: `team_history_{team_id}_{season_id}`
+- Recommendations: `recommendations_{league_id}_{season_id}_{limit}`
+
 #### Adding Cache Clearing to New Services
 
 If you add caching to a new service:
 
-1. Expose a `clear_cache()` function:
+1. Use `cachetools.TTLCache` for thread-safe, bounded caching:
    ```python
-   # In your service
-   _cache: dict[str, CacheEntry] = {}
+   from cachetools import TTLCache
+   from typing import Any
+
+   _cache: TTLCache[str, Any] = TTLCache(maxsize=100, ttl=600)
 
    def clear_cache() -> None:
        """Clear all cached data. Used by tests to prevent pollution."""

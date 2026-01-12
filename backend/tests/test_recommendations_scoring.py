@@ -10,6 +10,7 @@ The engine calculates:
 from decimal import Decimal
 from typing import TypedDict
 
+import httpx
 import pytest
 
 # =============================================================================
@@ -1532,7 +1533,11 @@ class TestRecommendationsService:
 
             async def get_manager_picks(self, manager_id: int):
                 if manager_id == 2:
-                    raise Exception("Failed to fetch manager 2")
+                    raise httpx.HTTPStatusError(
+                        "Failed to fetch manager 2",
+                        request=httpx.Request("GET", f"https://example.com/manager/{manager_id}"),
+                        response=httpx.Response(500),
+                    )
                 return {"picks": [{"element": 100 + manager_id}]}
 
         service = RecommendationsService(MockClient())
@@ -1543,6 +1548,33 @@ class TestRecommendationsService:
         assert len(result["manager_ids"]) == 3
         assert len(result["player_counts"]) == 2  # Only 2 successful
         assert result["failed_count"] == 1  # One request failed
+
+    async def test_fetch_league_ownership_handles_timeout(self):
+        """Should handle asyncio.TimeoutError gracefully and continue."""
+        import asyncio
+
+        from app.services.recommendations import RecommendationsService
+
+        class MockClient:
+            async def get_bootstrap_static(self):
+                return {}
+
+            async def get_league_standings_raw(self, league_id: int):
+                return {"standings": {"results": [{"entry": 1}, {"entry": 2}]}}
+
+            async def get_manager_picks(self, manager_id: int):
+                if manager_id == 1:
+                    raise asyncio.TimeoutError("Request timed out")
+                return {"picks": [{"element": 200 + manager_id}]}
+
+        service = RecommendationsService(MockClient())
+
+        result = await service._fetch_league_ownership(12345)
+
+        # Should still return results for successful requests
+        assert len(result["manager_ids"]) == 2
+        assert len(result["player_counts"]) == 1  # Only 1 successful
+        assert result["failed_count"] == 1  # One request timed out
 
     async def test_get_league_recommendations_full_flow(self):
         """Should orchestrate the full recommendation flow."""
@@ -1641,3 +1673,73 @@ class TestRecommendationsService:
         result = await service.get_league_recommendations(12345)
 
         assert result == {"punts": [], "defensive": [], "time_to_sell": []}
+
+    async def test_get_league_recommendations_uses_db_when_conn_provided(self):
+        """Should use DB ownership path when conn parameter is provided."""
+        from collections import Counter
+        from unittest.mock import AsyncMock, patch
+
+        from app.services.recommendations import RecommendationsService
+
+        class MockClient:
+            async def get_bootstrap_static(self):
+                return {
+                    "events": [{"id": 10, "is_current": True}],
+                    "elements": [
+                        {
+                            "id": 1,
+                            "web_name": "Player1",
+                            "element_type": 3,
+                            "status": "a",
+                            "minutes": 900,
+                            "expected_goals": "5.0",
+                            "expected_assists": "3.0",
+                            "expected_goals_conceded": "0.0",
+                            "clean_sheets": 0,
+                            "form": "7.0",
+                            "now_cost": 100,
+                            "team": 1,
+                        },
+                    ],
+                }
+
+            async def get_fixtures(self):
+                return []
+
+            async def get_league_standings_raw(self, league_id: int):
+                return {"standings": {"results": []}}
+
+            async def get_manager_picks(self, manager_id: int):
+                return {"picks": []}
+
+        service = RecommendationsService(MockClient())
+        mock_conn = AsyncMock()
+
+        # Mock _get_ownership_data to return DB-sourced data
+        with patch.object(
+            service, "_get_ownership_data", new_callable=AsyncMock
+        ) as mock_get_ownership:
+            mock_get_ownership.return_value = {
+                "player_counts": Counter({1: 5}),
+                "manager_ids": [],
+                "manager_count": 10,
+                "failed_count": 0,
+                "source": "db",
+            }
+
+            result = await service.get_league_recommendations(
+                12345, limit=10, season_id=2, conn=mock_conn
+            )
+
+            # Verify _get_ownership_data was called with the connection
+            mock_get_ownership.assert_called_once()
+            call_kwargs = mock_get_ownership.call_args.kwargs
+            assert call_kwargs["conn"] is mock_conn
+            assert call_kwargs["league_id"] == 12345
+            assert call_kwargs["season_id"] == 2
+            assert call_kwargs["gameweek"] == 10
+
+            # Should return valid structure
+            assert "punts" in result
+            assert "defensive" in result
+            assert "time_to_sell" in result

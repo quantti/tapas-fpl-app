@@ -110,3 +110,66 @@ def mock_pool():
     with patch("app.dependencies.get_pool") as mock:
         mock.return_value = MagicMock()
         yield mock
+
+
+# =============================================================================
+# MockAsyncpgPool: Shared asyncpg Pool Mock for Script Tests
+# =============================================================================
+
+
+class MockAcquire:
+    """Async context manager for pool.acquire()."""
+
+    def __init__(self, conn: AsyncMock) -> None:
+        self.conn = conn
+
+    async def __aenter__(self) -> AsyncMock:
+        return self.conn
+
+    async def __aexit__(self, *args: Any) -> None:
+        pass
+
+
+class MockAsyncpgPool:
+    """Mock asyncpg connection pool with acquire() context manager.
+
+    Usage:
+        async def test_example(mock_asyncpg_pool):
+            mock_asyncpg_pool.conn.fetch.return_value = [{"id": 1}]
+            # ... test code that uses pool.acquire()
+    """
+
+    def __init__(self) -> None:
+        self.conn = AsyncMock()
+
+    def acquire(self) -> MockAcquire:
+        """Return async context manager (not a coroutine)."""
+        return MockAcquire(self.conn)
+
+    async def close(self) -> None:
+        pass
+
+
+@pytest.fixture
+def mock_asyncpg_pool() -> MockAsyncpgPool:
+    """Mock asyncpg pool for script tests (backfill, compute).
+
+    This provides a pool with acquire() that returns an async context manager,
+    matching asyncpg's Pool.acquire() behavior.
+    """
+    return MockAsyncpgPool()
+
+
+@pytest.fixture(autouse=True)
+def clear_api_cache():
+    """Clear the in-memory API cache before each test.
+
+    This ensures tests don't interfere with each other via cached responses.
+    The cache is particularly important for recommendations tests where we need
+    to test both successful responses and error handling.
+    """
+    from app.api.routes import clear_cache
+
+    clear_cache()
+    yield
+    clear_cache()

@@ -9,12 +9,16 @@ from httpx import AsyncClient
 class TestRecommendationsEndpoint:
     """Tests for GET /api/v1/recommendations/league/{league_id}."""
 
-    async def test_returns_503_without_db(self, async_client: AsyncClient):
-        """Should return 503 when database unavailable."""
+    async def test_works_without_db_using_api_fallback(self, async_client: AsyncClient):
+        """Should work without database by falling back to API."""
         response = await async_client.get("/api/v1/recommendations/league/12345")
 
-        assert response.status_code == 503
-        assert "Database not available" in response.json()["detail"]
+        # Endpoint should succeed using API fallback when DB unavailable
+        assert response.status_code == 200
+        data = response.json()
+        assert "punts" in data
+        assert "defensive" in data
+        assert "time_to_sell" in data
 
     async def test_validates_league_id_must_be_positive(
         self, async_client: AsyncClient, mock_pool

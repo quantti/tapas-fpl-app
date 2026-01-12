@@ -1,14 +1,31 @@
 # Frontend Backend Integration Plan
 
-**Status:** Planning
+**Status:** In Progress
 **Created:** 2026-01-08
-**Last Updated:** 2026-01-08
+**Last Updated:** 2026-01-12
 
 ## Overview
 
-Migrate Statistics page components from direct FPL API calls to pre-computed backend endpoints. This reduces ~100+ API calls to 2 calls per page load.
+Migrate Statistics and Analytics page components from direct FPL API calls to pre-computed backend endpoints. This reduces ~100+ API calls to a few calls per page load.
 
-## Current Architecture
+## Completed Integrations
+
+### ✅ Recommendations (Analytics Page)
+**Completed:** 2026-01-12
+
+| Component | Hook | Data Source | API Calls |
+|-----------|------|-------------|-----------|
+| Recommendations | `useRecommendedPlayers` | Backend `/recommendations` | 1 call |
+
+**Changes:**
+- Added `backendApi.getLeagueRecommendations()` method
+- Rewrote `useRecommendedPlayers` hook to call backend API
+- Simplified `Recommendations.tsx` component props
+- Backend uses `cachetools.TTLCache` with 5-minute TTL
+
+---
+
+## Current Architecture (Statistics Page)
 
 | Feature | Hook | Data Source | API Calls |
 |---------|------|-------------|-----------|
@@ -182,6 +199,15 @@ useQuery({
 
 ## Migration Checklist
 
+### ✅ Recommendations (Completed 2026-01-12)
+- [x] Add `getLeagueRecommendations` method to `backendApi.ts`
+- [x] Rewrite `useRecommendedPlayers` hook
+- [x] Update `Recommendations.tsx` component
+- [x] Update `Analytics.tsx` view
+- [x] Add hook tests
+- [x] Add backend caching (`cachetools.TTLCache`)
+
+### Statistics Page (Pending)
 - [ ] Add backend types to `backendApi.ts`
 - [ ] Add `getLeagueStats` method
 - [ ] Add `getLeaguePositions` method
