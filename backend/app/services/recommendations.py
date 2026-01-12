@@ -854,12 +854,11 @@ class RecommendationsService:
         # DB-first path: use pre-cached data from database (fast, no API calls)
         # API fallback: fetch from FPL API if no DB connection
         if conn is not None:
-            # DB path: fetch all data from database in parallel
-            elements, fixtures, current_gameweek = await asyncio.gather(
-                self._get_players_from_db(conn, season_id),
-                self._get_fixtures_from_db(conn, season_id),
-                self._get_current_gameweek_from_db(conn, season_id),
-            )
+            # DB path: fetch all data from database sequentially
+            # Note: asyncpg doesn't support concurrent queries on same connection
+            elements = await self._get_players_from_db(conn, season_id)
+            fixtures = await self._get_fixtures_from_db(conn, season_id)
+            current_gameweek = await self._get_current_gameweek_from_db(conn, season_id)
             current_gameweek = current_gameweek or 1  # Default to GW1 if not found
             logger.info(
                 f"DB path: {len(elements)} players, {len(fixtures)} fixtures, GW{current_gameweek}"
@@ -1171,8 +1170,8 @@ class RecommendationsService:
             return result
         except (asyncpg.PostgresError, asyncpg.InterfaceError) as e:
             logger.error(
-                "Database error getting current gameweek",
-                extra={"season_id": season_id, "error_type": type(e).__name__, "error": str(e)},
+                f"Database error getting current gameweek: {type(e).__name__}: {e}",
+                extra={"season_id": season_id},
             )
             return None
 
@@ -1222,8 +1221,8 @@ class RecommendationsService:
             return players
         except (asyncpg.PostgresError, asyncpg.InterfaceError) as e:
             logger.error(
-                "Database error getting players",
-                extra={"season_id": season_id, "error_type": type(e).__name__, "error": str(e)},
+                f"Database error getting players: {type(e).__name__}: {e}",
+                extra={"season_id": season_id},
             )
             return []
 
@@ -1268,8 +1267,8 @@ class RecommendationsService:
             return fixtures
         except (asyncpg.PostgresError, asyncpg.InterfaceError) as e:
             logger.error(
-                "Database error getting fixtures",
-                extra={"season_id": season_id, "error_type": type(e).__name__, "error": str(e)},
+                f"Database error getting fixtures: {type(e).__name__}: {e}",
+                extra={"season_id": season_id},
             )
             return []
 
