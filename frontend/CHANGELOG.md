@@ -1,3 +1,10 @@
+# [0.30.0](https://github.com/quantti/tapas-fpl-app/compare/v0.29.0...v0.30.0) (2026-01-12)
+
+
+### Features
+
+* **backend:** add fixtures REST API endpoints ([0bed514](https://github.com/quantti/tapas-fpl-app/commit/0bed514bd53ffdb0c151be552356ce017570c9a4))
+
 # [0.29.0](https://github.com/quantti/tapas-fpl-app/compare/v0.28.0...v0.29.0) (2026-01-11)
 
 
