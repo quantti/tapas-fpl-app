@@ -8,6 +8,7 @@ import asyncpg
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.fixtures import router as fixtures_router
 from app.api.history import router as history_router
 from app.api.routes import router
 from app.config import get_settings
@@ -67,6 +68,7 @@ app.add_middleware(
 
 # Include API routes
 app.include_router(router)
+app.include_router(fixtures_router)
 app.include_router(history_router)
 
 
