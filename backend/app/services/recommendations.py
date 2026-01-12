@@ -850,19 +850,35 @@ class RecommendationsService:
         Returns:
             Dict with punts, defensive, and time_to_sell lists
         """
-        # 1. Fetch bootstrap and fixtures in parallel
-        bootstrap, fixtures = await asyncio.gather(
-            self.fpl_client.get_bootstrap_static(),
-            self.fpl_client.get_fixtures(),
-        )
-        elements = bootstrap.get("elements", [])
+        # 1. Fetch players, fixtures, and current gameweek
+        # DB-first path: use pre-cached data from database (fast, no API calls)
+        # API fallback: fetch from FPL API if no DB connection
+        if conn is not None:
+            # DB path: fetch all data from database in parallel
+            elements, fixtures, current_gameweek = await asyncio.gather(
+                self._get_players_from_db(conn, season_id),
+                self._get_fixtures_from_db(conn, season_id),
+                self._get_current_gameweek_from_db(conn, season_id),
+            )
+            current_gameweek = current_gameweek or 1  # Default to GW1 if not found
+            logger.info(
+                f"DB path: {len(elements)} players, {len(fixtures)} fixtures, GW{current_gameweek}"
+            )
+        else:
+            # API fallback: fetch from FPL API
+            bootstrap, fixtures = await asyncio.gather(
+                self.fpl_client.get_bootstrap_static(),
+                self.fpl_client.get_fixtures(),
+            )
+            elements = bootstrap.get("elements", [])
 
-        # Get current gameweek from events
-        current_gameweek = 1  # Default to GW1
-        for event in bootstrap.get("events", []):
-            if event.get("is_current"):
-                current_gameweek = event.get("id", 1)
-                break
+            # Get current gameweek from events
+            current_gameweek = 1  # Default to GW1
+            for event in bootstrap.get("events", []):
+                if event.get("is_current"):
+                    current_gameweek = event.get("id", 1)
+                    break
+            logger.info(f"API path: {len(elements)} players, GW{current_gameweek}")
 
         # 2. Fetch ownership (DB-first if connection provided, else API)
         if conn is not None:
@@ -1122,6 +1138,140 @@ class RecommendationsService:
                 "failed_count": 0,
                 "source": "api_error",
             }
+
+    async def _get_current_gameweek_from_db(
+        self,
+        conn: "Connection",
+        season_id: int,
+    ) -> int | None:
+        """Get current gameweek from database.
+
+        Args:
+            conn: Database connection
+            season_id: Season ID
+
+        Returns:
+            Current gameweek number, or None if not found
+        """
+        try:
+            result = await conn.fetchval(
+                """
+                SELECT id FROM gameweek
+                WHERE season_id = $1 AND is_current = true
+                """,
+                season_id,
+            )
+            if result is not None:
+                logger.debug(f"Current gameweek from DB: GW{result}")
+            else:
+                logger.warning(
+                    "No current gameweek found in DB",
+                    extra={"season_id": season_id},
+                )
+            return result
+        except (asyncpg.PostgresError, asyncpg.InterfaceError) as e:
+            logger.error(
+                "Database error getting current gameweek",
+                extra={"season_id": season_id, "error_type": type(e).__name__, "error": str(e)},
+            )
+            return None
+
+    async def _get_players_from_db(
+        self,
+        conn: "Connection",
+        season_id: int,
+    ) -> list[dict[str, Any]]:
+        """Get all players from database with fields matching FPL API structure.
+
+        Args:
+            conn: Database connection
+            season_id: Season ID
+
+        Returns:
+            List of player dicts with API-compatible field names
+        """
+        try:
+            rows = await conn.fetch(
+                """
+                SELECT
+                    id,
+                    element_type,
+                    status,
+                    minutes,
+                    expected_goals,
+                    expected_assists,
+                    expected_goals_conceded,
+                    clean_sheets,
+                    form,
+                    team_id AS team,
+                    web_name,
+                    now_cost
+                FROM player
+                WHERE season_id = $1
+                """,
+                season_id,
+            )
+            players = [dict(row) for row in rows]
+            if not players:
+                logger.warning(
+                    "No players found in DB",
+                    extra={"season_id": season_id},
+                )
+            else:
+                logger.debug(f"Loaded {len(players)} players from DB for season {season_id}")
+            return players
+        except (asyncpg.PostgresError, asyncpg.InterfaceError) as e:
+            logger.error(
+                "Database error getting players",
+                extra={"season_id": season_id, "error_type": type(e).__name__, "error": str(e)},
+            )
+            return []
+
+    async def _get_fixtures_from_db(
+        self,
+        conn: "Connection",
+        season_id: int,
+    ) -> list[dict[str, Any]]:
+        """Get all fixtures from database with fields matching FPL API structure.
+
+        Args:
+            conn: Database connection
+            season_id: Season ID
+
+        Returns:
+            List of fixture dicts with API-compatible field names (event = gameweek)
+        """
+        try:
+            rows = await conn.fetch(
+                """
+                SELECT
+                    id,
+                    gameweek AS event,
+                    team_h,
+                    team_a,
+                    team_h_difficulty,
+                    team_a_difficulty
+                FROM fixture
+                WHERE season_id = $1
+                ORDER BY gameweek, id
+                """,
+                season_id,
+            )
+            fixtures = [dict(row) for row in rows]
+            if not fixtures:
+                logger.warning(
+                    "No fixtures found in DB",
+                    extra={"season_id": season_id},
+                )
+            else:
+                logger.debug(f"Loaded {len(fixtures)} fixtures from DB for season {season_id}")
+            return fixtures
+        except (asyncpg.PostgresError, asyncpg.InterfaceError) as e:
+            logger.error(
+                "Database error getting fixtures",
+                extra={"season_id": season_id, "error_type": type(e).__name__, "error": str(e)},
+            )
+            return []
 
     async def _get_ownership_data(
         self,

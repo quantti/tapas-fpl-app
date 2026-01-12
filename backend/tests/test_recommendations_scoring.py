@@ -1715,10 +1715,21 @@ class TestRecommendationsService:
         service = RecommendationsService(MockClient())
         mock_conn = AsyncMock()
 
-        # Mock _get_ownership_data to return DB-sourced data
-        with patch.object(
-            service, "_get_ownership_data", new_callable=AsyncMock
-        ) as mock_get_ownership:
+        # Mock DB methods to return test data
+        with (
+            patch.object(
+                service, "_get_ownership_data", new_callable=AsyncMock
+            ) as mock_get_ownership,
+            patch.object(
+                service, "_get_players_from_db", new_callable=AsyncMock
+            ) as mock_get_players,
+            patch.object(
+                service, "_get_fixtures_from_db", new_callable=AsyncMock
+            ) as mock_get_fixtures,
+            patch.object(
+                service, "_get_current_gameweek_from_db", new_callable=AsyncMock
+            ) as mock_get_gw,
+        ):
             mock_get_ownership.return_value = {
                 "player_counts": Counter({1: 5}),
                 "manager_ids": [],
@@ -1726,6 +1737,24 @@ class TestRecommendationsService:
                 "failed_count": 0,
                 "source": "db",
             }
+            mock_get_players.return_value = [
+                {
+                    "id": 1,
+                    "web_name": "Player1",
+                    "element_type": 3,
+                    "status": "a",
+                    "minutes": 900,
+                    "expected_goals": "5.0",
+                    "expected_assists": "3.0",
+                    "expected_goals_conceded": "0.0",
+                    "clean_sheets": 0,
+                    "form": "7.0",
+                    "now_cost": 100,
+                    "team": 1,
+                },
+            ]
+            mock_get_fixtures.return_value = []
+            mock_get_gw.return_value = 10
 
             result = await service.get_league_recommendations(
                 12345, limit=10, season_id=2, conn=mock_conn
@@ -1739,7 +1768,116 @@ class TestRecommendationsService:
             assert call_kwargs["season_id"] == 2
             assert call_kwargs["gameweek"] == 10
 
+            # Verify DB methods were called
+            mock_get_players.assert_called_once_with(mock_conn, 2)
+            mock_get_fixtures.assert_called_once_with(mock_conn, 2)
+            mock_get_gw.assert_called_once_with(mock_conn, 2)
+
             # Should return valid structure
             assert "punts" in result
             assert "defensive" in result
             assert "time_to_sell" in result
+
+    async def test_db_path_defaults_to_gw1_when_gameweek_not_found(self):
+        """Should default to GW1 when _get_current_gameweek_from_db returns None."""
+        from collections import Counter
+        from unittest.mock import AsyncMock, patch
+
+        from app.services.recommendations import RecommendationsService
+
+        class MockClient:
+            async def get_bootstrap_static(self):
+                return {"events": [], "elements": []}
+
+            async def get_fixtures(self):
+                return []
+
+        service = RecommendationsService(MockClient())
+        mock_conn = AsyncMock()
+
+        with (
+            patch.object(
+                service, "_get_ownership_data", new_callable=AsyncMock
+            ) as mock_get_ownership,
+            patch.object(
+                service, "_get_players_from_db", new_callable=AsyncMock
+            ) as mock_get_players,
+            patch.object(
+                service, "_get_fixtures_from_db", new_callable=AsyncMock
+            ) as mock_get_fixtures,
+            patch.object(
+                service, "_get_current_gameweek_from_db", new_callable=AsyncMock
+            ) as mock_get_gw,
+        ):
+            mock_get_gw.return_value = None  # No current gameweek
+            mock_get_players.return_value = []
+            mock_get_fixtures.return_value = []
+            mock_get_ownership.return_value = {
+                "player_counts": Counter(),
+                "manager_ids": [],
+                "manager_count": 0,
+                "failed_count": 0,
+            }
+
+            result = await service.get_league_recommendations(
+                12345, limit=10, season_id=2, conn=mock_conn
+            )
+
+            # Ownership should be called with gameweek=1 (default)
+            call_kwargs = mock_get_ownership.call_args.kwargs
+            assert call_kwargs["gameweek"] == 1
+
+            # Should still return valid structure
+            assert "punts" in result
+            assert "defensive" in result
+            assert "time_to_sell" in result
+
+    async def test_db_path_returns_empty_when_no_players(self):
+        """Should return empty recommendations when _get_players_from_db returns empty."""
+        from collections import Counter
+        from unittest.mock import AsyncMock, patch
+
+        from app.services.recommendations import RecommendationsService
+
+        class MockClient:
+            async def get_bootstrap_static(self):
+                return {"events": [], "elements": []}
+
+            async def get_fixtures(self):
+                return []
+
+        service = RecommendationsService(MockClient())
+        mock_conn = AsyncMock()
+
+        with (
+            patch.object(
+                service, "_get_ownership_data", new_callable=AsyncMock
+            ) as mock_get_ownership,
+            patch.object(
+                service, "_get_players_from_db", new_callable=AsyncMock
+            ) as mock_get_players,
+            patch.object(
+                service, "_get_fixtures_from_db", new_callable=AsyncMock
+            ) as mock_get_fixtures,
+            patch.object(
+                service, "_get_current_gameweek_from_db", new_callable=AsyncMock
+            ) as mock_get_gw,
+        ):
+            mock_get_gw.return_value = 10
+            mock_get_players.return_value = []  # No players
+            mock_get_fixtures.return_value = []
+            mock_get_ownership.return_value = {
+                "player_counts": Counter(),
+                "manager_ids": [],
+                "manager_count": 10,
+                "failed_count": 0,
+            }
+
+            result = await service.get_league_recommendations(
+                12345, limit=10, season_id=2, conn=mock_conn
+            )
+
+            # Should return empty lists (no eligible players)
+            assert result["punts"] == []
+            assert result["defensive"] == []
+            assert result["time_to_sell"] == []

@@ -2,6 +2,111 @@
 
 Database design for Tapas FPL App - supporting multiple users tracking multiple leagues with historical data.
 
+---
+
+## ⚠️ DATA AVAILABILITY QUICK REFERENCE
+
+**CRITICAL: Always check this table BEFORE making FPL API calls.**
+
+The database contains pre-cached FPL data that is updated regularly. Using DB queries instead of API calls:
+- **Performance**: DB queries take ~10-50ms vs API calls taking 2-5s each
+- **Reliability**: No rate limiting, no FPL API downtime issues
+- **Cost**: No external HTTP requests, lower Fly.io bandwidth
+
+### What's in the Database (USE THIS)
+
+| Data | DB Table | Equivalent API | Update Frequency | Key Fields |
+|------|----------|---------------|------------------|------------|
+| **Players** | `player` | `/bootstrap-static` elements | Weekly (scheduled) | id, web_name, team_id, element_type, status, minutes, expected_goals, expected_assists, expected_goals_conceded, clean_sheets, form, now_cost |
+| **Teams** | `team` | `/bootstrap-static` teams | Weekly (scheduled) | id, name, short_name, strength ratings |
+| **Gameweeks** | `gameweek` | `/bootstrap-static` events | Weekly (scheduled) | id, is_current, is_next, deadline_time, finished |
+| **Fixtures** | `fixture` | `/fixtures` | Weekly (scheduled) | id, gameweek, team_h, team_a, team_h_difficulty, team_a_difficulty, kickoff_time, finished |
+| **League Ownership** | `league_ownership` | Computed from picks | Per-gameweek | league_id, player_id, ownership_count, ownership_percent |
+| **Manager Picks** | `manager_pick` | `/entry/{id}/event/{gw}/picks` | Per-gameweek | manager_id, player_id, position, multiplier, is_captain |
+| **Manager Snapshots** | `manager_gw_snapshot` | `/entry/{id}/event/{gw}/picks` | Per-gameweek | manager_id, gameweek, total_points, bank, value |
+| **Chip Usage** | `chip_usage` | Computed from picks | Per-gameweek | manager_id, chip type, gameweek used |
+| **Transfers** | `transfer` | `/entry/{id}/transfers` | Per-gameweek | manager_id, player_in, player_out, gameweek |
+| **Player GW Stats** | `player_gw_stats` | `/event/{gw}/live` | Per-gameweek | player_id, gameweek, points, minutes, goals, assists |
+| **Player Fixture Stats** | `player_fixture_stats` | `/element-summary/{id}` | Per-gameweek | player_id, fixture_id, detailed stats |
+
+### When to Use API (Rare Cases)
+
+| Scenario | Why API Needed |
+|----------|---------------|
+| **Live scores during matches** | Real-time data not in DB yet |
+| **Immediate transfer confirmation** | User just made transfer, DB not updated |
+| **New season bootstrap** | Season hasn't started, no DB data |
+| **Debugging/verification** | Compare DB vs API for data integrity |
+
+### Field Name Mappings (DB ↔ API)
+
+Some DB columns use different names than the FPL API:
+
+| DB Column | API Field | Notes |
+|-----------|-----------|-------|
+| `team_id` | `team` | Player's team |
+| `gameweek` | `event` | Fixture's gameweek number |
+| `element_type` | `element_type` | Position (1=GK, 2=DEF, 3=MID, 4=FWD) |
+
+### Example: Recommendations Service
+
+**WRONG** (slow, ~12-17s):
+```python
+# DON'T DO THIS - makes 3 expensive API calls
+bootstrap = await fpl_client.get_bootstrap_static()  # ~3-5s, 1.8MB
+fixtures = await fpl_client.get_fixtures()           # ~1-2s
+```
+
+**RIGHT** (fast, <100ms):
+```python
+# DO THIS - parallel DB queries
+players = await conn.fetch("SELECT * FROM player WHERE season_id = $1", season_id)
+fixtures = await conn.fetch("SELECT * FROM fixture WHERE season_id = $1", season_id)
+current_gw = await conn.fetchval("SELECT id FROM gameweek WHERE is_current = true AND season_id = $1", season_id)
+```
+
+### Data Pipeline
+
+```
+FPL API → Scheduled Jobs → PostgreSQL DB → Backend Services → Frontend
+           (weekly/daily)    (Supabase)
+```
+
+**Main orchestrator**: `scripts/scheduled_update.py`
+- Runs daily at 06:00 UTC via Supercronic on Fly.io
+- Idempotent - safe to run multiple times (skips if no new finalized GW)
+- Uses advisory locks to prevent concurrent runs
+
+**Updates performed** (in order):
+1. **Points Against** - FPL points conceded by each team (~2-5 min)
+2. **Teams & Players** - Sync from bootstrap-static (~5 sec)
+3. **Fixtures** - Match schedule, FDR ratings, scores (~2 sec)
+4. **Chips Usage** - Manager chip activations (~30 sec)
+5. **Manager Snapshots** - GW-by-GW picks and stats (~15 sec)
+6. **League Ownership** - Per-player ownership computed from picks (~2 sec)
+
+**Individual scripts** (can run standalone):
+- `scheduled_update.py` - Main orchestrator, runs all updates
+- `collect_points_against.py` - Computes points against per team
+- `collect_manager_snapshots.py` - Syncs manager picks, history, transfers
+- `compute_league_ownership.py` - Aggregates ownership per league per gameweek
+- `backfill_league_ownership.py` - Backfills historical ownership data
+
+**Cron schedule** (`crontab`):
+```
+0 6 * * * python -m scripts.scheduled_update
+```
+
+**Manual runs**:
+```bash
+python -m scripts.scheduled_update --status        # Show update status
+python -m scripts.scheduled_update --dry-run       # Check without changes
+python -m scripts.scheduled_update --sync-bootstrap # Teams/players only
+python -m scripts.scheduled_update --sync-fixtures  # Fixtures only
+```
+
+---
+
 ## Overview
 
 ```

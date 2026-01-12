@@ -1,6 +1,18 @@
 # Backend
 
-Python FastAPI application for future analytics. Currently the frontend uses Cloudflare Workers as the API proxy (see `worker/CLAUDE.md`).
+Python FastAPI application for analytics and data services.
+
+## ⚠️ IMPORTANT: DB-First Architecture
+
+**Before making ANY FPL API call, check if the data exists in the database.**
+
+See [`DB.md` → Data Availability Quick Reference](./DB.md#%EF%B8%8F-data-availability-quick-reference) for:
+- Complete list of data available in DB vs API
+- Performance comparison (DB: ~50ms vs API: ~3-5s)
+- Field name mappings (DB columns ↔ API fields)
+- Code examples (wrong vs right)
+
+**Rule of thumb**: If it's not live match data, it's probably in the DB.
 
 ## Development
 
