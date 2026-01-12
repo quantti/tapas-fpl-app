@@ -1428,7 +1428,7 @@ class TestRecommendationsService:
             async def get_bootstrap_static(self):
                 return {}
 
-            async def get_league_standings(self, league_id: int):
+            async def get_league_standings_raw(self, league_id: int):
                 return {}
 
             async def get_manager_picks(self, manager_id: int):
@@ -1463,7 +1463,7 @@ class TestRecommendationsService:
             async def get_bootstrap_static(self):
                 return {}
 
-            async def get_league_standings(self, league_id: int):
+            async def get_league_standings_raw(self, league_id: int):
                 return {}
 
             async def get_manager_picks(self, manager_id: int):
@@ -1495,7 +1495,7 @@ class TestRecommendationsService:
             async def get_bootstrap_static(self):
                 return {}
 
-            async def get_league_standings(self, league_id: int):
+            async def get_league_standings_raw(self, league_id: int):
                 return {"standings": {"results": [{"entry": i} for i in range(20)]}}
 
             async def get_manager_picks(self, manager_id: int):
@@ -1527,7 +1527,7 @@ class TestRecommendationsService:
             async def get_bootstrap_static(self):
                 return {}
 
-            async def get_league_standings(self, league_id: int):
+            async def get_league_standings_raw(self, league_id: int):
                 return {"standings": {"results": [{"entry": 1}, {"entry": 2}, {"entry": 3}]}}
 
             async def get_manager_picks(self, manager_id: int):
@@ -1591,7 +1591,7 @@ class TestRecommendationsService:
                     {"event": 10, "team_h": 4, "team_a": 2, "team_h_difficulty": 3, "team_a_difficulty": 4},
                 ]
 
-            async def get_league_standings(self, league_id: int):
+            async def get_league_standings_raw(self, league_id: int):
                 return {"standings": {"results": [{"entry": 1}]}}
 
             async def get_manager_picks(self, manager_id: int):
@@ -1630,7 +1630,7 @@ class TestRecommendationsService:
             async def get_fixtures(self):
                 return []
 
-            async def get_league_standings(self, league_id: int):
+            async def get_league_standings_raw(self, league_id: int):
                 return {}
 
             async def get_manager_picks(self, manager_id: int):

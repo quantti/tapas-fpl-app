@@ -231,7 +231,7 @@ class TestRecommendationServiceIntegration:
         }
 
         # Setup mock league ownership (only Salah is owned in league)
-        mock_fpl_client.get_league_standings.return_value = {
+        mock_fpl_client.get_league_standings_raw.return_value = {
             "standings": {"results": [{"entry": 1}, {"entry": 2}]},
         }
         mock_fpl_client.get_manager_picks.return_value = {

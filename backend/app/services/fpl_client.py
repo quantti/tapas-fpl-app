@@ -170,6 +170,7 @@ class FplApiClient:
         self._last_request_time = 0.0
         self._lock = asyncio.Lock()
         self._client: httpx.AsyncClient | None = None
+        self._current_gameweek: int | None = None  # Cached for efficiency
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create the HTTP client (lazy initialization, coroutine-safe)."""
@@ -185,6 +186,7 @@ class FplApiClient:
             if self._client is not None:
                 await self._client.aclose()
                 self._client = None
+            self._current_gameweek = None  # Reset cache to avoid stale data
 
     async def __aenter__(self) -> "FplApiClient":
         """Enter async context manager."""
@@ -399,4 +401,103 @@ class FplApiClient:
             league_id=league_id,
             league_name=league_name,
             members=members,
+        )
+
+    async def get_league_standings_raw(self, league_id: int) -> dict[str, Any]:
+        """
+        Fetch raw league standings as dict.
+
+        Unlike get_league_standings which returns a typed LeagueStandings dataclass,
+        this method returns the raw FPL API response format for RecommendationsService.
+
+        Args:
+            league_id: FPL classic league ID
+
+        Returns:
+            Dict with standings.results array containing all league members
+        """
+        members: list[dict[str, Any]] = []
+        page = 1
+        has_next = True
+
+        while has_next:
+            data = await self._get(
+                f"{FPL_BASE_URL}/leagues-classic/{league_id}/standings/?page_standings={page}"
+            )
+
+            standings = data.get("standings", {})
+            results = standings.get("results", [])
+            members.extend(results)
+
+            has_next = standings.get("has_next", False)
+            page += 1
+
+            if page > 100:
+                logger.warning(f"League {league_id} has >5000 members, stopping at page 100")
+                break
+
+        # Return in expected format
+        return {"standings": {"results": members}}
+
+    async def get_bootstrap_static(self) -> dict[str, Any]:
+        """
+        Fetch raw bootstrap-static data as dict.
+
+        Used by RecommendationsService which needs the raw API response
+        including elements, events, and teams. Also caches current gameweek
+        for use by get_manager_picks.
+
+        Returns:
+            Dict with elements (players), events (gameweeks), and teams arrays
+        """
+        data = await self._get(f"{FPL_BASE_URL}/bootstrap-static/")
+
+        # Cache current gameweek for efficiency
+        for event in data.get("events", []):
+            if event.get("is_current"):
+                self._current_gameweek = event["id"]
+                break
+
+        return data
+
+    async def _get_current_gameweek(self) -> int:
+        """
+        Get current gameweek, fetching from API if not cached.
+
+        Fallback chain: cached value → is_current event → first unfinished → GW 1
+
+        Returns:
+            Current gameweek number (1-38)
+        """
+        if self._current_gameweek is not None:
+            return self._current_gameweek
+
+        bootstrap = await self._get(f"{FPL_BASE_URL}/bootstrap-static/")
+        for event in bootstrap.get("events", []):
+            if event.get("is_current"):
+                self._current_gameweek = event["id"]
+                return self._current_gameweek
+
+        # Fallback to first unfinished gameweek
+        for event in bootstrap.get("events", []):
+            if not event.get("finished"):
+                self._current_gameweek = event["id"]
+                return self._current_gameweek
+
+        self._current_gameweek = 1  # Ultimate fallback
+        return self._current_gameweek
+
+    async def get_manager_picks(self, manager_id: int) -> dict[str, Any]:
+        """
+        Fetch a manager's current gameweek picks.
+
+        Args:
+            manager_id: FPL manager ID
+
+        Returns:
+            Dict with picks list containing player selections
+        """
+        current_gw = await self._get_current_gameweek()
+        return await self._get(
+            f"{FPL_BASE_URL}/entry/{manager_id}/event/{current_gw}/picks/"
         )

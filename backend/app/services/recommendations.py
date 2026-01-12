@@ -30,7 +30,7 @@ class FplClientProtocol(Protocol):
 
     async def get_bootstrap_static(self) -> dict[str, Any]: ...
     async def get_fixtures(self) -> list[dict[str, Any]]: ...
-    async def get_league_standings(self, league_id: int) -> dict[str, Any]: ...
+    async def get_league_standings_raw(self, league_id: int) -> dict[str, Any]: ...
     async def get_manager_picks(self, manager_id: int) -> dict[str, Any]: ...
 
 
@@ -973,7 +973,7 @@ class RecommendationsService:
             Exception: Propagates errors from league standings fetch
         """
         # Fetch league standings - let errors propagate (critical failure)
-        standings = await self.fpl_client.get_league_standings(league_id)
+        standings = await self.fpl_client.get_league_standings_raw(league_id)
         managers = standings.get("standings", {}).get("results", [])
 
         manager_ids = [m["entry"] for m in managers]
