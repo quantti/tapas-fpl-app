@@ -9,8 +9,11 @@ from app.config import Settings, get_settings
 class TestSettings:
     """Tests for Settings configuration class."""
 
+    @patch.dict(os.environ, {"LOG_LEVEL": ""}, clear=False)
     def test_default_values(self):
         """Settings should have sensible defaults."""
+        # Clear LOG_LEVEL to test actual defaults (not env overrides)
+        os.environ.pop("LOG_LEVEL", None)
         settings = Settings()
 
         assert settings.log_level == "INFO"

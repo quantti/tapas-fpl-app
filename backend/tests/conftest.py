@@ -173,3 +173,17 @@ def clear_api_cache():
     clear_cache()
     yield
     clear_cache()
+
+
+@pytest.fixture(autouse=True)
+def clear_bootstrap_cache():
+    """Clear the shared bootstrap cache before each test.
+
+    The bootstrap_cache module uses a singleton TTLCache that persists across
+    tests. This ensures test isolation by clearing it before and after each test.
+    """
+    from app.services.bootstrap_cache import clear_cache
+
+    clear_cache()
+    yield
+    clear_cache()

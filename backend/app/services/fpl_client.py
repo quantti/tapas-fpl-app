@@ -15,6 +15,8 @@ from tenacity import (
     wait_exponential,
 )
 
+from app.services.bootstrap_cache import get_cached_bootstrap, get_cached_gameweek
+
 logger = logging.getLogger(__name__)
 
 FPL_BASE_URL = "https://fantasy.premierleague.com/api"
@@ -224,9 +226,11 @@ class FplApiClient:
     async def get_bootstrap(self) -> BootstrapData:
         """
         Fetch bootstrap-static data (players, teams, gameweeks).
-        This is a single request that gives us all the core data.
+
+        Uses shared singleton cache to prevent OOM from multiple concurrent
+        requests parsing the ~1.8MB response.
         """
-        data = await self._get(f"{FPL_BASE_URL}/bootstrap-static/")
+        data = await get_cached_bootstrap(self._get)
 
         # Find current gameweek
         current_gw = None
@@ -444,15 +448,15 @@ class FplApiClient:
         Fetch raw bootstrap-static data as dict.
 
         Used by RecommendationsService which needs the raw API response
-        including elements, events, and teams. Also caches current gameweek
-        for use by get_manager_picks.
+        including elements, events, and teams. Uses shared singleton cache
+        to prevent OOM from multiple concurrent requests parsing the ~1.8MB response.
 
         Returns:
             Dict with elements (players), events (gameweeks), and teams arrays
         """
-        data = await self._get(f"{FPL_BASE_URL}/bootstrap-static/")
+        data = await get_cached_bootstrap(self._get)
 
-        # Cache current gameweek for efficiency
+        # Update instance cache for efficiency (may already be set by shared cache)
         for event in data.get("events", []):
             if event.get("is_current"):
                 self._current_gameweek = event["id"]
@@ -464,15 +468,23 @@ class FplApiClient:
         """
         Get current gameweek, fetching from API if not cached.
 
-        Fallback chain: cached value → is_current event → first unfinished → GW 1
+        Fallback chain: instance cache → shared cache → fetch → first unfinished → GW 1
 
         Returns:
             Current gameweek number (1-38)
         """
+        # Fast path: instance cache
         if self._current_gameweek is not None:
             return self._current_gameweek
 
-        bootstrap = await self._get(f"{FPL_BASE_URL}/bootstrap-static/")
+        # Fast path: shared cache (no API call if bootstrap is cached)
+        cached_gw = get_cached_gameweek()
+        if cached_gw is not None:
+            self._current_gameweek = cached_gw
+            return cached_gw
+
+        # Slow path: fetch via shared cache
+        bootstrap = await get_cached_bootstrap(self._get)
         for event in bootstrap.get("events", []):
             if event.get("is_current"):
                 self._current_gameweek = event["id"]
