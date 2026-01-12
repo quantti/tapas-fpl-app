@@ -354,31 +354,56 @@ async def sync_players_from_bootstrap(
         logger.warning("No players to sync")
         return 0
 
-    # Upsert player data - include all required fields from player table
-    # Important: includes stats needed for recommendations (minutes, xG, xA, xGC, CS, status)
+    # Upsert player data - sync all fields from FPL bootstrap API
+    # Includes: identity, status, season totals, expected stats
+    # Excludes: ICT index (influence, creativity, threat) - not needed
     await conn.executemany(
         """
         INSERT INTO player (
-            id, season_id, team_id, web_name, element_type, now_cost,
-            selected_by_percent, total_points, form,
-            minutes, status, expected_goals, expected_assists,
-            expected_goals_conceded, clean_sheets
+            id, season_id, team_id, first_name, second_name, web_name,
+            element_type, now_cost, selected_by_percent, total_points, form,
+            status, news, news_added,
+            minutes, goals_scored, assists, clean_sheets, goals_conceded,
+            own_goals, penalties_saved, penalties_missed,
+            yellow_cards, red_cards, saves, bonus, bps,
+            expected_goals, expected_assists, expected_goal_involvements,
+            expected_goals_conceded
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+            $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+            $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31
+        )
         ON CONFLICT (id, season_id) DO UPDATE SET
             team_id = EXCLUDED.team_id,
+            first_name = EXCLUDED.first_name,
+            second_name = EXCLUDED.second_name,
             web_name = EXCLUDED.web_name,
             element_type = EXCLUDED.element_type,
             now_cost = EXCLUDED.now_cost,
             selected_by_percent = EXCLUDED.selected_by_percent,
             total_points = EXCLUDED.total_points,
             form = EXCLUDED.form,
-            minutes = EXCLUDED.minutes,
             status = EXCLUDED.status,
+            news = EXCLUDED.news,
+            news_added = EXCLUDED.news_added,
+            minutes = EXCLUDED.minutes,
+            goals_scored = EXCLUDED.goals_scored,
+            assists = EXCLUDED.assists,
+            clean_sheets = EXCLUDED.clean_sheets,
+            goals_conceded = EXCLUDED.goals_conceded,
+            own_goals = EXCLUDED.own_goals,
+            penalties_saved = EXCLUDED.penalties_saved,
+            penalties_missed = EXCLUDED.penalties_missed,
+            yellow_cards = EXCLUDED.yellow_cards,
+            red_cards = EXCLUDED.red_cards,
+            saves = EXCLUDED.saves,
+            bonus = EXCLUDED.bonus,
+            bps = EXCLUDED.bps,
             expected_goals = EXCLUDED.expected_goals,
             expected_assists = EXCLUDED.expected_assists,
+            expected_goal_involvements = EXCLUDED.expected_goal_involvements,
             expected_goals_conceded = EXCLUDED.expected_goals_conceded,
-            clean_sheets = EXCLUDED.clean_sheets,
             updated_at = NOW()
         """,
         [
@@ -386,18 +411,34 @@ async def sync_players_from_bootstrap(
                 p["id"],
                 season_id,
                 p.get("team", 0),
+                p.get("first_name"),
+                p.get("second_name"),
                 p.get("web_name", "Unknown"),
                 p.get("element_type", 1),
                 p.get("now_cost", 0),
                 float(p.get("selected_by_percent", "0")),  # FPL API returns string
                 p.get("total_points", 0),
                 float(p.get("form", "0")),  # FPL API returns string
-                p.get("minutes", 0),
                 p.get("status", "a"),
+                p.get("news"),
+                p.get("news_added"),  # ISO datetime string or None
+                p.get("minutes", 0),
+                p.get("goals_scored", 0),
+                p.get("assists", 0),
+                p.get("clean_sheets", 0),
+                p.get("goals_conceded", 0),
+                p.get("own_goals", 0),
+                p.get("penalties_saved", 0),
+                p.get("penalties_missed", 0),
+                p.get("yellow_cards", 0),
+                p.get("red_cards", 0),
+                p.get("saves", 0),
+                p.get("bonus", 0),
+                p.get("bps", 0),
                 p.get("expected_goals", "0.00"),  # FPL API returns string
                 p.get("expected_assists", "0.00"),  # FPL API returns string
+                p.get("expected_goal_involvements", "0.00"),  # FPL API returns string
                 p.get("expected_goals_conceded", "0.00"),  # FPL API returns string
-                p.get("clean_sheets", 0),
             )
             for p in players
         ],
