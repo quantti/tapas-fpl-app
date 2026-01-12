@@ -40,6 +40,8 @@ from dotenv import load_dotenv
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from app.db import close_pool as close_app_pool
+from app.db import init_pool as init_app_pool
 from app.services.chips import ChipsService
 from app.services.fpl_client import FplApiClient
 from scripts.collect_manager_snapshots import (
@@ -897,6 +899,8 @@ async def run_scheduled_update(dry_run: bool = False) -> None:
     fpl_client = FplApiClient(requests_per_second=1.0, max_concurrent=5)
 
     try:
+        # Initialize app.db pool for ChipsService (uses get_connection from app.db)
+        await init_app_pool()
         # 1. Check if new GW is finalized
         logger.info("Checking for finalized gameweek...")
         bootstrap = await fpl_client.get_bootstrap()
@@ -1085,6 +1089,7 @@ async def run_scheduled_update(dry_run: bool = False) -> None:
         raise
     finally:
         await fpl_client.close()
+        await close_app_pool()
         if pool:
             await pool.close()
 

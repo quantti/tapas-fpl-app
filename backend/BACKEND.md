@@ -680,18 +680,18 @@ Each player object contains:
 6. Categorizes into punts/defensive/time_to_sell
 
 **Performance:**
-- First request: **~12 seconds** (limited by FPL API rate limiting)
+- With `league_ownership` data: **~2-3 seconds** (DB query + FPL bootstrap for player stats)
+- Without `league_ownership` data: **~12 seconds** (falls back to FPL API for manager picks)
 - Cached requests: **instant** (5-minute TTL)
-- Bottleneck: Fetching 50 manager picks from FPL API (10 concurrent, rate-limited)
 
 **Caching:**
 - In-memory cache with 5-minute TTL (shorter than other endpoints since ownership changes)
 - Cache key: `recommendations_{league_id}_{season_id}_{limit}`
 - Cache automatically cleared between tests via `conftest.py` autouse fixture
 
-**Future optimization:**
-- Store league ownership in database `league_ownership` table (schema exists in `migrations/003_analytics.sql`)
-- This would eliminate FPL API calls for ownership data, reducing response time to ~2-3s
+**Data Source Priority:**
+- Primary: `league_ownership` table (populated by `scheduled_update.py`)
+- Fallback: FPL API (fetches 50 manager picks, rate-limited, slow)
 
 **Known Limitations:**
 - No fixture difficulty integration yet
@@ -854,7 +854,7 @@ fly ssh console --app tapas-fpl-backend -C "python -m scripts.seed_test_data"
 
 ### scheduled_update.py
 
-Combined scheduled update that runs daily via Supercronic. Updates Points Against, Manager Snapshots, and Chips data.
+Combined scheduled update that runs daily via Supercronic. Updates Points Against, Manager Snapshots, Chips data, and League Ownership.
 
 ```bash
 # Run scheduled update
@@ -865,11 +865,15 @@ fly ssh console --app tapas-fpl-backend -C "python -m scripts.scheduled_update -
 
 # Dry run (check what would be updated without making changes)
 fly ssh console --app tapas-fpl-backend -C "python -m scripts.scheduled_update --dry-run"
+
+# Sync player stats only (goals, assists, xG, xA, form, etc.)
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.scheduled_update --sync-bootstrap"
 ```
 
 **Options:**
 - `--status` - Show current update status (last processed gameweek, timestamp)
 - `--dry-run` - Check for new gameweek without making changes
+- `--sync-bootstrap` - Sync player data from FPL bootstrap API (all stats fields)
 
 **Environment Variables:**
 - `SCHEDULED_UPDATE_LEAGUE_ID` - League to sync chips for (default: 242017)
@@ -885,14 +889,16 @@ fly ssh console --app tapas-fpl-backend -C "python -m scripts.scheduled_update -
 2. Validate FPL API response (events, players, teams must be present)
 3. Compare against last processed gameweek per season
 4. Acquire advisory lock (prevents concurrent runs)
-5. Run Points Against incremental update (~2-5 min)
-6. Verify Points Against data via `points_against_collection_status` table
-7. Run Manager Snapshots incremental update (~1-2 min)
-8. Verify Manager Snapshots data (snapshots and picks saved)
-9. Run Chips sync for tracked league (~30 sec)
-10. Verify Chips data (failure rate < 10%, members > 0)
-11. Mark gameweek as processed
-12. Release advisory lock
+5. Sync player data from FPL bootstrap API (goals, assists, xG, xA, form, etc.)
+6. Run Points Against incremental update (~2-5 min)
+7. Verify Points Against data via `points_against_collection_status` table
+8. Run Manager Snapshots incremental update (~1-2 min)
+9. Verify Manager Snapshots data (snapshots and picks saved)
+10. Run Chips sync for tracked league (~30 sec)
+11. Verify Chips data (failure rate < 10%, members > 0)
+12. Compute League Ownership from manager picks (~30 sec)
+13. Mark gameweek as processed
+14. Release advisory lock
 
 **Robustness Features:**
 - **Advisory locks**: `pg_try_advisory_lock` prevents race conditions from cron overlap or manual runs
@@ -901,6 +907,7 @@ fly ssh console --app tapas-fpl-backend -C "python -m scripts.scheduled_update -
 - **Zero members check**: Catches wrong league ID configuration
 - **PA status verification**: Checks `points_against_collection_status` table for completion
 - **Specific exceptions**: Only catches expected errors (`asyncpg.PostgresError`, `httpx.HTTPError`, `TimeoutError`)
+- **Dual pool initialization**: Initializes both script pool and `app.db` pool (ChipsService uses `get_connection()` from `app/db.py`)
 
 **Failure Handling:**
 - If any step fails, gameweek is NOT marked as processed
@@ -914,11 +921,22 @@ Current production data status (as of GW21, 2025-26 season):
 
 | Table | Rows | Coverage | Updated By |
 |-------|------|----------|------------|
+| `player` | 795 | All FPL players | Scheduled update (--sync-bootstrap) |
 | `player_fixture_stats` | 15,760 | GW1-21 | Points Against collection |
 | `points_against_by_fixture` | 420 | GW1-21 | Points Against collection |
 | `manager_gw_snapshot` | 377 | GW1-21, 18 managers | Manager Snapshots collection |
 | `manager_pick` | 5,655 | GW1-21, 18 managers | Manager Snapshots collection |
-| `chip_usage` | 65 | GW1-21 | Chips sync |
+| `chip_usage` | 39 | GW1-21 | Chips sync |
+| `league_ownership` | 0 | - | Scheduled update (needs run) |
+
+**Player stats synced from bootstrap API:**
+- Core: `total_points`, `minutes`, `form`, `selected_by_percent`
+- Goals: `goals_scored`, `assists`, `clean_sheets`, `goals_conceded`
+- Saves: `saves`, `penalties_saved`, `penalties_missed`
+- Cards: `yellow_cards`, `red_cards`
+- Bonus: `bonus`, `bps` (bonus points system)
+- xStats: `expected_goals`, `expected_assists`, `expected_goal_involvements`, `expected_goals_conceded`
+- ICT: `influence`, `creativity`, `threat`, `ict_index`
 
 **Initial Setup (one-time):**
 
@@ -931,13 +949,26 @@ fly ssh console --app tapas-fpl-backend -C "nohup python -m scripts.collect_poin
 # 2. Manager Snapshots (~10 min) - required for H2H comparison
 fly ssh console --app tapas-fpl-backend -C "python -m scripts.collect_manager_snapshots"
 
-# 3. Chips sync (~30 sec) - handled by scheduled update
+# 3. Player stats sync (~30 sec) - sync goals, assists, xG, xA from FPL API
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.scheduled_update --sync-bootstrap"
+
+# 4. League Ownership backfill (~30 sec) - compute ownership from manager_pick data
+fly ssh console --app tapas-fpl-backend -C "python -m scripts.backfill_league_ownership"
+
+# 5. Chips sync (~30 sec) - handled by scheduled update
 # No manual run needed
 ```
 
 **Ongoing Updates:**
 
-The `scheduled_update.py` script handles all three data types incrementally:
+The `scheduled_update.py` script handles all data types incrementally:
+- Player stats (goals, assists, xG, xA, form)
+- Points Against (per-fixture stats)
+- Manager Snapshots (picks, transfers)
+- Chips sync
+- League Ownership (computed from picks)
+
+Configuration:
 - Runs daily at 06:00 UTC via Supercronic
 - Only processes new finalized gameweeks
 - Tracks progress in `collection_status` table
