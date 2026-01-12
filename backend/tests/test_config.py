@@ -3,17 +3,18 @@
 import os
 from unittest.mock import patch
 
+import pytest
+
 from app.config import Settings, get_settings
 
 
 class TestSettings:
     """Tests for Settings configuration class."""
 
-    @patch.dict(os.environ, {"LOG_LEVEL": ""}, clear=False)
-    def test_default_values(self):
+    def test_default_values(self, monkeypatch: pytest.MonkeyPatch):
         """Settings should have sensible defaults."""
-        # Clear LOG_LEVEL to test actual defaults (not env overrides)
-        os.environ.pop("LOG_LEVEL", None)
+        # Remove LOG_LEVEL to test actual defaults (not env overrides)
+        monkeypatch.delenv("LOG_LEVEL", raising=False)
         settings = Settings()
 
         assert settings.log_level == "INFO"

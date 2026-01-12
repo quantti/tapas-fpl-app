@@ -7,6 +7,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.main import app
+from app.services.bootstrap_cache import clear_cache as clear_bootstrap_cache_fn
 
 
 @pytest.fixture
@@ -182,8 +183,6 @@ def clear_bootstrap_cache():
     The bootstrap_cache module uses a singleton TTLCache that persists across
     tests. This ensures test isolation by clearing it before and after each test.
     """
-    from app.services.bootstrap_cache import clear_cache
-
-    clear_cache()
+    clear_bootstrap_cache_fn()
     yield
-    clear_cache()
+    clear_bootstrap_cache_fn()

@@ -35,6 +35,8 @@ _bootstrap_cache: TTLCache[str, dict[str, Any]] = TTLCache(
 )
 
 # Lock to prevent thundering herd on cache miss
+# Note: FastAPI uses a single event loop, so module-level lock is safe.
+# If used in multi-loop contexts, this would need lazy initialization.
 _bootstrap_lock = asyncio.Lock()
 
 # Timestamp for monitoring/debugging
@@ -64,6 +66,8 @@ async def get_cached_bootstrap(
     cache_key = "bootstrap"
 
     # Fast path: check cache without lock
+    # TTLCache.get() is atomic and returns None for expired items,
+    # so this is safe for asyncio's single-threaded event loop
     cached = _bootstrap_cache.get(cache_key)
     if cached is not None:
         logger.debug("Bootstrap cache hit")
@@ -81,23 +85,42 @@ async def get_cached_bootstrap(
         logger.info("Fetching bootstrap-static from FPL API (cache miss)")
         start = time.monotonic()
 
-        data = await fetcher("https://fantasy.premierleague.com/api/bootstrap-static/")
+        try:
+            data = await fetcher(
+                "https://fantasy.premierleague.com/api/bootstrap-static/"
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to fetch bootstrap-static: {type(e).__name__}: {e}. "
+                "Request will fail, next request will retry."
+            )
+            raise
 
         elapsed = time.monotonic() - start
         _last_fetch_time = time.time()
 
         # Validate response before caching
         if not data.get("elements"):
-            logger.warning("Bootstrap response missing 'elements', not caching")
+            logger.error(
+                "Bootstrap response missing 'elements' key. "
+                f"Response keys: {list(data.keys())}, "
+                f"Response sample: {str(data)[:200]}. "
+                "API may be under maintenance or rate-limiting."
+            )
             return data  # Return but don't cache invalid response
 
         # Store in cache
-        _bootstrap_cache[cache_key] = data
-
-        logger.info(
-            f"Cached bootstrap-static: {len(data.get('elements', []))} players, "
-            f"fetched in {elapsed:.2f}s"
-        )
+        try:
+            _bootstrap_cache[cache_key] = data
+            logger.info(
+                f"Cached bootstrap-static: {len(data.get('elements', []))} players, "
+                f"fetched in {elapsed:.2f}s"
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to cache bootstrap data: {e}. "
+                "Request will succeed but future requests won't benefit from cache."
+            )
 
         return data
 
@@ -106,7 +129,7 @@ def get_cached_gameweek() -> int | None:
     """Get current gameweek from cached bootstrap if available.
 
     Returns:
-        Current gameweek number, or None if not cached
+        Current gameweek number, or None if not cached or no current gameweek
     """
     cached = _bootstrap_cache.get("bootstrap")
     if cached is None:
@@ -114,8 +137,16 @@ def get_cached_gameweek() -> int | None:
 
     for event in cached.get("events", []):
         if event.get("is_current"):
-            return event["id"]
+            event_id = event.get("id")
+            if event_id is not None:
+                return event_id
+            logger.warning(f"Event marked is_current but has no id: {event}")
 
+    # Cache exists but no current gameweek - normal during off-season
+    logger.debug(
+        "Bootstrap cached but no current gameweek found. "
+        f"Total events: {len(cached.get('events', []))}"
+    )
     return None
 
 
