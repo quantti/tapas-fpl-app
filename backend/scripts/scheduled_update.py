@@ -355,13 +355,16 @@ async def sync_players_from_bootstrap(
         return 0
 
     # Upsert player data - include all required fields from player table
+    # Important: includes stats needed for recommendations (minutes, xG, xA, xGC, CS, status)
     await conn.executemany(
         """
         INSERT INTO player (
             id, season_id, team_id, web_name, element_type, now_cost,
-            selected_by_percent, total_points, form
+            selected_by_percent, total_points, form,
+            minutes, status, expected_goals, expected_assists,
+            expected_goals_conceded, clean_sheets
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         ON CONFLICT (id, season_id) DO UPDATE SET
             team_id = EXCLUDED.team_id,
             web_name = EXCLUDED.web_name,
@@ -370,6 +373,12 @@ async def sync_players_from_bootstrap(
             selected_by_percent = EXCLUDED.selected_by_percent,
             total_points = EXCLUDED.total_points,
             form = EXCLUDED.form,
+            minutes = EXCLUDED.minutes,
+            status = EXCLUDED.status,
+            expected_goals = EXCLUDED.expected_goals,
+            expected_assists = EXCLUDED.expected_assists,
+            expected_goals_conceded = EXCLUDED.expected_goals_conceded,
+            clean_sheets = EXCLUDED.clean_sheets,
             updated_at = NOW()
         """,
         [
@@ -383,6 +392,12 @@ async def sync_players_from_bootstrap(
                 float(p.get("selected_by_percent", "0")),  # FPL API returns string
                 p.get("total_points", 0),
                 float(p.get("form", "0")),  # FPL API returns string
+                p.get("minutes", 0),
+                p.get("status", "a"),
+                p.get("expected_goals", "0.00"),  # FPL API returns string
+                p.get("expected_assists", "0.00"),  # FPL API returns string
+                p.get("expected_goals_conceded", "0.00"),  # FPL API returns string
+                p.get("clean_sheets", 0),
             )
             for p in players
         ],
