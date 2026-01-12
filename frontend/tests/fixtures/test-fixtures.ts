@@ -19,6 +19,7 @@ import {
   mockElementSummaryResponse,
   mockEventStatusResponse,
   mockComparisonResponse,
+  mockLeagueRecommendationsResponse,
   MOCK_MANAGER_IDS,
 } from './mock-data';
 
@@ -157,6 +158,15 @@ export async function setupApiMocking(page: Page) {
   await page.route('**/api/v1/history/league/*/positions**', (route) =>
     route.fulfill(unavailableResponse)
   );
+
+  // Mock league recommendations endpoint
+  await page.route('**/api/v1/recommendations/league/**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(mockLeagueRecommendationsResponse),
+    });
+  });
 
   // Mock H2H comparison endpoint
   await page.route('**/api/v1/history/comparison**', async (route) => {
