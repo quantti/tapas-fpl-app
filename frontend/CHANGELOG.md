@@ -1,3 +1,10 @@
+## [0.31.1](https://github.com/quantti/tapas-fpl-app/compare/v0.31.0...v0.31.1) (2026-01-12)
+
+
+### Bug Fixes
+
+* **backend:** make recommendations fully DB-driven ([7fe7417](https://github.com/quantti/tapas-fpl-app/commit/7fe741745367a683b79586d3da6b0d1ed760bef7))
+
 # [0.31.0](https://github.com/quantti/tapas-fpl-app/compare/v0.30.1...v0.31.0) (2026-01-12)
 
 
