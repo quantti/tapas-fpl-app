@@ -1284,3 +1284,10 @@ node scripts/add-release-note.js
 ### Files
 - `src/views/Changelog.tsx` - User-visible changelog
 - `scripts/add-release-note.js` - CLI tool to add notes
+
+## TODO / Tech Debt
+
+- [ ] **Inconsistent CSS file naming**: Some CSS files use `*.module.css` (correct) while others use plain `*.css`. All component styles should use CSS Modules naming (`ComponentName.module.css`). Files to fix:
+  - `src/App.css` → `src/App.module.css`
+  - `src/components/CookieConsent.css` → `src/components/CookieConsent.module.css`
+  - (run `find src -name "*.css" ! -name "*.module.css"` to find others)
