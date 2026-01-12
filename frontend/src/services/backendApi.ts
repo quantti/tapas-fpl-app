@@ -202,6 +202,29 @@ export interface ComparisonResponse {
   head_to_head: BackendHeadToHead;
 }
 
+// Recommendations API types
+export interface RecommendedPlayerData {
+  id: number;
+  name: string;
+  team: number;
+  position: number;
+  price: number;
+  ownership: number; // 0-100 percentage
+  score: number; // 0-1 normalized score
+  xg90: number;
+  xa90: number;
+  form: number;
+  sell_score?: number; // Only for time_to_sell category
+}
+
+export interface LeagueRecommendationsResponse {
+  league_id: number;
+  season_id: number;
+  punts: RecommendedPlayerData[];
+  defensive: RecommendedPlayerData[];
+  time_to_sell: RecommendedPlayerData[];
+}
+
 // History API types - League Positions
 export interface ManagerMetadata {
   id: number;
@@ -354,6 +377,29 @@ export function validateComparisonResponse(data: unknown): data is ComparisonRes
   return true;
 }
 
+/**
+ * Validate LeagueRecommendationsResponse has expected shape.
+ * @internal Exported for testing only
+ */
+export function validateLeagueRecommendationsResponse(
+  data: unknown
+): data is LeagueRecommendationsResponse {
+  if (!data || typeof data !== 'object') return false;
+  const response = data as Record<string, unknown>;
+  if (typeof response.league_id !== 'number') return false;
+  if (!Array.isArray(response.punts)) return false;
+  if (!Array.isArray(response.defensive)) return false;
+  if (!Array.isArray(response.time_to_sell)) return false;
+
+  // Validate first punt has expected structure (if array not empty)
+  if (response.punts.length > 0) {
+    const player = response.punts[0] as Record<string, unknown>;
+    if (typeof player.id !== 'number') return false;
+    if (typeof player.score !== 'number') return false;
+  }
+  return true;
+}
+
 export const backendApi = {
   /**
    * Get points conceded by all teams for the season.
@@ -455,6 +501,24 @@ export const backendApi = {
     const data = await fetchBackend<ComparisonResponse>(`/api/v1/history/comparison?${params}`);
     if (!validateComparisonResponse(data)) {
       throw new BackendApiError(200, 'OK', 'Invalid response shape from comparison endpoint');
+    }
+    return data;
+  },
+
+  /**
+   * Get player recommendations for a league.
+   * Returns punts (low ownership differentials), defensive (safe picks), and time to sell.
+   * Replaces heavy frontend calculation with backend computation.
+   */
+  getLeagueRecommendations: async (
+    leagueId: number,
+    { seasonId = 1, limit = 20 }: { seasonId?: number; limit?: number } = {}
+  ): Promise<LeagueRecommendationsResponse> => {
+    const data = await fetchBackend<LeagueRecommendationsResponse>(
+      `/api/v1/recommendations/league/${leagueId}?season_id=${seasonId}&limit=${limit}`
+    );
+    if (!validateLeagueRecommendationsResponse(data)) {
+      throw new BackendApiError(200, 'OK', 'Invalid response shape from recommendations endpoint');
     }
     return data;
   },

@@ -77,10 +77,9 @@ export function Analytics() {
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Recommendations</h2>
         <Recommendations
-          players={bootstrap?.elements ?? []}
-          managerDetails={managerDetails}
+          leagueId={LEAGUE_ID}
+          playersMap={playersMap}
           teamsMap={teamsMap}
-          currentGameweek={currentGameweek.id}
           onPlayerClick={setSelectedPlayer}
         />
       </section>

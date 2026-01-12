@@ -7,7 +7,6 @@ import { useRecommendedPlayers } from 'services/queries/useRecommendedPlayers';
 
 import * as styles from './Recommendations.module.css';
 
-import type { ManagerGameweekData } from 'services/queries/useFplData';
 import type { Player, Team } from 'types/fpl';
 
 const PUNTS_INFO =
@@ -34,10 +33,9 @@ function InfoTooltip({ text, disclaimer }: { text: string; disclaimer: string })
 }
 
 interface Props {
-  players: Player[];
-  managerDetails: ManagerGameweekData[];
+  leagueId: number;
+  playersMap: Map<number, Player>;
   teamsMap: Map<number, Team>;
-  currentGameweek: number;
   onPlayerClick?: (player: Player) => void;
 }
 
@@ -67,18 +65,11 @@ function ScoreStars({ score }: { score: number }) {
   );
 }
 
-export function Recommendations({
-  players,
-  managerDetails,
-  teamsMap,
-  currentGameweek,
-  onPlayerClick,
-}: Props) {
+export function Recommendations({ leagueId, playersMap, teamsMap, onPlayerClick }: Props) {
   const { punts, defensive, toSell, loading, error } = useRecommendedPlayers(
-    players,
-    managerDetails,
-    teamsMap,
-    currentGameweek
+    leagueId,
+    playersMap,
+    teamsMap
   );
 
   if (loading) {

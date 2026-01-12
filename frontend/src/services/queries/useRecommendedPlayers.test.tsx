@@ -2,38 +2,106 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { POSITION_TYPES } from 'constants/positions';
-
-import { fplApi } from '../api';
+import { backendApi, BackendApiError } from '../backendApi';
 
 import { useRecommendedPlayers } from './useRecommendedPlayers';
 
-import type { ManagerGameweekData } from './useFplData';
 import type { ReactNode } from 'react';
-import type { Player, Fixture, Team } from 'types/fpl';
+import type { Player, Team } from 'types/fpl';
+import type { LeagueRecommendationsResponse } from '../backendApi';
 
-// Note: Pure function tests (getPercentile, calculateFixtureScore, calculateLeagueOwnership)
-// are in src/utils/playerScoring.test.ts with comprehensive coverage (51 tests)
+// Mock backendApi
+vi.mock('../backendApi', async () => {
+  const actual = await vi.importActual<typeof import('../backendApi')>('../backendApi');
+  return {
+    ...actual,
+    backendApi: {
+      ...actual.backendApi,
+      getLeagueRecommendations: vi.fn(),
+    },
+  };
+});
 
-// Mock API
-vi.mock('../api', () => ({
-  fplApi: {
-    getFixtures: vi.fn(),
-  },
-}));
+// ============================================================================
+// Test Helpers
+// ============================================================================
 
-// Shared test helpers
-const makeManager = (id: number, playerIds: number[]): ManagerGameweekData =>
+const makePlayer = (id: number, overrides: Partial<Player> = {}): Player =>
   ({
-    entry: id,
-    picks: playerIds.map((pid) => ({
-      playerId: pid,
-      position: 1,
-      multiplier: 1,
-      is_captain: false,
-      is_vice_captain: false,
-    })),
-  }) as ManagerGameweekData;
+    id,
+    web_name: `Player${id}`,
+    team: 1,
+    element_type: 3, // MID
+    status: 'a',
+    ...overrides,
+  }) as Player;
+
+const makeTeam = (id: number): Team =>
+  ({
+    id,
+    name: `Team ${id}`,
+    short_name: `T${id}`,
+  }) as Team;
+
+const mockApiResponse: LeagueRecommendationsResponse = {
+  league_id: 12345,
+  season_id: 1,
+  punts: [
+    {
+      id: 1,
+      name: 'Player1',
+      team: 1,
+      position: 3,
+      price: 60,
+      ownership: 15,
+      score: 0.85,
+      xg90: 0.5,
+      xa90: 0.3,
+      form: 7.5,
+    },
+    {
+      id: 2,
+      name: 'Player2',
+      team: 2,
+      position: 4,
+      price: 75,
+      ownership: 25,
+      score: 0.72,
+      xg90: 0.4,
+      xa90: 0.2,
+      form: 6.0,
+    },
+  ],
+  defensive: [
+    {
+      id: 3,
+      name: 'Player3',
+      team: 1,
+      position: 3,
+      price: 100,
+      ownership: 65,
+      score: 0.9,
+      xg90: 0.6,
+      xa90: 0.4,
+      form: 8.5,
+    },
+  ],
+  time_to_sell: [
+    {
+      id: 4,
+      name: 'Player4',
+      team: 3,
+      position: 2,
+      price: 55,
+      ownership: 40,
+      score: 0.3,
+      sell_score: 0.75,
+      xg90: 0.1,
+      xa90: 0.0,
+      form: 2.0,
+    },
+  ],
+};
 
 // ============================================================================
 // Integration Tests: useRecommendedPlayers hook
@@ -47,45 +115,6 @@ describe('useRecommendedPlayers', () => {
     };
   };
 
-  const makePlayer = (id: number, elementType: number, overrides: Partial<Player> = {}): Player =>
-    ({
-      id,
-      web_name: `Player${id}`,
-      team: 1,
-      element_type: elementType,
-      status: 'a',
-      minutes: 900,
-      form: '5.0',
-      expected_goals: '2.0',
-      expected_assists: '1.5',
-      expected_goals_conceded: '0.5',
-      clean_sheets: 5,
-      now_cost: 60,
-      ...overrides,
-    }) as Player;
-
-  const makeTeam = (id: number): Team =>
-    ({
-      id,
-      name: `Team ${id}`,
-      short_name: `T${id}`,
-    }) as Team;
-
-  const mockFixtures: Fixture[] = [
-    {
-      id: 1,
-      event: 18,
-      team_h: 1,
-      team_a: 2,
-      team_h_difficulty: 2,
-      team_a_difficulty: 3,
-      started: false,
-      finished: false,
-      finished_provisional: false,
-      kickoff_time: '2025-01-01T15:00:00Z',
-    } as Fixture,
-  ];
-
   beforeEach(() => {
     vi.clearAllMocks();
     queryClient = new QueryClient({
@@ -93,316 +122,262 @@ describe('useRecommendedPlayers', () => {
         queries: { retry: false },
       },
     });
-    vi.mocked(fplApi.getFixtures).mockResolvedValue(mockFixtures);
   });
 
   afterEach(() => {
     queryClient.clear();
   });
 
-  it('returns empty arrays when players is empty', async () => {
+  it('returns empty arrays when playersMap is empty', async () => {
+    const playersMap = new Map<number, Player>();
     const teamsMap = new Map([[1, makeTeam(1)]]);
-    const { result } = renderHook(() => useRecommendedPlayers([], [], teamsMap, 17), {
+
+    const { result } = renderHook(() => useRecommendedPlayers(12345, playersMap, teamsMap), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
+    // Query should be disabled when playersMap is empty
+    expect(result.current.loading).toBe(false);
     expect(result.current.punts).toEqual([]);
     expect(result.current.defensive).toEqual([]);
     expect(result.current.toSell).toEqual([]);
   });
 
-  it('excludes goalkeepers from all lists', async () => {
-    const players = [
-      makePlayer(1, 1), // GK
-      makePlayer(2, 3), // MID
-    ];
-    const teamsMap = new Map([[1, makeTeam(1)]]);
-    const managers = [makeManager(1, [1, 2])];
+  it('calls backend API with correct leagueId', async () => {
+    vi.mocked(backendApi.getLeagueRecommendations).mockResolvedValue(mockApiResponse);
 
-    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
+    const playersMap = new Map([
+      [1, makePlayer(1)],
+      [2, makePlayer(2)],
+      [3, makePlayer(3)],
+      [4, makePlayer(4)],
+    ]);
+    const teamsMap = new Map([
+      [1, makeTeam(1)],
+      [2, makeTeam(2)],
+      [3, makeTeam(3)],
+    ]);
+
+    renderHook(() => useRecommendedPlayers(12345, playersMap, teamsMap), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(backendApi.getLeagueRecommendations).toHaveBeenCalledWith(12345, {
+        seasonId: 1,
+        limit: 20,
+      });
+    });
+  });
+
+  it('transforms backend response to RecommendedPlayer format', async () => {
+    vi.mocked(backendApi.getLeagueRecommendations).mockResolvedValue(mockApiResponse);
+
+    const playersMap = new Map([
+      [1, makePlayer(1, { element_type: 3 })],
+      [2, makePlayer(2, { element_type: 4 })],
+      [3, makePlayer(3, { element_type: 3 })],
+      [4, makePlayer(4, { element_type: 2 })],
+    ]);
+    const teamsMap = new Map([
+      [1, makeTeam(1)],
+      [2, makeTeam(2)],
+      [3, makeTeam(3)],
+    ]);
+
+    const { result } = renderHook(() => useRecommendedPlayers(12345, playersMap, teamsMap), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    // No goalkeeper in any list
-    const allPlayers = [
-      ...result.current.punts,
-      ...result.current.defensive,
-      ...result.current.toSell,
-    ];
-    expect(allPlayers.every((p) => p.player.element_type !== POSITION_TYPES.GOALKEEPER)).toBe(true);
+    // Punts should have players from punts array
+    expect(result.current.punts).toHaveLength(2);
+    expect(result.current.punts[0]).toEqual({
+      player: playersMap.get(1),
+      team: teamsMap.get(1),
+      score: 0.85,
+      fixtureScore: 0,
+      leagueOwnership: 0.15, // Backend returns 0-100, we convert to 0-1
+    });
+
+    // Defensive should have players from defensive array
+    expect(result.current.defensive).toHaveLength(1);
+    expect(result.current.defensive[0].player).toBe(playersMap.get(3));
+
+    // ToSell should use sell_score if available
+    expect(result.current.toSell).toHaveLength(1);
+    expect(result.current.toSell[0].score).toBe(0.75); // sell_score used
   });
 
-  it('excludes unavailable players', async () => {
-    const players = [
-      makePlayer(1, 3, { status: 'i' }), // injured
-      makePlayer(2, 3, { status: 'a' }), // available
-    ];
-    const teamsMap = new Map([[1, makeTeam(1)]]);
-    const managers = [makeManager(1, [1, 2])];
+  it('filters out players not in playersMap', async () => {
+    vi.mocked(backendApi.getLeagueRecommendations).mockResolvedValue(mockApiResponse);
 
-    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
+    // Only include player 1, not 2
+    const playersMap = new Map([[1, makePlayer(1)]]);
+    const teamsMap = new Map([
+      [1, makeTeam(1)],
+      [2, makeTeam(2)],
+    ]);
+
+    const { result } = renderHook(() => useRecommendedPlayers(12345, playersMap, teamsMap), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    const allPlayers = [
-      ...result.current.punts,
-      ...result.current.defensive,
-      ...result.current.toSell,
-    ];
-    expect(allPlayers.every((p) => p.player.status === 'a')).toBe(true);
+    // Only player 1 should be in punts (player 2 filtered out)
+    expect(result.current.punts).toHaveLength(1);
+    expect(result.current.punts[0].player.id).toBe(1);
   });
 
-  it('excludes players with less than 450 minutes', async () => {
-    const players = [
-      makePlayer(1, 3, { minutes: 400 }), // below threshold
-      makePlayer(2, 3, { minutes: 450 }), // at threshold
-      makePlayer(3, 3, { minutes: 900 }), // above threshold
-    ];
-    const teamsMap = new Map([[1, makeTeam(1)]]);
-    const managers: ManagerGameweekData[] = [];
+  it('filters out players with missing team', async () => {
+    vi.mocked(backendApi.getLeagueRecommendations).mockResolvedValue(mockApiResponse);
 
-    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
+    const playersMap = new Map([
+      [1, makePlayer(1)],
+      [2, makePlayer(2)],
+    ]);
+    // Only include team 1, not team 2
+    const teamsMap = new Map([[1, makeTeam(1)]]);
+
+    const { result } = renderHook(() => useRecommendedPlayers(12345, playersMap, teamsMap), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    // Only players 2 and 3 should be eligible for punts (low ownership)
-    const puntIds = result.current.punts.map((p) => p.player.id);
-    expect(puntIds).not.toContain(1);
+    // Only player 1 should be in punts (player 2's team missing)
+    expect(result.current.punts).toHaveLength(1);
+    expect(result.current.punts[0].player.id).toBe(1);
   });
 
-  it('punts filters for ownership < 40%', async () => {
-    const players = [
-      makePlayer(1, 3), // will have 100% ownership
-      makePlayer(2, 3), // will have 50% ownership
-      makePlayer(3, 3), // will have 0% ownership
-    ];
-    const teamsMap = new Map([[1, makeTeam(1)]]);
-    const managers = [makeManager(1, [1, 2]), makeManager(2, [1])];
-
-    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    // Punts should only have player 3 (0% ownership)
-    const puntIds = result.current.punts.map((p) => p.player.id);
-    expect(puntIds).toContain(3);
-    expect(puntIds).not.toContain(1); // 100% >= 40%
-    expect(puntIds).not.toContain(2); // 50% >= 40%
-  });
-
-  it('defensive filters for 40% < ownership < 100%', async () => {
-    const players = [
-      makePlayer(1, 3), // will have 100% ownership (excluded)
-      makePlayer(2, 3), // will have 50% ownership (included)
-      makePlayer(3, 3), // will have 25% ownership (excluded - too low)
-    ];
-    const teamsMap = new Map([[1, makeTeam(1)]]);
-    const managers = [
-      makeManager(1, [1, 2]),
-      makeManager(2, [1, 2]),
-      makeManager(3, [1, 3]),
-      makeManager(4, [1]),
-    ];
-
-    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    const defIds = result.current.defensive.map((p) => p.player.id);
-    expect(defIds).toContain(2); // 50% - in range
-    expect(defIds).not.toContain(1); // 100% - too high
-    expect(defIds).not.toContain(3); // 25% - too low
-  });
-
-  it('toSell filters for ownership > 0', async () => {
-    const players = [
-      makePlayer(1, 3, { form: '0.5' }), // owned, bad form
-      makePlayer(2, 3, { form: '0.5' }), // not owned
-    ];
-    const teamsMap = new Map([[1, makeTeam(1)]]);
-    const managers = [makeManager(1, [1])];
-
-    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    const sellIds = result.current.toSell.map((p) => p.player.id);
-    expect(sellIds).not.toContain(2); // 0% ownership - excluded
-  });
-
-  it('returns loading true while fixtures are fetching', async () => {
-    vi.mocked(fplApi.getFixtures).mockImplementation(
+  it('returns loading true while fetching', () => {
+    vi.mocked(backendApi.getLeagueRecommendations).mockImplementation(
       () => new Promise(() => {}) // never resolves
     );
 
-    const players = [makePlayer(1, 3)];
+    const playersMap = new Map([[1, makePlayer(1)]]);
     const teamsMap = new Map([[1, makeTeam(1)]]);
 
-    const { result } = renderHook(() => useRecommendedPlayers(players, [], teamsMap, 17), {
+    const { result } = renderHook(() => useRecommendedPlayers(12345, playersMap, teamsMap), {
       wrapper: createWrapper(),
     });
 
     expect(result.current.loading).toBe(true);
   });
 
-  it('limits punts to top 20', async () => {
-    // Create 25 eligible players
-    const players = Array.from({ length: 25 }, (_, i) =>
-      makePlayer(i + 1, 3, { form: String(5 - i * 0.1) })
-    );
+  it('returns error message on API failure', async () => {
+    vi.mocked(backendApi.getLeagueRecommendations).mockRejectedValue(new Error('Network error'));
+
+    const playersMap = new Map([[1, makePlayer(1)]]);
     const teamsMap = new Map([[1, makeTeam(1)]]);
 
-    const { result } = renderHook(() => useRecommendedPlayers(players, [], teamsMap, 17), {
+    const { result } = renderHook(() => useRecommendedPlayers(12345, playersMap, teamsMap), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    // Wait for error to appear (query may retry before settling)
+    await waitFor(() => expect(result.current.error).not.toBeNull(), { timeout: 5000 });
 
-    expect(result.current.punts.length).toBeLessThanOrEqual(20);
+    expect(result.current.error).toBe('Failed to load recommendations.');
+    expect(result.current.punts).toEqual([]);
   });
 
-  it('limits defensive to top 10', async () => {
-    // Create 15 eligible players with 50% ownership
-    const players = Array.from({ length: 15 }, (_, i) => makePlayer(i + 1, 3));
-    const teamsMap = new Map([[1, makeTeam(1)]]);
-    const managers = [
-      makeManager(
-        1,
-        players.slice(0, 8).map((p) => p.id)
-      ),
-      makeManager(
-        2,
-        players.slice(7, 15).map((p) => p.id)
-      ),
-    ];
+  it('returns specific error for rate limiting (429)', async () => {
+    // BackendApiError(status, statusText, detail)
+    const rateLimitError = new BackendApiError(429, 'Too Many Requests', 'Rate limited');
+    vi.mocked(backendApi.getLeagueRecommendations).mockRejectedValue(rateLimitError);
 
-    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
+    const playersMap = new Map([[1, makePlayer(1)]]);
+    const teamsMap = new Map([[1, makeTeam(1)]]);
+
+    const { result } = renderHook(() => useRecommendedPlayers(12345, playersMap, teamsMap), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.error).not.toBeNull(), { timeout: 5000 });
 
-    expect(result.current.defensive.length).toBeLessThanOrEqual(10);
+    expect(result.current.error).toBe('Rate limited. Please try again later.');
   });
 
-  it('limits toSell to top 10', async () => {
-    // Create 15 bad players owned by managers
-    const players = Array.from(
-      { length: 15 },
-      (_, i) => makePlayer(i + 1, 3, { form: '0.1' }) // very bad form
-    );
-    const teamsMap = new Map([[1, makeTeam(1)]]);
-    const managers = [
-      makeManager(
-        1,
-        players.map((p) => p.id)
-      ),
-    ];
+  it('returns specific error for service unavailable (503)', async () => {
+    // BackendApiError(status, statusText, detail)
+    const unavailableError = new BackendApiError(503, 'Service Unavailable', 'Backend down');
+    vi.mocked(backendApi.getLeagueRecommendations).mockRejectedValue(unavailableError);
 
-    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
+    const playersMap = new Map([[1, makePlayer(1)]]);
+    const teamsMap = new Map([[1, makeTeam(1)]]);
+
+    const { result } = renderHook(() => useRecommendedPlayers(12345, playersMap, teamsMap), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    // Service unavailable doesn't retry, so error appears quickly
+    await waitFor(() => expect(result.current.error).not.toBeNull());
 
-    expect(result.current.toSell.length).toBeLessThanOrEqual(10);
+    expect(result.current.error).toBe('Recommendations service temporarily unavailable.');
   });
 
-  it('sorts punts by score descending', async () => {
-    const players = [
-      makePlayer(1, 3, { form: '1.0' }), // low score
-      makePlayer(2, 3, { form: '8.0' }), // high score
-      makePlayer(3, 3, { form: '5.0' }), // medium score
-    ];
+  it('does not retry on service unavailable errors', async () => {
+    const unavailableError = new BackendApiError(503, 'Service Unavailable', 'Backend down');
+    vi.mocked(backendApi.getLeagueRecommendations).mockRejectedValue(unavailableError);
+
+    const playersMap = new Map([[1, makePlayer(1)]]);
     const teamsMap = new Map([[1, makeTeam(1)]]);
 
-    const { result } = renderHook(() => useRecommendedPlayers(players, [], teamsMap, 17), {
+    renderHook(() => useRecommendedPlayers(12345, playersMap, teamsMap), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    const scores = result.current.punts.map((p) => p.score);
-    for (let i = 1; i < scores.length; i++) {
-      expect(scores[i - 1]).toBeGreaterThanOrEqual(scores[i]);
-    }
+    await waitFor(() => {
+      // Should only be called once (no retries)
+      expect(backendApi.getLeagueRecommendations).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it('returns error when fixtures API fails', async () => {
-    vi.mocked(fplApi.getFixtures).mockRejectedValue(new Error('Network error'));
-
-    const players = [makePlayer(1, 3)];
+  it('respects enabled option', async () => {
+    const playersMap = new Map([[1, makePlayer(1)]]);
     const teamsMap = new Map([[1, makeTeam(1)]]);
 
-    const { result } = renderHook(() => useRecommendedPlayers(players, [], teamsMap, 17), {
+    renderHook(() => useRecommendedPlayers(12345, playersMap, teamsMap, { enabled: false }), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    // Error is captured
-    expect(result.current.error).toBe('Network error');
-    // Hook gracefully degrades - uses default fixture scores (0.5)
-    // Lists are still populated based on available data
+    // API should not be called when disabled
+    expect(backendApi.getLeagueRecommendations).not.toHaveBeenCalled();
   });
 
-  it('toSell excludes players with score <= 0.5', async () => {
-    // Create players across the spectrum so percentiles work correctly
-    // Player 1: excellent form (should NOT be in toSell)
-    // Player 2: poor form (should be in toSell)
-    const players = [
-      makePlayer(1, 3, {
-        form: '8.0',
-        expected_goals: '5.0',
-        expected_assists: '3.0',
-      }), // great
-      makePlayer(2, 3, {
-        form: '1.0',
-        expected_goals: '0.5',
-        expected_assists: '0.2',
-      }), // poor
-      makePlayer(3, 3, {
-        form: '5.0',
-        expected_goals: '2.0',
-        expected_assists: '1.0',
-      }), // avg
-      makePlayer(4, 3, {
-        form: '6.0',
-        expected_goals: '3.0',
-        expected_assists: '2.0',
-      }), // good
-      makePlayer(5, 3, {
-        form: '3.0',
-        expected_goals: '1.0',
-        expected_assists: '0.5',
-      }), // below avg
-    ];
-    const teamsMap = new Map([[1, makeTeam(1)]]);
-    // All managers own player 1 (great player) - should NOT be in toSell
-    const managers = [makeManager(1, [1]), makeManager(2, [1])];
+  it('converts ownership from 0-100 to 0-1 range', async () => {
+    const response: LeagueRecommendationsResponse = {
+      ...mockApiResponse,
+      punts: [
+        {
+          id: 1,
+          name: 'Player1',
+          team: 1,
+          position: 3,
+          price: 60,
+          ownership: 50, // 50% in backend format
+          score: 0.8,
+          xg90: 0.5,
+          xa90: 0.3,
+          form: 7.0,
+        },
+      ],
+    };
+    vi.mocked(backendApi.getLeagueRecommendations).mockResolvedValue(response);
 
-    const { result } = renderHook(() => useRecommendedPlayers(players, managers, teamsMap, 17), {
+    const playersMap = new Map([[1, makePlayer(1)]]);
+    const teamsMap = new Map([[1, makeTeam(1)]]);
+
+    const { result } = renderHook(() => useRecommendedPlayers(12345, playersMap, teamsMap), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    // Player 1 (great form) should NOT be in toSell even though owned
-    const sellIds = result.current.toSell.map((p) => p.player.id);
-    expect(sellIds).not.toContain(1);
+    // Ownership should be converted: 50 → 0.5
+    expect(result.current.punts[0].leagueOwnership).toBe(0.5);
   });
 });
