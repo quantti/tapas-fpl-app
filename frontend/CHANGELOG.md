@@ -1,3 +1,10 @@
+## [0.30.1](https://github.com/quantti/tapas-fpl-app/compare/v0.30.0...v0.30.1) (2026-01-12)
+
+
+### Bug Fixes
+
+* **backend:** resolve fixtures API runtime errors ([001b4d8](https://github.com/quantti/tapas-fpl-app/commit/001b4d860724c7a92504e43b42bd2355d1906077))
+
 # [0.30.0](https://github.com/quantti/tapas-fpl-app/compare/v0.29.0...v0.30.0) (2026-01-12)
 
 
