@@ -1,3 +1,19 @@
+# [0.31.0](https://github.com/quantti/tapas-fpl-app/compare/v0.30.1...v0.31.0) (2026-01-12)
+
+
+### Bug Fixes
+
+* **backend:** add missing cachetools to uv.lock ([9de8fe8](https://github.com/quantti/tapas-fpl-app/commit/9de8fe8d95f35522b517f9abc53713cb907f8fd6))
+* **backend:** add shared bootstrap cache to prevent OOM ([bba2ea7](https://github.com/quantti/tapas-fpl-app/commit/bba2ea7dba284b793dd37ad33c3573a4a41f124c))
+* **backend:** increase VM memory to 512MB to prevent OOM crashes ([bc7f9bb](https://github.com/quantti/tapas-fpl-app/commit/bc7f9bb60386624f6fb08b302a05bd1a787048e9))
+* **frontend:** add missing recommendations API mock for E2E tests ([4b2efd8](https://github.com/quantti/tapas-fpl-app/commit/4b2efd88d0c4ee99a768c99de10ab7af0909a970))
+
+
+### Features
+
+* **backend:** add league ownership data pipeline ([2a66cab](https://github.com/quantti/tapas-fpl-app/commit/2a66cab23d41f76aa033468df00250db13585403))
+* **backend:** add missing FplApiClient methods for recommendations ([029d77d](https://github.com/quantti/tapas-fpl-app/commit/029d77dc996728d60198101a41b348b9efa82099))
+
 ## [0.30.1](https://github.com/quantti/tapas-fpl-app/compare/v0.30.0...v0.30.1) (2026-01-12)
 
 
