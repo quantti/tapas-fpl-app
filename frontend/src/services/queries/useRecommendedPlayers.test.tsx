@@ -6,9 +6,9 @@ import { backendApi, BackendApiError } from '../backendApi';
 
 import { useRecommendedPlayers } from './useRecommendedPlayers';
 
+import type { LeagueRecommendationsResponse } from '../backendApi';
 import type { ReactNode } from 'react';
 import type { Player, Team } from 'types/fpl';
-import type { LeagueRecommendationsResponse } from '../backendApi';
 
 // Mock backendApi
 vi.mock('../backendApi', async () => {

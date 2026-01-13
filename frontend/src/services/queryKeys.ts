@@ -57,6 +57,10 @@ export const queryKeys = {
   // Recommendations (from backend API)
   leagueRecommendations: (leagueId: number, seasonId: number) =>
     ['leagueRecommendations', leagueId, seasonId] as const,
+
+  // Dashboard consolidation (from backend API)
+  leagueDashboard: (leagueId: number, gameweek: number, seasonId: number) =>
+    ['leagueDashboard', leagueId, gameweek, seasonId] as const,
 } as const;
 
 // Type exports for use in tests or other utilities

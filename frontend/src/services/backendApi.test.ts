@@ -4,6 +4,7 @@ import {
   BackendApiError,
   validateComparisonResponse,
   validateLeagueChipsResponse,
+  validateLeagueDashboardResponse,
   validateLeaguePositionsResponse,
   validateLeagueStatsResponse,
   validateTeamsResponse,
@@ -464,5 +465,142 @@ describe('validateComparisonResponse', () => {
       manager_a: { ...validManagerStats, starting_xi: 'not array' },
     };
     expect(validateComparisonResponse(data)).toBe(false);
+  });
+});
+
+describe('validateLeagueDashboardResponse', () => {
+  const validResponse = {
+    league_id: 242017,
+    gameweek: 21,
+    season_id: 1,
+    managers: [
+      {
+        entry_id: 123,
+        manager_name: 'John Doe',
+        team_name: 'FC Test',
+        total_points: 1250,
+        gw_points: 65,
+        rank: 1,
+        last_rank: 2,
+        overall_rank: 50000,
+        last_overall_rank: null,
+        bank: 0.5,
+        team_value: 102.3,
+        transfers_made: 1,
+        transfer_cost: 0,
+        chip_active: null,
+        picks: [
+          {
+            position: 1,
+            player_id: 427,
+            player_name: 'Salah',
+            team_id: 11,
+            team_short_name: 'LIV',
+            element_type: 3,
+            is_captain: true,
+            is_vice_captain: false,
+            multiplier: 2,
+            now_cost: 130,
+            form: 8.5,
+            points_per_game: 7.2,
+            selected_by_percent: 45.3,
+          },
+        ],
+        chips_used: ['wildcard_1'],
+        transfers: [],
+      },
+    ],
+  };
+
+  it('returns true for valid response', () => {
+    expect(validateLeagueDashboardResponse(validResponse)).toBe(true);
+  });
+
+  it('returns true for empty managers array', () => {
+    const data = { ...validResponse, managers: [] };
+    expect(validateLeagueDashboardResponse(data)).toBe(true);
+  });
+
+  it('returns false for null input', () => {
+    expect(validateLeagueDashboardResponse(null)).toBe(false);
+  });
+
+  it('returns false for undefined input', () => {
+    const undef = undefined as unknown;
+    expect(validateLeagueDashboardResponse(undef)).toBe(false);
+  });
+
+  it('returns false when league_id is missing', () => {
+    const { league_id, ...data } = validResponse;
+    void league_id;
+    expect(validateLeagueDashboardResponse(data)).toBe(false);
+  });
+
+  it('returns false when league_id is not a number', () => {
+    const data = { ...validResponse, league_id: '242017' };
+    expect(validateLeagueDashboardResponse(data)).toBe(false);
+  });
+
+  it('returns false when gameweek is missing', () => {
+    const { gameweek, ...data } = validResponse;
+    void gameweek;
+    expect(validateLeagueDashboardResponse(data)).toBe(false);
+  });
+
+  it('returns false when gameweek is not a number', () => {
+    const data = { ...validResponse, gameweek: '21' };
+    expect(validateLeagueDashboardResponse(data)).toBe(false);
+  });
+
+  it('returns false when season_id is missing', () => {
+    const { season_id, ...data } = validResponse;
+    void season_id;
+    expect(validateLeagueDashboardResponse(data)).toBe(false);
+  });
+
+  it('returns false when season_id is not a number', () => {
+    const data = { ...validResponse, season_id: '1' };
+    expect(validateLeagueDashboardResponse(data)).toBe(false);
+  });
+
+  it('returns false when managers is not an array', () => {
+    const data = { ...validResponse, managers: 'not an array' };
+    expect(validateLeagueDashboardResponse(data)).toBe(false);
+  });
+
+  it('returns false when managers is missing', () => {
+    const { managers, ...data } = validResponse;
+    void managers;
+    expect(validateLeagueDashboardResponse(data)).toBe(false);
+  });
+
+  it('returns false when first manager lacks entry_id', () => {
+    const { entry_id, ...managerWithoutId } = validResponse.managers[0];
+    void entry_id;
+    const data = { ...validResponse, managers: [managerWithoutId] };
+    expect(validateLeagueDashboardResponse(data)).toBe(false);
+  });
+
+  it('returns false when first manager entry_id is not a number', () => {
+    const data = {
+      ...validResponse,
+      managers: [{ ...validResponse.managers[0], entry_id: '123' }],
+    };
+    expect(validateLeagueDashboardResponse(data)).toBe(false);
+  });
+
+  it('returns false when first manager lacks picks array', () => {
+    const { picks, ...managerWithoutPicks } = validResponse.managers[0];
+    void picks;
+    const data = { ...validResponse, managers: [managerWithoutPicks] };
+    expect(validateLeagueDashboardResponse(data)).toBe(false);
+  });
+
+  it('returns false when first manager picks is not an array', () => {
+    const data = {
+      ...validResponse,
+      managers: [{ ...validResponse.managers[0], picks: 'not an array' }],
+    };
+    expect(validateLeagueDashboardResponse(data)).toBe(false);
   });
 });

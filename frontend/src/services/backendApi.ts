@@ -244,6 +244,57 @@ export interface LeaguePositionsResponse {
   managers: ManagerMetadata[];
 }
 
+// Dashboard API types
+export interface DashboardPick {
+  position: number;
+  player_id: number;
+  player_name: string;
+  team_id: number;
+  team_short_name: string;
+  element_type: number;
+  is_captain: boolean;
+  is_vice_captain: boolean;
+  multiplier: number;
+  now_cost: number;
+  form: number;
+  points_per_game: number;
+  selected_by_percent: number;
+}
+
+export interface DashboardTransfer {
+  player_in_id: number;
+  player_in_name: string;
+  player_out_id: number;
+  player_out_name: string;
+}
+
+export interface DashboardManager {
+  entry_id: number;
+  manager_name: string;
+  team_name: string;
+  total_points: number;
+  gw_points: number;
+  rank: number;
+  last_rank: number | null;
+  overall_rank: number | null;
+  last_overall_rank: number | null;
+  bank: number;
+  team_value: number;
+  transfers_made: number;
+  transfer_cost: number;
+  chip_active: string | null;
+  picks: DashboardPick[];
+  chips_used: string[];
+  transfers: DashboardTransfer[];
+}
+
+export interface LeagueDashboardResponse {
+  league_id: number;
+  gameweek: number;
+  season_id: number;
+  managers: DashboardManager[];
+}
+
 async function fetchBackend<T>(endpoint: string): Promise<T> {
   let response: Response;
 
@@ -374,6 +425,27 @@ export function validateComparisonResponse(data: unknown): data is ComparisonRes
   if (typeof managerA.total_points !== 'number') return false;
   if (!Array.isArray(managerA.starting_xi)) return false;
 
+  return true;
+}
+
+/**
+ * Validate LeagueDashboardResponse has expected shape.
+ * @internal Exported for testing only
+ */
+export function validateLeagueDashboardResponse(data: unknown): data is LeagueDashboardResponse {
+  if (!data || typeof data !== 'object') return false;
+  const response = data as Record<string, unknown>;
+  if (typeof response.league_id !== 'number') return false;
+  if (typeof response.gameweek !== 'number') return false;
+  if (typeof response.season_id !== 'number') return false;
+  if (!Array.isArray(response.managers)) return false;
+
+  // Validate first manager has expected structure (if array not empty)
+  if (response.managers.length > 0) {
+    const manager = response.managers[0] as Record<string, unknown>;
+    if (typeof manager.entry_id !== 'number') return false;
+    if (!Array.isArray(manager.picks)) return false;
+  }
   return true;
 }
 
@@ -519,6 +591,25 @@ export const backendApi = {
     );
     if (!validateLeagueRecommendationsResponse(data)) {
       throw new BackendApiError(200, 'OK', 'Invalid response shape from recommendations endpoint');
+    }
+    return data;
+  },
+
+  /**
+   * Get consolidated dashboard data for a league.
+   * Returns all manager data (picks, chips, transfers, standings) in a single call.
+   * Replaces ~64 FPL API calls with one backend request.
+   */
+  getLeagueDashboard: async (
+    leagueId: number,
+    gameweek: number,
+    seasonId = 1
+  ): Promise<LeagueDashboardResponse> => {
+    const data = await fetchBackend<LeagueDashboardResponse>(
+      `/api/v1/dashboard/league/${leagueId}?gameweek=${gameweek}&season_id=${seasonId}`
+    );
+    if (!validateLeagueDashboardResponse(data)) {
+      throw new BackendApiError(200, 'OK', 'Invalid response shape from dashboard endpoint');
     }
     return data;
   },
