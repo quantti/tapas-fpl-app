@@ -423,7 +423,10 @@ async def sync_players_from_bootstrap(
                 float(p.get("form", "0")),  # FPL API returns string
                 p.get("status", "a"),
                 p.get("news"),
-                p.get("news_added"),  # ISO datetime string or None
+                # Parse ISO datetime string to datetime object
+                datetime.fromisoformat(p["news_added"].replace("Z", "+00:00"))
+                if p.get("news_added")
+                else None,
                 p.get("minutes", 0),
                 p.get("goals_scored", 0),
                 p.get("assists", 0),
