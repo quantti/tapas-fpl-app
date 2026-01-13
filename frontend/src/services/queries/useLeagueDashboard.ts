@@ -39,6 +39,8 @@ interface UseLeagueDashboardReturn {
   isBackendUnavailable: boolean;
   /** Refetch function */
   refetch: () => void;
+  /** Timestamp when data was last fetched (for "last updated" displays) */
+  dataUpdatedAt: number;
 }
 
 interface UseLeagueDashboardOptions {
@@ -106,5 +108,6 @@ export function useLeagueDashboard(
     error: query.error?.message ?? null,
     isBackendUnavailable,
     refetch: query.refetch,
+    dataUpdatedAt: query.dataUpdatedAt,
   };
 }

@@ -1,4 +1,4 @@
-import { useQuery, useQueries } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { CACHE_TIMES, LEAGUE_ID, LIVE_REFRESH_INTERVAL, IDLE_REFRESH_INTERVAL } from 'src/config';
@@ -7,6 +7,8 @@ import { createPlayersMap, createTeamsMap } from 'utils/mappers';
 
 import { fplApi, FplApiError } from '../api';
 import { queryKeys } from '../queryKeys';
+
+import { useLeagueDashboard, type DashboardManagerCamel } from './useLeagueDashboard';
 
 import type { Player, Team } from 'types/fpl';
 
@@ -43,6 +45,67 @@ export interface ManagerGameweekData {
   bank: number;
   // Chips data - includes event number for 2025/26 half-season tracking
   chipsUsed: { name: string; event: number }[];
+}
+
+/**
+ * Transforms dashboard manager data to the ManagerGameweekData format.
+ * This enables the new consolidated endpoint to work with existing components.
+ */
+function transformDashboardManager(
+  manager: DashboardManagerCamel,
+  playersMap: Map<number, Player>
+): ManagerGameweekData {
+  // Find captain and vice captain from picks
+  const captainPick = manager.picks.find((p) => p.isCaptain);
+  const viceCaptainPick = manager.picks.find((p) => p.isViceCaptain);
+
+  // Parse chips_used strings like "wildcard_1" to {name, event} format
+  const chipsUsed = manager.chipsUsed.map((chip) => {
+    const match = chip.match(/^(.+)_(\d+)$/);
+    if (match) {
+      return { name: match[1], event: Number.parseInt(match[2], 10) };
+    }
+    return { name: chip, event: 0 };
+  });
+
+  // Map transfers to Player objects using bootstrap data
+  const transfersIn = manager.transfers
+    .map((t) => playersMap.get(t.playerInId))
+    .filter((p): p is Player => p !== undefined);
+  const transfersOut = manager.transfers
+    .map((t) => playersMap.get(t.playerOutId))
+    .filter((p): p is Player => p !== undefined);
+
+  return {
+    managerId: manager.entryId,
+    managerName: manager.managerName,
+    teamName: manager.teamName,
+    rank: manager.rank,
+    lastRank: manager.lastRank ?? 0,
+    gameweekPoints: manager.gwPoints,
+    totalPoints: manager.totalPoints,
+    overallRank: manager.overallRank ?? 0,
+    lastOverallRank: manager.lastOverallRank ?? 0,
+    picks: manager.picks.map((p) => ({
+      playerId: p.playerId,
+      position: p.position,
+      multiplier: p.multiplier,
+      isCaptain: p.isCaptain,
+      isViceCaptain: p.isViceCaptain,
+    })),
+    captain: captainPick ? (playersMap.get(captainPick.playerId) ?? null) : null,
+    viceCaptain: viceCaptainPick ? (playersMap.get(viceCaptainPick.playerId) ?? null) : null,
+    activeChip: manager.chipActive,
+    transfersIn,
+    transfersOut,
+    transfersCost: manager.transferCost,
+    // Note: totalHitsCost is cumulative across all GWs, but dashboard only has current GW cost
+    // For now, use transferCost. TODO: Add cumulative field to backend if needed.
+    totalHitsCost: manager.transferCost,
+    teamValue: manager.teamValue,
+    bank: manager.bank,
+    chipsUsed,
+  };
 }
 
 /**
@@ -113,102 +176,17 @@ export function useFplData() {
 
   const standings = standingsQuery.data ?? null;
 
-  // Get manager list from standings (limit to 20)
-  const managers = useMemo(() => {
-    if (!standings) return [];
-    return standings.standings.results.slice(0, 20);
-  }, [standings]);
-
-  // 4. Fetch manager details (picks, history, transfers) in parallel
-  // Each manager requires 3 API calls, so we use useQueries
-  const managerQueries = useQueries({
-    queries: managers.map((manager) => ({
-      queryKey: queryKeys.managerDetails(manager.entry, currentGameweek?.id),
-      queryFn: async (): Promise<ManagerGameweekData | null> => {
-        if (!currentGameweek) return null;
-
-        // Fetch all manager data in parallel
-        // Note: Don't catch errors here - let TanStack Query handle retries
-        // (default: 3 retries with exponential backoff)
-        const [picks, history, transfers] = await Promise.all([
-          fplApi.getEntryPicks(manager.entry, currentGameweek.id),
-          fplApi.getEntryHistory(manager.entry),
-          fplApi.getEntryTransfers(manager.entry),
-        ]);
-
-        // Find captain and vice captain
-        const captainPick = picks.picks.find((p) => p.is_captain);
-        const viceCaptainPick = picks.picks.find((p) => p.is_vice_captain);
-
-        // Map picks to our format for live scoring
-        const managerPicks: ManagerPick[] = picks.picks.map((p) => ({
-          playerId: p.element,
-          position: p.position,
-          multiplier: p.multiplier,
-          isCaptain: p.is_captain,
-          isViceCaptain: p.is_vice_captain,
-        }));
-
-        // Get current and previous week's history for overall rank comparison
-        const currentHistory = history.current.find((h) => h.event === currentGameweek.id);
-        const previousHistory = history.current.find((h) => h.event === currentGameweek.id - 1);
-
-        // Filter transfers to current gameweek
-        const gwTransfers = transfers.filter((t) => t.event === currentGameweek.id);
-
-        // Map transfer player IDs to Player objects
-        const transfersIn = gwTransfers
-          .map((t) => playersMap.get(t.element_in))
-          .filter((p): p is Player => p !== undefined);
-        const transfersOut = gwTransfers
-          .map((t) => playersMap.get(t.element_out))
-          .filter((p): p is Player => p !== undefined);
-
-        const transfersCost = currentHistory?.event_transfers_cost || 0;
-
-        // Calculate total hits cost across all gameweeks
-        const totalHitsCost = history.current.reduce(
-          (sum, gw) => sum + (gw.event_transfers_cost || 0),
-          0
-        );
-
-        return {
-          managerId: manager.entry,
-          managerName: manager.player_name,
-          teamName: manager.entry_name,
-          rank: manager.rank,
-          lastRank: manager.last_rank,
-          gameweekPoints: manager.event_total,
-          totalPoints: manager.total,
-          overallRank: currentHistory?.overall_rank ?? 0,
-          lastOverallRank: previousHistory?.overall_rank ?? 0,
-          picks: managerPicks,
-          captain: captainPick ? playersMap.get(captainPick.element) || null : null,
-          viceCaptain: viceCaptainPick ? playersMap.get(viceCaptainPick.element) || null : null,
-          activeChip: picks.active_chip,
-          transfersIn,
-          transfersOut,
-          transfersCost,
-          totalHitsCost,
-          // FPL API's `value` includes bank, so subtract to get actual squad value
-          teamValue: ((picks.entry_history.value || 0) - (picks.entry_history.bank || 0)) / 10,
-          bank: (picks.entry_history.bank || 0) / 10,
-          chipsUsed: history.chips.map((c) => ({
-            name: c.name,
-            event: c.event,
-          })),
-        };
-      },
-      staleTime: isLive ? 30 * 1000 : 60 * 1000,
-      refetchInterval: isLive ? LIVE_REFRESH_INTERVAL : IDLE_REFRESH_INTERVAL,
-      enabled: !!currentGameweek && !!playersMap.size,
-    })),
+  // 4. Fetch consolidated dashboard data from backend
+  // This replaces ~64 individual FPL API calls with 1 backend call
+  const dashboardQuery = useLeagueDashboard(LEAGUE_ID, currentGameweek?.id ?? 0, {
+    enabled: !!currentGameweek && playersMap.size > 0,
+    isLive,
   });
 
-  // Combine manager details results
+  // Transform dashboard managers to ManagerGameweekData format
   const managerDetails = useMemo(() => {
-    return managerQueries.map((q) => q.data).filter((d): d is ManagerGameweekData => d != null);
-  }, [managerQueries]);
+    return dashboardQuery.managers.map((m) => transformDashboardManager(m, playersMap));
+  }, [dashboardQuery.managers, playersMap]);
 
   // Detect "awaiting update" period
   const awaitingUpdate = useMemo(() => {
@@ -221,22 +199,23 @@ export function useFplData() {
 
   // Compute loading state
   const isLoading =
-    bootstrapQuery.isLoading || standingsQuery.isLoading || managerQueries.some((q) => q.isLoading);
+    bootstrapQuery.isLoading || standingsQuery.isLoading || dashboardQuery.isLoading;
 
   // Compute error state - preserve actual error object for 503 detection
-  const errorObject =
-    bootstrapQuery.error || standingsQuery.error || managerQueries.find((q) => q.error)?.error;
-  const error = errorObject?.message || null;
-  const isApiUnavailable = errorObject instanceof FplApiError && errorObject.isServiceUnavailable;
+  // Check both FPL API errors and backend API errors
+  const fplError = bootstrapQuery.error || standingsQuery.error;
+  const backendError = dashboardQuery.error;
+  const error = fplError?.message || backendError || null;
+  const isApiUnavailable =
+    (fplError instanceof FplApiError && fplError.isServiceUnavailable) ||
+    dashboardQuery.isBackendUnavailable;
 
   // Compute last updated time
-  // Note: This is cheap to compute, so we don't memoize to avoid dependency array issues
-  // with managerQueries being a new array reference each render
   const lastUpdated = (() => {
     const timestamps = [
       bootstrapQuery.dataUpdatedAt,
       standingsQuery.dataUpdatedAt,
-      ...managerQueries.map((q) => q.dataUpdatedAt),
+      dashboardQuery.dataUpdatedAt,
     ].filter((t) => t > 0);
 
     return timestamps.length > 0 ? new Date(Math.max(...timestamps)) : null;
@@ -247,9 +226,7 @@ export function useFplData() {
     bootstrapQuery.refetch();
     eventStatusQuery.refetch();
     standingsQuery.refetch();
-    for (const q of managerQueries) {
-      q.refetch();
-    }
+    dashboardQuery.refetch();
   };
 
   return {
