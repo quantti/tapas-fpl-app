@@ -1,3 +1,10 @@
+## [0.32.1](https://github.com/quantti/tapas-fpl-app/compare/v0.32.0...v0.32.1) (2026-01-13)
+
+
+### Bug Fixes
+
+* **backend:** parse news_added ISO datetime string for player sync ([8bf1062](https://github.com/quantti/tapas-fpl-app/commit/8bf1062dc2ab587443a694b8ec314bd8eec6ac6a))
+
 # [0.32.0](https://github.com/quantti/tapas-fpl-app/compare/v0.31.3...v0.32.0) (2026-01-13)
 
 
