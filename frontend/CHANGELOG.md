@@ -1,3 +1,15 @@
+# [0.32.0](https://github.com/quantti/tapas-fpl-app/compare/v0.31.3...v0.32.0) (2026-01-13)
+
+
+### Bug Fixes
+
+* **backend:** initialize app.db pool in scheduled_update ([b67ac31](https://github.com/quantti/tapas-fpl-app/commit/b67ac31d57390820e761fa0821567b561d0d68ad))
+
+
+### Features
+
+* **backend:** sync all player stats from FPL bootstrap API ([45588d7](https://github.com/quantti/tapas-fpl-app/commit/45588d792ee4d4b9cde78f68220daa3a694a5628))
+
 ## [0.31.3](https://github.com/quantti/tapas-fpl-app/compare/v0.31.2...v0.31.3) (2026-01-12)
 
 
