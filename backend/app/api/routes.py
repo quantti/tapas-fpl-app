@@ -5,11 +5,14 @@ from typing import Any
 
 import httpx
 from cachetools import TTLCache
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from pydantic import BaseModel
 
 from app.db import get_connection
+from app.schemas.dashboard import LeagueDashboardResponse
 from app.dependencies import require_db
 from app.services.chips import ChipsService
+from app.services.dashboard import DashboardService, LeagueNotFoundError
 from app.services.fpl_client import FplApiClient
 from app.services.points_against import PointsAgainstService
 from app.services.recommendations import RecommendationsService
@@ -20,6 +23,7 @@ router = APIRouter()
 # Cache configuration
 CACHE_TTL_SECONDS = 600  # 10 minutes for static API data
 RECOMMENDATIONS_CACHE_TTL_SECONDS = 300  # 5 minutes (shorter since ownership changes)
+DASHBOARD_CACHE_TTL_SECONDS = 300  # 5 minutes for dashboard data
 CACHE_MAX_SIZE = 100  # Maximum entries per cache
 
 # Thread-safe TTL caches with bounded size
@@ -28,12 +32,16 @@ _api_cache: TTLCache[str, Any] = TTLCache(maxsize=CACHE_MAX_SIZE, ttl=CACHE_TTL_
 _recommendations_cache: TTLCache[str, Any] = TTLCache(
     maxsize=CACHE_MAX_SIZE, ttl=RECOMMENDATIONS_CACHE_TTL_SECONDS
 )
+_dashboard_cache: TTLCache[str, Any] = TTLCache(
+    maxsize=CACHE_MAX_SIZE, ttl=DASHBOARD_CACHE_TTL_SECONDS
+)
 
 
 def clear_cache() -> None:
     """Clear all caches. Used by tests to ensure isolation."""
     _api_cache.clear()
     _recommendations_cache.clear()
+    _dashboard_cache.clear()
 
 
 # =============================================================================
@@ -544,3 +552,87 @@ async def get_league_recommendations(
         raise HTTPException(
             status_code=500, detail="Internal server error while fetching recommendations"
         ) from e
+
+
+# =============================================================================
+# League Dashboard (Consolidated Endpoint)
+# =============================================================================
+
+
+@router.get("/api/v1/dashboard/league/{league_id}", response_model=LeagueDashboardResponse)
+async def get_league_dashboard(
+    league_id: int = Path(ge=1, description="FPL league ID"),
+    gameweek: int | None = Query(
+        default=None, ge=1, le=38, description="Gameweek (1-38). Defaults to current."
+    ),
+    season_id: int = Query(
+        default=1, ge=1, le=100, description="Season ID (default: 1 for 2024-25)"
+    ),
+    _: None = Depends(require_db),
+) -> LeagueDashboardResponse:
+    """
+    Get consolidated dashboard data for a league.
+
+    Returns all manager data for the league in a single call, including:
+    - Manager info (name, team name, points, rank)
+    - Squad picks with player details
+    - Chips used this season
+    - Transfers made this gameweek
+
+    Args:
+        league_id: The FPL league ID (must be >= 1).
+        gameweek: The gameweek number (1-38). Defaults to current gameweek.
+        season_id: The season ID (must be >= 1). Defaults to 1.
+
+    Returns:
+        Dashboard data with league_id, gameweek, season_id, and managers list.
+
+    Raises:
+        422: Invalid parameters.
+        404: League not found.
+        503: Database unavailable.
+    """
+    # Check cache first if gameweek is specified (avoids DB connection for cache hits)
+    if gameweek is not None:
+        cache_key = f"dashboard_{league_id}_{gameweek}_{season_id}"
+        if cache_key in _dashboard_cache:
+            logger.debug("Dashboard cache hit for %s", cache_key)
+            return _dashboard_cache[cache_key]
+
+    async with get_connection() as conn:
+        # Resolve current gameweek if not specified
+        resolved_gameweek = gameweek
+        if resolved_gameweek is None:
+            resolved_gameweek = await conn.fetchval(
+                "SELECT id FROM gameweek WHERE is_current = true AND season_id = $1",
+                season_id,
+            )
+            if resolved_gameweek is None:
+                resolved_gameweek = 1  # Fallback to GW1 if no current gameweek
+
+        # Build cache key (now resolved_gameweek is always set)
+        cache_key = f"dashboard_{league_id}_{resolved_gameweek}_{season_id}"
+        if cache_key in _dashboard_cache:
+            logger.debug("Dashboard cache hit for %s", cache_key)
+            return _dashboard_cache[cache_key]
+
+        try:
+            service = DashboardService()
+            dashboard = await service.get_league_dashboard(
+                league_id, resolved_gameweek, season_id, conn
+            )
+        except LeagueNotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e)) from e
+        except Exception as e:
+            logger.exception("Failed to get league dashboard")
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error while fetching dashboard",
+            ) from e
+
+        # Convert dataclass to Pydantic model (from_attributes=True handles nested objects)
+        result = LeagueDashboardResponse.model_validate(dashboard, from_attributes=True)
+
+        # Cache and return
+        _dashboard_cache[cache_key] = result
+        return result

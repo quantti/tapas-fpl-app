@@ -16,7 +16,7 @@ def require_db() -> None:
             ...
     """
     try:
-        get_pool()
+        get_pool()  # Raises RuntimeError if pool not initialized
     except RuntimeError as e:
         raise HTTPException(
             status_code=503,
