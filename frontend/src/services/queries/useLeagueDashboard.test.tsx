@@ -55,6 +55,7 @@ const createMockResponse = (overrides = {}) => ({
       team_value: 102.3,
       transfers_made: 1,
       transfer_cost: 0,
+      total_hits_cost: 4,
       chip_active: null,
       picks: [
         {
@@ -112,6 +113,7 @@ const createMockResponse = (overrides = {}) => ({
       team_value: 101.5,
       transfers_made: 0,
       transfer_cost: 0,
+      total_hits_cost: 0,
       chip_active: '3xc',
       picks: [],
       chips_used: [],

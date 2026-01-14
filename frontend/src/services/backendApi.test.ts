@@ -488,6 +488,7 @@ describe('validateLeagueDashboardResponse', () => {
         team_value: 102.3,
         transfers_made: 1,
         transfer_cost: 0,
+        total_hits_cost: 4,
         chip_active: null,
         picks: [
           {

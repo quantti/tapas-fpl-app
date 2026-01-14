@@ -56,6 +56,7 @@ class ManagerResponse(BaseModel):
     team_value: float
     transfers_made: int
     transfer_cost: int
+    total_hits_cost: int  # Cumulative transfer costs across all GWs
     chip_active: str | None
     picks: list[PickResponse]
     chips_used: list[str]

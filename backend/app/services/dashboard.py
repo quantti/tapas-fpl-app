@@ -62,6 +62,7 @@ class ManagerDashboard:
     team_value: float
     transfers_made: int
     transfer_cost: int
+    total_hits_cost: int  # Cumulative transfer costs across all GWs
     chip_active: str | None
     picks: list[ManagerPick] = field(default_factory=list)
     chips_used: list[str] = field(default_factory=list)
@@ -181,8 +182,14 @@ class DashboardService:
 
         # 3. Fetch remaining data in parallel (all queries depend only on
         # managers_with_snapshots, so they can run concurrently)
-        picks_rows, chips_rows, transfers_rows, manager_info_rows, standings = (
-            await asyncio.gather(
+        (
+            picks_rows,
+            chips_rows,
+            transfers_rows,
+            manager_info_rows,
+            standings,
+            cumulative_hits_rows,
+        ) = await asyncio.gather(
                 # Picks with player and team data
                 conn.fetch(
                     """
@@ -263,7 +270,18 @@ class DashboardService:
                     managers_with_snapshots,
                     season_id,
                 ),
-            )
+                # Cumulative transfer costs (total hits across all GWs up to current)
+                conn.fetch(
+                    """
+                    SELECT manager_id, COALESCE(SUM(transfers_cost), 0) AS total_hits
+                    FROM manager_gw_snapshot
+                    WHERE manager_id = ANY($1) AND gameweek <= $2 AND season_id = $3
+                    GROUP BY manager_id
+                    """,
+                    managers_with_snapshots,
+                    gameweek,
+                    season_id,
+                ),
         )
 
         # Build picks lookup by manager_id
@@ -316,6 +334,11 @@ class DashboardService:
             row["id"]: dict(row) for row in manager_info_rows
         }
 
+        # Build cumulative hits lookup
+        hits_by_manager: dict[int, int] = {
+            row["manager_id"]: row["total_hits"] for row in cumulative_hits_rows
+        }
+
         # 4. Assemble managers sorted by rank
         managers: list[ManagerDashboard] = []
         for row in standings:
@@ -348,6 +371,7 @@ class DashboardService:
                     team_value=(snapshot["value"] or 0) / 10.0,
                     transfers_made=snapshot["transfers_made"],
                     transfer_cost=snapshot["transfers_cost"],
+                    total_hits_cost=hits_by_manager.get(mid, 0),
                     chip_active=snapshot["chip_used"],
                     picks=picks_by_manager.get(mid, []),
                     chips_used=chips_by_manager.get(mid, []),

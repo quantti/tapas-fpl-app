@@ -74,6 +74,7 @@ def sample_dashboard_response():
         team_value=102.3,
         transfers_made=1,
         transfer_cost=0,
+        total_hits_cost=8,  # Cumulative across all GWs
         chip_active=None,
         picks=[pick],
         chips_used=["wildcard_1"],
@@ -199,6 +200,7 @@ class TestDashboardEndpointResponseStructure:
             "team_value",
             "transfers_made",
             "transfer_cost",
+            "total_hits_cost",
             "chip_active",
             "picks",
             "chips_used",

@@ -282,6 +282,7 @@ export interface DashboardManager {
   team_value: number;
   transfers_made: number;
   transfer_cost: number;
+  total_hits_cost: number;
   chip_active: string | null;
   picks: DashboardPick[];
   chips_used: string[];

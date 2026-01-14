@@ -99,9 +99,7 @@ function transformDashboardManager(
     transfersIn,
     transfersOut,
     transfersCost: manager.transferCost,
-    // Note: totalHitsCost is cumulative across all GWs, but dashboard only has current GW cost
-    // For now, use transferCost. TODO: Add cumulative field to backend if needed.
-    totalHitsCost: manager.transferCost,
+    totalHitsCost: manager.totalHitsCost,
     teamValue: manager.teamValue,
     bank: manager.bank,
     chipsUsed,

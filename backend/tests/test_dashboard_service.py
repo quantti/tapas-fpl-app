@@ -101,6 +101,13 @@ class LeagueStandingsRow(TypedDict):
     event_total: int
 
 
+class CumulativeHitsRow(TypedDict):
+    """Mock cumulative hits SUM result."""
+
+    manager_id: int
+    total_hits: int
+
+
 @pytest.fixture
 def sample_league_managers() -> list[dict]:
     """Sample league_manager lookup result."""
@@ -323,6 +330,16 @@ def sample_league_standings() -> list[LeagueStandingsRow]:
 
 
 @pytest.fixture
+def sample_cumulative_hits() -> list[CumulativeHitsRow]:
+    """Sample cumulative hits (SUM of transfers_cost across all GWs)."""
+    return [
+        {"manager_id": 123, "total_hits": 4},  # 4pt total hits across season
+        {"manager_id": 456, "total_hits": 0},  # No hits taken
+        {"manager_id": 789, "total_hits": 12},  # 12pt total hits across season
+    ]
+
+
+@pytest.fixture
 def mock_conn() -> AsyncMock:
     """Mock database connection."""
     return AsyncMock()
@@ -341,6 +358,7 @@ class TestDashboardService:
         sample_transfers: list[TransferRow],
         sample_manager_info: list[ManagerInfoRow],
         sample_league_standings: list[LeagueStandingsRow],
+        sample_cumulative_hits: list[CumulativeHitsRow],
     ):
         """Dashboard should return LeagueDashboard with all managers."""
         from app.services.dashboard import DashboardService, LeagueDashboard
@@ -354,6 +372,7 @@ class TestDashboardService:
             sample_transfers,  # _get_transfers
             sample_manager_info,  # _get_manager_info
             sample_league_standings,  # _get_league_standings
+            sample_cumulative_hits,  # _get_cumulative_hits
         ]
 
         service = DashboardService()
@@ -380,6 +399,7 @@ class TestDashboardService:
         sample_transfers: list[TransferRow],
         sample_manager_info: list[ManagerInfoRow],
         sample_league_standings: list[LeagueStandingsRow],
+        sample_cumulative_hits: list[CumulativeHitsRow],
     ):
         """Managers should be sorted by rank ascending."""
         from app.services.dashboard import DashboardService
@@ -392,6 +412,7 @@ class TestDashboardService:
             sample_transfers,
             sample_manager_info,
             sample_league_standings,
+            sample_cumulative_hits,
         ]
 
         service = DashboardService()
@@ -415,6 +436,7 @@ class TestDashboardService:
         sample_transfers: list[TransferRow],
         sample_manager_info: list[ManagerInfoRow],
         sample_league_standings: list[LeagueStandingsRow],
+        sample_cumulative_hits: list[CumulativeHitsRow],
     ):
         """Manager should have correct points and rank data."""
         from app.services.dashboard import DashboardService
@@ -427,6 +449,7 @@ class TestDashboardService:
             sample_transfers,
             sample_manager_info,
             sample_league_standings,
+            sample_cumulative_hits,
         ]
 
         service = DashboardService()
@@ -451,6 +474,7 @@ class TestDashboardService:
         sample_transfers: list[TransferRow],
         sample_manager_info: list[ManagerInfoRow],
         sample_league_standings: list[LeagueStandingsRow],
+        sample_cumulative_hits: list[CumulativeHitsRow],
     ):
         """Bank and team_value should be converted from 0.1M to millions."""
         from app.services.dashboard import DashboardService
@@ -463,6 +487,7 @@ class TestDashboardService:
             sample_transfers,
             sample_manager_info,
             sample_league_standings,
+            sample_cumulative_hits,
         ]
 
         service = DashboardService()
@@ -475,6 +500,49 @@ class TestDashboardService:
         assert manager_123.bank == 0.5
         assert manager_123.team_value == 102.3
 
+    async def test_total_hits_cost_is_cumulative(
+        self,
+        mock_conn: AsyncMock,
+        sample_league_managers: list[dict],
+        sample_snapshots: list[SnapshotRow],
+        sample_picks: list[PickRow],
+        sample_chips: list[ChipUsageRow],
+        sample_transfers: list[TransferRow],
+        sample_manager_info: list[ManagerInfoRow],
+        sample_league_standings: list[LeagueStandingsRow],
+        sample_cumulative_hits: list[CumulativeHitsRow],
+    ):
+        """total_hits_cost should be cumulative sum across all GWs."""
+        from app.services.dashboard import DashboardService
+
+        mock_conn.fetch.side_effect = [
+            sample_league_managers,
+            sample_snapshots,
+            sample_picks,
+            sample_chips,
+            sample_transfers,
+            sample_manager_info,
+            sample_league_standings,
+            sample_cumulative_hits,  # Manager 123: 4, 456: 0, 789: 12
+        ]
+
+        service = DashboardService()
+        result = await service.get_league_dashboard(242017, 21, 1, mock_conn)
+
+        # Manager 789 has 12pt total hits across season (not just current GW's 4)
+        manager_789 = next(m for m in result.managers if m.entry_id == 789)
+        assert manager_789.transfer_cost == 4  # Current GW cost
+        assert manager_789.total_hits_cost == 12  # Cumulative across all GWs
+
+        # Manager 123 has 4pt total hits
+        manager_123 = next(m for m in result.managers if m.entry_id == 123)
+        assert manager_123.transfer_cost == 0  # No hit this GW
+        assert manager_123.total_hits_cost == 4  # But accumulated from previous GWs
+
+        # Manager 456 has 0 hits
+        manager_456 = next(m for m in result.managers if m.entry_id == 456)
+        assert manager_456.total_hits_cost == 0
+
     async def test_transfers_info_correct(
         self,
         mock_conn: AsyncMock,
@@ -485,6 +553,7 @@ class TestDashboardService:
         sample_transfers: list[TransferRow],
         sample_manager_info: list[ManagerInfoRow],
         sample_league_standings: list[LeagueStandingsRow],
+        sample_cumulative_hits: list[CumulativeHitsRow],
     ):
         """Transfer made and cost should be correct."""
         from app.services.dashboard import DashboardService
@@ -497,6 +566,7 @@ class TestDashboardService:
             sample_transfers,
             sample_manager_info,
             sample_league_standings,
+            sample_cumulative_hits,
         ]
 
         service = DashboardService()
@@ -518,6 +588,7 @@ class TestDashboardService:
         sample_transfers: list[TransferRow],
         sample_manager_info: list[ManagerInfoRow],
         sample_league_standings: list[LeagueStandingsRow],
+        sample_cumulative_hits: list[CumulativeHitsRow],
     ):
         """Active chip should be set from snapshot."""
         from app.services.dashboard import DashboardService
@@ -530,6 +601,7 @@ class TestDashboardService:
             sample_transfers,
             sample_manager_info,
             sample_league_standings,
+            sample_cumulative_hits,
         ]
 
         service = DashboardService()
@@ -553,6 +625,7 @@ class TestDashboardService:
         sample_transfers: list[TransferRow],
         sample_manager_info: list[ManagerInfoRow],
         sample_league_standings: list[LeagueStandingsRow],
+        sample_cumulative_hits: list[CumulativeHitsRow],
     ):
         """Manager name and team name should be populated."""
         from app.services.dashboard import DashboardService
@@ -565,6 +638,7 @@ class TestDashboardService:
             sample_transfers,
             sample_manager_info,
             sample_league_standings,
+            sample_cumulative_hits,
         ]
 
         service = DashboardService()
@@ -585,6 +659,7 @@ class TestDashboardService:
         sample_transfers: list[TransferRow],
         sample_manager_info: list[ManagerInfoRow],
         sample_league_standings: list[LeagueStandingsRow],
+        sample_cumulative_hits: list[CumulativeHitsRow],
     ):
         """Each pick should include player name, team, and stats."""
         from app.services.dashboard import DashboardService
@@ -597,6 +672,7 @@ class TestDashboardService:
             sample_transfers,
             sample_manager_info,
             sample_league_standings,
+            sample_cumulative_hits,
         ]
 
         service = DashboardService()
@@ -631,6 +707,7 @@ class TestDashboardService:
         sample_transfers: list[TransferRow],
         sample_manager_info: list[ManagerInfoRow],
         sample_league_standings: list[LeagueStandingsRow],
+        sample_cumulative_hits: list[CumulativeHitsRow],
     ):
         """Picks should be ordered by position (1-15)."""
         from app.services.dashboard import DashboardService
@@ -643,6 +720,7 @@ class TestDashboardService:
             sample_transfers,
             sample_manager_info,
             sample_league_standings,
+            sample_cumulative_hits,
         ]
 
         service = DashboardService()
@@ -663,6 +741,7 @@ class TestDashboardService:
         sample_transfers: list[TransferRow],
         sample_manager_info: list[ManagerInfoRow],
         sample_league_standings: list[LeagueStandingsRow],
+        sample_cumulative_hits: list[CumulativeHitsRow],
     ):
         """Chips used should include chips from both halves with suffix."""
         from app.services.dashboard import DashboardService
@@ -675,6 +754,7 @@ class TestDashboardService:
             sample_transfers,
             sample_manager_info,
             sample_league_standings,
+            sample_cumulative_hits,
         ]
 
         service = DashboardService()
@@ -697,6 +777,7 @@ class TestDashboardService:
         sample_transfers: list[TransferRow],
         sample_manager_info: list[ManagerInfoRow],
         sample_league_standings: list[LeagueStandingsRow],
+        sample_cumulative_hits: list[CumulativeHitsRow],
     ):
         """Transfers should include player in/out names."""
         from app.services.dashboard import DashboardService
@@ -709,6 +790,7 @@ class TestDashboardService:
             sample_transfers,
             sample_manager_info,
             sample_league_standings,
+            sample_cumulative_hits,
         ]
 
         service = DashboardService()
@@ -776,6 +858,7 @@ class TestDashboardService:
             [],  # transfers
             sample_manager_info,
             sample_league_standings,
+            [{"manager_id": 123, "total_hits": 0}],  # cumulative hits
         ]
 
         service = DashboardService()
@@ -794,6 +877,7 @@ class TestDashboardService:
         sample_transfers: list[TransferRow],
         sample_manager_info: list[ManagerInfoRow],
         sample_league_standings: list[LeagueStandingsRow],
+        sample_cumulative_hits: list[CumulativeHitsRow],
     ):
         """Manager who hasn't used any chips should have empty chips_used list."""
         from app.services.dashboard import DashboardService
@@ -807,6 +891,7 @@ class TestDashboardService:
             sample_transfers,
             sample_manager_info,
             sample_league_standings,
+            sample_cumulative_hits,
         ]
 
         service = DashboardService()
@@ -824,6 +909,7 @@ class TestDashboardService:
         sample_chips: list[ChipUsageRow],
         sample_manager_info: list[ManagerInfoRow],
         sample_league_standings: list[LeagueStandingsRow],
+        sample_cumulative_hits: list[CumulativeHitsRow],
     ):
         """Manager who made no transfers should have empty transfers list."""
         from app.services.dashboard import DashboardService
@@ -837,6 +923,7 @@ class TestDashboardService:
             [],  # No transfers
             sample_manager_info,
             sample_league_standings,
+            sample_cumulative_hits,
         ]
 
         service = DashboardService()
@@ -891,6 +978,7 @@ class TestDashboardService:
             transfers_for_123,
             manager_info_for_123,
             standings_for_123,
+            [{"manager_id": 123, "total_hits": 0}],  # cumulative hits
         ]
 
         service = DashboardService()
@@ -943,6 +1031,7 @@ class TestDashboardService:
             transfers_for_123,
             manager_info_for_123,
             standings_for_123,
+            [{"manager_id": 123, "total_hits": 0}],  # cumulative hits
         ]
 
         service = DashboardService()
@@ -971,6 +1060,7 @@ class TestDashboardServiceBatchQueries:
             [],  # transfers
             [],  # manager_info
             [],  # league_standings
+            [],  # cumulative_hits
         ]
 
         service = DashboardService()
@@ -999,6 +1089,7 @@ class TestDashboardServiceBatchQueries:
             [],  # transfers
             [],  # manager_info
             [],  # league_standings
+            [],  # cumulative_hits
         ]
 
         service = DashboardService()
@@ -1027,6 +1118,7 @@ class TestDashboardServiceBatchQueries:
             [],  # transfers
             [],  # manager_info
             [],  # league_standings
+            [],  # cumulative_hits
         ]
 
         service = DashboardService()
@@ -1040,15 +1132,15 @@ class TestDashboardServiceBatchQueries:
         assert "join player" in query
         assert "join team" in query
 
-    async def test_executes_five_queries_in_parallel_via_gather(
+    async def test_executes_six_queries_in_parallel_via_gather(
         self,
         mock_conn: AsyncMock,
         sample_league_managers: list[dict],
         sample_snapshots: list[dict],
     ):
-        """Should execute picks, chips, transfers, manager_info, and standings in parallel.
+        """Should execute picks, chips, transfers, manager_info, standings, and cumulative hits in parallel.
 
-        The service uses asyncio.gather to run 5 independent queries concurrently
+        The service uses asyncio.gather to run 6 independent queries concurrently
         after the sequential setup queries (league_manager and snapshots).
         """
         from app.services.dashboard import DashboardService
@@ -1062,16 +1154,17 @@ class TestDashboardServiceBatchQueries:
             [],  # transfers
             [],  # manager_info
             [],  # standings
+            [],  # cumulative_hits
         ]
 
         service = DashboardService()
         await service.get_league_dashboard(242017, 21, 1, mock_conn)
 
-        # Verify total of 7 fetch calls: 2 sequential + 5 parallel
-        assert mock_conn.fetch.call_count == 7
+        # Verify total of 8 fetch calls: 2 sequential + 6 parallel
+        assert mock_conn.fetch.call_count == 8
 
-        # Verify the 5 parallel queries are for the expected tables
-        parallel_calls = mock_conn.fetch.call_args_list[2:7]
+        # Verify the 6 parallel queries are for the expected tables
+        parallel_calls = mock_conn.fetch.call_args_list[2:8]
         queries = [call[0][0].lower() for call in parallel_calls]
 
         # Each parallel query should target a different table
@@ -1081,6 +1174,9 @@ class TestDashboardServiceBatchQueries:
         assert any("from manager" in q for q in queries), "Missing manager_info query"
         assert any("league_manager" in q and "rank" in q for q in queries), (
             "Missing standings query"
+        )
+        assert any("sum(transfers_cost)" in q for q in queries), (
+            "Missing cumulative hits query"
         )
 
 
@@ -1125,20 +1221,21 @@ class TestDashboardServiceErrors:
     ):
         """DB failure in parallel queries should propagate error, not return partial data.
 
-        The service uses asyncio.gather to run 5 queries in parallel (picks, chips,
-        transfers, manager_info, standings). If any query fails, the exception should
-        propagate and no partial data should be returned.
+        The service uses asyncio.gather to run 6 queries in parallel (picks, chips,
+        transfers, manager_info, standings, cumulative_hits). If any query fails,
+        the exception should propagate and no partial data should be returned.
         """
         # Sequential queries succeed, then one parallel query fails
         mock_conn.fetch.side_effect = [
             sample_league_managers,  # Success: league_manager lookup (sequential)
             sample_snapshots,  # Success: snapshots (sequential)
-            # Parallel queries via asyncio.gather (5 queries):
+            # Parallel queries via asyncio.gather (6 queries):
             sample_picks,  # picks - success
             Exception("Connection lost during chips query"),  # chips - failure
             [],  # transfers - would succeed but gather fails fast
             [],  # manager_info - would succeed but gather fails fast
             [],  # standings - would succeed but gather fails fast
+            [],  # cumulative_hits - would succeed but gather fails fast
         ]
 
         service = DashboardService()
@@ -1147,6 +1244,6 @@ class TestDashboardServiceErrors:
             await service.get_league_dashboard(242017, 21, 1, mock_conn)
 
         assert "Connection lost" in str(exc_info.value)
-        # All 7 fetch calls are initiated (2 sequential + 5 parallel)
+        # All 8 fetch calls are initiated (2 sequential + 6 parallel)
         # asyncio.gather starts all coroutines before any complete
-        assert mock_conn.fetch.call_count == 7
+        assert mock_conn.fetch.call_count == 8
