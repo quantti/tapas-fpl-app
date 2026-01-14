@@ -20,7 +20,7 @@ describe('useTheme', () => {
       addEventListener: (event: string, callback: (e: MediaQueryListEvent) => void) => {
         if (event === 'change') listeners.push(callback);
       },
-      removeEventListener: (event: string, callback: (e: MediaQueryListEvent) => void) => {
+      removeEventListener: (_event: string, callback: (e: MediaQueryListEvent) => void) => {
         listeners = listeners.filter((l) => l !== callback);
       },
     });

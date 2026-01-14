@@ -10,6 +10,7 @@ import type { Fixture, LiveGameweek, LivePlayer } from 'types/fpl';
 function createFixture(overrides: Partial<Fixture> = {}): Fixture {
   return {
     id: 1,
+    code: 1234567,
     event: 1,
     team_h: 1,
     team_a: 2,

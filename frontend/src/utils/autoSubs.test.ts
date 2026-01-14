@@ -59,6 +59,7 @@ function createPlayer(id: number, element_type: number, team: number, web_name: 
     team,
     team_code: team,
     element_type,
+    photo: `${id}.jpg`,
     now_cost: 100,
     selected_by_percent: '10',
     total_points: 0,
@@ -89,6 +90,7 @@ function createPlayer(id: number, element_type: number, team: number, web_name: 
     expected_assists: '0',
     expected_goal_involvements: '0',
     expected_goals_conceded: '0',
+    defensive_contribution: 0,
   };
 }
 

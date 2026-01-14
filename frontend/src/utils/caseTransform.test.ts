@@ -176,7 +176,8 @@ describe('transformKeys', () => {
     });
 
     it('handles undefined', () => {
-      expect(transformKeys()).toBeUndefined();
+      const undefinedValue: unknown = undefined;
+      expect(transformKeys(undefinedValue)).toBeUndefined();
     });
 
     it('handles empty object', () => {

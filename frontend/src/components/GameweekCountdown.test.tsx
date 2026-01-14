@@ -92,7 +92,7 @@ describe('GameweekCountdown', () => {
   it('clears interval when countdown expires (memory leak prevention)', () => {
     vi.setSystemTime(new Date(TEST_TIME_MIDNIGHT));
     const futureDeadline = new Date('2024-01-01T00:00:02Z').toISOString();
-    const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+    const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval');
 
     const { container } = render(<GameweekCountdown deadline={futureDeadline} gameweekId={20} />);
 
@@ -120,7 +120,7 @@ describe('GameweekCountdown', () => {
   it('does not start interval for already expired deadline', () => {
     vi.setSystemTime(new Date(TEST_TIME_NOON));
     const pastDeadline = new Date(TEST_TIME_11AM).toISOString();
-    const setIntervalSpy = vi.spyOn(global, 'setInterval');
+    const setIntervalSpy = vi.spyOn(globalThis, 'setInterval');
 
     const { container } = render(<GameweekCountdown deadline={pastDeadline} gameweekId={20} />);
 

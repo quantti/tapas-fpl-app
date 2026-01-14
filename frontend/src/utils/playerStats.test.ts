@@ -31,7 +31,8 @@ describe('playerStats utilities', () => {
     });
 
     it('returns 0 for undefined', () => {
-      expect(parseNumericString()).toBe(0);
+      const undefinedValue: string | undefined = undefined;
+      expect(parseNumericString(undefinedValue)).toBe(0);
     });
 
     it('returns 0 for invalid strings', () => {

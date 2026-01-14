@@ -70,7 +70,14 @@ function createManagerData(
 ): ManagerGameweekData {
   return {
     managerId,
+    managerName: `Manager ${managerId}`,
     teamName: `Team ${managerId}`,
+    rank: managerId,
+    lastRank: managerId,
+    gameweekPoints: 50,
+    totalPoints: 500,
+    overallRank: 100000,
+    lastOverallRank: 100000,
     picks: picks.map((p, idx) => ({
       playerId: p.playerId,
       position: idx + 1,
@@ -78,9 +85,16 @@ function createManagerData(
       isCaptain: p.multiplier === 2,
       isViceCaptain: false,
     })),
+    captain: null,
+    viceCaptain: null,
     transfersIn: [],
     transfersOut: [],
+    transfersCost: 0,
+    totalHitsCost: 0,
+    teamValue: 1000,
+    bank: 0,
     activeChip: null,
+    chipsUsed: [],
   };
 }
 

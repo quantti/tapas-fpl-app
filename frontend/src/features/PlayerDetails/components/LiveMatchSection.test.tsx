@@ -17,9 +17,11 @@ const createMockStats = (overrides: Partial<PlayerLiveStats> = {}): PlayerLiveSt
   assists: 1,
   yellowCards: 0,
   redCards: 0,
+  bps: 25,
   officialBonus: 0,
   provisionalBonus: 2,
   showProvisionalBonus: true,
+  defensiveContribution: 0,
   metDefCon: false,
   explain: [
     { identifier: 'minutes', value: 65, points: 2 },
