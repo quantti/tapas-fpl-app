@@ -4,6 +4,7 @@ node_modules/
 # Build outputs
 dist/
 .wrangler/
+*.css.d.ts
 
 # Environment files
 .env

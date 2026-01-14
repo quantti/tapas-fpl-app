@@ -59,8 +59,8 @@ describe('useLeagueStats', () => {
           { manager_id: 2, name: 'Manager 2', free_transfers: 5 },
         ],
         captain_differential: [
-          { manager_id: 1, name: 'Manager 1', differential_picks: 3, gain: 15 },
-          { manager_id: 2, name: 'Manager 2', differential_picks: 1, gain: -5 },
+          { manager_id: 1, name: 'Manager 1', differential_picks: 3, gain: 15, details: [] },
+          { manager_id: 2, name: 'Manager 2', differential_picks: 1, gain: -5, details: [] },
         ],
       };
 

@@ -20,7 +20,9 @@ function createPlayer(overrides: Partial<Player> & { id: number; element_type: n
     first_name: 'First',
     second_name: 'Last',
     team: overrides.team ?? 1,
+    team_code: overrides.team ?? 1,
     total_points: overrides.total_points ?? 50,
+    event_points: 0,
     now_cost: 50,
     selected_by_percent: overrides.selected_by_percent ?? '10.0',
     form: '5.0',
@@ -30,10 +32,15 @@ function createPlayer(overrides: Partial<Player> & { id: number; element_type: n
     assists: 3,
     clean_sheets: 5,
     goals_conceded: 10,
+    own_goals: 0,
+    penalties_saved: 0,
+    penalties_missed: 0,
+    yellow_cards: 0,
+    red_cards: 0,
     saves: 0,
     bonus: 10,
+    bps: 100,
     status: 'a',
-    chance_of_playing_next_round: 100,
     expected_goals: '3.5',
     expected_assists: '2.0',
     expected_goal_involvements: '5.5',
@@ -41,9 +48,12 @@ function createPlayer(overrides: Partial<Player> & { id: number; element_type: n
     news: '',
     news_added: null,
     photo: '',
-    squad_number: null,
+    influence: '100.0',
+    creativity: '100.0',
+    threat: '100.0',
     ict_index: '100.0',
-  } as Player;
+    defensive_contribution: 0,
+  };
 }
 
 // Helper to create mock team

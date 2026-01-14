@@ -228,7 +228,6 @@ describe('hasContribution', () => {
             identifier: 'minutes',
             points: 0,
             value: 0,
-            points_modification: 0,
           },
         ],
       },

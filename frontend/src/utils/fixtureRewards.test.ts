@@ -65,6 +65,7 @@ function createMockFixture(overrides: Partial<Fixture> = {}): Fixture {
     finished_provisional: true,
     minutes: 90,
     provisional_start_time: false,
+    pulse_id: 1,
     team_h_difficulty: 3,
     team_a_difficulty: 3,
     stats: [],

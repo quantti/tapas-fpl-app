@@ -79,8 +79,9 @@ const mockElementType = (id: number, singularName: string): ElementType => ({
   singular_name_short: singularName.substring(0, 3).toUpperCase(),
   plural_name: `${singularName}s`,
   plural_name_short: `${singularName.substring(0, 3).toUpperCase()}s`,
-  ui_shirt_specific: false,
-  element_count: 50,
+  squad_select: 1,
+  squad_min_play: 0,
+  squad_max_play: 1,
 });
 
 const defaultTeams: Team[] = [
@@ -97,6 +98,31 @@ const defaultElementTypes: ElementType[] = [
 ];
 
 const mockUsePlayerDetails = vi.mocked(usePlayerDetailsModule.usePlayerDetails);
+
+// Helper to create mock PlayerDetails return value
+const mockDetails = (
+  player: Player,
+  overrides: Partial<usePlayerDetailsModule.PlayerDetails> = {}
+): usePlayerDetailsModule.PlayerDetails => ({
+  player,
+  team: mockTeam(10, 'Manchester City', 'MCI'),
+  positionName: 'Forward',
+  price: '£15.0m',
+  priceChange: 0,
+  priceChangeFormatted: '',
+  xgDelta: 1.5,
+  xaDelta: 0.8,
+  xG90: 0.67,
+  xA90: 0.15,
+  xGI90: 0.82,
+  xGC90: 0,
+  pts90: 7.2,
+  formVsAvg: 'above' as const,
+  formDiff: 2.0,
+  summary: null,
+  isLoadingSummary: false,
+  ...overrides,
+});
 
 describe('PlayerDetails', () => {
   beforeEach(() => {
@@ -134,25 +160,12 @@ describe('PlayerDetails', () => {
   });
 
   it('renders player header with name and position badge', () => {
-    mockUsePlayerDetails.mockReturnValue({
-      team: mockTeam(10, 'Manchester City', 'MCI'),
-      elementType: mockElementType(4, 'Forward'),
-      price: '£15.0m',
-      xgDelta: 1.5,
-      xaDelta: 0.8,
-      xG90: 0.67,
-      xA90: 0.15,
-      xGI90: 0.82,
-      pts90: 7.2,
-      formVsAvg: 'above' as const,
-      formDiff: 2.0,
-      summary: null,
-      isLoadingSummary: false,
-    });
+    const player = mockPlayer();
+    mockUsePlayerDetails.mockReturnValue(mockDetails(player));
 
     render(
       <PlayerDetails
-        player={mockPlayer()}
+        player={player}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}
@@ -166,25 +179,12 @@ describe('PlayerDetails', () => {
   });
 
   it('renders team name', () => {
-    mockUsePlayerDetails.mockReturnValue({
-      team: mockTeam(10, 'Manchester City', 'MCI'),
-      elementType: mockElementType(4, 'Forward'),
-      price: '£15.0m',
-      xgDelta: 1.5,
-      xaDelta: 0.8,
-      xG90: 0.67,
-      xA90: 0.15,
-      xGI90: 0.82,
-      pts90: 7.2,
-      formVsAvg: 'above' as const,
-      formDiff: 2.0,
-      summary: null,
-      isLoadingSummary: false,
-    });
+    const player = mockPlayer();
+    mockUsePlayerDetails.mockReturnValue(mockDetails(player));
 
     render(
       <PlayerDetails
-        player={mockPlayer()}
+        player={player}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}
@@ -195,25 +195,12 @@ describe('PlayerDetails', () => {
   });
 
   it('renders price and ownership', () => {
-    mockUsePlayerDetails.mockReturnValue({
-      team: mockTeam(10, 'Manchester City', 'MCI'),
-      elementType: mockElementType(4, 'Forward'),
-      price: '£15.0m',
-      xgDelta: 1.5,
-      xaDelta: 0.8,
-      xG90: 0.67,
-      xA90: 0.15,
-      xGI90: 0.82,
-      pts90: 7.2,
-      formVsAvg: 'above' as const,
-      formDiff: 2.0,
-      summary: null,
-      isLoadingSummary: false,
-    });
+    const player = mockPlayer();
+    mockUsePlayerDetails.mockReturnValue(mockDetails(player));
 
     render(
       <PlayerDetails
-        player={mockPlayer()}
+        player={player}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}
@@ -225,25 +212,12 @@ describe('PlayerDetails', () => {
   });
 
   it('renders season stats', () => {
-    mockUsePlayerDetails.mockReturnValue({
-      team: mockTeam(10, 'Manchester City', 'MCI'),
-      elementType: mockElementType(4, 'Forward'),
-      price: '£15.0m',
-      xgDelta: 1.5,
-      xaDelta: 0.8,
-      xG90: 0.67,
-      xA90: 0.15,
-      xGI90: 0.82,
-      pts90: 7.2,
-      formVsAvg: 'above' as const,
-      formDiff: 2.0,
-      summary: null,
-      isLoadingSummary: false,
-    });
+    const player = mockPlayer();
+    mockUsePlayerDetails.mockReturnValue(mockDetails(player));
 
     render(
       <PlayerDetails
-        player={mockPlayer()}
+        player={player}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}
@@ -256,25 +230,12 @@ describe('PlayerDetails', () => {
   });
 
   it('renders form with trend indicator', () => {
-    mockUsePlayerDetails.mockReturnValue({
-      team: mockTeam(10, 'Manchester City', 'MCI'),
-      elementType: mockElementType(4, 'Forward'),
-      price: '£15.0m',
-      xgDelta: 1.5,
-      xaDelta: 0.8,
-      xG90: 0.67,
-      xA90: 0.15,
-      xGI90: 0.82,
-      pts90: 7.2,
-      formVsAvg: 'above' as const,
-      formDiff: 2.0,
-      summary: null,
-      isLoadingSummary: false,
-    });
+    const player = mockPlayer();
+    mockUsePlayerDetails.mockReturnValue(mockDetails(player));
 
     render(
       <PlayerDetails
-        player={mockPlayer()}
+        player={player}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}
@@ -286,25 +247,12 @@ describe('PlayerDetails', () => {
   });
 
   it('renders xG and xA stats with deltas', () => {
-    mockUsePlayerDetails.mockReturnValue({
-      team: mockTeam(10, 'Manchester City', 'MCI'),
-      elementType: mockElementType(4, 'Forward'),
-      price: '£15.0m',
-      xgDelta: 1.5,
-      xaDelta: 0.8,
-      xG90: 0.67,
-      xA90: 0.15,
-      xGI90: 0.82,
-      pts90: 7.2,
-      formVsAvg: 'above' as const,
-      formDiff: 2.0,
-      summary: null,
-      isLoadingSummary: false,
-    });
+    const player = mockPlayer();
+    mockUsePlayerDetails.mockReturnValue(mockDetails(player));
 
     render(
       <PlayerDetails
-        player={mockPlayer()}
+        player={player}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}
@@ -323,25 +271,12 @@ describe('PlayerDetails', () => {
   });
 
   it('renders additional stats (minutes, bonus)', () => {
-    mockUsePlayerDetails.mockReturnValue({
-      team: mockTeam(10, 'Manchester City', 'MCI'),
-      elementType: mockElementType(4, 'Forward'),
-      price: '£15.0m',
-      xgDelta: 1.5,
-      xaDelta: 0.8,
-      xG90: 0.67,
-      xA90: 0.15,
-      xGI90: 0.82,
-      pts90: 7.2,
-      formVsAvg: 'above' as const,
-      formDiff: 2.0,
-      summary: null,
-      isLoadingSummary: false,
-    });
+    const player = mockPlayer();
+    mockUsePlayerDetails.mockReturnValue(mockDetails(player));
 
     render(
       <PlayerDetails
-        player={mockPlayer()}
+        player={player}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}
@@ -353,25 +288,12 @@ describe('PlayerDetails', () => {
   });
 
   it('renders player status badge - Available', () => {
-    mockUsePlayerDetails.mockReturnValue({
-      team: mockTeam(10, 'Manchester City', 'MCI'),
-      elementType: mockElementType(4, 'Forward'),
-      price: '£15.0m',
-      xgDelta: 1.5,
-      xaDelta: 0.8,
-      xG90: 0.67,
-      xA90: 0.15,
-      xGI90: 0.82,
-      pts90: 7.2,
-      formVsAvg: 'above' as const,
-      formDiff: 2.0,
-      summary: null,
-      isLoadingSummary: false,
-    });
+    const player = mockPlayer({ status: 'a' });
+    mockUsePlayerDetails.mockReturnValue(mockDetails(player));
 
     render(
       <PlayerDetails
-        player={mockPlayer({ status: 'a' })}
+        player={player}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}
@@ -382,28 +304,15 @@ describe('PlayerDetails', () => {
   });
 
   it('renders player status badge - Doubtful with news', () => {
-    mockUsePlayerDetails.mockReturnValue({
-      team: mockTeam(10, 'Manchester City', 'MCI'),
-      elementType: mockElementType(4, 'Forward'),
-      price: '£15.0m',
-      xgDelta: 1.5,
-      xaDelta: 0.8,
-      xG90: 0.67,
-      xA90: 0.15,
-      xGI90: 0.82,
-      pts90: 7.2,
-      formVsAvg: 'above' as const,
-      formDiff: 2.0,
-      summary: null,
-      isLoadingSummary: false,
+    const player = mockPlayer({
+      status: 'd',
+      news: 'Hamstring - 75% chance of playing',
     });
+    mockUsePlayerDetails.mockReturnValue(mockDetails(player));
 
     render(
       <PlayerDetails
-        player={mockPlayer({
-          status: 'd',
-          news: 'Hamstring - 75% chance of playing',
-        })}
+        player={player}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}
@@ -415,28 +324,15 @@ describe('PlayerDetails', () => {
   });
 
   it('renders player status badge - Unavailable', () => {
-    mockUsePlayerDetails.mockReturnValue({
-      team: mockTeam(10, 'Manchester City', 'MCI'),
-      elementType: mockElementType(4, 'Forward'),
-      price: '£15.0m',
-      xgDelta: 1.5,
-      xaDelta: 0.8,
-      xG90: 0.67,
-      xA90: 0.15,
-      xGI90: 0.82,
-      pts90: 7.2,
-      formVsAvg: 'above' as const,
-      formDiff: 2.0,
-      summary: null,
-      isLoadingSummary: false,
+    const player = mockPlayer({
+      status: 'i',
+      news: 'Knee injury - Expected back January',
     });
+    mockUsePlayerDetails.mockReturnValue(mockDetails(player));
 
     render(
       <PlayerDetails
-        player={mockPlayer({
-          status: 'i',
-          news: 'Knee injury - Expected back January',
-        })}
+        player={player}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}
@@ -448,25 +344,12 @@ describe('PlayerDetails', () => {
   });
 
   it('shows loading message for fixtures when summary is loading', () => {
-    mockUsePlayerDetails.mockReturnValue({
-      team: mockTeam(10, 'Manchester City', 'MCI'),
-      elementType: mockElementType(4, 'Forward'),
-      price: '£15.0m',
-      xgDelta: 1.5,
-      xaDelta: 0.8,
-      xG90: 0.67,
-      xA90: 0.15,
-      xGI90: 0.82,
-      pts90: 7.2,
-      formVsAvg: 'above' as const,
-      formDiff: 2.0,
-      summary: null,
-      isLoadingSummary: true,
-    });
+    const player = mockPlayer();
+    mockUsePlayerDetails.mockReturnValue(mockDetails(player, { isLoadingSummary: true }));
 
     render(
       <PlayerDetails
-        player={mockPlayer()}
+        player={player}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}
@@ -478,29 +361,20 @@ describe('PlayerDetails', () => {
   });
 
   it('shows empty state for fixtures when no upcoming', () => {
-    mockUsePlayerDetails.mockReturnValue({
-      team: mockTeam(10, 'Manchester City', 'MCI'),
-      elementType: mockElementType(4, 'Forward'),
-      price: '£15.0m',
-      xgDelta: 1.5,
-      xaDelta: 0.8,
-      xG90: 0.67,
-      xA90: 0.15,
-      xGI90: 0.82,
-      pts90: 7.2,
-      formVsAvg: 'above' as const,
-      formDiff: 2.0,
-      summary: {
-        fixtures: [],
-        history: [],
-        history_past: [],
-      },
-      isLoadingSummary: false,
-    });
+    const player = mockPlayer();
+    mockUsePlayerDetails.mockReturnValue(
+      mockDetails(player, {
+        summary: {
+          fixtures: [],
+          history: [],
+          history_past: [],
+        },
+      })
+    );
 
     render(
       <PlayerDetails
-        player={mockPlayer()}
+        player={player}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}
@@ -512,25 +386,19 @@ describe('PlayerDetails', () => {
   });
 
   it('renders negative xG delta correctly', () => {
-    mockUsePlayerDetails.mockReturnValue({
-      team: mockTeam(10, 'Manchester City', 'MCI'),
-      elementType: mockElementType(4, 'Forward'),
-      price: '£15.0m',
-      xgDelta: -2.5,
-      xaDelta: -1.0,
-      xG90: 0.67,
-      xA90: 0.15,
-      xGI90: 0.82,
-      pts90: 7.2,
-      formVsAvg: 'below' as const,
-      formDiff: -1.5,
-      summary: null,
-      isLoadingSummary: false,
-    });
+    const player = mockPlayer();
+    mockUsePlayerDetails.mockReturnValue(
+      mockDetails(player, {
+        xgDelta: -2.5,
+        xaDelta: -1.0,
+        formVsAvg: 'below' as const,
+        formDiff: -1.5,
+      })
+    );
 
     render(
       <PlayerDetails
-        player={mockPlayer()}
+        player={player}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}
@@ -543,25 +411,24 @@ describe('PlayerDetails', () => {
   });
 
   it('renders form indicator as "= avg" when form is average', () => {
-    mockUsePlayerDetails.mockReturnValue({
-      team: mockTeam(10, 'Manchester City', 'MCI'),
-      elementType: mockElementType(4, 'Forward'),
-      price: '£15.0m',
-      xgDelta: 0,
-      xaDelta: 0,
-      xG90: 0,
-      xA90: 0,
-      xGI90: 0,
-      pts90: 0,
-      formVsAvg: 'same' as const,
-      formDiff: 0,
-      summary: null,
-      isLoadingSummary: false,
-    });
+    const player = mockPlayer();
+    mockUsePlayerDetails.mockReturnValue(
+      mockDetails(player, {
+        xgDelta: 0,
+        xaDelta: 0,
+        xG90: 0,
+        xA90: 0,
+        xGI90: 0,
+        xGC90: 0,
+        pts90: 0,
+        formVsAvg: 'same' as const,
+        formDiff: 0,
+      })
+    );
 
     render(
       <PlayerDetails
-        player={mockPlayer()}
+        player={player}
         teams={defaultTeams}
         elementTypes={defaultElementTypes}
         onClose={() => {}}

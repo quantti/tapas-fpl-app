@@ -81,7 +81,8 @@ function createLiveContext(
 describe('usePlayerLiveStats', () => {
   describe('when no live context', () => {
     it('returns default stats with isLive false', () => {
-      const { result } = renderHook(() => usePlayerLiveStats(100, 2, 1));
+      const noContext: LiveContext | undefined = undefined;
+      const { result } = renderHook(() => usePlayerLiveStats(100, 2, 1, noContext));
 
       expect(result.current.isLive).toBe(false);
       expect(result.current.fixture).toBeNull();
