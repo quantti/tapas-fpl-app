@@ -1,3 +1,10 @@
+## [0.33.2](https://github.com/quantti/tapas-fpl-app/compare/v0.33.1...v0.33.2) (2026-01-15)
+
+
+### Bug Fixes
+
+* **backend:** make rank nullable to handle NULL values in database ([ff6a093](https://github.com/quantti/tapas-fpl-app/commit/ff6a093fa1b98358e2b5f08c281a0515bc2c3f8b))
+
 ## [0.33.1](https://github.com/quantti/tapas-fpl-app/compare/v0.33.0...v0.33.1) (2026-01-15)
 
 
