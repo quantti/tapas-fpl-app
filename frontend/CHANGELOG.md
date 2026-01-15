@@ -1,3 +1,18 @@
+# [0.33.0](https://github.com/quantti/tapas-fpl-app/compare/v0.32.1...v0.33.0) (2026-01-15)
+
+
+### Bug Fixes
+
+* **tests:** resolve additional TypeScript errors in test files ([f5e8f65](https://github.com/quantti/tapas-fpl-app/commit/f5e8f6572f6b405ecc27d1f132d54962ebe0fbfd))
+* **tests:** resolve TypeScript errors after enabling type checking ([3548b12](https://github.com/quantti/tapas-fpl-app/commit/3548b12060b12b031d16d5ae949060f22ca09114))
+
+
+### Features
+
+* add cumulative transfer cost tracking (total_hits_cost) ([88d5383](https://github.com/quantti/tapas-fpl-app/commit/88d53837dfaf78a30f3ed9875f3b497694f0541e))
+* **backend:** add dashboard consolidation endpoint ([9973663](https://github.com/quantti/tapas-fpl-app/commit/997366341b4e89e5fcc48945f4cf4c2c9ba18850))
+* **frontend:** add useLeagueDashboard hook for consolidated dashboard data ([e3cee8d](https://github.com/quantti/tapas-fpl-app/commit/e3cee8da4c78e35262aab2aa3d25ad3ef0528f84))
+
 ## [0.32.1](https://github.com/quantti/tapas-fpl-app/compare/v0.32.0...v0.32.1) (2026-01-13)
 
 
