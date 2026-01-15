@@ -341,6 +341,78 @@ mock_data = {"season_id": 1, "positions": {"123": 1}}
 
 **Key takeaway:** 30 minutes of data verification upfront saves hours of debugging later.
 
+### asyncpg Connection Constraints (Critical!)
+
+**Learned from dashboard consolidation feature:** A single asyncpg connection cannot execute multiple queries concurrently. Attempting to do so causes runtime errors.
+
+#### The Problem
+
+```python
+# ❌ WRONG - crashes with "cannot perform operation: another operation is in progress"
+async def get_data(conn: asyncpg.Connection):
+    results = await asyncio.gather(
+        conn.fetch("SELECT * FROM picks"),
+        conn.fetch("SELECT * FROM transfers"),
+        conn.fetch("SELECT * FROM chips"),
+    )
+```
+
+**Error message:**
+```
+asyncpg.exceptions._base.InterfaceError: cannot perform operation: another operation is in progress
+```
+
+#### The Solution
+
+**Option 1: Sequential execution (simple, recommended for most cases)**
+
+```python
+# ✅ CORRECT - sequential awaits on same connection
+async def get_data(conn: asyncpg.Connection):
+    picks = await conn.fetch("SELECT * FROM picks")
+    transfers = await conn.fetch("SELECT * FROM transfers")
+    chips = await conn.fetch("SELECT * FROM chips")
+    return picks, transfers, chips
+```
+
+**Option 2: Connection pool for true parallelism (when performance critical)**
+
+```python
+# ✅ CORRECT - parallel execution with multiple connections
+async def get_data_parallel(pool: asyncpg.Pool):
+    async with pool.acquire() as conn1, pool.acquire() as conn2, pool.acquire() as conn3:
+        results = await asyncio.gather(
+            conn1.fetch("SELECT * FROM picks"),
+            conn2.fetch("SELECT * FROM transfers"),
+            conn3.fetch("SELECT * FROM chips"),
+        )
+    return results
+```
+
+#### When to Use Each Approach
+
+| Scenario | Approach | Rationale |
+|----------|----------|-----------|
+| Route handler with passed connection | Sequential | Connection already acquired, can't get more |
+| Background job needing max throughput | Pool + parallel | Worth the complexity for speed |
+| Service with 3-6 queries | Sequential | Simpler, latency acceptable |
+| Service with 10+ independent queries | Pool + parallel | Sequential would be too slow |
+
+#### Testing Considerations
+
+When writing tests for services that use sequential queries:
+
+```python
+# Mock returns values in order for sequential calls
+mock_conn.fetch.side_effect = [
+    first_query_result,
+    second_query_result,
+    third_query_result,
+]
+```
+
+**Key insight:** With sequential execution, if the second query fails, the third never runs. Test this behavior explicitly.
+
 ## Database Migrations
 
 Migrations are tracked in a `_migrations` table and managed via the migration script:
