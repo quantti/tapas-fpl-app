@@ -34,7 +34,7 @@ class SnapshotRow(TypedDict):
     manager_id: int
     points: int
     total_points: int
-    overall_rank: int
+    overall_rank: int | None  # Can be NULL before first gameweek completes
     bank: int  # In 0.1M units (5 = 0.5M)
     value: int  # In 0.1M units (1023 = 102.3M)
     transfers_made: int
@@ -95,7 +95,7 @@ class LeagueStandingsRow(TypedDict):
     """Mock league_manager row."""
 
     manager_id: int
-    rank: int
+    rank: int | None  # Can be NULL during recalculation or before first GW
     last_rank: int | None
     total: int
     event_total: int
@@ -1040,6 +1040,50 @@ class TestDashboardService:
         assert result.managers[0].bank == 0.0
         assert result.managers[0].team_value == 0.0
 
+    async def test_handles_null_rank_from_database(
+        self,
+        mock_conn: AsyncMock,
+        sample_league_managers: list[dict],
+        sample_snapshots: list[SnapshotRow],
+        sample_picks: list[PickRow],
+        sample_chips: list[ChipUsageRow],
+        sample_transfers: list[TransferRow],
+        sample_manager_info: list[ManagerInfoRow],
+        sample_cumulative_hits: list[CumulativeHitsRow],
+    ):
+        """Manager with NULL rank (during recalculation) should be handled."""
+        from app.services.dashboard import DashboardService
+
+        # Standings with NULL rank for one manager
+        standings_with_null_rank: list[LeagueStandingsRow] = [
+            {"manager_id": 456, "rank": None, "last_rank": 2, "total": 1310, "event_total": 72},
+            {"manager_id": 123, "rank": 2, "last_rank": 1, "total": 1250, "event_total": 65},
+            {"manager_id": 789, "rank": 3, "last_rank": 3, "total": 1180, "event_total": 48},
+        ]
+
+        mock_conn.fetch.side_effect = [
+            sample_league_managers,
+            sample_snapshots,
+            sample_picks,
+            sample_chips,
+            sample_transfers,
+            sample_manager_info,
+            standings_with_null_rank,
+            sample_cumulative_hits,
+        ]
+
+        service = DashboardService()
+        result = await service.get_league_dashboard(242017, 21, 1, mock_conn)
+
+        # Find manager with NULL rank
+        manager_456 = next(m for m in result.managers if m.entry_id == 456)
+        assert manager_456.rank is None
+        assert manager_456.last_rank == 2
+
+        # Other managers should have integer ranks
+        manager_123 = next(m for m in result.managers if m.entry_id == 123)
+        assert manager_123.rank == 2
+
 
 class TestDashboardServiceBatchQueries:
     """Tests verifying batch query behavior."""
@@ -1164,11 +1208,11 @@ class TestDashboardServiceBatchQueries:
         # Verify total of 8 fetch calls: 2 setup + 6 data queries (all sequential)
         assert mock_conn.fetch.call_count == 8
 
-        # Verify the 6 parallel queries are for the expected tables
-        parallel_calls = mock_conn.fetch.call_args_list[2:8]
-        queries = [call[0][0].lower() for call in parallel_calls]
+        # Verify the 6 sequential data queries are for the expected tables
+        data_query_calls = mock_conn.fetch.call_args_list[2:8]
+        queries = [call[0][0].lower() for call in data_query_calls]
 
-        # Each parallel query should target a different table
+        # Each data query should target a different table
         assert any("manager_pick" in q for q in queries), "Missing picks query"
         assert any("chip_usage" in q for q in queries), "Missing chips query"
         assert any("transfer" in q for q in queries), "Missing transfers query"
