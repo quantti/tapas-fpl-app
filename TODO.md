@@ -91,6 +91,17 @@
 
 ## Backend
 
+### 🔨 In Progress: Fixture Difficulty Index (FDI)
+See [docs/planning/fixture-difficulty-plan.md](docs/planning/fixture-difficulty-plan.md)
+
+Custom fixture difficulty rating (1-5 stars, 0-100 scale) that improves on FPL's inaccurate FDR:
+- [ ] Phase 1: Migration 014 - Historical match data (football-data.co.uk, 30+ seasons)
+- [ ] Phase 2: Migration 015 - Multi-competition fixtures (API-Football for rest days)
+- [ ] Phase 3: TDD tests - Write tests first for all calculations
+- [ ] Phase 4: Backend service - FDI calculation with H2H, form, Points Against weights
+- [ ] Phase 5: Integration & validation - Backtesting, weight tuning
+- [ ] Phase 6: Frontend integration (future)
+
 ### Phase 2: Expected Points Engine
 - [ ] xP calculation with all components
 - [ ] Expected minutes prediction

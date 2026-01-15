@@ -9,9 +9,9 @@ interface Feature {
 
 const nowFeatures: Feature[] = [
   {
-    title: 'H2H Manager Comparison',
+    title: 'Fixture Difficulty Index',
     description:
-      'Compare two managers side-by-side: captain choices, transfer history, chip usage, points breakdown.',
+      'Custom fixture ratings using 30+ seasons of historical data, head-to-head records, and rest day analysis.',
   },
 ];
 
