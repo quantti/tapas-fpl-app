@@ -48,7 +48,7 @@ class ManagerResponse(BaseModel):
     team_name: str
     total_points: int
     gw_points: int
-    rank: int
+    rank: int | None
     last_rank: int | None
     overall_rank: int | None
     last_overall_rank: int | None
