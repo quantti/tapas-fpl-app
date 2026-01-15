@@ -1132,23 +1132,24 @@ class TestDashboardServiceBatchQueries:
         assert "join player" in query
         assert "join team" in query
 
-    async def test_executes_six_queries_in_parallel_via_gather(
+    async def test_executes_six_queries_sequentially(
         self,
         mock_conn: AsyncMock,
         sample_league_managers: list[dict],
         sample_snapshots: list[dict],
     ):
-        """Should execute picks, chips, transfers, manager_info, standings, and cumulative hits in parallel.
+        """Should execute picks, chips, transfers, manager_info, standings, and cumulative hits sequentially.
 
-        The service uses asyncio.gather to run 6 independent queries concurrently
-        after the sequential setup queries (league_manager and snapshots).
+        The service runs 6 data queries sequentially after the setup queries
+        (league_manager and snapshots). asyncpg connections don't support
+        concurrent operations on the same connection.
         """
         from app.services.dashboard import DashboardService
 
         mock_conn.fetch.side_effect = [
             sample_league_managers,  # Sequential: league_manager lookup
             sample_snapshots,  # Sequential: snapshots
-            # Parallel via asyncio.gather:
+            # Sequential data queries:
             [],  # picks
             [],  # chips
             [],  # transfers
@@ -1160,7 +1161,7 @@ class TestDashboardServiceBatchQueries:
         service = DashboardService()
         await service.get_league_dashboard(242017, 21, 1, mock_conn)
 
-        # Verify total of 8 fetch calls: 2 sequential + 6 parallel
+        # Verify total of 8 fetch calls: 2 setup + 6 data queries (all sequential)
         assert mock_conn.fetch.call_count == 8
 
         # Verify the 6 parallel queries are for the expected tables
@@ -1219,23 +1220,18 @@ class TestDashboardServiceErrors:
         sample_snapshots: list[SnapshotRow],
         sample_picks: list[PickRow],
     ):
-        """DB failure in parallel queries should propagate error, not return partial data.
+        """DB failure in sequential queries should propagate error, not return partial data.
 
-        The service uses asyncio.gather to run 6 queries in parallel (picks, chips,
-        transfers, manager_info, standings, cumulative_hits). If any query fails,
-        the exception should propagate and no partial data should be returned.
+        The service runs queries sequentially. If any query fails, the exception
+        should propagate and no partial data should be returned.
         """
-        # Sequential queries succeed, then one parallel query fails
+        # Sequential queries: setup succeeds, then one data query fails
         mock_conn.fetch.side_effect = [
-            sample_league_managers,  # Success: league_manager lookup (sequential)
-            sample_snapshots,  # Success: snapshots (sequential)
-            # Parallel queries via asyncio.gather (6 queries):
-            sample_picks,  # picks - success
+            sample_league_managers,  # Success: league_manager lookup
+            sample_snapshots,  # Success: snapshots
+            sample_picks,  # Success: picks
             Exception("Connection lost during chips query"),  # chips - failure
-            [],  # transfers - would succeed but gather fails fast
-            [],  # manager_info - would succeed but gather fails fast
-            [],  # standings - would succeed but gather fails fast
-            [],  # cumulative_hits - would succeed but gather fails fast
+            # Remaining queries not executed due to sequential failure
         ]
 
         service = DashboardService()
@@ -1244,6 +1240,6 @@ class TestDashboardServiceErrors:
             await service.get_league_dashboard(242017, 21, 1, mock_conn)
 
         assert "Connection lost" in str(exc_info.value)
-        # All 8 fetch calls are initiated (2 sequential + 6 parallel)
-        # asyncio.gather starts all coroutines before any complete
-        assert mock_conn.fetch.call_count == 8
+        # Only 4 fetch calls: 2 setup + picks + chips (fails)
+        # Sequential execution stops at first failure
+        assert mock_conn.fetch.call_count == 4

@@ -1,6 +1,5 @@
 """Dashboard consolidation service - returns all league data in one call."""
 
-import asyncio
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -92,19 +91,20 @@ class DashboardService:
         """Returns consolidated dashboard data for a league.
 
         Fetches all manager data including picks, chips, transfers, and standings.
-        Uses asyncio.gather to run 5 independent queries in parallel for better
-        performance (reduces latency from ~250ms to ~50ms for typical leagues).
+        All queries run sequentially as asyncpg connections don't support concurrent
+        operations on the same connection.
 
         Query execution order:
-            1. League existence check (sequential - fail-fast if not found)
-            2. Manager IDs lookup (sequential - needed for subsequent queries)
-            3. Snapshots fetch (sequential - determines which managers have data)
-            4-8. Parallel queries via asyncio.gather:
+            1. League existence check (fail-fast if not found)
+            2. Manager IDs lookup (needed for subsequent queries)
+            3. Snapshots fetch (determines which managers have data)
+            4-9. Data queries (sequential):
                 - Picks with player/team data
                 - Chips used
                 - Transfers for gameweek
                 - Manager info (names)
                 - League standings
+                - Cumulative transfer costs
 
         Args:
             league_id: The FPL league ID to fetch data for.
@@ -180,108 +180,105 @@ class DashboardService:
                 managers=[],
             )
 
-        # 3. Fetch remaining data in parallel (all queries depend only on
-        # managers_with_snapshots, so they can run concurrently)
-        (
-            picks_rows,
-            chips_rows,
-            transfers_rows,
-            manager_info_rows,
-            standings,
-            cumulative_hits_rows,
-        ) = await asyncio.gather(
-                # Picks with player and team data
-                conn.fetch(
-                    """
-                    SELECT
-                        s.manager_id,
-                        mp.position,
-                        mp.player_id,
-                        mp.is_captain,
-                        mp.is_vice_captain,
-                        mp.multiplier,
-                        p.web_name,
-                        p.team_id,
-                        p.element_type,
-                        p.now_cost,
-                        p.form,
-                        p.points_per_game,
-                        p.selected_by_percent,
-                        t.short_name
-                    FROM manager_pick mp
-                    JOIN manager_gw_snapshot s ON mp.snapshot_id = s.id
-                    JOIN player p ON mp.player_id = p.id AND p.season_id = $3
-                    JOIN team t ON p.team_id = t.id AND t.season_id = $3
-                    WHERE s.manager_id = ANY($1) AND s.gameweek = $2 AND s.season_id = $3
-                    ORDER BY s.manager_id, mp.position
-                    """,
-                    managers_with_snapshots,
-                    gameweek,
-                    season_id,
-                ),
-                # Chips used (all time for managers)
-                conn.fetch(
-                    """
-                    SELECT manager_id, chip_type, season_half
-                    FROM chip_usage
-                    WHERE manager_id = ANY($1) AND season_id = $2
-                    ORDER BY manager_id, season_half
-                    """,
-                    managers_with_snapshots,
-                    season_id,
-                ),
-                # Transfers for this gameweek with player names
-                conn.fetch(
-                    """
-                    SELECT
-                        t.manager_id,
-                        t.player_in,
-                        t.player_out,
-                        pin.web_name AS player_in_name,
-                        pout.web_name AS player_out_name
-                    FROM transfer t
-                    JOIN player pin ON t.player_in = pin.id AND pin.season_id = $3
-                    JOIN player pout ON t.player_out = pout.id AND pout.season_id = $3
-                    WHERE t.manager_id = ANY($1) AND t.gameweek = $2 AND t.season_id = $3
-                    """,
-                    managers_with_snapshots,
-                    gameweek,
-                    season_id,
-                ),
-                # Manager info (names)
-                conn.fetch(
-                    """
-                    SELECT id, player_first_name, player_last_name, name
-                    FROM manager
-                    WHERE id = ANY($1) AND season_id = $2
-                    """,
-                    managers_with_snapshots,
-                    season_id,
-                ),
-                # League standings (rank, last_rank)
-                conn.fetch(
-                    """
-                    SELECT manager_id, rank, last_rank, total, event_total
-                    FROM league_manager
-                    WHERE league_id = $1 AND manager_id = ANY($2) AND season_id = $3
-                    ORDER BY rank
-                    """,
-                    league_id,
-                    managers_with_snapshots,
-                    season_id,
-                ),
-                # Cumulative transfer costs (total hits across all GWs up to current)
-                conn.fetch(
-                    """
-                    SELECT manager_id, COALESCE(SUM(transfers_cost), 0) AS total_hits
-                    FROM manager_gw_snapshot
-                    WHERE manager_id = ANY($1) AND gameweek <= $2 AND season_id = $3
-                    GROUP BY manager_id
-                    """,
-                    managers_with_snapshots,
-                    gameweek,
-                    season_id,
-                ),
+        # 4. Fetch remaining data sequentially (asyncpg connections don't support
+        # concurrent operations on the same connection)
+
+        # Picks with player and team data
+        picks_rows = await conn.fetch(
+            """
+            SELECT
+                s.manager_id,
+                mp.position,
+                mp.player_id,
+                mp.is_captain,
+                mp.is_vice_captain,
+                mp.multiplier,
+                p.web_name,
+                p.team_id,
+                p.element_type,
+                p.now_cost,
+                p.form,
+                p.points_per_game,
+                p.selected_by_percent,
+                t.short_name
+            FROM manager_pick mp
+            JOIN manager_gw_snapshot s ON mp.snapshot_id = s.id
+            JOIN player p ON mp.player_id = p.id AND p.season_id = $3
+            JOIN team t ON p.team_id = t.id AND t.season_id = $3
+            WHERE s.manager_id = ANY($1) AND s.gameweek = $2 AND s.season_id = $3
+            ORDER BY s.manager_id, mp.position
+            """,
+            managers_with_snapshots,
+            gameweek,
+            season_id,
+        )
+
+        # Chips used (all time for managers)
+        chips_rows = await conn.fetch(
+            """
+            SELECT manager_id, chip_type, season_half
+            FROM chip_usage
+            WHERE manager_id = ANY($1) AND season_id = $2
+            ORDER BY manager_id, season_half
+            """,
+            managers_with_snapshots,
+            season_id,
+        )
+
+        # Transfers for this gameweek with player names
+        transfers_rows = await conn.fetch(
+            """
+            SELECT
+                t.manager_id,
+                t.player_in,
+                t.player_out,
+                pin.web_name AS player_in_name,
+                pout.web_name AS player_out_name
+            FROM transfer t
+            JOIN player pin ON t.player_in = pin.id AND pin.season_id = $3
+            JOIN player pout ON t.player_out = pout.id AND pout.season_id = $3
+            WHERE t.manager_id = ANY($1) AND t.gameweek = $2 AND t.season_id = $3
+            """,
+            managers_with_snapshots,
+            gameweek,
+            season_id,
+        )
+
+        # Manager info (names)
+        manager_info_rows = await conn.fetch(
+            """
+            SELECT id, player_first_name, player_last_name, name
+            FROM manager
+            WHERE id = ANY($1) AND season_id = $2
+            """,
+            managers_with_snapshots,
+            season_id,
+        )
+
+        # League standings (rank, last_rank)
+        standings = await conn.fetch(
+            """
+            SELECT manager_id, rank, last_rank, total, event_total
+            FROM league_manager
+            WHERE league_id = $1 AND manager_id = ANY($2) AND season_id = $3
+            ORDER BY rank
+            """,
+            league_id,
+            managers_with_snapshots,
+            season_id,
+        )
+
+        # Cumulative transfer costs (total hits across all GWs up to current)
+        cumulative_hits_rows = await conn.fetch(
+            """
+            SELECT manager_id, COALESCE(SUM(transfers_cost), 0) AS total_hits
+            FROM manager_gw_snapshot
+            WHERE manager_id = ANY($1) AND gameweek <= $2 AND season_id = $3
+            GROUP BY manager_id
+            """,
+            managers_with_snapshots,
+            gameweek,
+            season_id,
         )
 
         # Build picks lookup by manager_id
