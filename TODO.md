@@ -8,12 +8,27 @@
 - [x] Remove direct FPL API calls (fixes "chips spam" issue)
 - [x] Test locally before deploying
 
-### 2. Frontend: Activate Points Against Feature ✅
+### 2. Game Rewards → Game Scores Redesign
+- [ ] Rename "Game Rewards" to "Game Scores"
+- [ ] Show live match scores prominently
+- [ ] Show match minutes/status indicator
+- [ ] Display goal scorers (goals_scored stat)
+- [ ] Display assists (assists stat)
+- [ ] Display own goals (own_goals stat)
+- [ ] Show yellow cards (yellow_cards stat)
+- [ ] Show red cards (red_cards stat)
+- [ ] Show missed penalties (penalties_missed stat)
+- [ ] Show penalties saved (penalties_saved stat)
+- [ ] Keep bonus points section
+- [ ] Keep DefCon section
+- [ ] Consider: saves count for GKs (may be too verbose)
+
+### 3. Frontend: Activate Points Against Feature ✅
 - [x] Unhide Points Against card on Statistics page
 - [x] Connect to backend API `GET /api/v1/points-against`
 - [x] Test locally before deploying
 
-### 3. Fix Flaky E2E Tests ✅
+### 4. Fix Flaky E2E Tests ✅
 - [x] No longer experiencing flaky test failures
 
 ---
