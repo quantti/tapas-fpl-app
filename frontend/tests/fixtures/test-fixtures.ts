@@ -20,6 +20,7 @@ import {
   mockEventStatusResponse,
   mockComparisonResponse,
   mockLeagueRecommendationsResponse,
+  mockLeagueDashboardResponse,
   MOCK_MANAGER_IDS,
 } from './mock-data';
 
@@ -177,6 +178,15 @@ export async function setupApiMocking(page: Page) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(mockComparisonResponse(managerA, managerB)),
+    });
+  });
+
+  // Mock dashboard consolidation endpoint
+  await page.route('**/api/v1/dashboard/league/**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(mockLeagueDashboardResponse),
     });
   });
 }
