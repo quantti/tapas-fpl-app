@@ -26,6 +26,7 @@ export const queryKeys = {
     ['managerDetails', managerId, gameweekId] as const,
   entryHistory: (managerId: number) => ['entryHistory', managerId] as const,
   entryPicks: (managerId: number, gameweek: number) => ['entryPicks', managerId, gameweek] as const,
+  entryTransfers: (managerId: number) => ['entryTransfers', managerId] as const,
 
   // Gameweek data
   liveGameweek: (gameweek: number) => ['liveGameweek', gameweek] as const,
