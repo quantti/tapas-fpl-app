@@ -1,3 +1,10 @@
+# [0.34.0](https://github.com/quantti/tapas-fpl-app/compare/v0.33.3...v0.34.0) (2026-01-17)
+
+
+### Features
+
+* **game-scores:** redesign Game Rewards to show match events ([e7ed350](https://github.com/quantti/tapas-fpl-app/commit/e7ed3501538a5a1338c6a93ab52818c8922ef81c))
+
 ## [0.33.3](https://github.com/quantti/tapas-fpl-app/compare/v0.33.2...v0.33.3) (2026-01-17)
 
 
