@@ -1,3 +1,10 @@
+## [0.33.3](https://github.com/quantti/tapas-fpl-app/compare/v0.33.2...v0.33.3) (2026-01-17)
+
+
+### Bug Fixes
+
+* **dashboard:** use live FPL data for current gameweek picks and transfers ([2a4e42e](https://github.com/quantti/tapas-fpl-app/commit/2a4e42eda085adbcb3a2ae2d5eea08fda3be3ab4))
+
 ## [0.33.2](https://github.com/quantti/tapas-fpl-app/compare/v0.33.1...v0.33.2) (2026-01-15)
 
 
