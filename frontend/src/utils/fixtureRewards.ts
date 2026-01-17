@@ -13,6 +13,12 @@ export interface PlayerReward {
   points: number;
 }
 
+export interface PlayerStat {
+  playerId: number;
+  webName: string;
+  value: number;
+}
+
 export type FixtureStatus = 'not_started' | 'in_progress' | 'rewards_available';
 
 export interface FixtureRewards {
@@ -22,7 +28,14 @@ export interface FixtureRewards {
   bonus: PlayerReward[]; // points: 1, 2, or 3 based on BPS ranking
   defcon: PlayerReward[]; // points: always 2 for meeting threshold
   status: FixtureStatus;
-  // showRewards removed - derive via: status === 'rewards_available'
+  // Match events
+  goals: PlayerStat[];
+  assists: PlayerStat[];
+  ownGoals: PlayerStat[];
+  yellowCards: PlayerStat[];
+  redCards: PlayerStat[];
+  penaltiesMissed: PlayerStat[];
+  penaltiesSaved: PlayerStat[];
 }
 
 /**
@@ -56,6 +69,25 @@ function mapToPlayerRewards(
       };
     })
     .sort((a, b) => b.points - a.points); // Sort by points descending
+}
+
+/**
+ * Map stat entries to player stats with names
+ */
+function mapToPlayerStats(
+  entries: { element: number; value: number }[],
+  playersMap: Map<number, Player>
+): PlayerStat[] {
+  return entries
+    .map((entry) => {
+      const player = playersMap.get(entry.element);
+      return {
+        playerId: entry.element,
+        webName: player?.web_name ?? `#${entry.element}`,
+        value: entry.value,
+      };
+    })
+    .sort((a, b) => b.value - a.value); // Sort by value descending
 }
 
 /**
@@ -158,6 +190,7 @@ export function extractFixtureRewards(
 
   const status = getFixtureStatus(fixture);
   const shouldShowRewards = status === 'rewards_available';
+  const matchStarted = fixture.started;
 
   // Only extract rewards if we should show them
   const defconEntries = shouldShowRewards ? getStatEntries(fixture, 'defensive_contribution') : [];
@@ -175,6 +208,29 @@ export function extractFixtureRewards(
     }
   }
 
+  // Extract match events (only after match started)
+  const goals = matchStarted
+    ? mapToPlayerStats(getStatEntries(fixture, 'goals_scored'), playersMap)
+    : [];
+  const assists = matchStarted
+    ? mapToPlayerStats(getStatEntries(fixture, 'assists'), playersMap)
+    : [];
+  const ownGoals = matchStarted
+    ? mapToPlayerStats(getStatEntries(fixture, 'own_goals'), playersMap)
+    : [];
+  const yellowCards = matchStarted
+    ? mapToPlayerStats(getStatEntries(fixture, 'yellow_cards'), playersMap)
+    : [];
+  const redCards = matchStarted
+    ? mapToPlayerStats(getStatEntries(fixture, 'red_cards'), playersMap)
+    : [];
+  const penaltiesMissed = matchStarted
+    ? mapToPlayerStats(getStatEntries(fixture, 'penalties_missed'), playersMap)
+    : [];
+  const penaltiesSaved = matchStarted
+    ? mapToPlayerStats(getStatEntries(fixture, 'penalties_saved'), playersMap)
+    : [];
+
   return {
     fixture,
     homeTeamName: homeTeam?.short_name ?? `Team ${fixture.team_h}`,
@@ -182,6 +238,13 @@ export function extractFixtureRewards(
     bonus,
     defcon: filterAndMapDefconRewards(defconEntries, playersMap),
     status,
+    goals,
+    assists,
+    ownGoals,
+    yellowCards,
+    redCards,
+    penaltiesMissed,
+    penaltiesSaved,
   };
 }
 

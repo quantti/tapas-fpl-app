@@ -1,10 +1,11 @@
-import { Award, Shield, Trophy } from 'lucide-react';
+import { Award, Circle, Hand, Shield, Square, Trophy, XCircle } from 'lucide-react';
 import { useMemo } from 'react';
 
 import {
   extractAllFixtureRewards,
   type FixtureRewards,
   type PlayerReward,
+  type PlayerStat,
 } from 'utils/fixtureRewards';
 
 import * as styles from './GameRewards.module.css';
@@ -42,24 +43,136 @@ function formatScore(fixture: Fixture): string {
   return `${fixture.team_h_score ?? 0}-${fixture.team_a_score ?? 0}`;
 }
 
+function formatMatchStatus(fixture: Fixture): string {
+  if (!fixture.started) {
+    return '';
+  }
+  if (fixture.finished) {
+    return 'FT';
+  }
+  if (fixture.finished_provisional) {
+    return 'FT';
+  }
+  // Show minutes for live match
+  return `${fixture.minutes}'`;
+}
+
+function formatPlayerNames(stats: PlayerStat[]): string {
+  // Group by player and show count if multiple (e.g., "Salah ×2")
+  const counts = new Map<string, number>();
+  for (const stat of stats) {
+    const current = counts.get(stat.webName) ?? 0;
+    counts.set(stat.webName, current + stat.value);
+  }
+
+  return Array.from(counts.entries())
+    .map(([name, count]) => (count > 1 ? `${name} ×${count}` : name))
+    .join(', ');
+}
+
+function StatRow({
+  icon,
+  iconColor,
+  label,
+  stats,
+}: {
+  icon: React.ReactNode;
+  iconColor?: string;
+  label: string;
+  stats: PlayerStat[];
+}) {
+  if (stats.length === 0) return null;
+
+  return (
+    <div className={styles.statRow}>
+      <span className={styles.statIcon} style={iconColor ? { color: iconColor } : undefined}>
+        {icon}
+      </span>
+      <span className={styles.statLabel}>{label}:</span>
+      <span className={styles.statPlayers}>{formatPlayerNames(stats)}</span>
+    </div>
+  );
+}
+
 function FixtureCard({ rewards }: { rewards: FixtureRewards }) {
   const bonusGrouped = groupBonusByPoints(rewards.bonus);
   const hasRewards = rewards.bonus.length > 0 || rewards.defcon.length > 0;
   const showRewards = rewards.status === 'rewards_available';
 
+  const hasMatchEvents =
+    rewards.goals.length > 0 ||
+    rewards.assists.length > 0 ||
+    rewards.ownGoals.length > 0 ||
+    rewards.yellowCards.length > 0 ||
+    rewards.redCards.length > 0 ||
+    rewards.penaltiesMissed.length > 0 ||
+    rewards.penaltiesSaved.length > 0;
+
+  const matchStatus = formatMatchStatus(rewards.fixture);
+
   return (
     <div className={styles.fixtureCard}>
       <div className={styles.fixtureHeader}>
         <span className={styles.teamName}>{rewards.homeTeamName}</span>
-        <span className={styles.score}>{formatScore(rewards.fixture)}</span>
+        <div className={styles.scoreContainer}>
+          <span className={styles.score}>{formatScore(rewards.fixture)}</span>
+          {matchStatus && <span className={styles.matchStatus}>{matchStatus}</span>}
+        </div>
         <span className={styles.teamName}>{rewards.awayTeamName}</span>
       </div>
 
       {rewards.status === 'not_started' && <div className={styles.statusMessage}>Not started</div>}
 
-      {rewards.status === 'in_progress' && <div className={styles.statusMessage}>In progress</div>}
+      {rewards.fixture.started && !hasMatchEvents && !hasRewards && (
+        <div className={styles.statusMessage}>No events yet</div>
+      )}
 
-      {showRewards && !hasRewards && <div className={styles.statusMessage}>No rewards yet</div>}
+      {hasMatchEvents && (
+        <div className={styles.matchEvents}>
+          <StatRow
+            icon={<Circle size={12} fill="currentColor" />}
+            iconColor="#10B981"
+            label="Goals"
+            stats={rewards.goals}
+          />
+          <StatRow
+            icon={<Circle size={12} />}
+            iconColor="#6366F1"
+            label="Assists"
+            stats={rewards.assists}
+          />
+          <StatRow
+            icon={<XCircle size={14} />}
+            iconColor="#EF4444"
+            label="Own Goals"
+            stats={rewards.ownGoals}
+          />
+          <StatRow
+            icon={<Square size={12} fill="currentColor" />}
+            iconColor="#EAB308"
+            label="Yellow"
+            stats={rewards.yellowCards}
+          />
+          <StatRow
+            icon={<Square size={12} fill="currentColor" />}
+            iconColor="#DC2626"
+            label="Red"
+            stats={rewards.redCards}
+          />
+          <StatRow
+            icon={<XCircle size={14} />}
+            iconColor="#F97316"
+            label="Pen Missed"
+            stats={rewards.penaltiesMissed}
+          />
+          <StatRow
+            icon={<Hand size={14} />}
+            iconColor="#22C55E"
+            label="Pen Saved"
+            stats={rewards.penaltiesSaved}
+          />
+        </div>
+      )}
 
       {showRewards && hasRewards && (
         <div className={styles.rewardsList}>
@@ -123,7 +236,7 @@ export function GameRewards({ fixtures, playersMap, teamsMap, liveData }: Props)
     <div className={styles.GameRewards}>
       <h3 className={styles.title}>
         <Trophy size={16} color="#FFD700" />
-        Game Rewards
+        Game Scores
       </h3>
       <div className={styles.fixtureGrid}>
         {allRewards.map((rewards) => (

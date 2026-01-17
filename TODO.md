@@ -8,19 +8,19 @@
 - [x] Remove direct FPL API calls (fixes "chips spam" issue)
 - [x] Test locally before deploying
 
-### 2. Game Rewards → Game Scores Redesign
-- [ ] Rename "Game Rewards" to "Game Scores"
-- [ ] Show live match scores prominently
-- [ ] Show match minutes/status indicator
-- [ ] Display goal scorers (goals_scored stat)
-- [ ] Display assists (assists stat)
-- [ ] Display own goals (own_goals stat)
-- [ ] Show yellow cards (yellow_cards stat)
-- [ ] Show red cards (red_cards stat)
-- [ ] Show missed penalties (penalties_missed stat)
-- [ ] Show penalties saved (penalties_saved stat)
-- [ ] Keep bonus points section
-- [ ] Keep DefCon section
+### 2. Game Rewards → Game Scores Redesign ✅
+- [x] Rename "Game Rewards" to "Game Scores"
+- [x] Show live match scores prominently
+- [x] Show match minutes/status indicator
+- [x] Display goal scorers (goals_scored stat)
+- [x] Display assists (assists stat)
+- [x] Display own goals (own_goals stat)
+- [x] Show yellow cards (yellow_cards stat)
+- [x] Show red cards (red_cards stat)
+- [x] Show missed penalties (penalties_missed stat)
+- [x] Show penalties saved (penalties_saved stat)
+- [x] Keep bonus points section
+- [x] Keep DefCon section
 - [ ] Consider: saves count for GKs (may be too verbose)
 
 ### 3. Frontend: Activate Points Against Feature ✅

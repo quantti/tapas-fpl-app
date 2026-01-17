@@ -54,12 +54,24 @@
     }
   }
 
+  .scoreContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50px;
+  }
+
   .score {
     font-size: var(--font-size-sm);
     font-weight: 700;
     color: var(--color-text-secondary);
-    min-width: 36px;
     text-align: center;
+  }
+
+  .matchStatus {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-weight: 500;
   }
 
   .statusMessage {
@@ -67,6 +79,42 @@
     color: var(--color-text-muted);
     text-align: center;
     font-style: italic;
+  }
+
+  .matchEvents {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-8);
+  }
+
+  .statRow {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    font-size: var(--font-size-xs);
+    line-height: 1.4;
+  }
+
+  .statIcon {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    justify-content: center;
+  }
+
+  .statLabel {
+    font-weight: 600;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+    min-width: 70px;
+  }
+
+  .statPlayers {
+    color: var(--color-text);
+    flex: 1;
   }
 
   .rewardsList {
