@@ -2,34 +2,7 @@
 
 ## Immediate Tasks
 
-### 1. Frontend: Integrate Chips Backend API ✅
-- [x] Update `ChipsRemaining` component to call backend API instead of direct FPL calls
-- [x] Use `GET /api/v1/chips/league/{league_id}?current_gameweek=N&sync=true`
-- [x] Remove direct FPL API calls (fixes "chips spam" issue)
-- [x] Test locally before deploying
-
-### 2. Game Rewards → Game Scores Redesign ✅
-- [x] Rename "Game Rewards" to "Game Scores"
-- [x] Show live match scores prominently
-- [x] Show match minutes/status indicator
-- [x] Display goal scorers (goals_scored stat)
-- [x] Display assists (assists stat)
-- [x] Display own goals (own_goals stat)
-- [x] Show yellow cards (yellow_cards stat)
-- [x] Show red cards (red_cards stat)
-- [x] Show missed penalties (penalties_missed stat)
-- [x] Show penalties saved (penalties_saved stat)
-- [x] Keep bonus points section
-- [x] Keep DefCon section
-- [ ] Consider: saves count for GKs (may be too verbose)
-
-### 3. Frontend: Activate Points Against Feature ✅
-- [x] Unhide Points Against card on Statistics page
-- [x] Connect to backend API `GET /api/v1/points-against`
-- [x] Test locally before deploying
-
-### 4. Fix Flaky E2E Tests ✅
-- [x] No longer experiencing flaky test failures
+None currently - all immediate tasks completed.
 
 ---
 
@@ -81,8 +54,9 @@
   - [ ] ChipsRemaining.module.css
   - [ ] BenchPoints.module.css
   - [x] FreeTransfers.module.css
-  - [ ] GameRewards.module.css - nesting doesn't reflect DOM hierarchy
-  - [ ] Audit all CSS modules - nesting should mirror actual DOM structure (e.g., `.bonusRow` should be nested inside `.rewardsList` if that's the parent in JSX)
+  - [x] GameRewards.module.css - updated with proper nesting for Game Scores
+  - [ ] Audit all CSS modules - nesting should mirror actual DOM structure
+- [ ] Rename GameRewards component to GameScores for consistency
 - [ ] Extract `FixtureCard` from `GameRewards.tsx` into separate component
 - [ ] Create shared `Layout` component to eliminate Header duplication:
   - [ ] Create `src/components/Layout.tsx` with Header + content wrapper
@@ -146,6 +120,20 @@ Custom fixture difficulty rating (1-5 stars, 0-100 scale) that improves on FPL's
 ---
 
 ## Recently Completed
+
+### Frontend: Game Scores Redesign (Jan 2026)
+- [x] Renamed "Game Rewards" to "Game Scores"
+- [x] Live match scores with minutes/status indicator
+- [x] Match events: goals, assists, own goals, cards, penalties
+- [x] Kept bonus points and DefCon sections
+
+### Frontend: Points Against Feature (Jan 2026)
+- [x] Unhide Points Against card on Statistics page
+- [x] Connected to backend API
+
+### Frontend: Chips Backend Integration (Jan 2026)
+- [x] Updated ChipsRemaining to use backend API
+- [x] Removed direct FPL API calls (fixed "chips spam")
 
 ### Backend: Chips Remaining API (Jan 2026)
 - [x] Database schema (`chip_usage` table with season half support)

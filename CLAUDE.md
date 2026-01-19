@@ -65,7 +65,7 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 - [x] League Template Team (most owned starting XI)
 - [x] Graceful 503 error handling
 - [x] League recalculation banner
-- [x] Game Rewards (bonus points + DefCon per fixture)
+- [x] Game Scores (live scores, match events, bonus points, DefCon)
 - [x] Player details modal (xG/xA stats, form, fixtures, history)
 - [x] Cookie consent banner (GDPR-compliant)
 - [x] Release notification banner
