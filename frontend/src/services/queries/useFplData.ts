@@ -182,16 +182,9 @@ export function useFplData() {
   // picks/captains/chips until the data collection runs.
   //
   // Historical gameweek: Use backend consolidated endpoint (faster, 1 call)
-  const liveManagerDetails = useLiveManagerDetails(
-    standings,
-    currentGameweek?.id ?? 0,
-    playersMap,
-    {
-      enabled: isLive && !!standings && playersMap.size > 0,
-    }
-  );
+  // BUT: Fall back to FPL API if backend returns empty data (data not collected yet)
 
-  // Backend dashboard - used when NOT live (historical data)
+  // Backend dashboard - try first when NOT live (historical data)
   const dashboardQuery = useLeagueDashboard(LEAGUE_ID, currentGameweek?.id ?? 0, {
     enabled: !isLive && !!currentGameweek && playersMap.size > 0,
     isLive: false,
@@ -202,8 +195,23 @@ export function useFplData() {
     return dashboardQuery.managers.map((m) => transformDashboardManager(m, playersMap));
   }, [dashboardQuery.managers, playersMap]);
 
-  // Use live data when live, otherwise use backend data
-  const managerDetails = isLive ? liveManagerDetails.managers : dashboardManagers;
+  // Check if backend data is empty (not yet collected for this gameweek)
+  const backendDataEmpty =
+    !isLive && !dashboardQuery.isLoading && dashboardQuery.managers.length === 0;
+
+  // Live manager details - used when live OR when backend data is empty (fallback)
+  const liveManagerDetails = useLiveManagerDetails(
+    standings,
+    currentGameweek?.id ?? 0,
+    playersMap,
+    {
+      enabled: (isLive || backendDataEmpty) && !!standings && playersMap.size > 0,
+    }
+  );
+
+  // Use live data when live OR when backend returns empty, otherwise use backend data
+  const managerDetails =
+    isLive || backendDataEmpty ? liveManagerDetails.managers : dashboardManagers;
 
   // Detect "awaiting update" period
   const awaitingUpdate = useMemo(() => {
@@ -214,20 +222,21 @@ export function useFplData() {
     return deadlinePassed && picksDataMissing;
   }, [currentGameweek, standings, managerDetails]);
 
-  // Compute loading state
+  // Compute loading state - account for fallback to live data when backend is empty
+  const usingLiveData = isLive || backendDataEmpty;
   const isLoading =
     bootstrapQuery.isLoading ||
     standingsQuery.isLoading ||
-    (isLive ? liveManagerDetails.isLoading : dashboardQuery.isLoading);
+    (usingLiveData ? liveManagerDetails.isLoading : dashboardQuery.isLoading);
 
   // Compute error state - preserve actual error object for 503 detection
   // Check both FPL API errors and backend/live API errors
   const fplError = bootstrapQuery.error || standingsQuery.error;
-  const dataError = isLive ? liveManagerDetails.error : dashboardQuery.error;
+  const dataError = usingLiveData ? liveManagerDetails.error : dashboardQuery.error;
   const error = fplError?.message || dataError || null;
   const isApiUnavailable =
     (fplError instanceof FplApiError && fplError.isServiceUnavailable) ||
-    (!isLive && dashboardQuery.isBackendUnavailable);
+    (!usingLiveData && dashboardQuery.isBackendUnavailable);
 
   // Compute last updated time
   const lastUpdated = (() => {
@@ -245,7 +254,7 @@ export function useFplData() {
     bootstrapQuery.refetch();
     eventStatusQuery.refetch();
     standingsQuery.refetch();
-    if (isLive) {
+    if (usingLiveData) {
       liveManagerDetails.refetch();
     } else {
       dashboardQuery.refetch();
