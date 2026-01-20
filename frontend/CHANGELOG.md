@@ -1,3 +1,10 @@
+## [0.34.1](https://github.com/quantti/tapas-fpl-app/compare/v0.34.0...v0.34.1) (2026-01-20)
+
+
+### Bug Fixes
+
+* fall back to FPL API when backend returns empty data ([d5ba645](https://github.com/quantti/tapas-fpl-app/commit/d5ba645674ed2fca4d251a7cd726c3d8770dc3d1))
+
 # [0.34.0](https://github.com/quantti/tapas-fpl-app/compare/v0.33.3...v0.34.0) (2026-01-17)
 
 
