@@ -1,3 +1,10 @@
+## [0.35.1](https://github.com/quantti/tapas-fpl-app/compare/v0.35.0...v0.35.1) (2026-01-20)
+
+
+### Bug Fixes
+
+* **game-scores:** reduce cache TTL and polling interval for fresher live data ([de9018c](https://github.com/quantti/tapas-fpl-app/commit/de9018c47f845061b7ab02ffe62c6053bf304b0d))
+
 # [0.35.0](https://github.com/quantti/tapas-fpl-app/compare/v0.34.1...v0.35.0) (2026-01-20)
 
 
