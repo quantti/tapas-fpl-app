@@ -4,21 +4,24 @@ const FPL_API_BASE = 'https://fantasy.premierleague.com/api';
 
 /**
  * Tiered Cache TTLs based on endpoint type (same as Cloudflare Worker)
+ * @param path - API path
+ * @param isLive - Whether games are currently in progress (reduces TTL for time-sensitive endpoints)
  */
-function getCacheTTL(path: string): number {
+function getCacheTTL(path: string, isLive: boolean): number {
   // Bootstrap static - players, teams, gameweeks
   if (path.includes('bootstrap-static')) {
     return 5 * 60; // 5 minutes
   }
 
-  // Fixtures - match schedule
+  // Fixtures - match schedule and scores
+  // During live games, scores update frequently so use shorter TTL
   if (path.includes('fixtures')) {
-    return 15 * 60; // 15 minutes
+    return isLive ? 30 : 15 * 60; // 30 seconds when live, 15 minutes otherwise
   }
 
   // Live gameweek data
   if (path.match(/event\/\d+\/live/)) {
-    return 2 * 60; // 2 minutes
+    return 60; // 1 minute
   }
 
   // Historical picks (past data is stable)
@@ -62,10 +65,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const fplPathMatch = url.match(/\/api\/fpl\/(.+?)(?:\?|$)/);
   const path = fplPathMatch ? fplPathMatch[1] : '';
 
-  // Build query string from remaining params (exclude path-related params)
+  // Check if this is a live request (for dynamic cache TTL)
+  const isLive = req.query.live === '1' || req.query.live === 'true';
+
+  // Build query string from remaining params (exclude path-related and cache-control params)
   const queryParams = new URLSearchParams();
   for (const [key, value] of Object.entries(req.query)) {
-    if (key !== 'path' && !key.includes('path') && value) {
+    // Exclude path params and our custom 'live' param from being forwarded to FPL API
+    if (key !== 'path' && !key.includes('path') && key !== 'live' && value) {
       queryParams.set(key, Array.isArray(value) ? value[0] : value);
     }
   }
@@ -96,8 +103,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const data = await response.json();
 
-    // Set cache headers
-    const ttl = getCacheTTL(path);
+    // Set cache headers (shorter TTL during live games)
+    const ttl = getCacheTTL(path, isLive);
     res.setHeader('Cache-Control', `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`);
     res.setHeader('Access-Control-Allow-Origin', '*');
 

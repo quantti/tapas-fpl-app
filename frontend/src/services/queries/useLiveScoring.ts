@@ -20,7 +20,7 @@ interface UseLiveScoringReturn {
   refresh: () => Promise<void>;
 }
 
-const DEFAULT_POLL_INTERVAL = 60000; // 60 seconds
+const DEFAULT_POLL_INTERVAL = 30000; // 30 seconds
 
 export function useLiveScoring(
   gameweek: number,
@@ -43,14 +43,15 @@ export function useLiveScoring(
   });
 
   // Fetch fixtures with same polling behavior
+  // When live, pass isLive flag to API for shorter cache TTL at proxy level
   const {
     data: fixtures,
     error: fixturesError,
     isLoading: fixturesLoading,
     refetch: refetchFixtures,
   } = useQuery({
-    queryKey: queryKeys.fixtures(gameweek),
-    queryFn: () => fplApi.getFixtures(gameweek),
+    queryKey: [...queryKeys.fixtures(gameweek), { isLive }],
+    queryFn: () => fplApi.getFixtures(gameweek, isLive),
     enabled: gameweek > 0,
     refetchInterval: isLive ? pollInterval : false,
     staleTime: isLive ? 0 : 5 * 60 * 1000,

@@ -56,10 +56,15 @@ export const fplApi = {
 
   /**
    * Get all fixtures for the season
-   * Optionally filter by gameweek
+   * @param gameweek - Optionally filter by gameweek
+   * @param isLive - When true, uses shorter cache TTL on proxy for fresher data during live games
    */
-  getFixtures: (gameweek?: number) => {
-    const endpoint = gameweek !== undefined ? `/fixtures?event=${gameweek}` : '/fixtures';
+  getFixtures: (gameweek?: number, isLive?: boolean) => {
+    const params = new URLSearchParams();
+    if (gameweek !== undefined) params.set('event', gameweek.toString());
+    if (isLive) params.set('live', '1');
+    const queryString = params.toString();
+    const endpoint = queryString ? `/fixtures?${queryString}` : '/fixtures';
     return fetchApi<Fixture[]>(endpoint);
   },
 
