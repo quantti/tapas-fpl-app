@@ -595,6 +595,17 @@ export const mockFixturesResponse = [
     kickoff_time: '2025-12-21T15:00:00Z',
     team_h_difficulty: 2,
     team_a_difficulty: 5,
+    stats: [
+      { identifier: 'goals_scored', h: [{ element: PLAYER_IDS.SALAH, value: 2 }], a: [] },
+      { identifier: 'assists', h: [{ element: PLAYER_IDS.PALMER, value: 2 }], a: [] },
+      { identifier: 'saves', h: [], a: [{ element: PLAYER_IDS.RAYA, value: 4 }] },
+      { identifier: 'yellow_cards', h: [], a: [] },
+      { identifier: 'red_cards', h: [], a: [] },
+      { identifier: 'own_goals', h: [], a: [] },
+      { identifier: 'penalties_saved', h: [], a: [] },
+      { identifier: 'penalties_missed', h: [], a: [] },
+      { identifier: 'bonus', h: [], a: [] },
+    ],
   },
   {
     id: 2,
@@ -610,6 +621,39 @@ export const mockFixturesResponse = [
     kickoff_time: '2025-12-21T17:30:00Z',
     team_h_difficulty: 5,
     team_a_difficulty: 4,
+    stats: [
+      {
+        identifier: 'goals_scored',
+        h: [{ element: PLAYER_IDS.HAALAND, value: 2 }],
+        a: [
+          { element: PLAYER_IDS.ISAK, value: 1 },
+          { element: PLAYER_IDS.GORDON, value: 1 },
+        ],
+      },
+      {
+        identifier: 'assists',
+        h: [{ element: PLAYER_IDS.SAKA, value: 1 }],
+        a: [{ element: PLAYER_IDS.ISAK, value: 1 }],
+      },
+      {
+        identifier: 'saves',
+        h: [{ element: PLAYER_IDS.ALISSON, value: 5 }],
+        a: [{ element: PLAYER_IDS.MARTINEZ, value: 3 }],
+      },
+      { identifier: 'yellow_cards', h: [{ element: PLAYER_IDS.HAALAND, value: 1 }], a: [] },
+      { identifier: 'red_cards', h: [], a: [] },
+      { identifier: 'own_goals', h: [], a: [] },
+      { identifier: 'penalties_saved', h: [], a: [] },
+      { identifier: 'penalties_missed', h: [], a: [] },
+      {
+        identifier: 'bonus',
+        h: [{ element: PLAYER_IDS.HAALAND, value: 3 }],
+        a: [
+          { element: PLAYER_IDS.ISAK, value: 2 },
+          { element: PLAYER_IDS.GORDON, value: 1 },
+        ],
+      },
+    ],
   },
   {
     id: 3,
@@ -624,6 +668,7 @@ export const mockFixturesResponse = [
     kickoff_time: '2025-12-26T15:00:00Z',
     team_h_difficulty: 2,
     team_a_difficulty: 3,
+    stats: [],
   },
 ];
 

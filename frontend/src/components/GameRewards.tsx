@@ -106,7 +106,8 @@ function FixtureCard({ rewards }: { rewards: FixtureRewards }) {
     rewards.yellowCards.length > 0 ||
     rewards.redCards.length > 0 ||
     rewards.penaltiesMissed.length > 0 ||
-    rewards.penaltiesSaved.length > 0;
+    rewards.penaltiesSaved.length > 0 ||
+    rewards.saves.length > 0;
 
   const matchStatus = formatMatchStatus(rewards.fixture);
 
@@ -170,6 +171,12 @@ function FixtureCard({ rewards }: { rewards: FixtureRewards }) {
             iconColor="#22C55E"
             label="Pen Saved"
             stats={rewards.penaltiesSaved}
+          />
+          <StatRow
+            icon={<Hand size={14} />}
+            iconColor="#3B82F6"
+            label="Saves"
+            stats={rewards.saves}
           />
         </div>
       )}

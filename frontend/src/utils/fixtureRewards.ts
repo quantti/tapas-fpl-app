@@ -36,6 +36,7 @@ export interface FixtureRewards {
   redCards: PlayerStat[];
   penaltiesMissed: PlayerStat[];
   penaltiesSaved: PlayerStat[];
+  saves: PlayerStat[];
 }
 
 /**
@@ -230,6 +231,7 @@ export function extractFixtureRewards(
   const penaltiesSaved = matchStarted
     ? mapToPlayerStats(getStatEntries(fixture, 'penalties_saved'), playersMap)
     : [];
+  const saves = matchStarted ? mapToPlayerStats(getStatEntries(fixture, 'saves'), playersMap) : [];
 
   return {
     fixture,
@@ -245,6 +247,7 @@ export function extractFixtureRewards(
     redCards,
     penaltiesMissed,
     penaltiesSaved,
+    saves,
   };
 }
 
