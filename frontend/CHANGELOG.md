@@ -1,3 +1,10 @@
+# [0.35.0](https://github.com/quantti/tapas-fpl-app/compare/v0.34.1...v0.35.0) (2026-01-20)
+
+
+### Features
+
+* **game-scores:** add goalkeeper saves to match events ([c5292d0](https://github.com/quantti/tapas-fpl-app/commit/c5292d0eb990edcb063f648198482dae97846753))
+
 ## [0.34.1](https://github.com/quantti/tapas-fpl-app/compare/v0.34.0...v0.34.1) (2026-01-20)
 
 
