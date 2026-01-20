@@ -95,9 +95,9 @@ Ensure these settings in Supabase Dashboard → Settings → Database:
 
 1. **`backend/crontab`** (new)
    ```
-   # Daily at 06:00 UTC (06:00 GMT / 07:00 BST)
-   # After most GWs finalize + buffer for bonus points
-   0 6 * * * python -m scripts.scheduled_update
+   # Daily at 08:00 UTC (08:00 GMT / 09:00 BST)
+   # After most GWs finalize + buffer for FPL to set data_checked flag
+   0 8 * * * python -m scripts.scheduled_update
    ```
 
 2. **`backend/scripts/scheduled_update.py`** (new)
@@ -274,9 +274,9 @@ Use this for one-time bootstrap population or to refresh player data outside sch
 
 ## Schedule
 
-- **Time:** 06:00 UTC daily
+- **Time:** 08:00 UTC daily
 - **Why daily?** Gameweeks can end any day (midweek games, blank GWs)
-- **Why 06:00?** GWs typically finish by 22:00 UK time + ~8hr buffer for FPL to finalize
+- **Why 08:00?** GWs typically finish by 22:00 UK time + ~10hr buffer for FPL to set `data_checked` flag
 - **Idempotent:** If no new `data_checked` GW, script exits without changes
 
 ### Gameweek Finalization Timeline
@@ -285,8 +285,8 @@ Use this for one-time bootstrap population or to refresh player data outside sch
 Sunday 16:30 - Last match kicks off
 Sunday 18:30 - Last match ends
 Sunday ~20:00 - Bonus points calculated
-Sunday ~22:00 - data_checked = true
-Monday 06:00 - Our scheduled update runs
+Sunday ~22:00 - data_checked = true (sometimes delayed)
+Monday 08:00 - Our scheduled update runs
 ```
 
 ---

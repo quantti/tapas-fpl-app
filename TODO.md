@@ -124,8 +124,15 @@ Custom fixture difficulty rating (1-5 stars, 0-100 scale) that improves on FPL's
 ### Frontend: Game Scores Redesign (Jan 2026)
 - [x] Renamed "Game Rewards" to "Game Scores"
 - [x] Live match scores with minutes/status indicator
-- [x] Match events: goals, assists, own goals, cards, penalties
+- [x] Match events: goals, assists, own goals, cards, penalties, goalkeeper saves
 - [x] Kept bonus points and DefCon sections
+
+### Backend: Dashboard Consolidation (Jan 2026)
+- [x] Created `/api/v1/dashboard/league/{id}` endpoint
+- [x] Consolidated 60+ FPL API calls into single backend call
+- [x] Frontend `useLeagueDashboard` hook with fallback logic
+- [x] Cron schedule adjusted to 08:00 UTC for data freshness
+- [x] See `backend/docs/dashboard-endpoint-plan.md` for full details
 
 ### Frontend: Points Against Feature (Jan 2026)
 - [x] Unhide Points Against card on Statistics page

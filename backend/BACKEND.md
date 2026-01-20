@@ -952,7 +952,7 @@ fly ssh console --app tapas-fpl-backend -C "python -m scripts.scheduled_update -
 - `SCHEDULED_UPDATE_TIMEOUT` - Maximum runtime in seconds (default: 1800)
 
 **Automatic Scheduling:**
-- Runs daily at 06:00 UTC via Supercronic (configured in `crontab`)
+- Runs daily at 08:00 UTC via Supercronic (configured in `crontab`)
 - Only processes if a new finalized gameweek is detected
 - Skips if already processed (idempotent)
 

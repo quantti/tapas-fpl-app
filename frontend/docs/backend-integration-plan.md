@@ -1,14 +1,31 @@
 # Frontend Backend Integration Plan
 
-**Status:** In Progress
+**Status:** In Progress (Statistics page pending)
 **Created:** 2026-01-08
-**Last Updated:** 2026-01-12
+**Last Updated:** 2026-01-20
 
 ## Overview
 
 Migrate Statistics and Analytics page components from direct FPL API calls to pre-computed backend endpoints. This reduces ~100+ API calls to a few calls per page load.
 
 ## Completed Integrations
+
+### ✅ Dashboard Consolidation
+**Completed:** 2026-01-20
+
+| Component | Hook | Data Source | API Calls |
+|-----------|------|-------------|-----------|
+| Dashboard | `useLeagueDashboard` | Backend `/dashboard/league/{id}` | 1 call |
+
+**Changes:**
+- Created `GET /api/v1/dashboard/league/{id}` backend endpoint
+- Created `useLeagueDashboard` hook with TanStack Query
+- Reduced 60+ FPL API calls to 1 backend call
+- Added fallback logic in `useFplData.ts` when backend returns empty data
+- Cron schedule adjusted to 08:00 UTC for data freshness
+- See `backend/docs/dashboard-endpoint-plan.md` for full details
+
+---
 
 ### ✅ Recommendations (Analytics Page)
 **Completed:** 2026-01-12
