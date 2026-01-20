@@ -215,8 +215,8 @@ Frontend → /api/fpl/* → Vercel Function → fantasy.premierleague.com/api/*
 
 **Implementation:** `api/fpl/[...path].ts` - Catch-all route with tiered caching:
 - Bootstrap static: 5 min
-- Fixtures: 15 min
-- Live gameweek: 2 min
+- Fixtures: 30s (live) / 15 min (default) - uses `?live=1` query param
+- Live gameweek: 1 min
 - Historical picks: 1 hour
 - Event status: 1 min
 

@@ -54,11 +54,7 @@ export const fplApi = {
    */
   getBootstrapStatic: () => fetchApi<BootstrapStatic>('/bootstrap-static'),
 
-  /**
-   * Get all fixtures for the season
-   * @param gameweek - Optionally filter by gameweek
-   * @param isLive - When true, uses shorter cache TTL on proxy for fresher data during live games
-   */
+  /** Get all fixtures for the season. isLive is a proxy cache hint (30s vs 15min TTL). */
   getFixtures: (gameweek?: number, isLive?: boolean) => {
     const params = new URLSearchParams();
     if (gameweek !== undefined) params.set('event', gameweek.toString());

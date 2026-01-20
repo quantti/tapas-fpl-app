@@ -50,7 +50,7 @@ export function useLiveScoring(
     isLoading: fixturesLoading,
     refetch: refetchFixtures,
   } = useQuery({
-    queryKey: [...queryKeys.fixtures(gameweek), { isLive }],
+    queryKey: queryKeys.fixtures(gameweek),
     queryFn: () => fplApi.getFixtures(gameweek, isLive),
     enabled: gameweek > 0,
     refetchInterval: isLive ? pollInterval : false,
