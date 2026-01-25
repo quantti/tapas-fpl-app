@@ -82,6 +82,7 @@ For 2025/26, free transfers are **topped up to 5** at GW16 to help manage Africa
 - Played when confirming costly transfers
 - **Cannot be cancelled after confirmation**
 - **You KEEP your banked transfers** when playing Wildcard
+- **You do NOT gain a free transfer during WC week** (the +1 comes next GW)
 - Best used for major squad overhaul
 
 ### Free Hit Details
@@ -90,17 +91,20 @@ For 2025/26, free transfers are **topped up to 5** at GW16 to help manage Africa
 - Squad **reverts to previous state** after deadline
 - **Cannot be cancelled after confirmation**
 - **You KEEP your banked transfers** when playing Free Hit
+- **You do NOT gain a free transfer during Free Hit week** (the +1 comes next GW)
 - **Restriction:** Cannot use Free Hit in both GW19 AND GW20
 - Ideal for Blank Gameweeks or Double Gameweeks
 
 ### Chip Examples (FT Impact)
 
-| Scenario | FT Before Chip | FT After GW |
-|----------|----------------|-------------|
-| Wildcard with 3 FT | 3 | 4 (3 preserved + 1) |
-| Free Hit with 2 FT | 2 | 3 (2 preserved + 1) |
-| Wildcard with 5 FT | 5 | 5 (capped at max) |
-| Triple Captain with 2 FT, 1 transfer | 2 | 2 (2 - 1 + 1) |
+**Important:** You do NOT gain a free transfer during the week you use Wildcard or Free Hit. The +1 comes in the following gameweek.
+
+| Scenario | FT Before Chip | FT After Chip GW | FT Next GW |
+|----------|----------------|------------------|------------|
+| Wildcard with 3 FT | 3 | 3 (preserved, no +1) | 4 (3 + weekly) |
+| Free Hit with 2 FT | 2 | 2 (preserved, no +1) | 3 (2 + weekly) |
+| Wildcard with 5 FT | 5 | 5 (preserved) | 5 (capped at max) |
+| Triple Captain with 2 FT, 1 transfer | 2 | 2 (2 - 1 + 1) | 2 (1 + weekly) |
 
 ---
 

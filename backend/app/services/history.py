@@ -994,7 +994,8 @@ class HistoryService:
         all_chips = ["wildcard", "bboost", "3xc", "freehit"]
         chips_remaining = [c for c in all_chips if c not in chips_used]
 
-        # Free transfers remaining
+        # Free transfers remaining (use current_gameweek + 1 because if we have
+        # history data for a GW, its deadline has passed, so +1 is gained)
         remaining_transfers = calculate_free_transfers(
             history_list, current_gameweek + 1, season_id
         )

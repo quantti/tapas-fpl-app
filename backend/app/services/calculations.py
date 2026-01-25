@@ -161,8 +161,8 @@ def calculate_free_transfers(
     - After each completed GW: gain +1 FT (capped at max)
     - Normal transfers: consume from FT (capped at 0), then +1 at GW end
     - Hits: same as normal - you just exceeded your FT and got -4 penalty
-    - Wildcard: preserve banked FT (unlimited free transfers), +1 at GW end
-    - Free Hit: preserve banked FT (team reverts), +1 at GW end
+    - Wildcard: preserve banked FT, NO +1 during WC week (comes next GW)
+    - Free Hit: preserve banked FT, NO +1 during FH week (comes next GW)
 
     Args:
         history: List of manager history rows (must be sorted by gameweek)
@@ -188,26 +188,28 @@ def calculate_free_transfers(
 
     for row in sorted_history:
         gw = row["gameweek"]
-        if gw >= current_gameweek:
+        if gw > current_gameweek:
             break
 
         chip = row.get("active_chip")
         transfers_made = row.get("transfers_made", 0)
 
         if chip in WILDCARD_CHIPS:
-            # Wildcard: preserve banked FT (unlimited free transfers during WC)
-            pass
+            # Wildcard: preserve banked FT, NO +1 during WC week
+            continue
         elif chip in REVERT_CHIPS:
-            # Free Hit: preserve banked FT (team reverts after GW)
-            pass
+            # Free Hit: preserve banked FT, NO +1 during FH week
+            continue
         else:
             # Normal gameweek (including hits): consume FT for transfers made
             # Hits just mean you exceeded FT and got -4 penalty, but FT consumption is same
             ft_used = min(transfers_made, ft)
             ft = ft - ft_used
 
-        # Gain +1 FT after GW completes (all cases)
-        ft = min(ft + 1, max_ft)
+        # Gain +1 FT after GW completes (not for current GW - it hasn't finished)
+        # Note: WC/FH already 'continue'd above, so they don't get +1
+        if gw < current_gameweek:
+            ft = min(ft + 1, max_ft)
 
     return ft
 

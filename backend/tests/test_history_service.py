@@ -200,28 +200,43 @@ class TestCalculateFreeTransfers:
         assert result == 1
 
     def test_wildcard_preserves_banked_transfers(self):
-        """Wildcard should preserve banked FT and gain +1 after completing GW."""
+        """Wildcard preserves banked FT but does NOT give +1 during WC week."""
         from app.services.history import calculate_free_transfers
 
         history: list[ManagerHistoryRow] = [
             _make_history_row(gameweek=1, transfers_made=0),  # 1 → 2 FT
             _make_history_row(gameweek=2, transfers_made=0),  # 2 → 3 FT
-            _make_history_row(gameweek=3, active_chip="wildcard", transfers_made=5),  # Wildcard: preserve 3 FT, +1 → 4 FT
+            _make_history_row(gameweek=3, active_chip="wildcard", transfers_made=5),  # Wildcard: preserve 3 FT, NO +1
         ]
-        # After wildcard GW: FT preserved (unlimited transfers during WC), then +1
+        # After wildcard GW: FT preserved (3), NO +1 during WC week
         result = calculate_free_transfers(history, current_gameweek=4)
-        assert result == 4
+        assert result == 3
 
-    def test_free_hit_preserves_and_gains_transfer(self):
-        """Free hit should preserve banked FT and gain +1 after completing GW."""
+    def test_free_hit_preserves_transfers_no_gain(self):
+        """Free hit preserves banked FT but does NOT give +1 during FH week."""
         from app.services.history import calculate_free_transfers
 
         history: list[ManagerHistoryRow] = [
             _make_history_row(gameweek=1, transfers_made=0),  # Bank 1 → 2
-            _make_history_row(gameweek=2, active_chip="freehit", transfers_made=10),  # Free hit: preserve 2, transfers don't consume FT, then +1 → 3
+            _make_history_row(gameweek=2, active_chip="freehit", transfers_made=10),  # Free hit: preserve 2, NO +1
         ]
-        # After free hit GW completes: preserve 2 FT (transfers don't count), then gain +1 → 3
+        # After free hit GW completes: preserve 2 FT (transfers don't count), NO +1 during FH week
         result = calculate_free_transfers(history, current_gameweek=3)
+        assert result == 2
+
+    def test_processes_current_gameweek_data(self):
+        """Should process current GW data when deadline passed (frontend sends GW+1)."""
+        from app.services.history import calculate_free_transfers
+
+        # Scenario: at GW3 with deadline passed, frontend sends current_gameweek=4
+        # History includes GW1-3 data
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, transfers_made=0),  # 1 → 2 FT
+            _make_history_row(gameweek=2, transfers_made=1),  # 2 - 1 = 1, +1 → 2 FT
+            _make_history_row(gameweek=3, transfers_made=0),  # 2 - 0 = 2, +1 → 3 FT
+        ]
+        # Frontend passes GW+1 when deadline passed, so backend adds +1 for GW3
+        result = calculate_free_transfers(history, current_gameweek=4)
         assert result == 3
 
 
