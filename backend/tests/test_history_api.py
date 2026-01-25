@@ -733,13 +733,13 @@ class TestHistoryStatsBusinessLogic:
     async def test_free_transfers_calculation(
         self, async_client: AsyncClient, mock_pool, mock_api_db: MockDB
     ):
-        """Free transfers should account for carries, hits, and gain +1 each GW."""
+        """Free transfers should account for carries and hits."""
         mock_members = [{"id": 123, "player_name": "John Doe", "team_name": "FC John"}]
-        # GW1: no transfers → 1 FT, gain +1 → 2 FT
-        # GW2: 1 transfer (use 1 FT) → 1 FT left, gain +1 → 2 FT
-        # GW3: 2 transfers with -4 hit → reset to 1, gain +1 → 2 FT
-        # GW4: no transfers → 2 FT, gain +1 → 3 FT
-        # Result: 3 FT remaining
+        # GW1: 0 transfers → 1 - 0 = 1, +1 = 2 FT
+        # GW2: 1 transfer → 2 - 1 = 1, +1 = 2 FT
+        # GW3: 2 transfers with hit → 2 - 2 = 0, +1 = 1 FT
+        # GW4: 0 transfers → 1 - 0 = 1, +1 = 2 FT
+        # Result: 2 FT remaining
         mock_history = [
             {
                 "manager_id": 123,
@@ -812,8 +812,8 @@ class TestHistoryStatsBusinessLogic:
         assert response.status_code == 200
         data = response.json()
 
-        # After GW4, should have 3 FT (reset+gain after hit, then +1 for GW4)
-        assert data["free_transfers"][0]["free_transfers"] == 3
+        # After GW4: 2 FT (hit depleted to 0 in GW3, gained +1, then +1 in GW4)
+        assert data["free_transfers"][0]["free_transfers"] == 2
 
     async def test_free_transfers_max_5_rule(
         self, async_client: AsyncClient, mock_pool, mock_api_db: MockDB

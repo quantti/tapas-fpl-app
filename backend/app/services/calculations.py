@@ -159,9 +159,10 @@ def calculate_free_transfers(
     - Start with 1 FT at GW1
     - Unused FT carries forward (max 5 for 2024/25+, max 2 for older seasons)
     - After each completed GW: gain +1 FT (capped at max)
-    - Taking a hit (transfers_cost < 0): reset to 1 FT, then gain +1 for completing GW
-    - Wildcard: preserve banked FT, gain +1 for completing GW
-    - Free Hit: preserve banked FT, gain +1 for completing GW
+    - Normal transfers: consume from FT (capped at 0), then +1 at GW end
+    - Hits: same as normal - you just exceeded your FT and got -4 penalty
+    - Wildcard: preserve banked FT (unlimited free transfers), +1 at GW end
+    - Free Hit: preserve banked FT (team reverts), +1 at GW end
 
     Args:
         history: List of manager history rows (must be sorted by gameweek)
@@ -191,27 +192,21 @@ def calculate_free_transfers(
             break
 
         chip = row.get("active_chip")
-        transfers_cost = row.get("transfers_cost", 0)
         transfers_made = row.get("transfers_made", 0)
 
-        # Check for hit (FPL API returns negative transfers_cost when taking hits, e.g., -4)
-        if transfers_cost < 0:
-            # Took a hit - reset to 1 FT
-            ft = 1
-        elif chip in WILDCARD_CHIPS:
-            # Wildcard: preserve banked FT, just consume transfers
-            ft_used = min(transfers_made, ft)
-            ft = ft - ft_used
+        if chip in WILDCARD_CHIPS:
+            # Wildcard: preserve banked FT (unlimited free transfers during WC)
+            pass
         elif chip in REVERT_CHIPS:
-            # Free Hit: preserve banked FT, transfers don't consume FT
-            # (team reverts, so FT stays unchanged)
+            # Free Hit: preserve banked FT (team reverts after GW)
             pass
         else:
-            # Normal gameweek: consume FT for transfers made
+            # Normal gameweek (including hits): consume FT for transfers made
+            # Hits just mean you exceeded FT and got -4 penalty, but FT consumption is same
             ft_used = min(transfers_made, ft)
             ft = ft - ft_used
 
-        # Gain +1 FT after GW completes (all cases: normal, hit, wildcard, free hit)
+        # Gain +1 FT after GW completes (all cases)
         ft = min(ft + 1, max_ft)
 
     return ft

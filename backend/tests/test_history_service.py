@@ -185,32 +185,32 @@ class TestCalculateFreeTransfers:
         result = calculate_free_transfers(history, current_gameweek=11, season_id=1)
         assert result == 5
 
-    def test_hit_reduces_to_one_free_transfer(self):
-        """Taking a hit should reset to 1 FT, then gain +1 after GW completes."""
+    def test_hit_depletes_ft_to_minimum(self):
+        """Taking a hit means FT depletes to 0, then +1 at GW end = 1 FT."""
         from app.services.history import calculate_free_transfers
 
-        # FPL API returns negative transfers_cost for hits
+        # FPL API returns negative transfers_cost for hits (just indicates penalty)
         history: list[ManagerHistoryRow] = [
-            _make_history_row(gameweek=1, transfers_made=0),  # Bank 1 → 2
-            _make_history_row(gameweek=2, transfers_made=0),  # Bank 2 → 3
-            _make_history_row(gameweek=3, transfers_made=3, transfers_cost=-8),  # Hit! Reset to 1, then +1 → 2
+            _make_history_row(gameweek=1, transfers_made=0),  # 1 → 2 FT
+            _make_history_row(gameweek=2, transfers_made=0),  # 2 → 3 FT
+            _make_history_row(gameweek=3, transfers_made=3, transfers_cost=-8),  # Use 3, FT = 0, +1 → 1 FT
         ]
-        # After hit GW completes, FT = 2 (reset to 1, then gain +1)
+        # After hit: used all 3 FT, depleted to 0, then +1 = 1 FT
         result = calculate_free_transfers(history, current_gameweek=4)
-        assert result == 2
+        assert result == 1
 
     def test_wildcard_preserves_banked_transfers(self):
         """Wildcard should preserve banked FT and gain +1 after completing GW."""
         from app.services.history import calculate_free_transfers
 
         history: list[ManagerHistoryRow] = [
-            _make_history_row(gameweek=1, transfers_made=0),  # Bank 1 → 2
-            _make_history_row(gameweek=2, transfers_made=0),  # Bank 2 → 3
-            _make_history_row(gameweek=3, active_chip="wildcard", transfers_made=5),  # Wildcard: use 3 FT, preserve 0 banked, then +1 → 1
+            _make_history_row(gameweek=1, transfers_made=0),  # 1 → 2 FT
+            _make_history_row(gameweek=2, transfers_made=0),  # 2 → 3 FT
+            _make_history_row(gameweek=3, active_chip="wildcard", transfers_made=5),  # Wildcard: preserve 3 FT, +1 → 4 FT
         ]
-        # After wildcard GW completes: used 3 FT (have 3), left with 0, then +1 → 1
+        # After wildcard GW: FT preserved (unlimited transfers during WC), then +1
         result = calculate_free_transfers(history, current_gameweek=4)
-        assert result == 1
+        assert result == 4
 
     def test_free_hit_preserves_and_gains_transfer(self):
         """Free hit should preserve banked FT and gain +1 after completing GW."""
