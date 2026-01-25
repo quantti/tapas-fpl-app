@@ -1,3 +1,10 @@
+## [0.36.1](https://github.com/quantti/tapas-fpl-app/compare/v0.36.0...v0.36.1) (2026-01-25)
+
+
+### Bug Fixes
+
+* **free-transfers:** correct wildcard/free hit +1 FT rule ([e7575f9](https://github.com/quantti/tapas-fpl-app/commit/e7575f94b11607736e2f406f4c418bd1f95bd418))
+
 # [0.36.0](https://github.com/quantti/tapas-fpl-app/compare/v0.35.4...v0.36.0) (2026-01-25)
 
 
