@@ -2,6 +2,8 @@
 
 Database design for Tapas FPL App - supporting multiple users tracking multiple leagues with historical data.
 
+> **Related docs:** See `FPL_RULES.md` for FPL game rules (transfers, chips, scoring system) that inform this schema.
+
 ---
 
 ## ⚠️ DATA AVAILABILITY QUICK REFERENCE

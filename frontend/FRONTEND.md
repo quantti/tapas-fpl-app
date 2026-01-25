@@ -2,6 +2,8 @@
 
 React 18 + TypeScript + Vite application for the Tapas FPL companion app.
 
+> **Related docs:** See `backend/FPL_RULES.md` for FPL game rules (transfers, chips, scoring system).
+
 ## Pages & Routing
 
 | Route | Component | Description |

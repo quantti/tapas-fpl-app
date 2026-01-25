@@ -7,6 +7,8 @@ A Fantasy Premier League companion app for tracking league standings, player sta
 > **Note**: This file contains high-level architecture. See subdirectory docs for detailed documentation:
 > - `frontend/FRONTEND.md` - React components, hooks, testing, CSS modules
 > - `backend/BACKEND.md` - Python FastAPI, database schema, Supabase
+> - `backend/DB.md` - Database schema and data availability reference
+> - `backend/FPL_RULES.md` - **FPL game rules for 2025/26 season** (transfers, chips, scoring)
 
 ## Tech Stack
 

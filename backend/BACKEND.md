@@ -2,6 +2,8 @@
 
 Python FastAPI application for analytics and data services.
 
+> **Related docs:** See `FPL_RULES.md` for FPL game rules (transfers, chips, scoring system) that inform implementations.
+
 ## ⚠️ IMPORTANT: DB-First Architecture
 
 **Before making ANY FPL API call, check if the data exists in the database.**
@@ -711,6 +713,97 @@ Tracks chip usage per manager with season-half support (FPL 2025-26: all chips r
 - `502` - FPL API unavailable
 - `504` - FPL API timeout
 - `503` - Database unavailable
+
+### Free Transfers Calculation
+
+Calculates remaining free transfers for each manager based on their gameweek history.
+
+**Implementation:** `app/services/calculations.py` → `calculate_free_transfers()`
+
+#### FPL Free Transfer Rules (2024/25 onwards)
+
+| Rule | Description |
+|------|-------------|
+| Starting FT | 1 FT at gameweek 1 |
+| Weekly gain | +1 FT after each completed gameweek |
+| Maximum | 5 FT (changed from 2 in 2024/25) |
+| Unused FT | Carries forward to next gameweek (up to max) |
+
+#### Transfer Scenarios
+
+| Scenario | FT Before | Transfers Made | FT After | Notes |
+|----------|-----------|----------------|----------|-------|
+| Normal transfer | 2 | 1 | 2 | 2 - 1 + 1 (weekly gain) |
+| Use all FT | 3 | 3 | 1 | 3 - 3 + 1 |
+| Hit (-4 points) | 2 | 3 | 1 | 2 - 2 (depletes to 0) + 1 |
+| Hit (-8 points) | 1 | 3 | 1 | 1 - 1 (depletes to 0) + 1 |
+| No transfers | 3 | 0 | 4 | 3 + 1 (capped at 5) |
+| At max | 5 | 0 | 5 | Already at max, no gain |
+
+#### Chip Behavior
+
+| Chip | FT Consumption | Weekly Gain | Effect |
+|------|----------------|-------------|--------|
+| **Wildcard** | None (unlimited free transfers) | +1 | Preserves banked FT |
+| **Free Hit** | None (team reverts after GW) | +1 | Preserves banked FT |
+| **Triple Captain** | Normal | +1 | No special FT handling |
+| **Bench Boost** | Normal | +1 | No special FT handling |
+
+**Wildcard/Free Hit Examples:**
+
+| Scenario | FT Before Chip | FT After GW |
+|----------|----------------|-------------|
+| Wildcard with 3 FT | 3 | 4 (3 preserved + 1) |
+| Free Hit with 2 FT | 2 | 3 (2 preserved + 1) |
+| Wildcard with 5 FT | 5 | 5 (capped at max) |
+
+#### Hit Points (-4 Penalty)
+
+The -4 point penalty applies when you make more transfers than your available FT:
+
+```
+Extra transfers = transfers_made - available_FT
+Hit penalty = extra_transfers × (-4)
+```
+
+**Example:** 2 FT available, make 4 transfers → 2 extra × -4 = -8 points
+
+**Important:** The FPL API returns `transfers_cost` as a **negative number** (e.g., `-4`, `-8`).
+
+#### Season-Specific Rules
+
+| Season | Max FT | Season ID |
+|--------|--------|-----------|
+| 2024/25 onwards | 5 | ≥ 1 |
+| 2023/24 and earlier | 2 | < 1 (legacy) |
+
+#### API Data Source
+
+Free transfer calculation uses the FPL API `/api/entry/{manager_id}/history/` endpoint:
+
+```json
+{
+  "current": [
+    {
+      "event": 21,
+      "transfers_made": 1,
+      "transfers_cost": 0,
+      "active_chip": null
+    },
+    {
+      "event": 20,
+      "transfers_made": 3,
+      "transfers_cost": -4,
+      "active_chip": "wildcard"
+    }
+  ]
+}
+```
+
+**Key Fields:**
+- `transfers_made` - Number of transfers made in the gameweek
+- `transfers_cost` - Point penalty (negative: -4, -8, etc. or 0)
+- `active_chip` - Chip played: `"wildcard"`, `"freehit"`, `"3xc"`, `"bboost"`, or `null`
 
 ### Recommendations API
 
