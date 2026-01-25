@@ -209,20 +209,6 @@ def calculate_free_transfers(
         # Gain +1 FT after GW completes (all cases)
         ft = min(ft + 1, max_ft)
 
-    # Handle gap between DB data and requested gameweek
-    # When a GW has started (deadline passed), the +1 FT gain is locked in
-    # even if we don't have that GW's data in the database yet
-    if sorted_history:
-        latest_gw_in_db = sorted_history[-1]["gameweek"]
-        # Add +1 for each GW that has started but isn't in DB
-        # (current_gameweek - 1 is the GW that should be complete/in-progress)
-        missing_gws = (current_gameweek - 1) - latest_gw_in_db
-        if missing_gws > 0:
-            # Each missing GW adds +1 FT (capped at max)
-            # Note: This assumes 0 transfers in missing GWs - a reasonable approximation
-            # since we can't know the actual transfers without fetching from FPL API
-            ft = min(ft + missing_gws, max_ft)
-
     return ft
 
 
