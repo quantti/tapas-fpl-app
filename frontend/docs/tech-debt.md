@@ -315,7 +315,6 @@ if (player.element_type === POSITION_TYPES.GOALKEEPER)
 - `hooks/usePlayerDetails.ts` - Updated 1 query key (playerSummary)
 - `hooks/useHistoricalData.ts` - Updated 2 query keys (liveGameweek, entryPicks)
 - `hooks/useLeaguePositionHistory.ts` - Updated 1 query key (entryHistory)
-- `hooks/useFreeTransfers.ts` - Updated 1 query key (entryHistory)
 
 **Query keys defined:**
 ```typescript
@@ -482,7 +481,6 @@ services/queries/          # Data-fetching hooks (moved from hooks/)
 ├── useBenchPoints.ts
 ├── useCaptainSuccess.ts
 ├── useFplData.ts
-├── useFreeTransfers.ts
 ├── useHistoricalData.ts
 ├── useLeaguePositionHistory.ts
 ├── useLiveScoring.ts

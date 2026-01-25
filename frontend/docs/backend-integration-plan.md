@@ -47,7 +47,7 @@ Migrate Statistics and Analytics page components from direct FPL API calls to pr
 | Feature | Hook | Data Source | API Calls |
 |---------|------|-------------|-----------|
 | BenchPoints | `useBenchPoints` | FPL API (picks + live per GW) | ~N × GWs |
-| FreeTransfers | `useFreeTransfers` | FPL API (`getEntryHistory`) | N managers |
+| FreeTransfers | `useLeagueStats` | Backend `/stats` | 1 (migrated) |
 | LeaguePosition | `useLeaguePositionHistory` | FPL API (`getEntryHistory`) | N managers |
 | CaptainSuccess | `useCaptainSuccess` (TBD) | FPL API | N managers |
 | ChipsRemaining | `backendApi.getLeagueChips` | Backend API | 1 call |
@@ -155,7 +155,7 @@ interface LeaguePositionsResponse {
 
 **Tasks:**
 1. **BenchPoints:** Replace `useBenchPoints` with data from `useLeagueStats`
-2. **FreeTransfers:** Replace `useFreeTransfers` with data from `useLeagueStats`
+2. **FreeTransfers:** ✅ Migrated to `useLeagueStats` (frontend hook deleted)
 3. **LeaguePosition:** Replace `useLeaguePositionHistory` with `useLeaguePositions`
 4. **CaptainSuccess:** Check if it uses captain differential data, integrate if so
 
@@ -184,7 +184,7 @@ const { positions, managers } = useLeaguePositions(LEAGUE_ID);
 **Tasks:**
 1. Update/remove unused hooks if fully migrated:
    - `useBenchPoints.ts` (keep for potential fallback?)
-   - `useFreeTransfers.ts` (keep calculation logic for reference)
+   - ~~`useFreeTransfers.ts`~~ ✅ Deleted (calculation now in backend)
    - `useLeaguePositionHistory.ts`
 
 2. Add/update tests:

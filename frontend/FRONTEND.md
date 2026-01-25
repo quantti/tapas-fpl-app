@@ -592,7 +592,6 @@ React hooks for data fetching, state management, and business logic.
 |------|---------|-------------|
 | `useBenchPoints(managers, historicalData)` | Cumulative bench points per manager | `{ benchPoints: ManagerBenchPoints[] }` |
 | `useCaptainDifferential(managers, historicalData)` | Captain picks vs template | `{ differentials: CaptainDifferential[] }` |
-| `useFreeTransfers(managers)` | Calculate remaining FTs | `{ freeTransfers: FreeTransferData[] }` |
 | `useLeaguePositionHistory(managers, currentGw)` | Position per GW for bump chart | `{ positionHistory: PositionHistory[] }` |
 | `useRecommendedPlayers(players, managers, teams, gw)` | Player recommendations | `{ punts, defensive, toSell }` |
 | `useHeadToHeadComparison(params)` | Compare two managers | `{ managerA, managerB, loading, error }` |
@@ -1004,8 +1003,8 @@ Shows the most owned starting XI across all managers in the league.
 Shows remaining free transfers for each manager in the league with color-coded values.
 
 **Key files:**
-- `src/services/queries/useFreeTransfers.ts` - Core calculation logic
 - `src/features/FreeTransfers/FreeTransfers.tsx` - Display component with deadline awareness
+- `src/services/queries/useLeagueStats.ts` - Fetches FT data from backend
 
 **Color gradient:** Values are color-coded to quickly identify banked transfers:
 | FT Count | Color |
@@ -1015,11 +1014,11 @@ Shows remaining free transfers for each manager in the league with color-coded v
 | 3-4 | Green (success) |
 | 5 | Gold |
 
-**FPL Free Transfer Rules (introduced 2024/25, continues in 2025/26):**
+**FPL Free Transfer Rules (2025/26):**
 - Start with 1 FT at beginning of season
 - Gain +1 FT per gameweek (max **5** can be banked)
-- Wildcard resets FT to 1
-- Free Hit doesn't consume FT
+- Wildcard preserves banked FT (unlimited transfers during WC)
+- Free Hit preserves banked FT (team reverts after GW)
 
 ### Game Rewards
 Shows bonus points (3/2/1) and defensive contribution (DefCon) points per fixture.

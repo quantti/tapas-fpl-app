@@ -98,7 +98,7 @@ MAX_FREE_TRANSFERS_LEGACY = 2  # Hypothetical older seasons
 # Season ID when new FT rules started
 NEW_FT_RULES_SEASON_ID = 1  # 2024-25
 
-# Chips that reset FT to 1
+# Chips with unlimited free transfers (preserves banked FT per 2025/26 rules)
 WILDCARD_CHIPS = frozenset({"wildcard"})
 
 # Chips that preserve banked FT and don't consume FT on transfers (team reverts)
