@@ -693,6 +693,92 @@ async def run_chips_update(
     return (synced, failed, total)
 
 
+async def _sync_manager_history_quick(
+    conn: asyncpg.Connection,
+    fpl_client: FplApiClient,
+    season_id: int,
+    gameweek: int,
+) -> None:
+    """Quick sync of manager history when deadline passes (before data_checked).
+
+    This syncs transfers_made for the specified gameweek so FT calculations
+    are accurate immediately after deadline passes, without waiting for
+    data_checked to become true.
+
+    Only syncs the snapshot data (transfers, points, etc.) - NOT picks.
+    Picks will be synced during full update when data_checked is true.
+
+    Args:
+        conn: Database connection
+        fpl_client: FPL API client
+        season_id: Season ID
+        gameweek: The gameweek to sync
+    """
+    logger.info(f"Quick-syncing manager history for GW{gameweek}...")
+    start = time.monotonic()
+
+    # Get league members
+    standings = await fpl_client.get_league_standings(LEAGUE_ID)
+    members = standings.members
+    total_members = len(members)
+    logger.info(f"Found {total_members} members in {standings.league_name}")
+
+    # Sync gameweeks first (needed for FK constraint)
+    async with httpx.AsyncClient(timeout=30.0) as http_client:
+        await sync_gameweeks_from_bootstrap(conn, http_client, season_id)
+
+        synced_count = 0
+        failed_count = 0
+
+        for i, member in enumerate(members):
+            manager_id = member.manager_id
+
+            try:
+                # Rate limiting - be gentle with FPL API
+                await asyncio.sleep(0.5)
+
+                # Fetch manager info (needed for FK constraint)
+                manager_info = await fetch_manager_info(http_client, manager_id)
+                await ensure_manager_exists(conn, manager_id, season_id, manager_info)
+
+                # Fetch history to get GW stats (includes transfers_made)
+                history, _ = await fetch_manager_history(http_client, manager_id)
+
+                # Find the specific gameweek in history
+                gw_data = None
+                for h in history:
+                    if h.gameweek == gameweek:
+                        gw_data = h
+                        break
+
+                if not gw_data:
+                    logger.debug(
+                        f"Manager {manager_id} has no data for GW{gameweek} yet"
+                    )
+                    continue
+
+                # Save snapshot WITHOUT picks (just the history data)
+                # This is enough for FT calculations
+                await save_snapshot_and_picks(
+                    conn, manager_id, season_id, gw_data, picks=[], chip_used=None
+                )
+
+                synced_count += 1
+                if (i + 1) % 5 == 0:
+                    logger.debug(f"Quick-synced {i + 1}/{total_members} managers")
+
+            except (httpx.HTTPError, RuntimeError) as e:
+                logger.warning(f"Failed to quick-sync manager {manager_id}: {e}")
+                failed_count += 1
+                continue
+
+    elapsed = time.monotonic() - start
+    logger.info(
+        f"Quick-sync complete in {elapsed:.1f}s - "
+        f"{synced_count}/{total_members} managers synced, {failed_count} failed"
+    )
+
+
 async def run_manager_snapshots_update(
     conn: asyncpg.Connection,
     fpl_client: FplApiClient,
@@ -927,16 +1013,33 @@ async def run_scheduled_update(dry_run: bool = False) -> None:
             )
 
         latest_finalized = None
+        latest_deadline_passed = None
+        now = datetime.now(UTC)
+
         for event in reversed(bootstrap.events):
-            if event.get("data_checked"):
+            # Find latest GW where data_checked is true (full data available)
+            if event.get("data_checked") and latest_finalized is None:
                 latest_finalized = event["id"]
+
+            # Find latest GW where deadline has passed (transfer data available)
+            deadline_str = event.get("deadline_time")
+            if deadline_str and latest_deadline_passed is None:
+                deadline = datetime.fromisoformat(deadline_str.replace("Z", "+00:00"))
+                if now > deadline:
+                    latest_deadline_passed = event["id"]
+
+            # Stop once we found both
+            if latest_finalized is not None and latest_deadline_passed is not None:
                 break
 
-        if not latest_finalized:
-            logger.info("No finalized gameweek found, skipping")
+        if not latest_finalized and not latest_deadline_passed:
+            logger.info("No finalized gameweek and no deadline passed, skipping")
             return
 
-        logger.info(f"Latest finalized GW: {latest_finalized}")
+        logger.info(
+            f"Latest finalized GW: {latest_finalized or 'None'}, "
+            f"Latest deadline passed GW: {latest_deadline_passed or 'None'}"
+        )
 
         # 2. Connect to database
         pool = await create_pool()
@@ -949,8 +1052,40 @@ async def run_scheduled_update(dry_run: bool = False) -> None:
             stored_gw = await get_stored_gameweek(conn, season_id)
             logger.info(f"Last processed GW: {stored_gw}")
 
-            if latest_finalized <= stored_gw:
-                logger.info(f"GW{latest_finalized} already processed, skipping")
+            # Check if manager snapshots are up-to-date
+            # (deadline-passed GWs need snapshot sync even before data_checked)
+            snapshot_gw = await conn.fetchval(
+                """
+                SELECT COALESCE(MAX(gameweek), 0)
+                FROM manager_gw_snapshot
+                WHERE season_id = $1
+                """,
+                season_id,
+            )
+            logger.info(f"Latest snapshot GW: {snapshot_gw}")
+
+            # Sync manager snapshots if deadline has passed for a newer GW
+            # This ensures we have transfers_made data immediately (not wait for data_checked)
+            if (
+                latest_deadline_passed
+                and latest_deadline_passed > snapshot_gw
+                and not dry_run
+            ):
+                logger.info(
+                    f"Deadline passed for GW{latest_deadline_passed} but snapshots only "
+                    f"up to GW{snapshot_gw} - syncing manager history now"
+                )
+                # Quick sync - just get history with transfers_made
+                await _sync_manager_history_quick(
+                    conn, fpl_client, season_id, latest_deadline_passed
+                )
+
+            # Full update only if we have new finalized data
+            if latest_finalized is None or latest_finalized <= stored_gw:
+                if latest_finalized:
+                    logger.info(f"GW{latest_finalized} already processed, skipping full update")
+                else:
+                    logger.info("No finalized GW yet, skipping full update")
                 return
 
             logger.info(f"Processing GW{latest_finalized} (new since GW{stored_gw})")
