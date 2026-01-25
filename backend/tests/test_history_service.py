@@ -224,6 +224,45 @@ class TestCalculateFreeTransfers:
         result = calculate_free_transfers(history, current_gameweek=3)
         assert result == 3
 
+    def test_missing_gameweek_adds_ft(self):
+        """When DB data is behind current GW, should add +1 FT for missing GW."""
+        from app.services.history import calculate_free_transfers
+
+        # DB has up to GW22, but we're asking for GW24 (GW23 started)
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=i, transfers_made=1) for i in range(1, 23)
+        ]
+        # After GW22: manager has 1 FT (used 1 each week)
+        # Missing GW23 adds +1 → 2 FT
+        result = calculate_free_transfers(history, current_gameweek=24, season_id=1)
+        assert result == 2
+
+    def test_missing_multiple_gameweeks_adds_ft(self):
+        """Missing multiple GWs should add +1 for each (capped at max)."""
+        from app.services.history import calculate_free_transfers
+
+        # DB has up to GW20, asking for GW24 (missing GW21, 22, 23)
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=i, transfers_made=1) for i in range(1, 21)
+        ]
+        # After GW20: manager has 1 FT
+        # Missing 3 GWs adds +3 → 4 FT
+        result = calculate_free_transfers(history, current_gameweek=24, season_id=1)
+        assert result == 4
+
+    def test_missing_gameweeks_capped_at_max(self):
+        """Missing GW bonus should not exceed max FT."""
+        from app.services.history import calculate_free_transfers
+
+        # Manager banked 4 FT, missing 2 GWs
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=i, transfers_made=0) for i in range(1, 21)
+        ]
+        # After GW20 with no transfers: manager has 5 FT (capped)
+        # Missing 3 GWs (21, 22, 23) would add +3 but already at max
+        result = calculate_free_transfers(history, current_gameweek=24, season_id=1)
+        assert result == 5
+
 
 # =============================================================================
 # Pure Function Tests: calculate_captain_differential
