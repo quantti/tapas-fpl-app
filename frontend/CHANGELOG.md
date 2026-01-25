@@ -1,3 +1,10 @@
+## [0.35.4](https://github.com/quantti/tapas-fpl-app/compare/v0.35.3...v0.35.4) (2026-01-25)
+
+
+### Bug Fixes
+
+* **free-transfers:** handle missing GW data when deadline passes ([7d3fb2a](https://github.com/quantti/tapas-fpl-app/commit/7d3fb2afb1b4321d15751cdad58a68b8dd3e6226))
+
 ## [0.35.3](https://github.com/quantti/tapas-fpl-app/compare/v0.35.2...v0.35.3) (2026-01-25)
 
 
