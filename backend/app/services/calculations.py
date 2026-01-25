@@ -101,7 +101,7 @@ NEW_FT_RULES_SEASON_ID = 1  # 2024-25
 # Chips that reset FT to 1
 WILDCARD_CHIPS = frozenset({"wildcard"})
 
-# Chips that don't affect FT calculation (team reverts)
+# Chips that preserve banked FT and don't consume FT on transfers (team reverts)
 REVERT_CHIPS = frozenset({"freehit"})
 
 # Chart colors for league position bump chart (colorblind-friendly palette)
@@ -158,9 +158,10 @@ def calculate_free_transfers(
     Rules:
     - Start with 1 FT at GW1
     - Unused FT carries forward (max 5 for 2024/25+, max 2 for older seasons)
-    - Taking a hit (transfers_cost > 0) resets to 1 FT
-    - Wildcard resets to 1 FT
-    - Free hit doesn't affect FT count (team reverts)
+    - After each completed GW: gain +1 FT (capped at max)
+    - Taking a hit (transfers_cost < 0): reset to 1 FT, then gain +1 for completing GW
+    - Wildcard: preserve banked FT, gain +1 for completing GW
+    - Free Hit: preserve banked FT, gain +1 for completing GW
 
     Args:
         history: List of manager history rows (must be sorted by gameweek)
@@ -190,29 +191,28 @@ def calculate_free_transfers(
             break
 
         chip = row.get("active_chip")
-
-        # Wildcard resets FT to 1
-        if chip in WILDCARD_CHIPS:
-            ft = 1
-            continue
-
-        # Free hit doesn't affect FT (team reverts)
-        if chip in REVERT_CHIPS:
-            continue
-
-        # Check for hit (FPL API returns positive transfers_cost when taking hits)
         transfers_cost = row.get("transfers_cost", 0)
         transfers_made = row.get("transfers_made", 0)
 
-        if transfers_cost > 0:
-            # Took a hit - reset to 1
+        # Check for hit (FPL API returns negative transfers_cost when taking hits, e.g., -4)
+        if transfers_cost < 0:
+            # Took a hit - reset to 1 FT
             ft = 1
-        else:
-            # Calculate FT used and carry
+        elif chip in WILDCARD_CHIPS:
+            # Wildcard: preserve banked FT, just consume transfers
             ft_used = min(transfers_made, ft)
-            ft_remaining = ft - ft_used
-            # Add 1 for next week, cap at max
-            ft = min(ft_remaining + 1, max_ft)
+            ft = ft - ft_used
+        elif chip in REVERT_CHIPS:
+            # Free Hit: preserve banked FT, transfers don't consume FT
+            # (team reverts, so FT stays unchanged)
+            pass
+        else:
+            # Normal gameweek: consume FT for transfers made
+            ft_used = min(transfers_made, ft)
+            ft = ft - ft_used
+
+        # Gain +1 FT after GW completes (all cases: normal, hit, wildcard, free hit)
+        ft = min(ft + 1, max_ft)
 
     return ft
 
@@ -478,12 +478,12 @@ def calculate_hit_frequency(history: list[ManagerHistoryRow]) -> float:
         history: List of manager history rows with transfers_cost field
 
     Returns:
-        Percentage (0-100) of gameweeks with hits (transfers_cost > 0)
+        Percentage (0-100) of gameweeks with hits (transfers_cost < 0)
     """
     if not history:
         return 0.0
 
-    hits_count = sum(1 for row in history if row["transfers_cost"] > 0)
+    hits_count = sum(1 for row in history if row["transfers_cost"] < 0)
     return (hits_count / len(history)) * 100
 
 

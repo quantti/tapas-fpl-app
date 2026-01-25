@@ -186,42 +186,43 @@ class TestCalculateFreeTransfers:
         assert result == 5
 
     def test_hit_reduces_to_one_free_transfer(self):
-        """Taking a hit should reset to 1 FT next week."""
+        """Taking a hit should reset to 1 FT, then gain +1 after GW completes."""
         from app.services.history import calculate_free_transfers
 
-        # FPL API returns positive transfers_cost for hits
+        # FPL API returns negative transfers_cost for hits
         history: list[ManagerHistoryRow] = [
-            _make_history_row(gameweek=1, transfers_made=0),  # Bank 1
-            _make_history_row(gameweek=2, transfers_made=0),  # Bank 2
-            _make_history_row(gameweek=3, transfers_made=3, transfers_cost=8),  # Hit!
+            _make_history_row(gameweek=1, transfers_made=0),  # Bank 1 → 2
+            _make_history_row(gameweek=2, transfers_made=0),  # Bank 2 → 3
+            _make_history_row(gameweek=3, transfers_made=3, transfers_cost=-8),  # Hit! Reset to 1, then +1 → 2
         ]
-        # After hit, reset to 1
+        # After hit GW completes, FT = 2 (reset to 1, then gain +1)
         result = calculate_free_transfers(history, current_gameweek=4)
-        assert result == 1
+        assert result == 2
 
-    def test_wildcard_resets_to_one(self):
-        """Wildcard should reset FT to 1."""
-        from app.services.history import calculate_free_transfers
-
-        history: list[ManagerHistoryRow] = [
-            _make_history_row(gameweek=1, transfers_made=0),
-            _make_history_row(gameweek=2, transfers_made=0),
-            _make_history_row(gameweek=3, active_chip="wildcard", transfers_made=5),
-        ]
-        result = calculate_free_transfers(history, current_gameweek=4)
-        assert result == 1
-
-    def test_free_hit_does_not_affect_ft_count(self):
-        """Free hit should not affect FT (team reverts)."""
+    def test_wildcard_preserves_banked_transfers(self):
+        """Wildcard should preserve banked FT and gain +1 after completing GW."""
         from app.services.history import calculate_free_transfers
 
         history: list[ManagerHistoryRow] = [
             _make_history_row(gameweek=1, transfers_made=0),  # Bank 1 → 2
-            _make_history_row(gameweek=2, active_chip="freehit", transfers_made=10),
+            _make_history_row(gameweek=2, transfers_made=0),  # Bank 2 → 3
+            _make_history_row(gameweek=3, active_chip="wildcard", transfers_made=5),  # Wildcard: use 3 FT, preserve 0 banked, then +1 → 1
         ]
-        # After free hit, FT should continue from pre-FH state
+        # After wildcard GW completes: used 3 FT (have 3), left with 0, then +1 → 1
+        result = calculate_free_transfers(history, current_gameweek=4)
+        assert result == 1
+
+    def test_free_hit_preserves_and_gains_transfer(self):
+        """Free hit should preserve banked FT and gain +1 after completing GW."""
+        from app.services.history import calculate_free_transfers
+
+        history: list[ManagerHistoryRow] = [
+            _make_history_row(gameweek=1, transfers_made=0),  # Bank 1 → 2
+            _make_history_row(gameweek=2, active_chip="freehit", transfers_made=10),  # Free hit: preserve 2, transfers don't consume FT, then +1 → 3
+        ]
+        # After free hit GW completes: preserve 2 FT (transfers don't count), then gain +1 → 3
         result = calculate_free_transfers(history, current_gameweek=3)
-        assert result == 2
+        assert result == 3
 
 
 # =============================================================================
@@ -1024,7 +1025,7 @@ class TestHistoryServiceGetManagerComparison:
                 gameweek=2,
                 gameweek_points=60,
                 points_on_bench=8,
-                transfers_cost=4,  # FPL API returns positive for hits
+                transfers_cost=-4,  # FPL API returns negative for hits
             ),
             _make_history_row(manager_id=123, gameweek=3, gameweek_points=70, points_on_bench=3),
         ]
@@ -1377,12 +1378,12 @@ class TestCalculateHitFrequency:
         from app.services.calculations import calculate_hit_frequency
 
         # 2 out of 4 GWs had hits = 50%
-        # FPL API returns positive values for transfers_cost (4 = -4 point hit)
+        # FPL API returns negative values for transfers_cost (-4 = -4 point hit)
         history: list[ManagerHistoryRow] = [
             _make_history_row(gameweek=1, transfers_cost=0),
-            _make_history_row(gameweek=2, transfers_cost=4),  # Hit
+            _make_history_row(gameweek=2, transfers_cost=-4),  # Hit
             _make_history_row(gameweek=3, transfers_cost=0),
-            _make_history_row(gameweek=4, transfers_cost=8),  # Hit
+            _make_history_row(gameweek=4, transfers_cost=-8),  # Hit
         ]
         result = calculate_hit_frequency(history)
         assert result == 50.0
@@ -1408,11 +1409,11 @@ class TestCalculateHitFrequency:
         """Should return 100 when hits taken every gameweek."""
         from app.services.calculations import calculate_hit_frequency
 
-        # FPL API returns positive values for transfers_cost
+        # FPL API returns negative values for transfers_cost
         history: list[ManagerHistoryRow] = [
-            _make_history_row(gameweek=1, transfers_cost=4),
-            _make_history_row(gameweek=2, transfers_cost=8),
-            _make_history_row(gameweek=3, transfers_cost=4),
+            _make_history_row(gameweek=1, transfers_cost=-4),
+            _make_history_row(gameweek=2, transfers_cost=-8),
+            _make_history_row(gameweek=3, transfers_cost=-4),
         ]
         assert calculate_hit_frequency(history) == 100.0
 
