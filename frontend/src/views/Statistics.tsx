@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 import { LEAGUE_ID } from 'src/config';
 
 import { ChipsRemaining } from 'components/ChipsRemaining';
@@ -35,6 +37,13 @@ export function Statistics() {
   // Show PersonalStats only if user is logged in AND in the mini-league
   const isUserInLeague = managerDetails.some((m) => m.managerId === managerId);
   const showPersonalStats = isLoggedIn && isUserInLeague;
+
+  // For free transfers: when deadline passes, send GW+1 so backend adds +1 for completed GW
+  const freeTransfersGameweek = useMemo(() => {
+    if (!currentGameweek) return 0;
+    const deadlinePassed = new Date() > new Date(currentGameweek.deadline_time);
+    return deadlinePassed ? currentGameweek.id + 1 : currentGameweek.id;
+  }, [currentGameweek]);
 
   if (isLoading) {
     return (
@@ -86,7 +95,7 @@ export function Statistics() {
         <BenchPoints leagueId={LEAGUE_ID} currentGameweek={currentGameweek.id} />
         <CaptainSuccess leagueId={LEAGUE_ID} currentGameweek={currentGameweek.id} />
         <ChipsRemaining leagueId={LEAGUE_ID} currentGameweek={currentGameweek.id} />
-        <FreeTransfers leagueId={LEAGUE_ID} currentGameweek={currentGameweek.id} />
+        <FreeTransfers leagueId={LEAGUE_ID} currentGameweek={freeTransfersGameweek} />
         <LeaguePosition leagueId={LEAGUE_ID} />
         <PlayerOwnership
           managerDetails={managerDetails}

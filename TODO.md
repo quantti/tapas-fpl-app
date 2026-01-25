@@ -18,6 +18,12 @@ None currently - all immediate tasks completed.
 ### UI Enhancements
 - [x] Free transfers card - show how many free transfers each manager has
 - [ ] Player recommendation modal - see [docs/player-modal-plan.md](docs/player-modal-plan.md)
+- [ ] Set and Forget table - hypothetical points if manager made no transfers all season:
+  - [ ] Calculate points from GW1 squad only (no transfers)
+  - [ ] Use original captain choice; fall back to vice-captain if captain unavailable
+  - [ ] Apply same chip usage (except Wildcard - skip it)
+  - [ ] Show comparison: actual points vs set-and-forget points
+  - [ ] Highlight managers who would have done better/worse without transfers
 - [x] Better position indicators - replace colored dots with text labels (DEF, MID, FWD) in badges
 - [x] H2H manager comparison view - Phase 1 complete, see [docs/h2h-plan.md](docs/h2h-plan.md)
 - [x] Points breakdown by position (PersonalStats position breakdown)

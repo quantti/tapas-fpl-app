@@ -211,7 +211,8 @@ def calculate_free_transfers(
         if gw < current_gameweek:
             ft = min(ft + 1, max_ft)
 
-    return ft
+    # Safety: minimum 1 FT (shouldn't happen with correct logic, but enforce it)
+    return max(ft, 1)
 
 
 class CaptainDifferentialDetail(TypedDict):
