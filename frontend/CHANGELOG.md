@@ -1,3 +1,10 @@
+## [0.35.3](https://github.com/quantti/tapas-fpl-app/compare/v0.35.2...v0.35.3) (2026-01-25)
+
+
+### Bug Fixes
+
+* **free-transfers:** show correct FT count after deadline passes ([877224d](https://github.com/quantti/tapas-fpl-app/commit/877224d31cf64603784724c835d41e3989795601))
+
 ## [0.35.2](https://github.com/quantti/tapas-fpl-app/compare/v0.35.1...v0.35.2) (2026-01-25)
 
 
