@@ -1,3 +1,11 @@
+## [0.35.2](https://github.com/quantti/tapas-fpl-app/compare/v0.35.1...v0.35.2) (2026-01-25)
+
+
+### Bug Fixes
+
+* **free-transfers:** correct FPL 2025/26 transfer rules implementation ([d01cc45](https://github.com/quantti/tapas-fpl-app/commit/d01cc4514000a2f4cbd6544ce2b1a0465ba54219))
+* **free-transfers:** correct FPL rules - no special reset for hits ([9458789](https://github.com/quantti/tapas-fpl-app/commit/94587898c9419bf838077ce05921fe65641eedcb))
+
 ## [0.35.1](https://github.com/quantti/tapas-fpl-app/compare/v0.35.0...v0.35.1) (2026-01-20)
 
 
