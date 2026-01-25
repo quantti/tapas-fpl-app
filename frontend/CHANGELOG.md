@@ -1,3 +1,15 @@
+# [0.36.0](https://github.com/quantti/tapas-fpl-app/compare/v0.35.4...v0.36.0) (2026-01-25)
+
+
+### Features
+
+* **sync:** quick-sync manager history when deadline passes ([44b3a37](https://github.com/quantti/tapas-fpl-app/commit/44b3a3710be26854a346839b7839a48663f82c22))
+
+
+### Reverts
+
+* **free-transfers:** remove incorrect missing GW logic ([1bb33fc](https://github.com/quantti/tapas-fpl-app/commit/1bb33fc983e55bb7b20df686a7b56090f9041af9))
+
 ## [0.35.4](https://github.com/quantti/tapas-fpl-app/compare/v0.35.3...v0.35.4) (2026-01-25)
 
 
