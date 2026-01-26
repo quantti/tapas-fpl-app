@@ -1,3 +1,17 @@
+# [0.37.0](https://github.com/quantti/tapas-fpl-app/compare/v0.36.3...v0.37.0) (2026-01-26)
+
+
+### Bug Fixes
+
+* **set-and-forget:** correct schema queries and add comprehensive test support ([a13c733](https://github.com/quantti/tapas-fpl-app/commit/a13c733cbf8fd30aa14a9bbdeda8a996c4420498)), closes [#9333ea](https://github.com/quantti/tapas-fpl-app/issues/9333ea)
+* **set-and-forget:** correct schema queries and add comprehensive test support ([fc60fb3](https://github.com/quantti/tapas-fpl-app/commit/fc60fb302ac740022d7184c03d3bd75fc56b60cd)), closes [#9333ea](https://github.com/quantti/tapas-fpl-app/issues/9333ea)
+
+
+### Features
+
+* **set-and-forget:** add API endpoint and frontend component ([2326624](https://github.com/quantti/tapas-fpl-app/commit/2326624db4d98e3062b113560f7f04de7bbf6bf7))
+* **set-and-forget:** implement TDD service with comprehensive tests ([8cad23a](https://github.com/quantti/tapas-fpl-app/commit/8cad23a766234097e6df18a72f7d598c5ee01c69))
+
 ## [0.36.3](https://github.com/quantti/tapas-fpl-app/compare/v0.36.2...v0.36.3) (2026-01-26)
 
 
