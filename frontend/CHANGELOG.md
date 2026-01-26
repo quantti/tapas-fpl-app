@@ -1,3 +1,10 @@
+## [0.36.3](https://github.com/quantti/tapas-fpl-app/compare/v0.36.2...v0.36.3) (2026-01-26)
+
+
+### Bug Fixes
+
+* **free-transfers:** join chip_usage table for accurate chip detection ([24da350](https://github.com/quantti/tapas-fpl-app/commit/24da350ddb37baf52a63ec58e8c4cd8c38f6e981))
+
 ## [0.36.2](https://github.com/quantti/tapas-fpl-app/compare/v0.36.1...v0.36.2) (2026-01-26)
 
 
