@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
 import { CURRENT_SEASON_ID } from 'src/config';
 
@@ -59,8 +60,10 @@ export function useSetAndForget(
   const isBackendUnavailable =
     query.error instanceof BackendApiError && query.error.isServiceUnavailable;
 
+  const managers = useMemo(() => transformKeys(query.data?.managers ?? []), [query.data?.managers]);
+
   return {
-    managers: transformKeys(query.data?.managers ?? []),
+    managers,
     currentGameweek: query.data?.current_gameweek ?? currentGameweek,
     isLoading: query.isLoading,
     error: query.error?.message ?? null,

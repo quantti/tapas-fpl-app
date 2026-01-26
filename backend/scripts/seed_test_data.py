@@ -204,6 +204,7 @@ async def clear_all(conn: asyncpg.Connection, season_id: int) -> None:
     await conn.execute("DELETE FROM manager_pick WHERE snapshot_id IN (SELECT id FROM manager_gw_snapshot WHERE season_id = $1)", season_id)
     await conn.execute("DELETE FROM manager_gw_snapshot WHERE season_id = $1", season_id)
     await conn.execute("DELETE FROM chip_usage WHERE season_id = $1", season_id)
+    await conn.execute("DELETE FROM player_gw_stats WHERE season_id = $1", season_id)
     await conn.execute("DELETE FROM league_manager WHERE season_id = $1", season_id)
     await conn.execute("DELETE FROM manager WHERE season_id = $1", season_id)
     await conn.execute("DELETE FROM league WHERE season_id = $1", season_id)
@@ -311,6 +312,64 @@ async def seed_managers(conn: asyncpg.Connection, season_id: int) -> None:
     print(f"  \u2713 Seeded {len(TEST_MANAGERS)} managers")
 
 
+async def seed_player_gw_stats(
+    conn: asyncpg.Connection, season_id: int, num_gw: int
+) -> None:
+    """Seed player gameweek stats (points, minutes) for Set and Forget calculations."""
+    print(f"Seeding player GW stats for {num_gw} gameweeks...")
+
+    total_stats = 0
+    for player_id, name, team_id, pos in SAMPLE_PLAYERS:
+        for gw in range(1, num_gw + 1):
+            # Most players play 90 mins, some get subbed or benched
+            minutes = random.choices([0, 60, 75, 90], weights=[5, 10, 15, 70])[0]
+
+            # Points based on position and minutes
+            if minutes == 0:
+                total_points = 0
+            else:
+                base_points = {1: 3, 2: 4, 3: 5, 4: 5}[pos]
+                total_points = base_points + random.randint(-2, 8)
+                if minutes < 60:
+                    total_points = max(1, total_points - 1)
+
+            await conn.execute("""
+                INSERT INTO player_gw_stats
+                    (player_id, season_id, gameweek, total_points, minutes)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (player_id, season_id, gameweek, fixture_id) DO NOTHING
+            """, player_id, season_id, gw, total_points, minutes)
+            total_stats += 1
+
+    print(f"  \u2713 Seeded {total_stats} player GW stats")
+
+
+async def seed_chip_usage(
+    conn: asyncpg.Connection, season_id: int, num_gw: int
+) -> None:
+    """Seed chip usage records for Set and Forget calculations."""
+    print("Seeding chip usage...")
+
+    total_chips = 0
+    for manager_id, _, _, _ in TEST_MANAGERS:
+        # Randomly assign chips (some managers use none, some use several)
+        chips_available = ["bboost", "3xc", "freehit", "wildcard"]
+
+        # First half: 50% chance of using bench boost or triple captain
+        if random.random() < 0.5 and num_gw >= 5:
+            chip = random.choice(["bboost", "3xc"])
+            gw = random.randint(3, min(19, num_gw))
+            season_half = 1 if gw < 20 else 2
+            await conn.execute("""
+                INSERT INTO chip_usage (manager_id, season_id, gameweek, chip_type, season_half)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (manager_id, season_id, season_half, chip_type) DO NOTHING
+            """, manager_id, season_id, gw, chip, season_half)
+            total_chips += 1
+
+    print(f"  \u2713 Seeded {total_chips} chip usages")
+
+
 async def seed_manager_snapshots(
     conn: asyncpg.Connection, season_id: int, num_gw: int
 ) -> None:
@@ -366,19 +425,23 @@ async def seed_manager_snapshots(
             picks.extend(random.sample(mid_ids, min(5, len(mid_ids))))
             picks.extend(random.sample(fwd_ids, min(3, len(fwd_ids))))
 
-            # Pick captain from starting XI (positions 1-11)
+            # Pick captain and vice captain from starting XI (positions 1-11)
             captain_idx = random.randint(0, 10)
+            vc_idx = random.randint(0, 10)
+            while vc_idx == captain_idx:
+                vc_idx = random.randint(0, 10)
 
             for pos, player_id in enumerate(picks, start=1):
                 multiplier = 0 if pos > 11 else (2 if pos - 1 == captain_idx else 1)
                 is_captain = (pos - 1 == captain_idx)
+                is_vice_captain = (pos - 1 == vc_idx)
                 points = random.randint(1, 15) * multiplier
 
                 await conn.execute("""
                     INSERT INTO manager_pick
-                        (snapshot_id, player_id, position, multiplier, is_captain, points)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                """, snapshot_id, player_id, pos, multiplier, is_captain, points)
+                        (snapshot_id, player_id, position, multiplier, is_captain, is_vice_captain, points)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                """, snapshot_id, player_id, pos, multiplier, is_captain, is_vice_captain, points)
                 total_picks += 1
 
     print(f"  \u2713 Seeded {total_snapshots} snapshots, {total_picks} picks")
@@ -476,6 +539,8 @@ async def main() -> None:
         await seed_players(conn, season_id)
         await seed_league(conn, season_id)
         await seed_managers(conn, season_id)
+        await seed_player_gw_stats(conn, season_id, args.gameweeks)
+        await seed_chip_usage(conn, season_id, args.gameweeks)
         await seed_manager_snapshots(conn, season_id, args.gameweeks)
 
         await verify_data(conn, season_id)

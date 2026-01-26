@@ -2792,3 +2792,48 @@ export const mockLeagueDashboardResponse = {
     },
   ],
 };
+
+/**
+ * League Set and Forget response from backend API
+ * Used for /api/v1/set-and-forget/league/{league_id} endpoint
+ * Shows hypothetical points if each manager kept their GW1 squad all season
+ */
+export const mockLeagueSetAndForgetResponse = {
+  league_id: MOCK_LEAGUE_ID,
+  season_id: 1,
+  current_gameweek: 18,
+  managers: [
+    {
+      manager_id: MOCK_MANAGER_IDS.manager1,
+      total_points: 1080, // S&F points
+      actual_points: 1050, // Real points
+      difference: 30, // +30 = transfers cost 30 points
+      auto_subs_made: 12,
+      captain_points_gained: 45,
+    },
+    {
+      manager_id: MOCK_MANAGER_IDS.manager2,
+      total_points: 990,
+      actual_points: 1020,
+      difference: -30, // -30 = transfers helped by 30 points
+      auto_subs_made: 8,
+      captain_points_gained: 38,
+    },
+    {
+      manager_id: MOCK_MANAGER_IDS.manager3,
+      total_points: 945,
+      actual_points: 945,
+      difference: 0, // Neutral
+      auto_subs_made: 15,
+      captain_points_gained: 52,
+    },
+    {
+      manager_id: MOCK_MANAGER_IDS.manager4,
+      total_points: 920,
+      actual_points: 900,
+      difference: 20, // +20 = transfers cost 20 points
+      auto_subs_made: 10,
+      captain_points_gained: 40,
+    },
+  ],
+};

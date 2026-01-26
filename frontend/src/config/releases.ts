@@ -12,6 +12,18 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: '0.37.0',
+    date: 'January 27, 2026',
+    items: [
+      {
+        title: 'Set and Forget Table',
+        description:
+          'See how many points you would have scored if you kept your GW1 squad all season with no transfers. Shows actual vs hypothetical points and highlights who benefited from transfers.',
+        type: 'feature',
+      },
+    ],
+  },
+  {
     version: '0.27.0',
     date: 'January 11, 2026',
     items: [

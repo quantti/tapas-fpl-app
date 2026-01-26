@@ -104,13 +104,15 @@ class SetAndForgetService:
         try:
             async with get_connection() as conn:
                 # 1. Fetch GW1 picks with player info
+                # manager_pick links to manager_gw_snapshot via snapshot_id
                 picks_rows = await conn.fetch(
                     """
                     SELECT mp.player_id, mp.position, mp.is_captain, mp.is_vice_captain,
                            mp.multiplier, p.element_type
                     FROM manager_pick mp
-                    JOIN player p ON p.id = mp.player_id AND p.season_id = mp.season_id
-                    WHERE mp.manager_id = $1 AND mp.season_id = $2 AND mp.gameweek = 1
+                    JOIN manager_gw_snapshot mgs ON mp.snapshot_id = mgs.id
+                    JOIN player p ON p.id = mp.player_id AND p.season_id = mgs.season_id
+                    WHERE mgs.manager_id = $1 AND mgs.season_id = $2 AND mgs.gameweek = 1
                     ORDER BY mp.position
                     """,
                     manager_id,
@@ -195,9 +197,10 @@ class SetAndForgetService:
                 chips_by_gw: dict[int, str] = {row["gameweek"]: row["chip_type"] for row in chip_rows}
 
                 # 4. Fetch actual total points for comparison
+                # Note: The column is named 'points' in manager_gw_snapshot schema
                 actual_points = await conn.fetchval(
                     """
-                    SELECT COALESCE(SUM(gameweek_points), 0)
+                    SELECT COALESCE(SUM(points), 0)
                     FROM manager_gw_snapshot
                     WHERE manager_id = $1 AND season_id = $2 AND gameweek <= $3
                     """,

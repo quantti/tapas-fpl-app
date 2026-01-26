@@ -6,6 +6,8 @@ import { CardHeader } from 'components/CardHeader';
 import * as styles from './SetAndForget.module.css';
 import { useSetAndForget, type SetAndForgetManagerCamel } from './useSetAndForget';
 
+const HEADER_ICON = <GhostIcon size={16} color="#9333ea" />;
+
 interface Props {
   leagueId: number;
   currentGameweek: number;
@@ -34,7 +36,7 @@ function ManagerRow({
   rank: number;
 }) {
   return (
-    <tr className={styles.row}>
+    <tr>
       <td className={styles.rank}>{rank}</td>
       <td className={styles.name}>{name}</td>
       <td className={styles.points}>{manager.actualPoints}</td>
@@ -56,7 +58,7 @@ export function SetAndForget({ leagueId, currentGameweek, managerNames }: Props)
     return (
       <Card>
         <div className={styles.SetAndForget}>
-          <CardHeader icon={<GhostIcon size={16} color="#9CA3AF" />}>Set and Forget</CardHeader>
+          <CardHeader icon={HEADER_ICON}>Set and Forget</CardHeader>
           <div className={styles.loading}>Loading...</div>
         </div>
       </Card>
@@ -71,7 +73,7 @@ export function SetAndForget({ leagueId, currentGameweek, managerNames }: Props)
     <Card data-testid="set-and-forget">
       <div className={styles.SetAndForget}>
         <CardHeader
-          icon={<GhostIcon size={16} color="#9CA3AF" />}
+          icon={HEADER_ICON}
           tooltip="Hypothetical points if you kept your GW1 squad all season with no transfers"
         >
           Set and Forget

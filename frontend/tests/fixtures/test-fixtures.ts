@@ -21,6 +21,7 @@ import {
   mockComparisonResponse,
   mockLeagueRecommendationsResponse,
   mockLeagueDashboardResponse,
+  mockLeagueSetAndForgetResponse,
   MOCK_MANAGER_IDS,
 } from './mock-data';
 
@@ -187,6 +188,15 @@ export async function setupApiMocking(page: Page) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(mockLeagueDashboardResponse),
+    });
+  });
+
+  // Mock Set and Forget endpoint
+  await page.route('**/api/v1/set-and-forget/league/**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(mockLeagueSetAndForgetResponse),
     });
   });
 }
