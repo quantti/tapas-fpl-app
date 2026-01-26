@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Add a release note to Changelog.tsx
+ * Add a release note to releases.ts
  *
  * Usage:
  *   node scripts/add-release-note.js "Title" "Description"
@@ -15,7 +15,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
 
-const CHANGELOG_PATH = path.join(process.cwd(), 'src/views/Changelog.tsx');
+const RELEASES_PATH = path.join(process.cwd(), 'src/config/releases.ts');
 
 function question(rl, prompt) {
   return new Promise((resolve) => {
@@ -25,7 +25,7 @@ function question(rl, prompt) {
 
 function addReleaseNote(title, description, type = 'feature') {
   // Read current changelog
-  const content = fs.readFileSync(CHANGELOG_PATH, 'utf8');
+  const content = fs.readFileSync(RELEASES_PATH, 'utf8');
 
   // Check if "Next Release" section exists
   const hasNextRelease = content.includes("version: 'Next Release'");
@@ -66,7 +66,7 @@ ${newItem}
   }
 
   // Write updated content
-  fs.writeFileSync(CHANGELOG_PATH, updatedContent);
+  fs.writeFileSync(RELEASES_PATH, updatedContent);
 
   return { title, description, type, isNew: !hasNextRelease };
 }
@@ -96,7 +96,7 @@ async function interactiveMode() {
   rl.close();
 
   const result = addReleaseNote(title, description);
-  console.log('\nRelease note added to Changelog.tsx');
+  console.log('\nRelease note added to releases.ts');
   console.log(`   Title: ${result.title}`);
   console.log(`   Type: ${result.type}`);
   if (result.isNew) {

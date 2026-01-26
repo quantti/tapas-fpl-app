@@ -10,7 +10,7 @@
  *
  * Release Notes Workflow:
  * 1. Developer adds release note via: node scripts/add-release-note.js
- * 2. This creates/updates "Next Release" section in Changelog.tsx
+ * 2. This creates/updates "Next Release" section in releases.ts
  * 3. On release, this script replaces "Next Release" with actual version
  */
 export default {
@@ -41,11 +41,11 @@ export default {
       },
     ],
 
-    // Commit the changed files (CHANGELOG.md, package.json, Changelog.tsx)
+    // Commit the changed files (CHANGELOG.md, package.json, releases.ts)
     [
       '@semantic-release/git',
       {
-        assets: ['CHANGELOG.md', 'package.json', 'src/views/Changelog.tsx'],
+        assets: ['CHANGELOG.md', 'package.json', 'src/config/releases.ts'],
         message: 'chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}',
       },
     ],

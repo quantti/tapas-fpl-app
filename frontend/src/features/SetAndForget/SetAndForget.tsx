@@ -2,6 +2,7 @@ import { GhostIcon } from 'lucide-react';
 
 import { Card } from 'components/Card';
 import { CardHeader } from 'components/CardHeader';
+import { InfoTooltip } from 'components/InfoTooltip';
 
 import * as styles from './SetAndForget.module.css';
 import { useSetAndForget, type SetAndForgetManagerCamel } from './useSetAndForget';
@@ -72,11 +73,9 @@ export function SetAndForget({ leagueId, currentGameweek, managerNames }: Props)
   return (
     <Card data-testid="set-and-forget">
       <div className={styles.SetAndForget}>
-        <CardHeader
-          icon={HEADER_ICON}
-          tooltip="Hypothetical points if you kept your GW1 squad all season with no transfers"
-        >
-          Set and Forget
+        <CardHeader icon={HEADER_ICON}>
+          Set and Forget{' '}
+          <InfoTooltip text="Hypothetical points if you kept your GW1 squad all season with no transfers" />
         </CardHeader>
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
