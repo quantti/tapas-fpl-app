@@ -260,8 +260,8 @@ Auto-subs occur when starting XI players play 0 minutes:
 
 **Bench Priority:**
 - Bench ranked in priority order (1st substitute → highest priority)
-- Position-specific rules enforced (need DEF → only DEF can sub in)
-- Formation constraints: Must maintain min 1 GK, 3 DEF, 1 FWD
+- GK can only be replaced by GK; outfield players can sub for any outfield position
+- Any sub must maintain valid formation: min 1 GK, 3 DEF, 1 FWD
 
 ### Price Changes
 

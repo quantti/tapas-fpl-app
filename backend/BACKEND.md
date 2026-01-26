@@ -345,12 +345,20 @@ mock_data = {"season_id": 1, "positions": {"123": 1}}
 
 ### asyncpg Connection Constraints (Critical!)
 
-**Learned from dashboard consolidation feature:** A single asyncpg connection cannot execute multiple queries concurrently. Attempting to do so causes runtime errors.
+**⚠️ PROJECT POLICY: Parallel database queries are BANNED in this codebase.**
+
+Always use sequential queries. Never use `asyncio.gather()` with database operations, even with connection pools.
+
+#### Why Parallel Queries Are Banned
+
+1. **Single connection limitation:** asyncpg connections cannot execute multiple queries concurrently
+2. **Pool complexity:** Using multiple connections adds complexity, pool exhaustion risk, and harder debugging
+3. **Project decision:** We prioritize simplicity and reliability over marginal performance gains
 
 #### The Problem
 
 ```python
-# ❌ WRONG - crashes with "cannot perform operation: another operation is in progress"
+# ❌ BANNED - crashes with "cannot perform operation: another operation is in progress"
 async def get_data(conn: asyncpg.Connection):
     results = await asyncio.gather(
         conn.fetch("SELECT * FROM picks"),
@@ -364,9 +372,7 @@ async def get_data(conn: asyncpg.Connection):
 asyncpg.exceptions._base.InterfaceError: cannot perform operation: another operation is in progress
 ```
 
-#### The Solution
-
-**Option 1: Sequential execution (simple, recommended for most cases)**
+#### The Solution: Sequential Queries (ALWAYS)
 
 ```python
 # ✅ CORRECT - sequential awaits on same connection
@@ -377,28 +383,7 @@ async def get_data(conn: asyncpg.Connection):
     return picks, transfers, chips
 ```
 
-**Option 2: Connection pool for true parallelism (when performance critical)**
-
-```python
-# ✅ CORRECT - parallel execution with multiple connections
-async def get_data_parallel(pool: asyncpg.Pool):
-    async with pool.acquire() as conn1, pool.acquire() as conn2, pool.acquire() as conn3:
-        results = await asyncio.gather(
-            conn1.fetch("SELECT * FROM picks"),
-            conn2.fetch("SELECT * FROM transfers"),
-            conn3.fetch("SELECT * FROM chips"),
-        )
-    return results
-```
-
-#### When to Use Each Approach
-
-| Scenario | Approach | Rationale |
-|----------|----------|-----------|
-| Route handler with passed connection | Sequential | Connection already acquired, can't get more |
-| Background job needing max throughput | Pool + parallel | Worth the complexity for speed |
-| Service with 3-6 queries | Sequential | Simpler, latency acceptable |
-| Service with 10+ independent queries | Pool + parallel | Sequential would be too slow |
+**Even for 10+ queries, use sequential execution.** The latency is acceptable for this application's use cases.
 
 #### Testing Considerations
 
@@ -414,6 +399,15 @@ mock_conn.fetch.side_effect = [
 ```
 
 **Key insight:** With sequential execution, if the second query fails, the third never runs. Test this behavior explicitly.
+
+#### Code Review Note
+
+If a code review suggests "these queries could be parallelized for performance", ignore it - parallel queries are banned in this project. Add a comment referencing this section if needed:
+
+```python
+# NOTE: Sequential queries are intentional - parallel DB queries are banned
+# See BACKEND.md "asyncpg Connection Constraints"
+```
 
 ## Database Migrations
 
