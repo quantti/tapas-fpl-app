@@ -104,6 +104,7 @@ _PLAYER_GW_POINTS_SQL = """
 """
 
 # Get full history for managers
+# JOIN chip_usage to get chip data (snapshot.chip_used may be NULL)
 _MANAGER_HISTORY_SQL = """
     SELECT mgs.manager_id,
            mgs.gameweek,
@@ -115,28 +116,35 @@ _MANAGER_HISTORY_SQL = """
            mgs.transfers_cost,
            mgs.bank,
            mgs.value as team_value,
-           mgs.chip_used as active_chip
+           COALESCE(mgs.chip_used, cu.chip_type) as active_chip
     FROM manager_gw_snapshot mgs
+    LEFT JOIN chip_usage cu ON cu.manager_id = mgs.manager_id
+                           AND cu.season_id = mgs.season_id
+                           AND cu.gameweek = mgs.gameweek
     WHERE mgs.manager_id = ANY($1) AND mgs.season_id = $2
     ORDER BY mgs.manager_id, mgs.gameweek
 """
 
 # Get history for single manager
+# JOIN chip_usage to get chip data (snapshot.chip_used may be NULL)
 _SINGLE_MANAGER_HISTORY_SQL = """
-    SELECT manager_id,
-           gameweek,
-           points as gameweek_points,
-           total_points,
-           points_on_bench,
-           overall_rank,
-           transfers_made,
-           transfers_cost,
-           bank,
-           value as team_value,
-           chip_used as active_chip
-    FROM manager_gw_snapshot
-    WHERE manager_id = $1 AND season_id = $2
-    ORDER BY gameweek
+    SELECT mgs.manager_id,
+           mgs.gameweek,
+           mgs.points as gameweek_points,
+           mgs.total_points,
+           mgs.points_on_bench,
+           mgs.overall_rank,
+           mgs.transfers_made,
+           mgs.transfers_cost,
+           mgs.bank,
+           mgs.value as team_value,
+           COALESCE(mgs.chip_used, cu.chip_type) as active_chip
+    FROM manager_gw_snapshot mgs
+    LEFT JOIN chip_usage cu ON cu.manager_id = mgs.manager_id
+                           AND cu.season_id = mgs.season_id
+                           AND cu.gameweek = mgs.gameweek
+    WHERE mgs.manager_id = $1 AND mgs.season_id = $2
+    ORDER BY mgs.gameweek
 """
 
 # Get positions-only history (for bump chart)
