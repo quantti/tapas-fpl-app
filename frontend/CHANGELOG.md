@@ -1,3 +1,10 @@
+## [0.36.2](https://github.com/quantti/tapas-fpl-app/compare/v0.36.1...v0.36.2) (2026-01-26)
+
+
+### Bug Fixes
+
+* **free-transfers:** add deadline awareness and safety checks ([00bee60](https://github.com/quantti/tapas-fpl-app/commit/00bee60d40adc6dd382a39071215d840b3057969))
+
 ## [0.36.1](https://github.com/quantti/tapas-fpl-app/compare/v0.36.0...v0.36.1) (2026-01-25)
 
 
