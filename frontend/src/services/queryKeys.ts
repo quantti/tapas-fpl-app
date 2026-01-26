@@ -62,6 +62,10 @@ export const queryKeys = {
   // Dashboard consolidation (from backend API)
   leagueDashboard: (leagueId: number, gameweek: number, seasonId: number) =>
     ['leagueDashboard', leagueId, gameweek, seasonId] as const,
+
+  // Set and Forget (from backend API)
+  leagueSetAndForget: (leagueId: number, gameweek: number, seasonId: number) =>
+    ['leagueSetAndForget', leagueId, gameweek, seasonId] as const,
 } as const;
 
 // Type exports for use in tests or other utilities

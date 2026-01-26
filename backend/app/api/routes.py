@@ -16,6 +16,7 @@ from app.services.dashboard import DashboardService, LeagueNotFoundError
 from app.services.fpl_client import FplApiClient
 from app.services.points_against import PointsAgainstService
 from app.services.recommendations import RecommendationsService
+from app.services.set_and_forget import SetAndForgetService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -35,6 +36,9 @@ _recommendations_cache: TTLCache[str, Any] = TTLCache(
 _dashboard_cache: TTLCache[str, Any] = TTLCache(
     maxsize=CACHE_MAX_SIZE, ttl=DASHBOARD_CACHE_TTL_SECONDS
 )
+_set_and_forget_cache: TTLCache[str, Any] = TTLCache(
+    maxsize=CACHE_MAX_SIZE, ttl=CACHE_TTL_SECONDS
+)
 
 
 def clear_cache() -> None:
@@ -42,6 +46,7 @@ def clear_cache() -> None:
     _api_cache.clear()
     _recommendations_cache.clear()
     _dashboard_cache.clear()
+    _set_and_forget_cache.clear()
 
 
 # =============================================================================
@@ -636,3 +641,122 @@ async def get_league_dashboard(
         # Cache and return
         _dashboard_cache[cache_key] = result
         return result
+
+
+# =============================================================================
+# Set and Forget Endpoints
+# =============================================================================
+
+
+class SetAndForgetResponse(BaseModel):
+    """Response for Set and Forget calculation."""
+
+    manager_id: int
+    total_points: int
+    actual_points: int
+    difference: int
+    auto_subs_made: int
+    captain_points_gained: int
+
+
+class LeagueSetAndForgetResponse(BaseModel):
+    """Response for league Set and Forget endpoint."""
+
+    league_id: int
+    season_id: int
+    current_gameweek: int
+    managers: list[SetAndForgetResponse]
+
+
+@router.get("/api/v1/set-and-forget/league/{league_id}", response_model=LeagueSetAndForgetResponse)
+async def get_league_set_and_forget(
+    league_id: int = Path(ge=1, description="FPL league ID"),
+    current_gameweek: int = Query(
+        ..., ge=1, le=38, description="Current gameweek (1-38)"
+    ),
+    season_id: int = Query(
+        default=1, ge=1, le=100, description="Season ID (default: 1 for 2024-25)"
+    ),
+    _: None = Depends(require_db),
+) -> LeagueSetAndForgetResponse:
+    """
+    Calculate Set and Forget points for all managers in a league.
+
+    Set and Forget calculates hypothetical points if a manager kept their GW1
+    squad all season without making any transfers. Uses original captain choice,
+    applies auto-sub rules, and respects TC/BB chip usage.
+
+    Returns:
+        Manager-by-manager comparison of actual vs hypothetical points.
+    """
+    # Check cache first
+    cache_key = f"set_and_forget_{league_id}_{current_gameweek}_{season_id}"
+    cached = _set_and_forget_cache.get(cache_key)
+    if cached is not None:
+        logger.debug("Cache hit for %s", cache_key)
+        return cached
+
+    try:
+        async with get_connection() as conn:
+            # Get all manager IDs in the league
+            manager_rows = await conn.fetch(
+                """
+                SELECT manager_id FROM league_manager
+                WHERE league_id = $1 AND season_id = $2
+                """,
+                league_id,
+                season_id,
+            )
+
+            if not manager_rows:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"League {league_id} not found or has no managers",
+                )
+
+            manager_ids = [row["manager_id"] for row in manager_rows]
+
+        # Calculate Set and Forget for each manager
+        service = SetAndForgetService()
+        results: list[SetAndForgetResponse] = []
+
+        for manager_id in manager_ids:
+            result = await service.calculate(
+                manager_id=manager_id,
+                season_id=season_id,
+                current_gameweek=current_gameweek,
+            )
+            results.append(
+                SetAndForgetResponse(
+                    manager_id=manager_id,
+                    total_points=result.total_points,
+                    actual_points=result.actual_points,
+                    difference=result.difference,
+                    auto_subs_made=result.auto_subs_made,
+                    captain_points_gained=result.captain_points_gained,
+                )
+            )
+
+        # Sort by difference (descending) to show who benefited most from set-and-forget
+        results.sort(key=lambda r: r.difference, reverse=True)
+
+        response = LeagueSetAndForgetResponse(
+            league_id=league_id,
+            season_id=season_id,
+            current_gameweek=current_gameweek,
+            managers=results,
+        )
+
+        # Cache the result
+        _set_and_forget_cache[cache_key] = response
+
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to get set and forget data: %s", e)
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while calculating set and forget",
+        ) from e

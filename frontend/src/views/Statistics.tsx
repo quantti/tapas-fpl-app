@@ -14,6 +14,7 @@ import { CaptainSuccess } from 'features/CaptainSuccess';
 import { FreeTransfers } from 'features/FreeTransfers';
 import { LeaguePosition } from 'features/LeaguePosition';
 import { PersonalStats } from 'features/PersonalStats';
+import { SetAndForget } from 'features/SetAndForget';
 
 import { useManagerId } from 'hooks/useManagerId';
 
@@ -44,6 +45,12 @@ export function Statistics() {
     const deadlinePassed = new Date() > new Date(currentGameweek.deadline_time);
     return deadlinePassed ? currentGameweek.id + 1 : currentGameweek.id;
   }, [currentGameweek]);
+
+  // Map of manager ID to team name for Set and Forget display
+  const managerNames = useMemo(
+    () => new Map(managerDetails.map((m) => [m.managerId, m.teamName])),
+    [managerDetails]
+  );
 
   if (isLoading) {
     return (
@@ -95,6 +102,11 @@ export function Statistics() {
         <BenchPoints leagueId={LEAGUE_ID} currentGameweek={currentGameweek.id} />
         <CaptainSuccess leagueId={LEAGUE_ID} currentGameweek={currentGameweek.id} />
         <ChipsRemaining leagueId={LEAGUE_ID} currentGameweek={currentGameweek.id} />
+        <SetAndForget
+          leagueId={LEAGUE_ID}
+          currentGameweek={currentGameweek.id}
+          managerNames={managerNames}
+        />
         <FreeTransfers leagueId={LEAGUE_ID} currentGameweek={freeTransfersGameweek} />
         <LeaguePosition leagueId={LEAGUE_ID} />
         <PlayerOwnership

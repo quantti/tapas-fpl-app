@@ -244,6 +244,23 @@ export interface LeaguePositionsResponse {
   managers: ManagerMetadata[];
 }
 
+// Set and Forget API types
+export interface SetAndForgetManager {
+  manager_id: number;
+  total_points: number;
+  actual_points: number;
+  difference: number;
+  auto_subs_made: number;
+  captain_points_gained: number;
+}
+
+export interface LeagueSetAndForgetResponse {
+  league_id: number;
+  season_id: number;
+  current_gameweek: number;
+  managers: SetAndForgetManager[];
+}
+
 // Dashboard API types
 export interface DashboardPick {
   position: number;
@@ -473,6 +490,29 @@ export function validateLeagueRecommendationsResponse(
   return true;
 }
 
+/**
+ * Validate LeagueSetAndForgetResponse has expected shape.
+ * @internal Exported for testing only
+ */
+export function validateLeagueSetAndForgetResponse(
+  data: unknown
+): data is LeagueSetAndForgetResponse {
+  if (!data || typeof data !== 'object') return false;
+  const response = data as Record<string, unknown>;
+  if (typeof response.league_id !== 'number') return false;
+  if (typeof response.current_gameweek !== 'number') return false;
+  if (!Array.isArray(response.managers)) return false;
+
+  // Validate first manager has expected structure (if array not empty)
+  if (response.managers.length > 0) {
+    const manager = response.managers[0] as Record<string, unknown>;
+    if (typeof manager.manager_id !== 'number') return false;
+    if (typeof manager.total_points !== 'number') return false;
+    if (typeof manager.difference !== 'number') return false;
+  }
+  return true;
+}
+
 export const backendApi = {
   /**
    * Get points conceded by all teams for the season.
@@ -611,6 +651,25 @@ export const backendApi = {
     );
     if (!validateLeagueDashboardResponse(data)) {
       throw new BackendApiError(200, 'OK', 'Invalid response shape from dashboard endpoint');
+    }
+    return data;
+  },
+
+  /**
+   * Get Set and Forget points comparison for a league.
+   * Calculates hypothetical points if each manager kept their GW1 squad all season.
+   * Returns managers sorted by difference (best set-and-forget performance first).
+   */
+  getLeagueSetAndForget: async (
+    leagueId: number,
+    currentGameweek: number,
+    seasonId = 1
+  ): Promise<LeagueSetAndForgetResponse> => {
+    const data = await fetchBackend<LeagueSetAndForgetResponse>(
+      `/api/v1/set-and-forget/league/${leagueId}?current_gameweek=${currentGameweek}&season_id=${seasonId}`
+    );
+    if (!validateLeagueSetAndForgetResponse(data)) {
+      throw new BackendApiError(200, 'OK', 'Invalid response shape from set-and-forget endpoint');
     }
     return data;
   },
