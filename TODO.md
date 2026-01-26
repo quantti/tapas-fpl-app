@@ -127,6 +127,14 @@ Custom fixture difficulty rating (1-5 stars, 0-100 scale) that improves on FPL's
 
 ## Recently Completed
 
+### Free Transfers Calculation Fix (Jan 2026)
+- [x] Fixed WC/FH chip detection: JOIN `chip_usage` table (snapshot `chip_used` may be NULL)
+- [x] Fixed WC/FH weekly gain: NO +1 during chip week (was incorrectly adding +1)
+- [x] Fixed frontend deadline awareness: Send GW+1 after deadline passes
+- [x] Added `max(ft, 1)` safety check for minimum 1 FT
+- [x] Removed obsolete `useFreeTransfers.ts` from frontend (uses backend API)
+- [x] Updated documentation in BACKEND.md and FPL_RULES.md
+
 ### Frontend: Game Scores Redesign (Jan 2026)
 - [x] Renamed "Game Rewards" to "Game Scores"
 - [x] Live match scores with minutes/status indicator

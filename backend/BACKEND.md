@@ -744,18 +744,21 @@ Calculates remaining free transfers for each manager based on their gameweek his
 
 | Chip | FT Consumption | Weekly Gain | Effect |
 |------|----------------|-------------|--------|
-| **Wildcard** | None (unlimited free transfers) | +1 | Preserves banked FT |
-| **Free Hit** | None (team reverts after GW) | +1 | Preserves banked FT |
+| **Wildcard** | None (unlimited free transfers) | **NO +1** | Preserves banked FT, no weekly gain |
+| **Free Hit** | None (team reverts after GW) | **NO +1** | Preserves banked FT, no weekly gain |
 | **Triple Captain** | Normal | +1 | No special FT handling |
 | **Bench Boost** | Normal | +1 | No special FT handling |
 
+> **Important:** You do NOT gain a free transfer during Wildcard or Free Hit weeks.
+> The +1 FT is earned in the following gameweek, not the chip week itself.
+
 **Wildcard/Free Hit Examples:**
 
-| Scenario | FT Before Chip | FT After GW |
-|----------|----------------|-------------|
-| Wildcard with 3 FT | 3 | 4 (3 preserved + 1) |
-| Free Hit with 2 FT | 2 | 3 (2 preserved + 1) |
-| Wildcard with 5 FT | 5 | 5 (capped at max) |
+| Scenario | FT Before Chip | FT During Chip GW | FT Next GW |
+|----------|----------------|-------------------|------------|
+| Wildcard with 3 FT | 3 | 3 (preserved, no +1) | 4 (3 + weekly) |
+| Free Hit with 2 FT | 2 | 2 (preserved, no +1) | 3 (2 + weekly) |
+| Wildcard with 5 FT | 5 | 5 (preserved) | 5 (capped at max) |
 
 #### Hit Points (-4 Penalty)
 
@@ -804,6 +807,35 @@ Free transfer calculation uses the FPL API `/api/entry/{manager_id}/history/` en
 - `transfers_made` - Number of transfers made in the gameweek
 - `transfers_cost` - Point penalty (negative: -4, -8, etc. or 0)
 - `active_chip` - Chip played: `"wildcard"`, `"freehit"`, `"3xc"`, `"bboost"`, or `null`
+
+#### Implementation Notes
+
+**Chip Data Source:**
+
+The backend uses two tables that may contain chip data:
+
+1. `manager_gw_snapshot.chip_used` - May be NULL even when chip was used
+2. `chip_usage` table - Authoritative chip usage records
+
+The history query JOINs both tables to ensure chip detection:
+
+```sql
+SELECT mgs.manager_id,
+       mgs.gameweek,
+       COALESCE(mgs.chip_used, cu.chip_type) as active_chip
+FROM manager_gw_snapshot mgs
+LEFT JOIN chip_usage cu ON cu.manager_id = mgs.manager_id
+                       AND cu.season_id = mgs.season_id
+                       AND cu.gameweek = mgs.gameweek
+```
+
+**Frontend-Backend Coordination:**
+
+The frontend must send the correct gameweek for FT calculation:
+- **Before deadline:** Send `currentGameweek.id` (shows FT remaining for this GW)
+- **After deadline:** Send `currentGameweek.id + 1` (includes +1 for completed GW)
+
+This is handled in `Statistics.tsx` via `freeTransfersGameweek` memo.
 
 ### Recommendations API
 
