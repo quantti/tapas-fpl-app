@@ -1,3 +1,10 @@
+## [0.37.1](https://github.com/quantti/tapas-fpl-app/compare/v0.37.0...v0.37.1) (2026-01-27)
+
+
+### Bug Fixes
+
+* **set-and-forget:** use correct data source and support late joiners ([259762b](https://github.com/quantti/tapas-fpl-app/commit/259762b074b6eb79d1f1da6fb114147c47067944))
+
 # [0.37.0](https://github.com/quantti/tapas-fpl-app/compare/v0.36.3...v0.37.0) (2026-01-26)
 
 
