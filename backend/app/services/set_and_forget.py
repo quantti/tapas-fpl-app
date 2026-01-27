@@ -1,7 +1,7 @@
 """Set and Forget calculation service.
 
-Calculates hypothetical points if a manager kept their GW1 squad all season:
-1. Uses GW1 picks only (no transfers)
+Calculates hypothetical points if a manager kept their first squad all season:
+1. Uses first gameweek picks only (handles late joiners who started after GW1)
 2. Applies auto-sub rules when starters have 0 minutes
 3. Uses original captain; falls back to vice-captain if captain has 0 mins
 4. Applies TC/BB chips, ignores Wildcard/Free Hit squad changes
@@ -103,7 +103,32 @@ class SetAndForgetService:
 
         try:
             async with get_connection() as conn:
-                # 1. Fetch GW1 picks with player info
+                # 1. Find manager's first gameweek (handles late joiners like GW2 starters)
+                first_gw = await conn.fetchval(
+                    """
+                    SELECT MIN(gameweek)
+                    FROM manager_gw_snapshot
+                    WHERE manager_id = $1 AND season_id = $2
+                    """,
+                    manager_id,
+                    season_id,
+                )
+
+                if first_gw is None:
+                    logger.info(
+                        "Manager %d has no snapshots in season %d",
+                        manager_id,
+                        season_id,
+                    )
+                    return SetAndForgetResult(
+                        total_points=0,
+                        actual_points=0,
+                        difference=0,
+                        auto_subs_made=0,
+                        captain_points_gained=0,
+                    )
+
+                # 2. Fetch first GW picks with player info
                 # manager_pick links to manager_gw_snapshot via snapshot_id
                 picks_rows = await conn.fetch(
                     """
@@ -112,33 +137,20 @@ class SetAndForgetService:
                     FROM manager_pick mp
                     JOIN manager_gw_snapshot mgs ON mp.snapshot_id = mgs.id
                     JOIN player p ON p.id = mp.player_id AND p.season_id = mgs.season_id
-                    WHERE mgs.manager_id = $1 AND mgs.season_id = $2 AND mgs.gameweek = 1
+                    WHERE mgs.manager_id = $1 AND mgs.season_id = $2 AND mgs.gameweek = $3
                     ORDER BY mp.position
                     """,
                     manager_id,
                     season_id,
+                    first_gw,
                 )
 
                 if not picks_rows:
-                    # Check if manager exists to distinguish late joiner vs data issue
-                    manager_exists = await conn.fetchval(
-                        "SELECT EXISTS(SELECT 1 FROM manager WHERE id = $1 AND season_id = $2)",
+                    logger.warning(
+                        "Manager %d has snapshot for GW%d but no picks (data sync issue)",
                         manager_id,
-                        season_id,
+                        first_gw,
                     )
-                    if manager_exists:
-                        logger.warning(
-                            "Manager %d exists but has no GW1 picks for season %d "
-                            "(possible data sync issue or late joiner)",
-                            manager_id,
-                            season_id,
-                        )
-                    else:
-                        logger.info(
-                            "Manager %d not found in season %d",
-                            manager_id,
-                            season_id,
-                        )
                     return SetAndForgetResult(
                         total_points=0,
                         actual_points=0,
@@ -150,19 +162,23 @@ class SetAndForgetService:
                 # Convert to typed dicts (asyncpg.Record is structurally compatible)
                 picks = cast(list[GW1Pick], [dict(row) for row in picks_rows])
 
-                # 2. Fetch all fixture stats for these players up to current GW
+                # 3. Fetch all fixture stats for these players from first_gw to current GW
+                # Uses player_fixture_stats (populated by Points Against collection)
+                # instead of player_gw_stats (empty - no sync script)
                 player_ids = [p["player_id"] for p in picks]
                 stats_rows = await conn.fetch(
                     """
-                    SELECT pgs.player_id, pgs.gameweek, pgs.total_points, pgs.minutes
-                    FROM player_gw_stats pgs
-                    WHERE pgs.player_id = ANY($1)
-                      AND pgs.season_id = $2
-                      AND pgs.gameweek <= $3
-                    ORDER BY pgs.gameweek, pgs.player_id
+                    SELECT pfs.player_id, pfs.gameweek, pfs.total_points, pfs.minutes
+                    FROM player_fixture_stats pfs
+                    WHERE pfs.player_id = ANY($1)
+                      AND pfs.season_id = $2
+                      AND pfs.gameweek >= $3
+                      AND pfs.gameweek <= $4
+                    ORDER BY pfs.gameweek, pfs.player_id
                     """,
                     player_ids,
                     season_id,
+                    first_gw,
                     current_gameweek,
                 )
 
@@ -184,28 +200,33 @@ class SetAndForgetService:
                     stats_by_gw[gw][player_id]["total_points"] += row["total_points"]
                     stats_by_gw[gw][player_id]["minutes"] += row["minutes"]
 
-                # 3. Fetch chip usage
+                # 4. Fetch chip usage (only from first_gw onwards)
                 chip_rows = await conn.fetch(
                     """
                     SELECT chip_type, gameweek
                     FROM chip_usage
                     WHERE manager_id = $1 AND season_id = $2
+                      AND gameweek >= $3 AND gameweek <= $4
                     """,
                     manager_id,
                     season_id,
+                    first_gw,
+                    current_gameweek,
                 )
                 chips_by_gw: dict[int, str] = {row["gameweek"]: row["chip_type"] for row in chip_rows}
 
-                # 4. Fetch actual total points for comparison
+                # 5. Fetch actual total points for comparison (from first_gw onwards)
                 # Note: The column is named 'points' in manager_gw_snapshot schema
                 actual_points = await conn.fetchval(
                     """
                     SELECT COALESCE(SUM(points), 0)
                     FROM manager_gw_snapshot
-                    WHERE manager_id = $1 AND season_id = $2 AND gameweek <= $3
+                    WHERE manager_id = $1 AND season_id = $2
+                      AND gameweek >= $3 AND gameweek <= $4
                     """,
                     manager_id,
                     season_id,
+                    first_gw,
                     current_gameweek,
                 )
         except Exception as error:
@@ -220,12 +241,12 @@ class SetAndForgetService:
             )
             raise
 
-        # 5. Calculate points for each gameweek
+        # 6. Calculate points for each gameweek (from first_gw onwards)
         total_points = 0
         total_auto_subs = 0
         total_captain_bonus = 0
 
-        for gw in range(1, current_gameweek + 1):
+        for gw in range(first_gw, current_gameweek + 1):
             gw_stats = stats_by_gw.get(gw, {})
             chip = chips_by_gw.get(gw)
 

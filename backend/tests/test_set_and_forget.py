@@ -1,7 +1,7 @@
 """Tests for Set and Forget calculation service.
 
 Set and Forget calculates what points a manager would have scored if they:
-1. Kept their GW1 squad all season (no transfers)
+1. Kept their first active squad all season (handles late joiners who started after GW1)
 2. Applied chips (TC, BB) but ignored Wildcard/Free Hit squad changes
 3. Used auto-sub rules when starters had 0 minutes
 4. Used original captain; vice-captain if captain had 0 minutes
@@ -2342,3 +2342,93 @@ class TestDatabaseErrors:
             await set_and_forget_service.calculate(
                 manager_id=12345, season_id=1, current_gameweek=10
             )
+
+
+class TestLateJoiners:
+    """Tests for managers who joined after GW1 (late joiners)."""
+
+    @pytest.mark.asyncio
+    async def test_late_joiner_uses_first_active_gameweek_as_base(
+        self, set_and_forget_service: "SetAndForgetService", mock_saf_db: MockDB
+    ):
+        """Manager who started in GW2 uses GW2 squad as set-and-forget base.
+
+        Setup: Manager joined in GW2, their GW2 squad scores 60 pts in GW2 and GW3
+        Expected: 120 total points (60 * 2 GWs)
+        """
+        picks = make_standard_squad()
+
+        # Stats for GW2 and GW3 (not GW1 since manager wasn't active)
+        fixture_stats = []
+        for gw in [2, 3]:
+            for player_id in range(1, 16):
+                fixture_stats.append(
+                    make_fixture_stats(
+                        player_id=player_id, gameweek=gw, total_points=5, minutes=90
+                    )
+                )
+
+        # Mock: first_gw=2 (late joiner), actual_points=115
+        mock_saf_db.conn.fetchval.side_effect = [2, 115]
+        mock_saf_db.conn.fetch.side_effect = [picks, fixture_stats, []]
+
+        with mock_saf_db:
+            result = await set_and_forget_service.calculate(
+                manager_id=12345, season_id=1, current_gameweek=3
+            )
+
+        # 2 GWs * 60 points per GW = 120
+        assert result.total_points == 120
+        assert result.actual_points == 115
+        assert result.difference == 5
+
+    @pytest.mark.asyncio
+    async def test_late_joiner_gw2_ignores_gw1_data(
+        self, set_and_forget_service: "SetAndForgetService", mock_saf_db: MockDB
+    ):
+        """Manager who started in GW2 should not include any GW1 points.
+
+        Setup: Player stats exist for GW1 but manager joined GW2
+        Expected: Only GW2+ points count
+        """
+        picks = make_standard_squad()
+
+        # Only GW2 stats (GW1 data should not be fetched)
+        fixture_stats = []
+        for player_id in range(1, 16):
+            fixture_stats.append(
+                make_fixture_stats(
+                    player_id=player_id, gameweek=2, total_points=10, minutes=90
+                )
+            )
+
+        mock_saf_db.conn.fetchval.side_effect = [2, 50]  # first_gw=2, actual=50
+        mock_saf_db.conn.fetch.side_effect = [picks, fixture_stats, []]
+
+        with mock_saf_db:
+            result = await set_and_forget_service.calculate(
+                manager_id=12345, season_id=1, current_gameweek=2
+            )
+
+        # 1 GW * (10*2 captain + 10*10 others) = 120
+        assert result.total_points == 120
+
+    @pytest.mark.asyncio
+    async def test_manager_with_no_snapshots_returns_zeros(
+        self, set_and_forget_service: "SetAndForgetService", mock_saf_db: MockDB
+    ):
+        """Manager with no gameweek snapshots (never played) returns zeros.
+
+        Setup: No snapshots exist for manager
+        Expected: 0 points
+        """
+        mock_saf_db.conn.fetchval.return_value = None  # No first_gw
+
+        with mock_saf_db:
+            result = await set_and_forget_service.calculate(
+                manager_id=99999, season_id=1, current_gameweek=10
+            )
+
+        assert result.total_points == 0
+        assert result.actual_points == 0
+        assert result.difference == 0
