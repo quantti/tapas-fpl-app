@@ -118,6 +118,9 @@ Custom fixture difficulty rating (1-5 stars, 0-100 scale) that improves on FPL's
 - [ ] Ownership trends over time
 - [ ] Season-over-season comparisons
 - [ ] Scheduled data snapshots via background jobs
+- [ ] Add sync script for `player_gw_stats` table (currently empty, orphan table)
+  - Source: FPL `/event/{gw}/live` endpoint
+  - Alternative: Consider removing table if `player_fixture_stats` suffices
 
 ### Nice to Have
 - [ ] PWA support (offline access, install prompt)
