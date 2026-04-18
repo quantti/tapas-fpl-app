@@ -181,7 +181,7 @@ export function usePlayerLiveStats(
     // Pick the most relevant fixture: prefer in-progress, then latest started
     const fixture =
       playerFixtures.find((f) => f.started && !f.finished_provisional) ??
-      playerFixtures.findLast((f) => f.started) ??
+      [...playerFixtures].reverse().find((f) => f.started) ??
       playerFixtures[0];
 
     // Fixture hasn't started yet
