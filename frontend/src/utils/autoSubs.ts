@@ -14,37 +14,44 @@ export const STARTING_XI_MAX_POSITION = 11;
 export const BENCH_POSITIONS = [12, 13, 14, 15] as const;
 
 /**
- * Build a map of team ID -> fixture for quick lookup
+ * Build a map of team ID -> fixtures for quick lookup.
+ * Returns an array per team to support double gameweeks.
  */
-export function buildTeamFixtureMap(fixtures: Fixture[]): Map<number, Fixture> {
-  const map = new Map<number, Fixture>();
+export function buildTeamFixtureMap(fixtures: Fixture[]): Map<number, Fixture[]> {
+  const map = new Map<number, Fixture[]>();
   for (const fixture of fixtures) {
-    map.set(fixture.team_h, fixture);
-    map.set(fixture.team_a, fixture);
+    const homeFixtures = map.get(fixture.team_h) ?? [];
+    homeFixtures.push(fixture);
+    map.set(fixture.team_h, homeFixtures);
+
+    const awayFixtures = map.get(fixture.team_a) ?? [];
+    awayFixtures.push(fixture);
+    map.set(fixture.team_a, awayFixtures);
   }
   return map;
 }
 
 /**
- * Check if a player's fixture has finished (provisionally or fully)
+ * Check if a player's fixture has finished (provisionally or fully).
+ * For double gameweeks, ALL fixtures must be finished.
  */
 export function isPlayerFixtureFinished(
   playerTeamId: number,
-  teamFixtureMap: Map<number, Fixture>
+  teamFixtureMap: Map<number, Fixture[]>
 ): boolean {
-  const fixture = teamFixtureMap.get(playerTeamId);
-  if (!fixture) return false;
-  return fixture.finished_provisional || fixture.finished;
+  const fixtures = teamFixtureMap.get(playerTeamId);
+  if (!fixtures || fixtures.length === 0) return false;
+  return fixtures.every((f) => f.finished_provisional || f.finished);
 }
 
 /**
- * Check if a team's fixture has started (for showing points vs "–")
- * Use this to determine whether to display player points or fixture info
+ * Check if a team's fixture has started (for showing points vs "–").
+ * For double gameweeks, returns true if ANY fixture has started.
  */
-export function hasFixtureStarted(teamId: number, teamFixtureMap: Map<number, Fixture>): boolean {
-  const fixture = teamFixtureMap.get(teamId);
-  if (!fixture) return false;
-  return fixture.started || fixture.finished;
+export function hasFixtureStarted(teamId: number, teamFixtureMap: Map<number, Fixture[]>): boolean {
+  const fixtures = teamFixtureMap.get(teamId);
+  if (!fixtures || fixtures.length === 0) return false;
+  return fixtures.some((f) => f.started || f.finished);
 }
 
 /**
@@ -56,22 +63,25 @@ export interface OpponentInfo {
 }
 
 /**
- * Get opponent info for a team's fixture
- * Used for displaying "ARS (H)" or "MUN (A)" style fixture info
+ * Get opponent info for a team's fixtures.
+ * Returns an array to support double gameweeks (e.g. "ARS (H), MUN (A)").
  */
 export function getOpponentInfo(
   teamId: number,
-  teamFixtureMap: Map<number, Fixture>,
+  teamFixtureMap: Map<number, Fixture[]>,
   teamsMap: Map<number, Team>
-): OpponentInfo | null {
-  const fixture = teamFixtureMap.get(teamId);
-  if (!fixture) return null;
+): OpponentInfo[] {
+  const fixtures = teamFixtureMap.get(teamId);
+  if (!fixtures || fixtures.length === 0) return [];
 
-  const isHome = fixture.team_h === teamId;
-  const opponentId = isHome ? fixture.team_a : fixture.team_h;
-  const opponent = teamsMap.get(opponentId);
-
-  return opponent ? { shortName: opponent.short_name, isHome } : null;
+  return fixtures
+    .map((fixture) => {
+      const isHome = fixture.team_h === teamId;
+      const opponentId = isHome ? fixture.team_a : fixture.team_h;
+      const opponent = teamsMap.get(opponentId);
+      return opponent ? { shortName: opponent.short_name, isHome } : null;
+    })
+    .filter((info): info is OpponentInfo => info !== null);
 }
 
 /**
@@ -102,7 +112,7 @@ export function getPlayerEligibility(
   pick: ManagerPick,
   liveData: LiveGameweek,
   playersMap: Map<number, Player>,
-  teamFixtureMap: Map<number, Fixture>
+  teamFixtureMap: Map<number, Fixture[]>
 ): PlayerEligibility | null {
   const player = playersMap.get(pick.playerId);
   if (!player) return null;
@@ -272,7 +282,7 @@ function buildEligibilityMap(
   picks: ManagerPick[],
   liveData: LiveGameweek,
   playersMap: Map<number, Player>,
-  teamFixtureMap: Map<number, Fixture>
+  teamFixtureMap: Map<number, Fixture[]>
 ): Map<number, PlayerEligibility> {
   const eligibilityMap = new Map<number, PlayerEligibility>();
   for (const pick of picks) {

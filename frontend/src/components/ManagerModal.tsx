@@ -160,9 +160,9 @@ export function ManagerModal({
 
       if (fixtureStarted) return String(points);
 
-      const opponentInfo = getOpponentInfo(player.team, teamFixtureMap, teamsMap);
-      if (opponentInfo) {
-        return `${opponentInfo.shortName} (${opponentInfo.isHome ? 'H' : 'A'})`;
+      const opponents = getOpponentInfo(player.team, teamFixtureMap, teamsMap);
+      if (opponents.length > 0) {
+        return opponents.map((o) => `${o.shortName} (${o.isHome ? 'H' : 'A'})`).join(', ');
       }
       return '–';
     };

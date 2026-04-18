@@ -139,17 +139,27 @@ describe('buildTeamFixtureMap', () => {
     const fixtures = [createFixture(1, 10, 20)];
     const map = buildTeamFixtureMap(fixtures);
 
-    expect(map.get(10)).toBe(fixtures[0]);
-    expect(map.get(20)).toBe(fixtures[0]);
+    expect(map.get(10)).toEqual([fixtures[0]]);
+    expect(map.get(20)).toEqual([fixtures[0]]);
   });
 
   it('should handle multiple fixtures', () => {
     const fixtures = [createFixture(1, 10, 20), createFixture(2, 30, 40)];
     const map = buildTeamFixtureMap(fixtures);
 
-    expect(map.get(10)).toBe(fixtures[0]);
-    expect(map.get(30)).toBe(fixtures[1]);
+    expect(map.get(10)).toEqual([fixtures[0]]);
+    expect(map.get(30)).toEqual([fixtures[1]]);
     expect(map.size).toBe(4);
+  });
+
+  it('should support double gameweeks (team in two fixtures)', () => {
+    const fixtures = [createFixture(1, 10, 20), createFixture(2, 10, 30)];
+    const map = buildTeamFixtureMap(fixtures);
+
+    expect(map.get(10)).toHaveLength(2);
+    expect(map.get(10)).toEqual([fixtures[0], fixtures[1]]);
+    expect(map.get(20)).toEqual([fixtures[0]]);
+    expect(map.get(30)).toEqual([fixtures[1]]);
   });
 });
 
@@ -177,8 +187,25 @@ describe('isPlayerFixtureFinished', () => {
   });
 
   it('should return false when team has no fixture', () => {
-    const map = new Map<number, Fixture>();
+    const map = new Map<number, Fixture[]>();
     expect(isPlayerFixtureFinished(999, map)).toBe(false);
+  });
+
+  it('should return false in DGW when only one of two fixtures finished', () => {
+    const fixtures = [
+      createFixture(1, 10, 20, true, false),
+      createFixture(2, 10, 30, false, false),
+    ];
+    const map = buildTeamFixtureMap(fixtures);
+
+    expect(isPlayerFixtureFinished(10, map)).toBe(false);
+  });
+
+  it('should return true in DGW when both fixtures finished', () => {
+    const fixtures = [createFixture(1, 10, 20, true, false), createFixture(2, 10, 30, true, false)];
+    const map = buildTeamFixtureMap(fixtures);
+
+    expect(isPlayerFixtureFinished(10, map)).toBe(true);
   });
 });
 
@@ -961,8 +988,18 @@ describe('hasFixtureStarted', () => {
   });
 
   it('should return false when team has no fixture', () => {
-    const map = new Map<number, Fixture>();
+    const map = new Map<number, Fixture[]>();
     expect(hasFixtureStarted(999, map)).toBe(false);
+  });
+
+  it('should return true in DGW when first fixture started but second has not', () => {
+    const fixture1 = createFixture(1, 10, 20, false, false);
+    fixture1.started = true;
+    const fixture2 = createFixture(2, 10, 30, false, false);
+    fixture2.started = false;
+    const map = buildTeamFixtureMap([fixture1, fixture2]);
+
+    expect(hasFixtureStarted(10, map)).toBe(true);
   });
 });
 
@@ -977,7 +1014,7 @@ describe('getOpponentInfo', () => {
 
     const result = getOpponentInfo(10, fixtureMap, teams);
 
-    expect(result).toEqual({ shortName: 'AWY', isHome: true });
+    expect(result).toEqual([{ shortName: 'AWY', isHome: true }]);
   });
 
   it('should return opponent info for away team', () => {
@@ -990,25 +1027,42 @@ describe('getOpponentInfo', () => {
 
     const result = getOpponentInfo(20, fixtureMap, teams);
 
-    expect(result).toEqual({ shortName: 'HOM', isHome: false });
+    expect(result).toEqual([{ shortName: 'HOM', isHome: false }]);
   });
 
-  it('should return null when team has no fixture', () => {
-    const fixtureMap = new Map<number, Fixture>();
+  it('should return empty array when team has no fixture', () => {
+    const fixtureMap = new Map<number, Fixture[]>();
     const teams = new Map<number, Team>();
 
     const result = getOpponentInfo(999, fixtureMap, teams);
 
-    expect(result).toBeNull();
+    expect(result).toEqual([]);
   });
 
-  it('should return null when opponent team not found in teams map', () => {
+  it('should filter out opponents not found in teams map', () => {
     const fixtures = [createFixture(1, 10, 20)];
     const teams = new Map([[10, createTeam(10, 'HOM')]]); // Missing team 20
     const fixtureMap = buildTeamFixtureMap(fixtures);
 
     const result = getOpponentInfo(10, fixtureMap, teams);
 
-    expect(result).toBeNull();
+    expect(result).toEqual([]);
+  });
+
+  it('should return multiple opponents in a double gameweek', () => {
+    const fixtures = [createFixture(1, 10, 20), createFixture(2, 30, 10)];
+    const teams = new Map([
+      [10, createTeam(10, 'HOM')],
+      [20, createTeam(20, 'AWY')],
+      [30, createTeam(30, 'THR')],
+    ]);
+    const fixtureMap = buildTeamFixtureMap(fixtures);
+
+    const result = getOpponentInfo(10, fixtureMap, teams);
+
+    expect(result).toEqual([
+      { shortName: 'AWY', isHome: true },
+      { shortName: 'THR', isHome: false },
+    ]);
   });
 });
