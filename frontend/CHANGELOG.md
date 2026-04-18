@@ -1,3 +1,17 @@
+# [0.38.0](https://github.com/quantti/tapas-fpl-app/compare/v0.37.1...v0.38.0) (2026-04-18)
+
+
+### Bug Fixes
+
+* replace findLast with reverse().find() for ES2022 compat ([c6bbffa](https://github.com/quantti/tapas-fpl-app/commit/c6bbffadb7968cff70f64f28527173cab65c5578))
+* update dashboard visual snapshots for DGW display ([9ee4d83](https://github.com/quantti/tapas-fpl-app/commit/9ee4d8320f3a2df723e57771ce5f4827a14a4939))
+
+
+### Features
+
+* complete DGW support, fix modal points to match standings ([98501e4](https://github.com/quantti/tapas-fpl-app/commit/98501e438babf016966a1bd10356e426e400bd05))
+* support double gameweeks in fixture map and consumer functions ([8282cf4](https://github.com/quantti/tapas-fpl-app/commit/8282cf4b07068e23df3840149a915eefaa3744d2))
+
 ## [0.37.1](https://github.com/quantti/tapas-fpl-app/compare/v0.37.0...v0.37.1) (2026-01-27)
 
 
