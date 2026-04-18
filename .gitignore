@@ -30,6 +30,9 @@ Thumbs.db
 # Local Claude files
 .claude/
 
+# Plans and research docs
+docs/
+
 # Test outputs
 test-results/
 .vercel
