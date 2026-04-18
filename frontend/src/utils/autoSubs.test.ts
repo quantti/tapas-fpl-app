@@ -927,6 +927,75 @@ describe('calculateAutoSubs', () => {
     // After third sub: 2 DEF - invalid
     expect(result.autoSubs.length).toBeLessThanOrEqual(2);
   });
+
+  it('should handle DGW: only sub when ALL fixtures for a team are finished', () => {
+    const { picks, playersMap } = createStandardSquad();
+
+    // Team 10 has TWO fixtures (DGW)
+    const fixture1 = createFixture(1, 10, 20, true); // Finished
+    const fixture2 = createFixture(2, 10, 40, false); // Not finished yet
+    fixture2.started = true;
+    fixture2.minutes = 45;
+    const fixture3 = createFixture(3, 30, 50, true); // Bench team fixture
+
+    // Player 2 (DEF, team 10) has 0 minutes across both fixtures
+    // But fixture2 is still in progress, so auto-sub should NOT trigger yet
+    const liveData: LiveGameweek = {
+      elements: picks.map((p) => {
+        if (p.playerId === 2) {
+          return createLivePlayer(2, { minutes: 0 }, []);
+        }
+        if (p.playerId === 12) {
+          return createLivePlayer(12, { minutes: 0 }, []);
+        }
+        return createLivePlayer(p.playerId, { minutes: 90 }, [
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
+        ]);
+      }),
+    };
+
+    const result = calculateAutoSubs(picks, liveData, [fixture1, fixture2, fixture3], playersMap);
+
+    // Should NOT sub because team 10's second fixture is still in progress
+    expect(result.autoSubs).toHaveLength(0);
+  });
+
+  it('should handle DGW: sub when ALL fixtures for a team are finished', () => {
+    const { picks, playersMap } = createStandardSquad();
+
+    // Team 10 has TWO fixtures, BOTH finished
+    const fixture1 = createFixture(1, 10, 20, true);
+    const fixture2 = createFixture(2, 10, 40, true);
+    const fixture3 = createFixture(3, 30, 50, true);
+
+    // Player 2 (DEF, team 10) has 0 minutes across both finished fixtures
+    const liveData: LiveGameweek = {
+      elements: picks.map((p) => {
+        if (p.playerId === 2) {
+          return createLivePlayer(2, { minutes: 0 }, []);
+        }
+        if (p.playerId === 12) {
+          return createLivePlayer(12, { minutes: 0 }, []);
+        }
+        return createLivePlayer(p.playerId, { minutes: 90 }, [
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
+        ]);
+      }),
+    };
+
+    const result = calculateAutoSubs(picks, liveData, [fixture1, fixture2, fixture3], playersMap);
+
+    // NOW should sub because both of team 10's fixtures are finished
+    expect(result.autoSubs).toHaveLength(1);
+    expect(result.autoSubs[0].playerOut.playerId).toBe(2);
+    expect(result.autoSubs[0].playerIn.playerId).toBe(13);
+  });
 });
 
 describe('POSITION_LIMITS', () => {

@@ -656,6 +656,23 @@ export const mockFixturesResponse = [
     ],
   },
   {
+    // DGW: Liverpool's second fixture (not started yet)
+    id: 4,
+    event: 18,
+    team_h: 3,
+    team_a: 11,
+    team_h_score: null,
+    team_a_score: null,
+    finished: false,
+    finished_provisional: false,
+    started: false,
+    minutes: 0,
+    kickoff_time: '2025-12-22T15:00:00Z',
+    team_h_difficulty: 4,
+    team_a_difficulty: 2,
+    stats: [],
+  },
+  {
     id: 3,
     event: 19,
     team_h: 6,

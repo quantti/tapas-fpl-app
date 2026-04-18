@@ -226,6 +226,7 @@ export function calculateLiveManagerPoints(
 /**
  * Build a map of player ID -> provisional bonus for all qualifying fixtures.
  * A fixture qualifies for provisional bonus if it's >= 60 minutes or finished.
+ * In DGWs, a player can earn bonus from multiple fixtures - sum them.
  */
 function buildProvisionalBonusMap(
   liveData: LiveGameweek,
@@ -249,9 +250,9 @@ function buildProvisionalBonusMap(
 
     const fixtureBonus = calculateProvisionalBonus(bpsScores);
 
-    // Merge into result (a player only plays in one fixture per GW)
+    // Merge into result - sum across fixtures for DGW players
     for (const [playerId, bonus] of fixtureBonus) {
-      result.set(playerId, bonus);
+      result.set(playerId, (result.get(playerId) ?? 0) + bonus);
     }
   }
 

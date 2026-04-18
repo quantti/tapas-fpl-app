@@ -41,7 +41,9 @@ export function PitchPlayer({
       <div className={styles.name} data-testid="player-name">
         {name}
       </div>
-      <div className={styles.stat}>{stat}</div>
+      <div className={styles.stat} data-testid="player-stat">
+        {stat}
+      </div>
     </>
   );
 

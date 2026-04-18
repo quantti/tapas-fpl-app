@@ -162,6 +162,45 @@ test.describe('Manager Modal - Team Lineup', () => {
   });
 });
 
+test.describe('Manager Modal - Double Gameweek', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await waitForPageReady(page);
+  });
+
+  test('DGW player shows points from first game and upcoming opponent for second', async ({
+    page,
+  }) => {
+    await waitForDataLoad(page);
+
+    // Open first manager's modal (Alice - has Salah who is Liverpool, team 11)
+    const teamButtons = page.locator(SELECTORS.TEAM_BUTTONS);
+    await teamButtons.first().click();
+
+    const dialog = page.locator(SELECTORS.DIALOG_OPEN);
+    await expect(dialog).toBeVisible({ timeout: 5000 });
+    await waitForDataLoad(page);
+
+    // Wait for pitch to render
+    const pitch = dialog.locator('[data-testid="pitch-layout"]');
+    await expect(pitch).toBeVisible({ timeout: 5000 });
+
+    // Find a Liverpool player's stat display (Salah is on team 11)
+    // Liverpool has DGW: fixture 1 (vs TOT, in progress) + fixture 4 (vs BOU, not started)
+    // Salah's stat should show points AND upcoming opponent "BOU (A)"
+    const playerStats = dialog.locator('[data-testid="player-stat"]');
+    const allStats = await playerStats.allTextContents();
+
+    // At least one player stat should contain "BOU (A)" - the upcoming DGW fixture
+    const hasDgwOpponent = allStats.some((text) => text.includes('BOU (A)'));
+    expect(hasDgwOpponent).toBe(true);
+
+    // The same stat should also contain points (a number)
+    const dgwStat = allStats.find((text) => text.includes('BOU (A)'));
+    expect(dgwStat).toMatch(/\d+/);
+  });
+});
+
 test.describe('Manager Modal - Mobile', () => {
   test.use({ viewport: VIEWPORTS.MOBILE });
 

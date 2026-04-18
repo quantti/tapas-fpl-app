@@ -74,12 +74,11 @@ const DEFAULT_STATS: PlayerLiveStats = {
 };
 
 /**
- * Find a player's fixture by checking which fixture their team is playing in
+ * Find all of a player's fixtures for a gameweek (supports DGW).
  */
-function findPlayerFixture(teamId: number, fixtures: Fixture[], gameweek: number): Fixture | null {
-  return (
-    fixtures.find((f) => f.event === gameweek && (f.team_h === teamId || f.team_a === teamId)) ??
-    null
+function findPlayerFixtures(teamId: number, fixtures: Fixture[], gameweek: number): Fixture[] {
+  return fixtures.filter(
+    (f) => f.event === gameweek && (f.team_h === teamId || f.team_a === teamId)
   );
 }
 
@@ -173,11 +172,17 @@ export function usePlayerLiveStats(
       return DEFAULT_STATS;
     }
 
-    // Find player's fixture for this gameweek
-    const fixture = findPlayerFixture(teamId, fixtures, gameweek);
-    if (!fixture) {
+    // Find player's fixtures for this gameweek (may be multiple in DGW)
+    const playerFixtures = findPlayerFixtures(teamId, fixtures, gameweek);
+    if (playerFixtures.length === 0) {
       return DEFAULT_STATS;
     }
+
+    // Pick the most relevant fixture: prefer in-progress, then latest started
+    const fixture =
+      playerFixtures.find((f) => f.started && !f.finished_provisional) ??
+      playerFixtures.findLast((f) => f.started) ??
+      playerFixtures[0];
 
     // Fixture hasn't started yet
     if (!fixture.started) {

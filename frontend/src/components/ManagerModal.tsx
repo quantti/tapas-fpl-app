@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 
 import { STARTING_XI_MAX_POSITION } from 'constants/positions';
 
@@ -7,6 +7,7 @@ import { PlayerDetails } from 'features/PlayerDetails';
 import { useManagerPicks } from 'services/queries/useManagerPicks';
 
 import { buildTeamFixtureMap, hasFixtureStarted, getOpponentInfo } from 'utils/autoSubs';
+import { calculateLiveManagerPoints } from 'utils/liveScoring';
 import { createPlayersMap, createTeamsMap, createLivePlayersMap } from 'utils/mappers';
 import { getCaptainBadge } from 'utils/picks';
 
@@ -15,24 +16,15 @@ import { Modal } from './Modal';
 import { PitchLayout, type PitchPlayer as BasePitchPlayer } from './PitchLayout';
 import { PitchPlayer } from './PitchPlayer';
 
-import type {
-  Player,
-  BootstrapStatic,
-  LiveGameweek,
-  Fixture,
-  SquadPick,
-  PickForPoints,
-} from 'types/fpl';
+import type { Player, BootstrapStatic, LiveGameweek, Fixture, SquadPick } from 'types/fpl';
 
 interface Props {
   managerId: number | null;
   gameweek: number;
   onClose: () => void;
-  // Required: bootstrap and live data from parent (Dashboard)
   bootstrap: BootstrapStatic | null;
   liveData: LiveGameweek | null;
   fixtures: Fixture[];
-  calculateTeamPoints: (picks: PickForPoints[]) => number;
 }
 
 export function ManagerModal({
@@ -42,7 +34,6 @@ export function ManagerModal({
   bootstrap,
   liveData,
   fixtures,
-  calculateTeamPoints,
 }: Props) {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
@@ -80,11 +71,19 @@ export function ManagerModal({
 
   const isOpen = managerId !== null;
 
-  // Get live points using hook's calculation
+  // Calculate live points using same algorithm as standings table
   const getLivePoints = (): number => {
     if (!picks) return 0;
-    const startingPicks = picks.picks.filter((p) => p.position <= STARTING_XI_MAX_POSITION);
-    return calculateTeamPoints(startingPicks);
+    const gwFixtures = fixtures.filter((f) => f.event === gameweek);
+    const managerPicks = picks.picks.map((p) => ({
+      playerId: p.element,
+      position: p.position,
+      multiplier: p.multiplier,
+      isCaptain: p.is_captain,
+      isViceCaptain: p.is_vice_captain,
+    }));
+    const result = calculateLiveManagerPoints(managerPicks, liveData, gwFixtures, 0, playersMap);
+    return result.totalPoints;
   };
 
   // Compute modal title - show team name and points when data is loaded
@@ -152,17 +151,47 @@ export function ManagerModal({
       .filter((p): p is ManagerPitchPlayer => p !== null);
 
     // Get points display string for a player
-    const getPointsDisplay = (pick: SquadPick, player: Player): string => {
+    const getPointsDisplay = (pick: SquadPick, player: Player): ReactNode => {
       const live = liveMap.get(player.id);
       const fixtureStarted = hasFixtureStarted(player.team, teamFixtureMap);
       const basePoints = live?.stats.total_points ?? 0;
       const points = pick.multiplier > 0 ? basePoints * pick.multiplier : basePoints;
 
+      const teamFixtures = teamFixtureMap.get(player.team) ?? [];
+      const upcomingOpponents = teamFixtures
+        .filter((f) => !f.started && !f.finished)
+        .map((f) => {
+          const isHome = f.team_h === player.team;
+          const opponentId = isHome ? f.team_a : f.team_h;
+          const opponent = teamsMap.get(opponentId);
+          if (!opponent) return null;
+          const venue = isHome ? 'H' : 'A';
+          return `${opponent.short_name} (${venue})`;
+        })
+        .filter((s): s is string => s !== null);
+
+      // DGW mixed state: first game played, second upcoming
+      if (fixtureStarted && upcomingOpponents.length > 0) {
+        return (
+          <>
+            <div>{points}</div>
+            <div>{upcomingOpponents.join(' ')}</div>
+          </>
+        );
+      }
+
       if (fixtureStarted) return String(points);
 
       const opponents = getOpponentInfo(player.team, teamFixtureMap, teamsMap);
-      if (opponents.length > 0) {
-        return opponents.map((o) => `${o.shortName} (${o.isHome ? 'H' : 'A'})`).join(', ');
+      if (opponents.length === 1) {
+        return `${opponents[0].shortName} (${opponents[0].isHome ? 'H' : 'A'})`;
+      }
+      if (opponents.length > 1) {
+        return opponents.map((o, i) => (
+          <div key={i}>
+            {o.shortName} ({o.isHome ? 'H' : 'A'})
+          </div>
+        ));
       }
       return '–';
     };
