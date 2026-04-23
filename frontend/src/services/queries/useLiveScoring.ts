@@ -1,7 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 
-import { calculateProvisionalBonus, shouldShowProvisionalBonus } from 'utils/liveScoring';
+import {
+  calculateProvisionalBonus,
+  getFixtureBpsScores,
+  shouldShowProvisionalBonus,
+} from 'utils/liveScoring';
 
 import { fplApi } from '../api';
 import { queryKeys } from '../queryKeys';
@@ -80,16 +84,9 @@ export function useLiveScoring(
         return 0;
       }
 
-      // Get BPS scores for players in this fixture
-      const playersInFixture = liveData.elements.filter((p) =>
-        p.explain.some((e) => e.fixture === fixtureId)
-      );
-
-      const bpsScores = playersInFixture.map((p) => ({
-        playerId: p.id,
-        bps: p.stats.bps,
-      }));
-
+      // Use per-fixture BPS from fixture.stats; LivePlayer.stats.bps is aggregated
+      // across DGW fixtures and inflates rankings if used here.
+      const bpsScores = getFixtureBpsScores(fixture);
       const bonusMap = calculateProvisionalBonus(bpsScores);
       return bonusMap.get(playerId) ?? 0;
     },

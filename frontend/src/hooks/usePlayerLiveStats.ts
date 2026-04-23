@@ -4,8 +4,8 @@ import { isOutfieldPosition, DEFCON_THRESHOLDS } from 'utils/defcon';
 import {
   shouldShowProvisionalBonus,
   calculateProvisionalBonus,
+  getFixtureBpsScores,
   isFixtureLive,
-  type BpsScore,
 } from 'utils/liveScoring';
 
 import type { LiveContext } from 'features/PlayerDetails/PlayerDetails';
@@ -99,27 +99,13 @@ function getDefensiveContribution(playerId: number, fixture: Fixture): number {
 /**
  * Calculate provisional bonus for a specific player in their fixture
  */
-function calculatePlayerProvisionalBonus(
-  playerId: number,
-  fixture: Fixture,
-  liveElements: LivePlayer[]
-): number {
-  // Get all players in this fixture by checking their explain array
-  const playersInFixture = liveElements.filter((p) =>
-    p.explain.some((e) => e.fixture === fixture.id)
-  );
+function calculatePlayerProvisionalBonus(playerId: number, fixture: Fixture): number {
+  // Use per-fixture BPS from fixture.stats; LivePlayer.stats.bps is aggregated
+  // across DGW fixtures and inflates rankings if used here.
+  const bpsScores = getFixtureBpsScores(fixture);
+  if (bpsScores.length === 0) return 0;
 
-  if (playersInFixture.length === 0) return 0;
-
-  // Build BPS scores array
-  const bpsScores: BpsScore[] = playersInFixture.map((p) => ({
-    playerId: p.id,
-    bps: p.stats.bps,
-  }));
-
-  // Calculate provisional bonus map
   const bonusMap = calculateProvisionalBonus(bpsScores);
-
   return bonusMap.get(playerId) ?? 0;
 }
 
@@ -215,7 +201,7 @@ export function usePlayerLiveStats(
     // Calculate provisional bonus
     const showProvisionalBonus = shouldShowProvisionalBonus(fixture);
     const provisionalBonus = showProvisionalBonus
-      ? calculatePlayerProvisionalBonus(playerId, fixture, liveData.elements)
+      ? calculatePlayerProvisionalBonus(playerId, fixture)
       : 0;
 
     return {

@@ -110,7 +110,16 @@ const mockFixtures: Fixture[] = [
     team_h_difficulty: 3,
     team_a_difficulty: 3,
     pulse_id: 123,
-    stats: [],
+    stats: [
+      {
+        identifier: 'bps',
+        h: [
+          { element: 1, value: 65 },
+          { element: 2, value: 55 },
+        ],
+        a: [],
+      },
+    ],
   },
 ];
 

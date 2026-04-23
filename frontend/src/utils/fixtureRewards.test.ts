@@ -543,24 +543,27 @@ describe('fixtureRewards', () => {
         [202, createMockPlayer(202, 'Martinelli', 3)],
       ]);
 
-      // Fixture at 60+ minutes with empty bonus stats
+      // Fixture at 60+ minutes with BPS available but no confirmed bonus yet
       const fixture = createMockFixture({
         id: 1,
         started: true,
         finished: false,
         finished_provisional: false,
         minutes: 75,
-        stats: [], // No confirmed bonus
+        stats: [
+          {
+            identifier: 'bps',
+            h: [
+              { element: 200, value: 45 }, // Highest -> 3 bonus
+              { element: 201, value: 38 }, // Second -> 2 bonus
+              { element: 202, value: 30 }, // Third -> 1 bonus
+            ],
+            a: [],
+          },
+        ],
       });
 
-      // Live data with BPS scores
-      const liveData: LiveGameweek = {
-        elements: [
-          createMockLivePlayer(200, 45, 1), // Highest BPS -> 3 bonus
-          createMockLivePlayer(201, 38, 1), // Second -> 2 bonus
-          createMockLivePlayer(202, 30, 1), // Third -> 1 bonus
-        ],
-      };
+      const liveData: LiveGameweek = { elements: [] };
 
       const result = extractFixtureRewards(fixture, playersMap, createTeamsMap(), liveData);
 
@@ -590,23 +593,27 @@ describe('fixtureRewards', () => {
         [202, createMockPlayer(202, 'Martinelli', 3)],
       ]);
 
+      // Two players tied for highest BPS
+      // FPL rule: both get 3 bonus, third gets 1 (2nd place tier is skipped)
       const fixture = createMockFixture({
         id: 1,
         started: true,
         finished: false,
         minutes: 80,
-        stats: [],
+        stats: [
+          {
+            identifier: 'bps',
+            h: [
+              { element: 200, value: 45 }, // Tied for first -> 3
+              { element: 201, value: 45 }, // Tied for first -> 3
+              { element: 202, value: 30 }, // Third -> 1 (skips 2)
+            ],
+            a: [],
+          },
+        ],
       });
 
-      // Two players tied for highest BPS
-      // FPL rule: both get 3 bonus, third gets 1 (2nd place tier is skipped)
-      const liveData: LiveGameweek = {
-        elements: [
-          createMockLivePlayer(200, 45, 1), // Tied for first -> 3 bonus
-          createMockLivePlayer(201, 45, 1), // Tied for first -> 3 bonus
-          createMockLivePlayer(202, 30, 1), // Third -> 1 bonus (skips 2)
-        ],
-      };
+      const liveData: LiveGameweek = { elements: [] };
 
       const result = extractFixtureRewards(fixture, playersMap, createTeamsMap(), liveData);
 
@@ -690,31 +697,32 @@ describe('fixtureRewards', () => {
       expect(result.bonus).toHaveLength(0);
     });
 
-    it('should filter players by fixture ID when calculating provisional bonus', () => {
+    it('only awards bonus to players listed in this fixture stats', () => {
       const playersMap = new Map<number, Player>([
         [200, createMockPlayer(200, 'Saka', 3)],
-        [201, createMockPlayer(201, 'Salah', 3)], // Different fixture
+        [201, createMockPlayer(201, 'Salah', 3)],
       ]);
 
+      // fixture.stats.bps only contains players in this fixture — Salah
+      // (in a different fixture this gameweek) is naturally excluded.
       const fixture = createMockFixture({
         id: 1,
         started: true,
         finished: false,
         minutes: 75,
-        stats: [],
+        stats: [
+          {
+            identifier: 'bps',
+            h: [{ element: 200, value: 45 }],
+            a: [],
+          },
+        ],
       });
 
-      // Salah is in a different fixture (id: 2)
-      const liveData: LiveGameweek = {
-        elements: [
-          createMockLivePlayer(200, 45, 1), // In our fixture
-          createMockLivePlayer(201, 60, 2), // In different fixture
-        ],
-      };
+      const liveData: LiveGameweek = { elements: [] };
 
       const result = extractFixtureRewards(fixture, playersMap, createTeamsMap(), liveData);
 
-      // Only Saka should get bonus (Salah is filtered out)
       expect(result.bonus).toHaveLength(1);
       expect(result.bonus[0].playerId).toBe(200);
     });

@@ -247,20 +247,25 @@ describe('usePlayerLiveStats', () => {
     });
 
     it('shows provisional bonus after 60 minutes', () => {
-      const fixture = createFixture({ started: true, minutes: 67 });
-      // Create multiple players with different BPS to test bonus calculation
+      const fixture = createFixture({
+        started: true,
+        minutes: 67,
+        stats: [
+          {
+            identifier: 'bps',
+            h: [
+              { element: 100, value: 50 }, // Highest -> 3
+              { element: 101, value: 40 }, // Second -> 2
+              { element: 102, value: 30 }, // Third -> 1
+            ],
+            a: [],
+          },
+        ],
+      });
       const players = [
-        createLivePlayer({ id: 100, stats: { ...createLivePlayer().stats, bps: 50 } }),
-        createLivePlayer({
-          id: 101,
-          stats: { ...createLivePlayer().stats, bps: 40 },
-          explain: [{ fixture: 1, stats: [] }],
-        }),
-        createLivePlayer({
-          id: 102,
-          stats: { ...createLivePlayer().stats, bps: 30 },
-          explain: [{ fixture: 1, stats: [] }],
-        }),
+        createLivePlayer({ id: 100 }),
+        createLivePlayer({ id: 101 }),
+        createLivePlayer({ id: 102 }),
       ];
       const context = createLiveContext(1, [fixture], players);
 

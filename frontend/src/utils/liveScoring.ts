@@ -183,7 +183,7 @@ export function calculateLiveManagerPoints(
   const livePlayersMap = createLivePlayersMap(liveData.elements);
 
   // Build provisional bonus map for all fixtures that qualify
-  const provisionalBonusMap = buildProvisionalBonusMap(liveData, fixtures);
+  const provisionalBonusMap = buildProvisionalBonusMap(fixtures);
 
   let basePoints = 0;
   let provisionalBonus = 0;
@@ -201,13 +201,11 @@ export function calculateLiveManagerPoints(
     const playerPoints = livePlayer.stats.total_points * pick.multiplier;
     basePoints += playerPoints;
 
-    // Add provisional bonus if:
-    // 1. Official bonus not yet awarded (stats.bonus === 0)
-    // 2. Player has provisional bonus from BPS ranking
-    if (livePlayer.stats.bonus === 0) {
-      const playerProvisionalBonus = provisionalBonusMap.get(pick.playerId) ?? 0;
-      provisionalBonus += playerProvisionalBonus * pick.multiplier;
-    }
+    // Add provisional bonus from fixtures that haven't awarded official bonus yet.
+    // The map already skips fixtures with official bonus, so a DGW player with
+    // official bonus in F1 can still accrue provisional from F2.
+    const playerProvisionalBonus = provisionalBonusMap.get(pick.playerId) ?? 0;
+    provisionalBonus += playerProvisionalBonus * pick.multiplier;
   }
 
   const totalPoints = basePoints + provisionalBonus;
@@ -228,26 +226,32 @@ export function calculateLiveManagerPoints(
  * A fixture qualifies for provisional bonus if it's >= 60 minutes or finished.
  * In DGWs, a player can earn bonus from multiple fixtures - sum them.
  */
-function buildProvisionalBonusMap(
-  liveData: LiveGameweek,
-  fixtures: Fixture[]
-): Map<number, number> {
+/**
+ * Extract per-fixture BPS scores for every player in a fixture.
+ * Reads from `fixture.stats` (identifier='bps'), which FPL populates per-fixture —
+ * unlike `LivePlayer.stats.bps`, which is aggregated across DGW fixtures.
+ */
+export function getFixtureBpsScores(fixture: Fixture): BpsScore[] {
+  const bpsStat = fixture.stats?.find((s) => s.identifier === 'bps');
+  if (!bpsStat) return [];
+  return [...bpsStat.h, ...bpsStat.a].map((e) => ({
+    playerId: e.element,
+    bps: e.value,
+  }));
+}
+
+export function buildProvisionalBonusMap(fixtures: Fixture[]): Map<number, number> {
   const result = new Map<number, number>();
 
   for (const fixture of fixtures) {
     if (!shouldShowProvisionalBonus(fixture)) continue;
+    // Skip fixtures where FPL has already awarded official bonus — those points
+    // are already in LivePlayer.stats.total_points and would double-count here.
+    if (fixtureHasOfficialBonus(fixture)) continue;
 
-    // Get all players in this fixture by checking their explain array
-    const playersInFixture = liveData.elements.filter((p) =>
-      p.explain.some((e) => e.fixture === fixture.id)
-    );
-
-    // Calculate provisional bonus for this fixture
-    const bpsScores: BpsScore[] = playersInFixture.map((p) => ({
-      playerId: p.id,
-      bps: p.stats.bps,
-    }));
-
+    // Use per-fixture BPS from fixture.stats; LivePlayer.stats.bps is aggregated
+    // across DGW fixtures and inflates rankings if used here.
+    const bpsScores = getFixtureBpsScores(fixture);
     const fixtureBonus = calculateProvisionalBonus(bpsScores);
 
     // Merge into result - sum across fixtures for DGW players
@@ -257,4 +261,10 @@ function buildProvisionalBonusMap(
   }
 
   return result;
+}
+
+function fixtureHasOfficialBonus(fixture: Fixture): boolean {
+  const bonusStat = fixture.stats?.find((s) => s.identifier === 'bonus');
+  if (!bonusStat) return false;
+  return bonusStat.h.length > 0 || bonusStat.a.length > 0;
 }
