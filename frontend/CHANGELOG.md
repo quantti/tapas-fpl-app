@@ -1,3 +1,10 @@
+## [0.38.1](https://github.com/quantti/tapas-fpl-app/compare/v0.38.0...v0.38.1) (2026-04-23)
+
+
+### Bug Fixes
+
+* use per-fixture BPS for provisional bonus and handle DGW mixed states ([86fdebf](https://github.com/quantti/tapas-fpl-app/commit/86fdebff8e9fe07429f8735e779810fa06c9bd22))
+
 # [0.38.0](https://github.com/quantti/tapas-fpl-app/compare/v0.37.1...v0.38.0) (2026-04-18)
 
 
