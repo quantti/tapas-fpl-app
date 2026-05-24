@@ -1,3 +1,10 @@
+## [0.38.2](https://github.com/quantti/tapas-fpl-app/compare/v0.38.1...v0.38.2) (2026-05-24)
+
+
+### Bug Fixes
+
+* add Referer and Origin headers to FPL proxy to reduce Cloudflare blocks ([5a41d4b](https://github.com/quantti/tapas-fpl-app/commit/5a41d4b04d1781ca3ce8c9a3f8f8b4147f628d54))
+
 ## [0.38.1](https://github.com/quantti/tapas-fpl-app/compare/v0.38.0...v0.38.1) (2026-04-23)
 
 
