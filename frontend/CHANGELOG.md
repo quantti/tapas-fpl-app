@@ -1,3 +1,10 @@
+# [0.42.0](https://github.com/quantti/tapas-fpl-app/compare/v0.41.0...v0.42.0) (2026-08-13)
+
+
+### Features
+
+* add pre-season countdown to Statistics and Analytics views ([8c6ef0c](https://github.com/quantti/tapas-fpl-app/commit/8c6ef0c3aa89c52976301d90a5c1936bed1edadc))
+
 # [0.41.0](https://github.com/quantti/tapas-fpl-app/compare/v0.40.1...v0.41.0) (2026-08-13)
 
 
