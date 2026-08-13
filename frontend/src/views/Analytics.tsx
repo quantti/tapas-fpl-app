@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { LEAGUE_ID } from 'src/config';
 
 import { FplUpdating } from 'components/FplUpdating';
+import { GameweekCountdown } from 'components/GameweekCountdown';
 import { LoadingState } from 'components/LoadingState';
 import { PointsAgainstCard } from 'components/PointsAgainstCard';
 
@@ -55,6 +56,20 @@ export function Analytics() {
             <p>{error}</p>
           </div>
         )}
+      </div>
+    );
+  }
+
+  const nextEvent = bootstrap?.events?.find((e) => e.is_next);
+
+  if (!currentGameweek && nextEvent) {
+    return (
+      <div className={styles.Analytics}>
+        <GameweekCountdown
+          deadline={nextEvent.deadline_time}
+          gameweekId={nextEvent.id}
+          title="Season Starts"
+        />
       </div>
     );
   }

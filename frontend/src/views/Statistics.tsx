@@ -4,6 +4,7 @@ import { LEAGUE_ID } from 'src/config';
 
 import { ChipsRemaining } from 'components/ChipsRemaining';
 import { FplUpdating } from 'components/FplUpdating';
+import { GameweekCountdown } from 'components/GameweekCountdown';
 import { LeagueTemplateTeam } from 'components/LeagueTemplateTeam';
 import { LoadingState } from 'components/LoadingState';
 import { PlayerOwnership } from 'components/PlayerOwnership';
@@ -71,6 +72,20 @@ export function Statistics() {
             <p>{error}</p>
           </div>
         )}
+      </div>
+    );
+  }
+
+  const nextEvent = bootstrap?.events?.find((e) => e.is_next);
+
+  if (!currentGameweek && nextEvent) {
+    return (
+      <div className={styles.Statistics}>
+        <GameweekCountdown
+          deadline={nextEvent.deadline_time}
+          gameweekId={nextEvent.id}
+          title="Season Starts"
+        />
       </div>
     );
   }
