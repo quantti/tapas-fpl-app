@@ -25,6 +25,9 @@ vi.mock('./PreviousSeasonStandings.module.css', () => ({
   points: 'points',
   winner: 'winner',
   last: 'last',
+  annotation: 'annotation',
+  relegatedText: 'relegatedText',
+  arrowSvg: 'arrowSvg',
 }));
 
 const mockHook = vi.mocked(usePreviousSeasonStandings);

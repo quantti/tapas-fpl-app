@@ -55,6 +55,35 @@ export function PreviousSeasonStandings() {
           ))}
         </tbody>
       </table>
+      <div className={styles.annotation}>
+        <span className={styles.relegatedText}>Relegated, exiles in Cadiz.</span>
+        <svg
+          className={styles.arrowSvg}
+          viewBox="0 0 200 80"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <marker
+              id="arrow-red"
+              markerWidth="10"
+              markerHeight="7"
+              refX="9"
+              refY="3.5"
+              orient="auto-start-reverse"
+            >
+              <polygon points="0 0, 10 3.5, 0 7" fill="var(--color-error)" />
+            </marker>
+          </defs>
+          <path
+            d="M 10,75 C 10,40 100,40 170,15"
+            stroke="var(--color-error)"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            markerEnd="url(#arrow-red)"
+          />
+        </svg>
+      </div>
     </section>
   );
 }

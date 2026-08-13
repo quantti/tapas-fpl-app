@@ -83,4 +83,40 @@
       }
     }
   }
+
+  .annotation {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-4) var(--space-16) var(--space-16);
+
+    .relegatedText {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      font-style: italic;
+      margin-bottom: 0;
+    }
+
+    .arrowSvg {
+      width: 100%;
+      height: 60px;
+      overflow: visible;
+    }
+
+    @media (min-width: 640px) {
+      flex-direction: row;
+      align-items: flex-end;
+      gap: var(--space-8);
+
+      .relegatedText {
+        white-space: nowrap;
+        margin-bottom: var(--space-4);
+      }
+
+      .arrowSvg {
+        width: auto;
+        max-width: 200px;
+      }
+    }
+  }
 }
