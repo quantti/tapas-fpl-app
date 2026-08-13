@@ -10,6 +10,14 @@ const packageJson = JSON.parse(readFileSync('./package.json', 'utf-8'));
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), svgr()],
+  server: {
+    proxy: {
+      '/api/fpl': {
+        target: 'https://tapas-and-tackles.live',
+        changeOrigin: true,
+      },
+    },
+  },
   resolve: {
     alias: {
       // Direct folder aliases for clean imports
