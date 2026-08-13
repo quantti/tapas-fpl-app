@@ -63,10 +63,7 @@ export function Dashboard() {
   }, [bootstrap, currentGameweek, fixtures]);
 
   // Next scheduled event regardless of current GW (used for pre-season state)
-  const nextEvent = useMemo(
-    () => bootstrap?.events.find((e) => e.is_next) ?? null,
-    [bootstrap]
-  );
+  const nextEvent = useMemo(() => bootstrap?.events.find((e) => e.is_next) ?? null, [bootstrap]);
 
   // Modal state from URL for shareability
   const selectedManagerId = searchParams.get('manager')

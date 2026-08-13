@@ -161,6 +161,9 @@ export async function setupApiMocking(page: Page) {
     route.fulfill(unavailableResponse)
   );
 
+  // League history (full-season per-manager data — for previous season standings)
+  await page.route('**/api/v1/history/league/*', (route) => route.fulfill(unavailableResponse));
+
   // Mock league recommendations endpoint
   await page.route('**/api/v1/recommendations/league/**', async (route) => {
     await route.fulfill({
