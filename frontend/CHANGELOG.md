@@ -1,3 +1,10 @@
+# [0.40.0](https://github.com/quantti/tapas-fpl-app/compare/v0.39.0...v0.40.0) (2026-08-13)
+
+
+### Features
+
+* add relegated annotation with curved arrow to previous season standings ([d579b46](https://github.com/quantti/tapas-fpl-app/commit/d579b462586df58085f443faaab5d879473cf8fe))
+
 # [0.39.0](https://github.com/quantti/tapas-fpl-app/compare/v0.38.2...v0.39.0) (2026-08-13)
 
 
