@@ -1,3 +1,10 @@
+## [0.40.1](https://github.com/quantti/tapas-fpl-app/compare/v0.40.0...v0.40.1) (2026-08-13)
+
+
+### Bug Fixes
+
+* redesign relegated arrow to match emoji style, fix sizing ([b795081](https://github.com/quantti/tapas-fpl-app/commit/b7950814f0f5397c105744d639085011f1d8ff85))
+
 # [0.40.0](https://github.com/quantti/tapas-fpl-app/compare/v0.39.0...v0.40.0) (2026-08-13)
 
 
