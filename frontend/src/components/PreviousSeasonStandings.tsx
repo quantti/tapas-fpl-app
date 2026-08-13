@@ -33,8 +33,8 @@ export function PreviousSeasonStandings() {
         <thead>
           <tr>
             <th className={styles.colRank}>#</th>
-            <th className={styles.colTeam}>Team</th>
-            <th className={styles.colManager}>Manager</th>
+            <th>Team</th>
+            <th>Manager</th>
             <th className={styles.colPoints}>Points</th>
           </tr>
         </thead>
@@ -48,7 +48,7 @@ export function PreviousSeasonStandings() {
               })}
             >
               <td className={styles.rank}>{index + 1}</td>
-              <td className={styles.team}>{entry.teamName}</td>
+              <td>{entry.teamName}</td>
               <td className={styles.manager}>{entry.managerName}</td>
               <td className={styles.points}>{entry.totalPoints}</td>
             </tr>
