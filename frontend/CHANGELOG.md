@@ -1,3 +1,18 @@
+# [0.39.0](https://github.com/quantti/tapas-fpl-app/compare/v0.38.2...v0.39.0) (2026-08-13)
+
+
+### Bug Fixes
+
+* Biome format in test-fixtures.ts and add league history E2E mock ([dff1679](https://github.com/quantti/tapas-fpl-app/commit/dff16793cf5212a3cf64cb49929b453a46a2abab))
+* correct season IDs, league config, schema and pre-season standings ([a6d984e](https://github.com/quantti/tapas-fpl-app/commit/a6d984eca84c9a94b52ed887e824e01be867ce64))
+* remove non-existent CSS class references in PreviousSeasonStandings ([f24c2a3](https://github.com/quantti/tapas-fpl-app/commit/f24c2a352ad2d33400b1b8e39722429871e8bfad))
+
+
+### Features
+
+* pre-season dashboard with season countdown and final standings ([86bab73](https://github.com/quantti/tapas-fpl-app/commit/86bab7311eff5e49a2e91d185716c09dff9f0a28))
+* transition app to 2026/27 season ([5a4da1f](https://github.com/quantti/tapas-fpl-app/commit/5a4da1ffc8fb7c4921ee9c0b53c253cb13861e10))
+
 ## [0.38.2](https://github.com/quantti/tapas-fpl-app/compare/v0.38.1...v0.38.2) (2026-05-24)
 
 
