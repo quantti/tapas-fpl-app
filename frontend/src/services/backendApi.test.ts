@@ -5,6 +5,7 @@ import {
   validateComparisonResponse,
   validateLeagueChipsResponse,
   validateLeagueDashboardResponse,
+  validateLeagueHistoryResponse,
   validateLeaguePositionsResponse,
   validateLeagueStatsResponse,
   validateTeamsResponse,
@@ -302,6 +303,71 @@ describe('validateLeaguePositionsResponse', () => {
       managers: [],
     };
     expect(validateLeaguePositionsResponse(data)).toBe(false);
+  });
+});
+
+describe('validateLeagueHistoryResponse', () => {
+  const validResponse = {
+    league_id: 123,
+    season_id: 1,
+    current_gameweek: 38,
+    managers: [
+      {
+        manager_id: 1001,
+        name: 'Manager 1',
+        team_name: 'Team 1',
+        history: [
+          {
+            gameweek: 38,
+            gameweek_points: 50,
+            total_points: 2100,
+            overall_rank: 1000,
+            transfers_made: 1,
+            transfers_cost: 0,
+            points_on_bench: 5,
+            bank: 0,
+            team_value: 1000,
+            active_chip: null,
+          },
+        ],
+        chips: [],
+      },
+    ],
+  };
+
+  it('returns true for valid response', () => {
+    expect(validateLeagueHistoryResponse(validResponse)).toBe(true);
+  });
+
+  it('returns true for empty managers array', () => {
+    expect(validateLeagueHistoryResponse({ league_id: 123, managers: [] })).toBe(true);
+  });
+
+  it('returns false for null input', () => {
+    expect(validateLeagueHistoryResponse(null)).toBe(false);
+  });
+
+  it('returns false when league_id is missing', () => {
+    expect(validateLeagueHistoryResponse({ managers: [] })).toBe(false);
+  });
+
+  it('returns false when managers is not an array', () => {
+    expect(validateLeagueHistoryResponse({ league_id: 123, managers: {} })).toBe(false);
+  });
+
+  it('returns false when first manager lacks team_name', () => {
+    const { team_name, ...managerWithoutTeam } = validResponse.managers[0];
+    void team_name;
+    const data = { ...validResponse, managers: [managerWithoutTeam] };
+    expect(validateLeagueHistoryResponse(data)).toBe(false);
+  });
+
+  it('returns false when first manager history is not an array', () => {
+    const data = {
+      ...validResponse,
+      managers: [{ ...validResponse.managers[0], history: 'not an array' }],
+    };
+    expect(validateLeagueHistoryResponse(data)).toBe(false);
   });
 });
 

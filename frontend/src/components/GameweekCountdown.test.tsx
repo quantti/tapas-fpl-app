@@ -67,6 +67,22 @@ describe('GameweekCountdown', () => {
     expect(screen.getByText('Gameweek 25')).toBeInTheDocument();
   });
 
+  it('supports custom title and label (e.g. season countdown)', () => {
+    const futureDate = new Date(Date.now() + 1000 * 60 * 60);
+    render(
+      <GameweekCountdown
+        deadline={futureDate.toISOString()}
+        gameweekId={1}
+        title="Season Starts"
+        label="Gameweek 1"
+      />
+    );
+
+    expect(screen.getByText('Season Starts')).toBeInTheDocument();
+    expect(screen.getByText('Gameweek 1')).toBeInTheDocument();
+    expect(screen.queryByText('Next Deadline')).not.toBeInTheDocument();
+  });
+
   it('updates countdown every second', () => {
     vi.setSystemTime(new Date(TEST_TIME_MIDNIGHT));
     const futureDeadline = new Date('2024-01-01T00:00:05Z').toISOString();

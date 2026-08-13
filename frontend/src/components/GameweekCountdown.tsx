@@ -7,13 +7,17 @@ import * as styles from './GameweekCountdown.module.css';
 interface Props {
   deadline: string;
   gameweekId: number;
+  /** Override header title (default: "Next Deadline") */
+  title?: string;
+  /** Override header label (default: "Gameweek {gameweekId}") */
+  label?: string;
 }
 
 function pad(num: number): string {
   return num.toString().padStart(2, '0');
 }
 
-export function GameweekCountdown({ deadline, gameweekId }: Props) {
+export function GameweekCountdown({ deadline, gameweekId, title, label }: Props) {
   const [timeRemaining, setTimeRemaining] = useState<TimeRemaining | null>(() =>
     calculateTimeRemaining(deadline)
   );
@@ -42,8 +46,8 @@ export function GameweekCountdown({ deadline, gameweekId }: Props) {
   return (
     <div className={styles.GameweekCountdown}>
       <div className={styles.header}>
-        <span className={styles.title}>Next Deadline</span>
-        <span className={styles.gameweek}>Gameweek {gameweekId}</span>
+        <span className={styles.title}>{title ?? 'Next Deadline'}</span>
+        <span className={styles.gameweek}>{label ?? `Gameweek ${gameweekId}`}</span>
       </div>
       <div className={styles.countdown}>
         <div className={styles.unit}>

@@ -4,6 +4,12 @@ export const LEAGUE_ID = 242017;
 // Current FPL season (2026-27 season = ID 2 in our database)
 export const CURRENT_SEASON_ID = 2;
 
+// Season labels for display (database season ID -> label)
+export const SEASON_LABELS: Record<number, string> = {
+  1: '2025/26',
+  2: '2026/27',
+};
+
 // Refresh intervals (in milliseconds)
 export const LIVE_REFRESH_INTERVAL = 60_000; // 1 minute during live games
 export const IDLE_REFRESH_INTERVAL = 300_000; // 5 minutes when no games

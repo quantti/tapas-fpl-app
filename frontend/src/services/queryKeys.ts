@@ -50,6 +50,8 @@ export const queryKeys = {
     ['leagueStats', leagueId, gameweek, seasonId] as const,
   leaguePositions: (leagueId: number, seasonId: number) =>
     ['leaguePositions', leagueId, seasonId] as const,
+  leagueHistory: (leagueId: number, seasonId: number) =>
+    ['leagueHistory', leagueId, seasonId] as const,
 
   // Manager comparison (from backend API)
   managerComparison: (managerA: number, managerB: number, leagueId: number, seasonId: number) =>

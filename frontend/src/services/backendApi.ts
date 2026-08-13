@@ -244,6 +244,35 @@ export interface LeaguePositionsResponse {
   managers: ManagerMetadata[];
 }
 
+// History API types - League History (full-season per-manager history)
+export interface LeagueHistoryGameweek {
+  gameweek: number;
+  gameweek_points: number;
+  total_points: number;
+  overall_rank: number | null;
+  transfers_made: number;
+  transfers_cost: number;
+  points_on_bench: number;
+  bank: number;
+  team_value: number;
+  active_chip: string | null;
+}
+
+export interface LeagueHistoryManager {
+  manager_id: number;
+  name: string;
+  team_name: string;
+  history: LeagueHistoryGameweek[];
+  chips: { chip_type: string; gameweek: number }[];
+}
+
+export interface LeagueHistoryResponse {
+  league_id: number;
+  season_id: number;
+  managers: LeagueHistoryManager[];
+  current_gameweek: number | null;
+}
+
 // Set and Forget API types
 export interface SetAndForgetManager {
   manager_id: number;
@@ -424,6 +453,23 @@ export function validateLeaguePositionsResponse(data: unknown): data is LeaguePo
   return true;
 }
 
+export function validateLeagueHistoryResponse(data: unknown): data is LeagueHistoryResponse {
+  if (!data || typeof data !== 'object') return false;
+  const response = data as Record<string, unknown>;
+  if (typeof response.league_id !== 'number') return false;
+  if (!Array.isArray(response.managers)) return false;
+
+  // Validate first manager has expected fields (if array not empty)
+  if (response.managers.length > 0) {
+    const manager = response.managers[0] as Record<string, unknown>;
+    if (typeof manager.manager_id !== 'number') return false;
+    if (typeof manager.name !== 'string') return false;
+    if (typeof manager.team_name !== 'string') return false;
+    if (!Array.isArray(manager.history)) return false;
+  }
+  return true;
+}
+
 /**
  * Validate ComparisonResponse has expected shape.
  * @internal Exported for testing only
@@ -590,6 +636,21 @@ export const backendApi = {
     );
     if (!validateLeaguePositionsResponse(data)) {
       throw new BackendApiError(200, 'OK', 'Invalid response shape from positions endpoint');
+    }
+    return data;
+  },
+
+  /**
+   * Get full-season history for all managers in a league.
+   * Returns per-gameweek history and chips from stored snapshots.
+   * Works off-season (data comes from our database, not the FPL API).
+   */
+  getLeagueHistory: async (leagueId: number, seasonId = 1): Promise<LeagueHistoryResponse> => {
+    const data = await fetchBackend<LeagueHistoryResponse>(
+      `/api/v1/history/league/${leagueId}?season_id=${seasonId}`
+    );
+    if (!validateLeagueHistoryResponse(data)) {
+      throw new BackendApiError(200, 'OK', 'Invalid response shape from history endpoint');
     }
     return data;
   },
