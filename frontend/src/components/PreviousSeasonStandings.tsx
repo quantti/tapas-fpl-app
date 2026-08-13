@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 
-import { CURRENT_SEASON_ID, LEAGUE_ID, SEASON_LABELS } from 'src/config';
+import { CURRENT_SEASON_ID, LEAGUE_IDS, SEASON_LABELS } from 'src/config';
 
 import { usePreviousSeasonStandings } from 'services/queries/usePreviousSeasonStandings';
 
@@ -15,7 +15,8 @@ import * as styles from './PreviousSeasonStandings.module.css';
  */
 export function PreviousSeasonStandings() {
   const seasonId = CURRENT_SEASON_ID - 1;
-  const { standings, isLoading, error } = usePreviousSeasonStandings(LEAGUE_ID, { seasonId });
+  const leagueId = LEAGUE_IDS[seasonId] ?? 0;
+  const { standings, isLoading, error } = usePreviousSeasonStandings(leagueId, { seasonId });
 
   if (isLoading || error || standings.length === 0) return null;
 

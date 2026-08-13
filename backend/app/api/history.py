@@ -44,7 +44,7 @@ class ManagerHistoryRecord(BaseModel):
     points_on_bench: int
     overall_rank: int | None
     transfers_made: int = Field(ge=0)
-    transfers_cost: int = Field(le=0)  # Always 0 or negative
+    transfers_cost: int = Field(ge=0)  # Cost in points (positive; e.g. 4 or 8 for a hit)
     bank: int = Field(ge=0)
     team_value: int = Field(ge=0)
     active_chip: str | None

@@ -76,7 +76,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configuration (can be overridden via environment variables)
-LEAGUE_ID = int(os.getenv("SCHEDULED_UPDATE_LEAGUE_ID", "242017"))  # Tapas and Tackles
+LEAGUE_ID = int(os.getenv("SCHEDULED_UPDATE_LEAGUE_ID", "101407"))  # Tapas and Tackles (season 2026/27)
 MAX_RUNTIME_SECONDS = int(os.getenv("SCHEDULED_UPDATE_TIMEOUT", "1800"))  # 30 min
 MAX_FAILURE_RATE = 0.1  # 10% - fail if more than this ratio of managers fail to sync
 

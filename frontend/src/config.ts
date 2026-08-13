@@ -1,8 +1,14 @@
 // App configuration
-export const LEAGUE_ID = 242017;
-
+// League IDs per season (database season ID -> FPL classic league ID)
 // Current FPL season (2026-27 season = ID 2 in our database)
 export const CURRENT_SEASON_ID = 2;
+
+// League IDs per season (database season ID -> FPL classic league ID)
+export const LEAGUE_IDS: Record<number, number> = {
+  1: 242017, // 2025/26 Tapas and Tackles
+  2: 101407, // 2026/27 Tapas and Tackles
+};
+export const LEAGUE_ID = LEAGUE_IDS[CURRENT_SEASON_ID] ?? 101407;
 
 // Season labels for display (database season ID -> label)
 export const SEASON_LABELS: Record<number, string> = {
