@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+import { CURRENT_SEASON_ID } from 'src/config';
+
 import { backendApi, BackendApiError } from '../backendApi';
 
 import { useRecommendedPlayers } from './useRecommendedPlayers';
@@ -164,7 +166,7 @@ describe('useRecommendedPlayers', () => {
 
     await waitFor(() => {
       expect(backendApi.getLeagueRecommendations).toHaveBeenCalledWith(12345, {
-        seasonId: 1,
+        seasonId: CURRENT_SEASON_ID,
         limit: 20,
       });
     });

@@ -269,10 +269,10 @@ class ComparisonResponse(BaseModel):
 LeagueIdPath = Annotated[int, Path(ge=1, description="League ID (must be positive)")]
 
 # Common season_id query parameter
-# Valid values: 1 = 2024-25, 2 = 2025-26 (must match VALID_SEASON_IDS in history service)
+# Valid values: 1 = 2025-26, 2 = 2026-27 (must match VALID_SEASON_IDS in history service)
 SeasonIdQuery = Annotated[
     int,
-    Query(ge=1, le=2, description="Season ID: 1 = 2024-25, 2 = 2025-26"),
+    Query(ge=1, le=2, description="Season ID: 1 = 2025-26, 2 = 2026-27"),
 ]
 
 

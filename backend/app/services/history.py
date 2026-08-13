@@ -364,7 +364,7 @@ def clear_cache() -> None:
 # =============================================================================
 
 # Valid season IDs (database uses integers)
-VALID_SEASON_IDS = frozenset({1, 2})  # 1 = 2024-25, 2 = 2025-26
+VALID_SEASON_IDS = frozenset({1, 2})  # 1 = 2025-26, 2 = 2026-27
 
 
 def _validate_season_id(season_id: int) -> None:
@@ -446,7 +446,7 @@ class HistoryService:
 
         Args:
             league_id: FPL league ID
-            season_id: Integer season ID (1 = 2024-25, 2 = 2025-26)
+            season_id: Integer season ID (1 = 2025-26, 2 = 2026-27)
             include_picks: Whether to include full squad picks per gameweek
 
         Returns:
@@ -996,7 +996,7 @@ class HistoryService:
         best_gw = max(history_list, key=lambda x: x["gameweek_points"], default=None)
         worst_gw = min(history_list, key=lambda x: x["gameweek_points"], default=None)
 
-        # 2025/26 rules: ALL 4 chips reset at GW20 (season_half 1 = GW1-19, 2 = GW20-38)
+        # 2025/26+ rules: ALL 4 chips reset at GW20 (season_half 1 = GW1-19, 2 = GW20-38)
         current_half = 1 if current_gameweek <= 19 else 2
         chips_used = [r["chip_type"] for r in chips if r["season_half"] == current_half]
         all_chips = ["wildcard", "bboost", "3xc", "freehit"]

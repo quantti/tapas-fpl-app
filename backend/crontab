@@ -1,8 +1,8 @@
 # Scheduled data updates for Tapas FPL App
 #
-# Run daily at 08:00 UTC (08:00 GMT / 09:00 BST)
-# After most GWs finalize (~22:00 UK time) + buffer for bonus points
-# Changed from 06:00 to 08:00 to ensure FPL has set data_checked flag
+# Run daily at 10:00 UTC (10:00 GMT / 11:00 BST)
+# 2026/27: GW scores finalize at 09:00 UK time the day after the final match
+# ("later lockdown"), so run after that with a buffer in both GMT and BST.
 #
 # Updates:
 # - Points Against: FPL points conceded by each team (~5-10 min incremental)
@@ -11,4 +11,4 @@
 #
 # Idempotent - safe to run multiple times (skips if no new finalized GW)
 
-0 8 * * * python -m scripts.scheduled_update
+0 10 * * * python -m scripts.scheduled_update

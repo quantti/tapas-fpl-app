@@ -92,11 +92,11 @@ class PickWithXg(TypedDict, total=False):
 # =============================================================================
 
 # From 2024/25 season (season_id=1), max free transfers increased from 2 to 5
-MAX_FREE_TRANSFERS_NEW = 5  # Season ID >= 1 (2024-25+)
+MAX_FREE_TRANSFERS_NEW = 5  # Season ID >= 1 (2025-26+)
 MAX_FREE_TRANSFERS_LEGACY = 2  # Hypothetical older seasons
 
 # Season ID when new FT rules started
-NEW_FT_RULES_SEASON_ID = 1  # 2024-25
+NEW_FT_RULES_SEASON_ID = 1  # 2025-26
 
 # Chips with unlimited free transfers (preserves banked FT per 2025/26 rules)
 WILDCARD_CHIPS = frozenset({"wildcard"})
@@ -167,7 +167,7 @@ def calculate_free_transfers(
     Args:
         history: List of manager history rows (must be sorted by gameweek)
         current_gameweek: Current gameweek number
-        season_id: Integer season ID (1 = 2024-25, 2 = 2025-26, etc.)
+        season_id: Integer season ID (1 = 2025-26, 2 = 2026-27, etc.)
 
     Returns:
         Number of free transfers remaining

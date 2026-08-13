@@ -1,8 +1,8 @@
 // App configuration
 export const LEAGUE_ID = 242017;
 
-// Current FPL season (2025-26 season = ID 1 in our database)
-export const CURRENT_SEASON_ID = 1;
+// Current FPL season (2026-27 season = ID 2 in our database)
+export const CURRENT_SEASON_ID = 2;
 
 // Refresh intervals (in milliseconds)
 export const LIVE_REFRESH_INTERVAL = 60_000; // 1 minute during live games

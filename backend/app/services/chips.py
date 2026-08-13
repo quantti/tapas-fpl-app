@@ -1,6 +1,6 @@
 """Chips Remaining service - tracks FPL chip usage per season half.
 
-FPL 2025-26 Rules:
+FPL 2025-26+ Rules (chip system unchanged for 2026-27):
 - All 4 chips reset at GW20 (second half of season)
 - Chips: wildcard, bboost (bench boost), 3xc (triple captain), freehit
 """

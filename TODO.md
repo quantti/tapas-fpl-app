@@ -2,7 +2,12 @@
 
 ## Immediate Tasks
 
-None currently - all immediate tasks completed.
+### Season 2026/27 Launch
+- [ ] Run migration `014_season_2026_27.sql` in Supabase (before frontend deploy of CURRENT_SEASON_ID=2)
+- [ ] Restore Supabase from summer pause + re-set Fly.io secrets (`SUPABASE_URL`, `SUPABASE_KEY`) — backend currently reports `database: not_configured`
+- [ ] Run `python -m scripts.scheduled_update` to sync teams/fixtures/players for season 2
+- [ ] **GW1 verification (21-24 Aug):** FPL now adds projected bonus to live scores after 20 min. Check whether `/event/{gw}/live` `total_points` includes projected bonus — if yes, `frontend/src/utils/liveScoring.ts` provisional bonus would double-count. Also check if fixture `stats` `bonus` identifier is populated live (would auto-skip provisional via `fixtureHasOfficialBonus`)
+  - If FPL feed handles projected bonus natively, consider removing app's own provisional logic or lowering `shouldShowProvisionalBonus` threshold from 60 to 20 min
 
 ---
 

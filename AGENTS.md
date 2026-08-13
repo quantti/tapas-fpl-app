@@ -2,7 +2,7 @@
 
 A Fantasy Premier League companion app for tracking league standings, player stats, and live gameweek data.
 
-**Current Season:** 2025/26 (FPL season ID will be assigned when season starts)
+**Current Season:** 2026/27 (GW1 deadline 21 Aug 2026; season ID 2 in our database, ID 1 = 2025/26)
 
 > **Note**: This file contains high-level architecture. See subdirectory docs for detailed documentation:
 > - `frontend/FRONTEND.md` - React components, hooks, testing, CSS modules

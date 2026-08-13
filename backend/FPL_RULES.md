@@ -1,6 +1,6 @@
-# FPL Rules - Season 2025/26
+# FPL Rules - Season 2026/27
 
-Comprehensive Fantasy Premier League rules reference for the 2025/26 season.
+Comprehensive Fantasy Premier League rules reference for the 2026/27 season.
 
 > **Important:** This document serves as the source of truth for FPL game mechanics in this codebase. All implementations should follow these rules.
 
@@ -12,7 +12,7 @@ Comprehensive Fantasy Premier League rules reference for the 2025/26 season.
 - [Captain Rules](#captain-rules)
 - [Scoring System](#scoring-system)
 - [Gameweek Rules](#gameweek-rules)
-- [2025/26 Season Changes](#202526-season-changes)
+- [2026/27 Season Changes](#202627-season-changes)
 - [API Reference](#api-reference)
 
 ---
@@ -48,21 +48,21 @@ Hit penalty = extra_transfers × (-4)
 
 **Example:** 2 FT available, make 4 transfers → 2 extra × -4 = **-8 points**
 
-### Special: AFCON (Gameweek 16)
+### AFCON Transfers
 
-For 2025/26, free transfers are **topped up to 5** at GW16 to help manage Africa Cup of Nations departures.
+**Not in 2026/27.** In 2025/26, free transfers were topped up to 5 at GW16 for the Africa Cup of Nations. AFCON is played in June/July 2027, so there is no top-up this season.
 
 ---
 
 ## Chips System
 
-### Two-Chip System (NEW for 2025/26)
+### Two-Chip System (since 2025/26, unchanged for 2026/27)
 
-**Major change:** Managers receive TWO sets of chips:
+Managers receive TWO sets of chips:
 
 | Chip Set | Availability | Deadline |
 |----------|--------------|----------|
-| First set | GW1-19 | Must use by GW19 deadline (6:30pm GMT, 30 Dec) |
+| First set | GW1-19 | Must use by GW19 deadline (1:30pm GMT, 2 Jan 2027) |
 | Second set | GW20-38 | Available from GW20 onwards |
 
 **Total: 8 chips per season** (4 chips × 2 sets)
@@ -174,7 +174,7 @@ Starting XI must include:
 ### Assists
 
 - **3 points** per assist
-- Simplified definition for 2025/26 (more objective criteria)
+- Simplified definition (since 2025/26, more objective criteria)
 
 ### Clean Sheets
 
@@ -195,7 +195,7 @@ Starting XI must include:
 | Penalty save | 5 |
 | Every 2 goals conceded | -1 |
 
-### Defensive Contributions (NEW for 2025/26)
+### Defensive Contributions (since 2025/26, unchanged for 2026/27)
 
 | Position | Threshold | Points |
 |----------|-----------|--------|
@@ -228,16 +228,18 @@ Three highest-scoring players per match receive bonus:
 | 2nd | 2 |
 | 3rd | 1 |
 
-**2025/26 BPS Changes:**
+**2026/27 BPS Changes** (reduce overlap with DefCon; help GKs, full-backs and attackers):
 
 | Action | BPS Points | Notes |
 |--------|------------|-------|
-| GK save (inside box) | 3 | New location-based system |
-| GK save (outside box) | 2 | New location-based system |
-| Penalty save | 8 | Reduced from 9 |
-| Goalline clearance | 9 | Increased from 3 |
-| Penalty goal | 12 | Unified (was position-based) |
-| Tackle won | 2 | Simplified formula |
+| GK save (shot inside box) | 3 | Unchanged |
+| Any other GK save | 2 | Replaces "save from outside box" (also 2) |
+| Big chance saved | +1 | New; added on top of the save itself |
+| Penalty save | 8 | Unchanged (7 + 1 for big chance saved) |
+| Clearances/blocks/interceptions | 1 per 3 | Was 1 per 2 in 2025/26 |
+| Being tackled | 0 | Was -1 in 2025/26; no longer punished |
+
+**Live bonus (NEW):** Projected bonus points are added to players' live scores after 20 minutes of each match and update across the rest of the contest. Mini-league standings and overall ranks also update live.
 
 ---
 
@@ -248,6 +250,12 @@ Three highest-scoring players per match receive bonus:
 - **Timing:** 90 minutes before opening match of Gameweek
 - **Typical:** Saturday 11:00am GMT (when most GWs begin)
 - All changes must be confirmed before deadline
+
+### Score Lockdown (CHANGED for 2026/27)
+
+- Gameweek scores become **final at 09:00 UK time the day after the final match** of the Gameweek
+- Previously: one hour after the final whistle of the last match
+- Allows post-match Opta review data to be reflected in BPS and defensive contribution points
 
 ### Auto-Substitution Rules
 
@@ -280,26 +288,26 @@ Auto-subs occur when starting XI players play 0 minutes:
 
 ---
 
-## 2025/26 Season Changes
+## 2026/27 Season Changes
 
 ### Major New Features
 
 | Feature | Description |
 |---------|-------------|
-| **Two-Chip System** | All 4 chips available in each half-season (8 total) |
-| **Chip Reset at GW20** | First set must be used by GW19; new set from GW20 |
-| **Simplified Assists** | More objective definition (41 extra assists vs 2024/25) |
-| **Defensive Contributions** | New 2-point category for defensive actions |
-| **BPS Overhaul** | 4 specific changes (saves, goalline, penalties, tackles) |
-| **AFCON Transfers** | FT topped up to 5 at GW16 |
-| **No Assistant Manager** | Chip removed for 2025/26 |
+| **Live bonus points** | Projected bonus added to live scores after 20 min of each match |
+| **Live ranks** | Mini-league standings and overall rank update in real time |
+| **BPS tweaks** | No -1 for being tackled; CBI 1 per 3 (was 1 per 2); GK save scoring reworked |
+| **Later lockdown** | GW scores final at 09:00 UK the day after the final match |
+| **Rank as percentage** | Season history shows final rank as % of all managers + career average |
+| **Price Change Predictor** | Official tool tracking likely price rises/falls each day at 00:00 UK |
+| **No AFCON transfers** | No FT top-up this season (AFCON is June/July 2027) |
 
-### Elite Global Leagues (NEW)
+### Unchanged from 2025/26
 
-| League | Qualification |
-|--------|---------------|
-| Top 1% League | Top 1% from previous season |
-| Top 10% League | Top 10% from previous season |
+- Two-chip system: 8 chips total, first set expires at GW19 deadline
+- Max 5 banked free transfers
+- Defensive contribution points (thresholds unchanged)
+- Squad rules, budget (£100m), scoring values
 
 ---
 
@@ -357,10 +365,8 @@ Auto-subs occur when starting XI players play 0 minutes:
 ## Sources
 
 - [Official Fantasy Premier League](https://fantasy.premierleague.com/)
-- [Premier League - What's new for 2025/26](https://www.premierleague.com/en/news/4373187)
-- [Premier League - Two sets of chips](https://www.premierleague.com/en/news/4362027)
-- [Premier League - AFCON transfers](https://www.premierleague.com/en/news/4362102)
-- [Premier League - BPS changes](https://www.premierleague.com/en/news/4362127)
+- [Premier League - All you need to know about changes to FPL for 2026/27](https://www.premierleague.com/en/news/4679873/all-you-need-to-know-about-changes-to-fpl-for-202627)
+- [Fantasy Football Scout - FPL 2026/27: 5 rule changes + new features](https://www.fantasyfootballscout.co.uk/2026/07/20/fpl-2026-27-5-rule-changes-new-features-announced)
 - [Premier League - Scoring points](https://www.premierleague.com/en/news/2174909)
 - [Premier League - Managing your team](https://www.premierleague.com/en/news/2174899)
 
@@ -378,4 +384,4 @@ When implementing FPL features in this codebase:
 
 ---
 
-*Last updated: January 2026*
+*Last updated: August 2026*
