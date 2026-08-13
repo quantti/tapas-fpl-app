@@ -10,7 +10,6 @@ import { LeagueStandings } from 'components/LeagueStandings';
 import { LeagueUpdating } from 'components/LeagueUpdating';
 import { LoadingState } from 'components/LoadingState';
 import { ManagerModal } from 'components/ManagerModal';
-import { PreviousSeasonStandings } from 'components/PreviousSeasonStandings';
 import { ReleaseNotification } from 'components/ReleaseNotification';
 
 import { useFplData } from 'services/queries/useFplData';
@@ -62,9 +61,6 @@ export function Dashboard() {
     return events.find((e) => e.is_next) ?? null;
   }, [bootstrap, currentGameweek, fixtures]);
 
-  // Next scheduled event regardless of current GW (used for pre-season state)
-  const nextEvent = useMemo(() => bootstrap?.events.find((e) => e.is_next) ?? null, [bootstrap]);
-
   // Modal state from URL for shareability
   const selectedManagerId = searchParams.get('manager')
     ? Number(searchParams.get('manager'))
@@ -101,22 +97,6 @@ export function Dashboard() {
             <p className={styles.errorHint}>Data will refresh automatically. Please wait.</p>
           </div>
         )}
-      </div>
-    );
-  }
-
-  // Pre-season: no current gameweek yet - show season countdown and
-  // previous season's final standings instead of live standings
-  if (!currentGameweek && nextEvent) {
-    return (
-      <div className={styles.Dashboard}>
-        <ReleaseNotification />
-        <GameweekCountdown
-          deadline={nextEvent.deadline_time}
-          gameweekId={nextEvent.id}
-          title="Season Starts"
-        />
-        <PreviousSeasonStandings />
       </div>
     );
   }
