@@ -1,3 +1,15 @@
+# [0.43.0](https://github.com/quantti/tapas-fpl-app/compare/v0.42.0...v0.43.0) (2026-09-14)
+
+
+### Bug Fixes
+
+* preserve contrast throughout live badge animation ([b4e741e](https://github.com/quantti/tapas-fpl-app/commit/b4e741ebe0868e7074805e66ca614ab58367e73c))
+
+
+### Features
+
+* prepare guarded core sync handover ([ddfe9b4](https://github.com/quantti/tapas-fpl-app/commit/ddfe9b435b4b0fa2770f3db53be7ab49c9d12107))
+
 # [0.42.0](https://github.com/quantti/tapas-fpl-app/compare/v0.41.0...v0.42.0) (2026-08-13)
 
 
