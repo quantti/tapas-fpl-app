@@ -17,6 +17,8 @@ import random
 import asyncpg
 from dotenv import load_dotenv
 
+from app.core_writes import require_disposable_database
+
 # Load local environment
 load_dotenv(".env.local")
 load_dotenv(".env")
@@ -72,15 +74,15 @@ TEAM_DEFENSIVE_FACTOR = {
 
 
 async def get_connection() -> asyncpg.Connection:
-    """Get database connection from environment."""
-    db_url = os.getenv(
-        "DATABASE_URL", "postgresql://tapas:localdev@localhost:5432/tapas_fpl"
-    )
+    """Get a connection only when the target is an explicitly local database."""
+    db_url = os.getenv("DATABASE_URL")
+    require_disposable_database(db_url, "seed_test_data")
     return await asyncpg.connect(db_url)
 
 
 async def get_season_id(conn: asyncpg.Connection) -> int:
     """Get or create season with ID=1 (matches frontend CURRENT_SEASON_ID)."""
+    require_disposable_database(os.getenv("DATABASE_URL"), "seed_test_data")
     row = await conn.fetchrow("SELECT id FROM season WHERE id = 1")
     if row:
         return row["id"]
@@ -96,6 +98,7 @@ async def get_season_id(conn: asyncpg.Connection) -> int:
 
 async def seed_teams(conn: asyncpg.Connection, season_id: int) -> None:
     """Seed team data."""
+    require_disposable_database(os.getenv("DATABASE_URL"), "seed_test_data")
     print("Seeding teams...")
     for team_id, name, short_name in TEAMS:
         await conn.execute("""
@@ -116,6 +119,7 @@ async def seed_points_against(
 
     Returns the number of fixture records created.
     """
+    require_disposable_database(os.getenv("DATABASE_URL"), "seed_test_data")
     print(f"Seeding points against data for {num_gameweeks} gameweeks...")
 
     # Clear existing data for this season
@@ -183,6 +187,7 @@ async def seed_collection_status(
     conn: asyncpg.Connection, season_id: int, latest_gw: int
 ) -> None:
     """Update collection status to indicate seeded data."""
+    require_disposable_database(os.getenv("DATABASE_URL"), "seed_test_data")
     print("Updating collection status...")
     await conn.execute("""
         INSERT INTO points_against_collection_status
@@ -199,6 +204,7 @@ async def seed_collection_status(
 
 async def clear_all(conn: asyncpg.Connection, season_id: int) -> None:
     """Clear all seeded data for this season."""
+    require_disposable_database(os.getenv("DATABASE_URL"), "seed_test_data")
     print("Clearing existing data...")
     # Clear in correct order for FK constraints
     await conn.execute("DELETE FROM manager_pick WHERE snapshot_id IN (SELECT id FROM manager_gw_snapshot WHERE season_id = $1)", season_id)
@@ -257,6 +263,7 @@ SAMPLE_PLAYERS = [
 
 async def seed_gameweeks(conn: asyncpg.Connection, season_id: int, num_gw: int) -> None:
     """Seed gameweek records."""
+    require_disposable_database(os.getenv("DATABASE_URL"), "seed_test_data")
     print(f"Seeding {num_gw} gameweeks...")
     for gw in range(1, num_gw + 1):
         await conn.execute("""
@@ -269,6 +276,7 @@ async def seed_gameweeks(conn: asyncpg.Connection, season_id: int, num_gw: int) 
 
 async def seed_players(conn: asyncpg.Connection, season_id: int) -> None:
     """Seed player data."""
+    require_disposable_database(os.getenv("DATABASE_URL"), "seed_test_data")
     print(f"Seeding {len(SAMPLE_PLAYERS)} players...")
     for player_id, name, team_id, pos in SAMPLE_PLAYERS:
         # now_cost in 0.1m units: 100 = £10.0m
@@ -284,6 +292,7 @@ async def seed_players(conn: asyncpg.Connection, season_id: int) -> None:
 
 async def seed_league(conn: asyncpg.Connection, season_id: int) -> None:
     """Seed league data."""
+    require_disposable_database(os.getenv("DATABASE_URL"), "seed_test_data")
     print(f"Seeding league {TEST_LEAGUE_ID}...")
     await conn.execute("""
         INSERT INTO league (id, season_id, name, league_type, scoring, start_event)
@@ -295,6 +304,7 @@ async def seed_league(conn: asyncpg.Connection, season_id: int) -> None:
 
 async def seed_managers(conn: asyncpg.Connection, season_id: int) -> None:
     """Seed managers and league membership."""
+    require_disposable_database(os.getenv("DATABASE_URL"), "seed_test_data")
     print(f"Seeding {len(TEST_MANAGERS)} managers...")
     for idx, (manager_id, team_name, first, last) in enumerate(TEST_MANAGERS):
         await conn.execute("""
@@ -316,6 +326,7 @@ async def seed_player_gw_stats(
     conn: asyncpg.Connection, season_id: int, num_gw: int
 ) -> None:
     """Seed player gameweek stats (points, minutes) for Set and Forget calculations."""
+    require_disposable_database(os.getenv("DATABASE_URL"), "seed_test_data")
     print(f"Seeding player GW stats for {num_gw} gameweeks...")
 
     total_stats = 0
@@ -348,6 +359,7 @@ async def seed_chip_usage(
     conn: asyncpg.Connection, season_id: int, num_gw: int
 ) -> None:
     """Seed chip usage records for Set and Forget calculations."""
+    require_disposable_database(os.getenv("DATABASE_URL"), "seed_test_data")
     print("Seeding chip usage...")
 
     total_chips = 0
@@ -374,6 +386,7 @@ async def seed_manager_snapshots(
     conn: asyncpg.Connection, season_id: int, num_gw: int
 ) -> None:
     """Seed manager gameweek snapshots and picks."""
+    require_disposable_database(os.getenv("DATABASE_URL"), "seed_test_data")
     print(f"Seeding manager snapshots for {num_gw} gameweeks...")
 
     # Player pool for picks

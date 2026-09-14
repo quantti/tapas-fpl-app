@@ -28,6 +28,7 @@ from dotenv import load_dotenv
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from app.core_writes import require_core_writes
 from app.services.fpl_client import FplApiClient, PlayerHistory
 from app.services.points_against import PointsAgainstService
 
@@ -90,6 +91,7 @@ async def sync_teams(
     conn: asyncpg.Connection, teams: list[dict], season_id: int
 ) -> None:
     """Sync team data from bootstrap to database."""
+    require_core_writes("Points Against team sync")
     for team in teams:
         await conn.execute(
             """
@@ -123,6 +125,7 @@ async def save_player_fixture_stats(
 
     Returns the number of records saved.
     """
+    require_core_writes("Points Against player fixture stats sync")
     if not history:
         return 0
 
@@ -235,6 +238,7 @@ async def collect_points_against(
     fpl_client: FplApiClient,
     season_id: int,
     batch_size: int = 50,
+    publish_derived: bool = True,
 ) -> None:
     """
     Collect points against data by iterating through all players.
@@ -245,13 +249,15 @@ async def collect_points_against(
     3. For each fixture in history, add points to the opponent's total
     4. Save to database in batches
     """
+    require_core_writes("Points Against collection")
     pa_service = PointsAgainstService()
     start_time = time.monotonic()
 
-    # Update status to running
-    await pa_service.update_collection_status(
-        conn, season_id, 0, 0, "running", None, False
-    )
+    # Scheduled ingestion leaves derived status untouched until derivation is ready.
+    if publish_derived:
+        await pa_service.update_collection_status(
+            conn, season_id, 0, 0, "running", None, False
+        )
 
     try:
         # Get bootstrap data
@@ -341,49 +347,52 @@ async def collect_points_against(
                     f"({fetch_failure_rate:.1%})"
                 )
                 logger.error(error_msg)
-                await pa_service.update_collection_status(
-                    conn, season_id, current_gw, total_processed, "failed", error_msg, False
-                )
+                if publish_derived:
+                    await pa_service.update_collection_status(
+                        conn, season_id, current_gw, total_processed, "failed", error_msg, False
+                    )
                 raise RuntimeError(error_msg)
 
         logger.info(f"Collected data for {len(fixture_points)} fixture-team combinations")
 
-        # Save all fixture data in a single transaction for atomicity
-        logger.info("Saving to database...")
         saved = 0
+        if publish_derived:
+            # Direct collector retains its legacy aggregate publication path.
+            logger.info("Saving legacy Points Against aggregation...")
+            async with conn.transaction():
+                for (fixture_id, team_id), data in fixture_points.items():
+                    await pa_service.save_fixture_points(
+                        conn,
+                        fixture_id=fixture_id,
+                        team_id=team_id,
+                        season_id=season_id,
+                        gameweek=data["gameweek"],
+                        home_points=data["home_points"],
+                        away_points=data["away_points"],
+                        is_home=data["is_home"],
+                        opponent_id=data["opponent_id"],
+                    )
+                    saved += 1
 
-        async with conn.transaction():
-            for (fixture_id, team_id), data in fixture_points.items():
-                await pa_service.save_fixture_points(
+            logger.info(f"Saved {saved} fixture records")
+
+            # Update status to idle on success
+            elapsed_total = time.monotonic() - start_time
+            try:
+                await pa_service.update_collection_status(
                     conn,
-                    fixture_id=fixture_id,
-                    team_id=team_id,
-                    season_id=season_id,
-                    gameweek=data["gameweek"],
-                    home_points=data["home_points"],
-                    away_points=data["away_points"],
-                    is_home=data["is_home"],
-                    opponent_id=data["opponent_id"],
+                    season_id,
+                    current_gw,
+                    total_processed,
+                    "idle",
+                    None,
+                    is_full_collection=True,
                 )
-                saved += 1
-
-        logger.info(f"Saved {saved} fixture records")
-
-        # Update status to idle on success
-        elapsed_total = time.monotonic() - start_time
-        try:
-            await pa_service.update_collection_status(
-                conn,
-                season_id,
-                current_gw,
-                total_processed,
-                "idle",
-                None,
-                is_full_collection=True,
-            )
-        except asyncpg.PostgresError as e:
-            logger.error(f"Failed to update collection status to idle: {e}")
-            # Don't raise - collection data was saved successfully
+            except asyncpg.PostgresError as e:
+                logger.error(f"Failed to update collection status to idle: {e}")
+                # Don't raise - collection data was saved successfully
+        else:
+            elapsed_total = time.monotonic() - start_time
 
         logger.info(
             f"Collection complete in {elapsed_total:.1f}s! "
@@ -394,15 +403,16 @@ async def collect_points_against(
     except Exception as e:
         # Update status to failed on error
         logger.error(f"Collection failed: {e}")
-        await pa_service.update_collection_status(
-            conn,
-            season_id,
-            0,
-            0,
-            "failed",
-            str(e)[:500],  # Truncate error message
-            is_full_collection=False,
-        )
+        if publish_derived:
+            await pa_service.update_collection_status(
+                conn,
+                season_id,
+                0,
+                0,
+                "failed",
+                str(e)[:500],  # Truncate error message
+                is_full_collection=False,
+            )
         raise
 
 
@@ -481,6 +491,7 @@ async def reset_data(conn: asyncpg.Connection, season_id: int) -> None:
     Uses direct queries instead of the service's clear_season_data() which would
     try to use the app's connection pool (not initialized in script context).
     """
+    require_core_writes("Points Against reset")
     print("WARNING: This will delete all Points Against data!")
     confirm = input("Type 'yes' to confirm: ")
     if confirm.lower() != "yes":
@@ -521,6 +532,9 @@ async def main() -> None:
     parser.add_argument("--status", action="store_true", help="Show collection status")
     parser.add_argument("--reset", action="store_true", help="Clear and re-collect")
     args = parser.parse_args()
+
+    if not args.status:
+        require_core_writes("Points Against command")
 
     try:
         conn = await get_connection()

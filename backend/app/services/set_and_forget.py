@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import TypedDict, cast
 
 from app.db import get_connection
+from app.services.pfs_read import IncompletePfsData, with_pfs_read
 
 logger = logging.getLogger(__name__)
 
@@ -166,21 +167,59 @@ class SetAndForgetService:
                 # Uses player_fixture_stats (populated by Points Against collection)
                 # instead of player_gw_stats (empty - no sync script)
                 player_ids = [p["player_id"] for p in picks]
-                stats_rows = await conn.fetch(
+                stats_query = await with_pfs_read(
+                    conn,
                     """
-                    SELECT pfs.player_id, pfs.gameweek, pfs.total_points, pfs.minutes
-                    FROM player_fixture_stats pfs
-                    WHERE pfs.player_id = ANY($1)
-                      AND pfs.season_id = $2
-                      AND pfs.gameweek >= $3
-                      AND pfs.gameweek <= $4
-                    ORDER BY pfs.gameweek, pfs.player_id
+                    SELECT p.id AS player_id, gw.gameweek,
+                           COALESCE(pfs.total_points, 0) AS total_points,
+                           COALESCE(pfs.minutes, 0) AS minutes,
+                           CASE WHEN f.fixture_id IS NULL THEN TRUE
+                                ELSE COALESCE(pfs.evidence_available, FALSE)
+                           END AS evidence_available
+                    FROM player p
+                    CROSS JOIN generate_series($3, $4) AS gw(gameweek)
+                    LEFT JOIN LATERAL (
+                        SELECT raw.fixture_id
+                        FROM player_fixture_stats raw
+                        WHERE raw.player_id = p.id AND raw.season_id = p.season_id
+                          AND raw.gameweek = gw.gameweek
+                        UNION
+                        SELECT fx.id
+                        FROM fixture fx
+                        WHERE fx.season_id = p.season_id AND fx.gameweek = gw.gameweek
+                          AND (fx.team_h = p.team_id OR fx.team_a = p.team_id)
+                          AND NOT EXISTS (
+                              SELECT 1 FROM player_fixture_stats raw
+                              WHERE raw.player_id = p.id
+                                AND raw.season_id = p.season_id
+                                AND raw.gameweek = gw.gameweek
+                          )
+                    ) f ON TRUE
+                    LEFT JOIN pfs_read pfs ON pfs.player_id = p.id
+                      AND pfs.fixture_id = f.fixture_id AND pfs.season_id = p.season_id
+                    WHERE p.id = ANY($1) AND p.season_id = $2
+                    ORDER BY gw.gameweek, p.id
                     """,
+                )
+                stats_rows = await conn.fetch(
+                    stats_query,
                     player_ids,
                     season_id,
                     first_gw,
                     current_gameweek,
                 )
+
+                # A stale/pending DGW leg makes the whole answer unavailable. Its
+                # physical zero minutes must never activate an auto-sub or vice-captain.
+                unavailable = [
+                    row for row in stats_rows if row.get("evidence_available", True) is False
+                ]
+                if unavailable:
+                    first = unavailable[0]
+                    raise IncompletePfsData(
+                        f"Player fixture evidence unavailable for player "
+                        f"{first['player_id']} in GW{first['gameweek']}"
+                    )
 
                 # Group stats by gameweek -> player_id, summing for DGW
                 stats_by_gw: dict[int, dict[int, PlayerStats]] = {}
@@ -213,7 +252,9 @@ class SetAndForgetService:
                     first_gw,
                     current_gameweek,
                 )
-                chips_by_gw: dict[int, str] = {row["gameweek"]: row["chip_type"] for row in chip_rows}
+                chips_by_gw: dict[int, str] = {
+                    row["gameweek"]: row["chip_type"] for row in chip_rows
+                }
 
                 # 5. Fetch actual total points for comparison (from first_gw onwards)
                 # Note: The column is named 'points' in manager_gw_snapshot schema

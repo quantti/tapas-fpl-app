@@ -943,14 +943,28 @@ class RecommendationsService:
         result = []
         for p in players:
             minutes = p.get("minutes", 0)
-
-            # Parse decimal strings from FPL API
-            xg = Decimal(p.get("expected_goals", "0") or "0")
-            xa = Decimal(p.get("expected_assists", "0") or "0")
-            xgc = Decimal(p.get("expected_goals_conceded", "0") or "0")
-            cs = p.get("clean_sheets", 0) or 0
+            position = p.get("element_type")
+            required_fields = ["expected_goals", "expected_assists"]
+            if position == POSITION_DEF:
+                required_fields.extend(["expected_goals_conceded", "clean_sheets"])
+            missing = [field for field in required_fields if p.get(field) is None]
 
             player_copy = dict(p)
+            if missing:
+                player_copy["recommendation_exclusion_reason"] = (
+                    "missing required metrics: " + ", ".join(missing)
+                )
+                result.append(player_copy)
+                continue
+
+            # Zero is valid evidence; only explicit null is treated as unknown.
+            xg = Decimal(str(p["expected_goals"]))
+            xa = Decimal(str(p["expected_assists"]))
+            xgc_raw = p.get("expected_goals_conceded")
+            cs_raw = p.get("clean_sheets")
+            xgc = Decimal(str(xgc_raw)) if xgc_raw is not None else Decimal("0")
+            cs = int(cs_raw) if cs_raw is not None else 0
+
             player_copy["xg90"] = calculate_xg90(xg, minutes)
             player_copy["xa90"] = calculate_xa90(xa, minutes)
             player_copy["xgc90"] = calculate_xgc90(xgc, minutes)
@@ -970,22 +984,30 @@ class RecommendationsService:
         Returns:
             Players with percentile rankings added
         """
-        # Collect all values for percentile calculation
-        all_xg90 = [p["xg90"] for p in players]
-        all_xa90 = [p["xa90"] for p in players]
-        all_xgc90 = [p["xgc90"] for p in players]
-        all_cs90 = [p["cs90"] for p in players]
-        all_form = [float(p.get("form", "0") or "0") for p in players]
+        # Unknown required metrics are excluded from every ranking pool rather than
+        # being imputed as zero. The reason remains on the pre-percentile record.
+        prepared = []
+        for player in players:
+            if player.get("form") is None:
+                player = dict(player)
+                player["recommendation_exclusion_reason"] = "missing required metrics: form"
+            prepared.append(player)
+        complete = [p for p in prepared if "recommendation_exclusion_reason" not in p]
+        all_xg90 = [p["xg90"] for p in complete]
+        all_xa90 = [p["xa90"] for p in complete]
+        all_xgc90 = [p["xgc90"] for p in complete]
+        all_cs90 = [p["cs90"] for p in complete]
+        all_form = [float(p["form"]) for p in complete]
 
         result = []
-        for p in players:
+        for p in complete:
             player_copy = dict(p)
             player_copy["percentiles"] = {
                 "xg90": get_percentile(p["xg90"], all_xg90),
                 "xa90": get_percentile(p["xa90"], all_xa90),
                 "xgc90": get_percentile(p["xgc90"], all_xgc90),
                 "cs90": get_percentile(p["cs90"], all_cs90),
-                "form": get_percentile(float(p.get("form", "0") or "0"), all_form),
+                "form": get_percentile(float(p["form"]), all_form),
             }
             result.append(player_copy)
 

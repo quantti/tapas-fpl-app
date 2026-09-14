@@ -78,6 +78,7 @@ class PickWithXg(TypedDict, total=False):
     """
 
     element_type: int  # Position: 1=GK, 2=DEF, 3=MID, 4=FWD
+    evidence_available: bool
     multiplier: int  # 0=bench, 1=playing, 2=captain, 3=TC
     is_captain: bool
     total_points: int  # Actual FPL points (multiplied for captain)
@@ -666,6 +667,20 @@ def _get_actual_points(
     return float(total_points - appearance_bonus)
 
 
+def _has_complete_expected_evidence(pick: PickWithXg) -> bool:
+    """Require every component used by a derived expected-points calculation."""
+    if pick.get("evidence_available", True) is False:
+        return False
+    if pick.get("total_points") is None or pick.get("minutes") is None:
+        return False
+    if pick.get("expected_goals") is None or pick.get("expected_assists") is None:
+        return False
+    return not (
+        pick.get("element_type", FWD) in (GK, DEF)
+        and pick.get("expected_goals_conceded") is None
+    )
+
+
 def calculate_luck_index(picks: list[PickWithXg]) -> float | None:
     """Calculate luck index: sum of (actual - expected) across all picks.
 
@@ -693,20 +708,19 @@ def calculate_luck_index(picks: list[PickWithXg]) -> float | None:
         if pick.get("multiplier", 1) == 0:
             continue
 
-        # Skip players who didn't play (minutes=0)
-        if pick.get("minutes", 90) == 0:
+        if not _has_complete_expected_evidence(pick):
+            return None
+
+        # A covered zero-minute row is a known non-appearance.
+        if pick.get("minutes") == 0:
             continue
 
-        # Skip if xG data is missing (both xG and xA are None)
-        # Note: We include assists-only players as they contribute to luck
-        xg = pick.get("expected_goals")
-        xa = pick.get("expected_assists")
-        if xg is None and xa is None:
-            continue
-
-        # Convert Decimal (from DB) to float for arithmetic
-        xg = 0.0 if xg is None else float(xg)
-        xa = 0.0 if xa is None else float(xa)
+        # Presence was checked above; numeric zero remains valid evidence.
+        xg_raw = pick.get("expected_goals")
+        xa_raw = pick.get("expected_assists")
+        assert xg_raw is not None and xa_raw is not None
+        xg = float(xg_raw)
+        xa = float(xa_raw)
         xga_raw = pick.get("expected_goals_conceded")
         xga = 0.0 if xga_raw is None else float(xga_raw)
 
@@ -755,19 +769,18 @@ def calculate_captain_xp_delta(picks: list[PickWithXg]) -> float | None:
         if multiplier < 2:
             continue
 
-        # Skip captains who didn't play
-        if pick.get("minutes", 90) == 0:
+        if not _has_complete_expected_evidence(pick):
+            return None
+
+        # A covered zero-minute row is a known non-appearance.
+        if pick.get("minutes") == 0:
             continue
 
-        # Skip if xG data is missing (xG is the primary metric for captaincy skill)
-        xg = pick.get("expected_goals")
-        if xg is None:
-            continue
-
-        # Convert Decimal (from DB) to float for arithmetic
-        xg = float(xg)  # Already checked not None above
+        xg_raw = pick.get("expected_goals")
         xa_raw = pick.get("expected_assists")
-        xa = 0.0 if xa_raw is None else float(xa_raw)
+        assert xg_raw is not None and xa_raw is not None
+        xg = float(xg_raw)
+        xa = float(xa_raw)
         xga_raw = pick.get("expected_goals_conceded")
         xga = 0.0 if xga_raw is None else float(xga_raw)
 
@@ -820,15 +833,14 @@ def calculate_squad_xp(picks: list[PickWithXg]) -> float | None:
         if pick.get("multiplier", 1) == 0:
             continue
 
-        # Skip players with no xG data
-        xg = pick.get("expected_goals")
-        xa = pick.get("expected_assists")
-        if xg is None and xa is None:
-            continue
+        if not _has_complete_expected_evidence(pick):
+            return None
 
-        # Convert Decimal (from DB) to float for arithmetic
-        xg = 0.0 if xg is None else float(xg)
-        xa = 0.0 if xa is None else float(xa)
+        xg_raw = pick.get("expected_goals")
+        xa_raw = pick.get("expected_assists")
+        assert xg_raw is not None and xa_raw is not None
+        xg = float(xg_raw)
+        xa = float(xa_raw)
 
         # Base xGI for all positions
         xp = xg + xa

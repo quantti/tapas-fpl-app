@@ -15,10 +15,12 @@ class TestSettings:
         """Settings should have sensible defaults."""
         # Remove LOG_LEVEL to test actual defaults (not env overrides)
         monkeypatch.delenv("LOG_LEVEL", raising=False)
+        monkeypatch.delenv("FPL_CORE_WRITES_ENABLED", raising=False)
         settings = Settings()
 
         assert settings.log_level == "INFO"
         assert "localhost" in settings.cors_origins
+        assert settings.fpl_core_writes_enabled is True
 
     def test_cors_origins_list_single(self):
         """CORS origins should be parsed from comma-separated string."""
@@ -37,6 +39,13 @@ class TestSettings:
         settings = Settings(cors_origins="  http://a.com  ,  http://b.com  ")
 
         assert settings.cors_origins_list == ["http://a.com", "http://b.com"]
+
+    def test_core_writes_flag_can_be_disabled(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("FPL_CORE_WRITES_ENABLED", "false")
+
+        settings = Settings()
+
+        assert settings.fpl_core_writes_enabled is False
 
     @patch.dict(os.environ, {"LOG_LEVEL": "DEBUG"})
     def test_log_level_override(self):

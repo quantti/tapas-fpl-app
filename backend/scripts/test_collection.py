@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from app.core_writes import require_disposable_database
 from app.services.fpl_client import FplApiClient
 
 # Load environment
@@ -38,6 +39,7 @@ async def main() -> None:
     if not db_url:
         logger.error("DATABASE_URL not set! Set it as environment variable.")
         sys.exit(1)
+    require_disposable_database(db_url, "test_collection")
 
     # Mask password in log
     masked_url = db_url.split("@")[1] if "@" in db_url else "***"
