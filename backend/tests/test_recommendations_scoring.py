@@ -1456,6 +1456,37 @@ class TestRecommendationsService:
         assert result[0]["xgc90"] == pytest.approx(0.2, rel=1e-2)  # 2/900*90
         assert result[0]["cs90"] == pytest.approx(0.4, rel=1e-2)  # 4/900*90
 
+    async def test_nullable_bootstrap_metric_is_excluded_without_zero_imputation(self):
+        from app.services.recommendations import RecommendationsService
+
+        service = RecommendationsService(None)  # type: ignore[arg-type]
+        players = [
+            {
+                "id": 1,
+                "element_type": 3,
+                "minutes": 900,
+                "expected_goals": Decimal("0.00"),
+                "expected_assists": Decimal("0.00"),
+                "form": Decimal("0.0"),
+            },
+            {
+                "id": 2,
+                "element_type": 3,
+                "minutes": 900,
+                "expected_goals": None,
+                "expected_assists": Decimal("1.00"),
+                "form": Decimal("5.0"),
+            },
+        ]
+
+        with_stats = service._calculate_per90_stats(players)
+        assert with_stats[0]["xg90"] == 0.0
+        assert "recommendation_exclusion_reason" not in with_stats[0]
+        assert "expected_goals" in with_stats[1]["recommendation_exclusion_reason"]
+
+        ranked = service._calculate_percentiles(with_stats)
+        assert [player["id"] for player in ranked] == [1]
+
     async def test_calculate_percentiles(self):
         """Should calculate percentiles across all players."""
         from app.services.recommendations import RecommendationsService

@@ -308,12 +308,13 @@
   }
 }
 
+/* Pulse the halo, not the text/background contrast. */
 @keyframes pulse {
   0%,
   100% {
-    opacity: 1;
+    box-shadow: 0 0 0 0 transparent;
   }
   50% {
-    opacity: 0.7;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 30%, transparent);
   }
 }

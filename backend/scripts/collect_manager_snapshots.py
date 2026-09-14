@@ -30,6 +30,7 @@ from dotenv import load_dotenv
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from app.core_writes import core_writes_enabled
 from app.services.fpl_client import FplApiClient
 
 # Configuration constants
@@ -159,7 +160,18 @@ async def ensure_manager_exists(
 async def ensure_gameweek_exists(
     conn: asyncpg.Connection, gameweek: int, season_id: int
 ) -> None:
-    """Ensure gameweek record exists in database."""
+    """Require an owned gameweek at cutover; create only while legacy writes are enabled."""
+    if not core_writes_enabled():
+        exists = await conn.fetchval(
+            "SELECT EXISTS (SELECT 1 FROM gameweek WHERE id = $1 AND season_id = $2)",
+            gameweek,
+            season_id,
+        )
+        if not exists:
+            raise RuntimeError(
+                f"Owned gameweek {gameweek} is not published for season {season_id}"
+            )
+        return
     await conn.execute(
         """
         INSERT INTO gameweek (id, season_id, name, deadline_time)
@@ -186,6 +198,15 @@ async def sync_gameweeks_from_bootstrap(
     Returns:
         Number of gameweeks synced
     """
+    if not core_writes_enabled():
+        count = await conn.fetchval(
+            "SELECT COUNT(*) FROM gameweek WHERE season_id = $1", season_id
+        )
+        logger.info(
+            "Tapas gameweek writes disabled; using %d owned gameweeks", count
+        )
+        return count
+
     url = "https://fantasy.premierleague.com/api/bootstrap-static/"
     response = await http_client.get(url)
     response.raise_for_status()

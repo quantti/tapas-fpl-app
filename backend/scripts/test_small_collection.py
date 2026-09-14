@@ -8,6 +8,8 @@ from datetime import datetime
 import asyncpg
 import httpx
 
+from app.core_writes import require_disposable_database
+
 
 def parse_kickoff_time(kickoff_str: str | None) -> datetime | None:
     """Parse kickoff time string to datetime."""
@@ -19,6 +21,7 @@ def parse_kickoff_time(kickoff_str: str | None) -> datetime | None:
 
 async def test_small_sample():
     db_url = os.environ.get("DATABASE_URL")
+    require_disposable_database(db_url, "test_small_collection")
     conn = await asyncpg.connect(db_url)
 
     print("=== Testing small sample collection ===")

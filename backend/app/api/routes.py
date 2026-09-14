@@ -9,11 +9,12 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from pydantic import BaseModel
 
 from app.db import get_connection
-from app.schemas.dashboard import LeagueDashboardResponse
 from app.dependencies import require_db
+from app.schemas.dashboard import LeagueDashboardResponse
 from app.services.chips import ChipsService
 from app.services.dashboard import DashboardService, LeagueNotFoundError
 from app.services.fpl_client import FplApiClient
+from app.services.pfs_read import IncompletePfsData
 from app.services.points_against import PointsAgainstService
 from app.services.recommendations import RecommendationsService
 from app.services.set_and_forget import SetAndForgetService
@@ -754,6 +755,8 @@ async def get_league_set_and_forget(
 
     except HTTPException:
         raise
+    except IncompletePfsData as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:
         logger.exception("Failed to get set and forget data: %s", e)
         raise HTTPException(

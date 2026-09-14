@@ -26,11 +26,11 @@ Next run will attempt to process it again. Manual intervention required if repea
 
 import argparse
 import asyncio
+import json
 import logging
 import os
 import sys
 import time
-import json
 from datetime import UTC, datetime
 
 import asyncpg
@@ -40,10 +40,12 @@ from dotenv import load_dotenv
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from app.core_writes import core_writes_enabled, require_core_writes
 from app.db import close_pool as close_app_pool
 from app.db import init_pool as init_app_pool
 from app.services.chips import ChipsService
 from app.services.fpl_client import FplApiClient
+from app.services.pfs_read import pfs_read_cte
 from scripts.collect_manager_snapshots import (
     ensure_manager_exists,
     fetch_manager_history,
@@ -76,7 +78,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configuration (can be overridden via environment variables)
-LEAGUE_ID = int(os.getenv("SCHEDULED_UPDATE_LEAGUE_ID", "101407"))  # Tapas and Tackles (season 2026/27)
+# Tapas and Tackles (season 2026/27)
+LEAGUE_ID = int(os.getenv("SCHEDULED_UPDATE_LEAGUE_ID", "101407"))
 MAX_RUNTIME_SECONDS = int(os.getenv("SCHEDULED_UPDATE_TIMEOUT", "1800"))  # 30 min
 MAX_FAILURE_RATE = 0.1  # 10% - fail if more than this ratio of managers fail to sync
 
@@ -171,6 +174,7 @@ async def sync_fixtures_from_api(
     Returns:
         Number of fixtures synced
     """
+    require_core_writes("fixture sync")
     if not fixtures:
         logger.warning("No fixtures to sync")
         return 0
@@ -296,6 +300,7 @@ async def sync_teams_from_bootstrap(
     Returns:
         Number of teams synced
     """
+    require_core_writes("team sync")
     if not teams:
         logger.warning("No teams to sync")
         return 0
@@ -352,6 +357,7 @@ async def sync_players_from_bootstrap(
     Returns:
         Number of players synced
     """
+    require_core_writes("player sync")
     if not players:
         logger.warning("No players to sync")
         return 0
@@ -652,18 +658,111 @@ async def run_points_against_update(
     fpl_client: FplApiClient,
     season_id: int,
 ) -> None:
-    """Run Points Against incremental update.
-
-    Uses faster rate limiting than initial bulk collection since we're
-    only fetching players who played in the latest gameweek (~300 vs 785).
-    """
-    logger.info("Starting Points Against update...")
+    """Ingest legacy PFS rows. Derived Points Against publication is separate."""
+    require_core_writes("scheduled Points Against update")
+    logger.info("Starting Points Against PFS ingestion...")
     start = time.monotonic()
 
-    await collect_points_against(conn, fpl_client, season_id)
+    await collect_points_against(
+        conn, fpl_client, season_id, publish_derived=False
+    )
 
     elapsed = time.monotonic() - start
-    logger.info(f"Points Against update complete in {elapsed:.1f}s")
+    logger.info(f"Points Against PFS ingestion complete in {elapsed:.1f}s")
+
+
+async def derive_points_against(
+    conn: asyncpg.Connection, season_id: int, gameweek: int
+) -> bool:
+    """Atomically derive PA from complete evidence-aware PFS without core writes.
+
+    If any finished fixture lacks both complete team aggregates, the previous
+    published totals and status are retained unchanged.
+    """
+    cte = await pfs_read_cte(conn)
+    aggregate = f"""
+        WITH {cte}, derived AS (
+            SELECT pfs.fixture_id,
+                   pfs.opponent_team_id AS team_id,
+                   pfs.season_id,
+                   pfs.gameweek,
+                   COALESCE(SUM(pfs.total_points) FILTER (WHERE pfs.was_home), 0)::int
+                       AS home_points,
+                   COALESCE(SUM(pfs.total_points) FILTER (WHERE NOT pfs.was_home), 0)::int
+                       AS away_points,
+                   NOT pfs.was_home AS is_home,
+                   pfs.player_team_id AS opponent_id
+            FROM pfs_read pfs
+            JOIN fixture f ON f.id = pfs.fixture_id AND f.season_id = pfs.season_id
+            WHERE pfs.season_id = $1 AND pfs.gameweek <= $2 AND f.finished = true
+            GROUP BY pfs.fixture_id, pfs.opponent_team_id, pfs.season_id,
+                     pfs.gameweek, pfs.was_home, pfs.player_team_id
+            HAVING BOOL_AND(pfs.evidence_available)
+        )
+    """
+    # Coverage validation and replacement share one repeatable-read snapshot so
+    # an owner generation change cannot turn a validated result into a partial one.
+    async with conn.transaction(isolation="repeatable_read"):
+        expected_rows = await conn.fetchval(
+            """
+            SELECT COUNT(*) * 2
+            FROM fixture
+            WHERE season_id = $1 AND gameweek <= $2 AND finished = true
+            """,
+            season_id,
+            gameweek,
+        )
+        derived_rows = await conn.fetchval(
+            aggregate + "SELECT COUNT(*) FROM derived", season_id, gameweek
+        )
+        if expected_rows == 0 or derived_rows != expected_rows:
+            logger.error(
+                "Points Against derivation unavailable for GW%d: expected %d "
+                "fixture-team rows, found %d complete rows; retaining previous publication",
+                gameweek,
+                expected_rows,
+                derived_rows,
+            )
+            return False
+
+        await conn.execute(
+            "DELETE FROM points_against_by_fixture WHERE season_id = $1",
+            season_id,
+        )
+        await conn.execute(
+            aggregate
+            + """
+            INSERT INTO points_against_by_fixture
+                (fixture_id, team_id, season_id, gameweek, home_points,
+                 away_points, is_home, opponent_id, updated_at)
+            SELECT fixture_id, team_id, season_id, gameweek, home_points,
+                   away_points, is_home, opponent_id, NOW()
+            FROM derived
+            """,
+            season_id,
+            gameweek,
+        )
+        await conn.execute(
+            """
+            INSERT INTO points_against_collection_status
+                (id, season_id, latest_gameweek, total_players_processed,
+                 last_incremental_update, status, error_message, updated_at)
+            SELECT 'points_against', $1, $2, COUNT(DISTINCT player_id),
+                   NOW(), 'idle', NULL, NOW()
+            FROM player_fixture_stats
+            WHERE season_id = $1 AND gameweek <= $2
+            ON CONFLICT (id) DO UPDATE SET
+                season_id = EXCLUDED.season_id,
+                latest_gameweek = EXCLUDED.latest_gameweek,
+                total_players_processed = EXCLUDED.total_players_processed,
+                last_incremental_update = EXCLUDED.last_incremental_update,
+                status = 'idle', error_message = NULL, updated_at = NOW()
+            """,
+            season_id,
+            gameweek,
+        )
+    logger.info("Derived complete Points Against totals through GW%d", gameweek)
+    return True
 
 
 async def run_chips_update(
@@ -1115,46 +1214,69 @@ async def run_scheduled_update(dry_run: bool = False) -> None:
                 return
 
             try:
-                # 6. Update Points Against (slow operation)
-                await run_points_against_update(conn, fpl_client, season_id)
-
-                # 7. Verify Points Against data
-                if not await verify_points_against_data(conn, season_id, latest_finalized):
-                    raise RuntimeError(
-                        f"Points Against verification failed for GW{latest_finalized}"
+                # 6-7.8 Core writers are skipped independently at cutover; the cron
+                # continues manager/league/chip/derived work against owned core rows.
+                if not core_writes_enabled():
+                    owned_gameweek_ready = await conn.fetchval(
+                        """
+                        SELECT EXISTS (
+                            SELECT 1 FROM gameweek WHERE id = $1 AND season_id = $2
+                        )
+                        """,
+                        latest_finalized,
+                        season_id,
                     )
+                    if not owned_gameweek_ready:
+                        raise RuntimeError(
+                            f"Owned gameweek {latest_finalized} is not published "
+                            f"for season {season_id}"
+                        )
 
-                # 7.5 Sync teams and players (needed for world template calculations)
-                # Teams: sync only if not already present (they don't change mid-season)
-                team_count = await conn.fetchval(
-                    "SELECT COUNT(*) FROM team WHERE season_id = $1", season_id
-                )
-                if team_count == 0:
-                    teams_synced = await sync_teams_from_bootstrap(
-                        conn, bootstrap.teams, season_id
+                if core_writes_enabled():
+                    await run_points_against_update(conn, fpl_client, season_id)
+
+                    team_count = await conn.fetchval(
+                        "SELECT COUNT(*) FROM team WHERE season_id = $1", season_id
                     )
-                    logger.info(f"Team sync complete: {teams_synced} teams")
+                    if team_count == 0:
+                        teams_synced = await sync_teams_from_bootstrap(
+                            conn, bootstrap.teams, season_id
+                        )
+                        logger.info(f"Team sync complete: {teams_synced} teams")
+
+                    players_synced = await sync_players_from_bootstrap(
+                        conn, bootstrap.players, season_id
+                    )
+                    logger.info(f"Player sync complete: {players_synced} players")
+                    if not await verify_player_sync(
+                        conn, season_id, len(bootstrap.players)
+                    ):
+                        raise RuntimeError("Player sync verification failed")
+
+                    fixtures = await fpl_client.get_fixtures()
+                    fixtures_synced = await sync_fixtures_from_api(
+                        conn, fixtures, season_id
+                    )
+                    logger.info(f"Fixture sync complete: {fixtures_synced} fixtures")
+                    if not await verify_fixtures_data(
+                        conn, season_id, len(fixtures)
+                    ):
+                        raise RuntimeError("Fixture sync verification failed")
                 else:
-                    logger.debug(f"Teams already present ({team_count}), skipping sync")
+                    logger.info(
+                        "Tapas core writes disabled; deriving from owned core evidence"
+                    )
 
-                # Players: sync every time as selected_by_percent changes weekly
-                players_synced = await sync_players_from_bootstrap(
-                    conn, bootstrap.players, season_id
+                # Points Against is always derived from the evidence-aware PFS read.
+                # A pending publication withholds overall completion but must not
+                # prevent independent manager/chip/ownership work from running.
+                points_against_ready = await derive_points_against(
+                    conn, season_id, latest_finalized
                 )
-                logger.info(f"Player sync complete: {players_synced} players")
-
-                # 7.6 Verify player sync
-                if not await verify_player_sync(conn, season_id, len(bootstrap.players)):
-                    raise RuntimeError("Player sync verification failed")
-
-                # 7.7 Sync fixtures (updates every GW: scores, stats, rescheduling)
-                fixtures = await fpl_client.get_fixtures()
-                fixtures_synced = await sync_fixtures_from_api(conn, fixtures, season_id)
-                logger.info(f"Fixture sync complete: {fixtures_synced} fixtures")
-
-                # 7.8 Verify fixture sync
-                if not await verify_fixtures_data(conn, season_id, len(fixtures)):
-                    raise RuntimeError("Fixture sync verification failed")
+                if points_against_ready:
+                    points_against_ready = await verify_points_against_data(
+                        conn, season_id, latest_finalized
+                    )
 
                 # 8. Update Chips for tracked league (fast operation)
                 _, failed_count, total_members = await run_chips_update(fpl_client, season_id)
@@ -1209,7 +1331,11 @@ async def run_scheduled_update(dry_run: bool = False) -> None:
                         f"League ownership verification failed for GW{latest_finalized}"
                     )
 
-                # 15. All verified - mark gameweek as processed
+                # 15. Required derivation gates overall collection success.
+                if not points_against_ready:
+                    raise RuntimeError(
+                        f"Points Against derivation unavailable for GW{latest_finalized}"
+                    )
                 await update_collection_status(conn, season_id, latest_finalized)
                 logger.info(f"Scheduled update complete for GW{latest_finalized}")
             finally:
@@ -1279,6 +1405,7 @@ async def sync_bootstrap_only() -> None:
     This is a one-time operation to populate the database with team and player data
     required for world template calculations. Runs independently of scheduled updates.
     """
+    require_core_writes("--sync-bootstrap")
     pool = None
     fpl_client = FplApiClient(requests_per_second=1.0, max_concurrent=5)
 
@@ -1326,6 +1453,7 @@ async def sync_fixtures_only() -> None:
 
     Use this for initial population or to update fixture data outside scheduled runs.
     """
+    require_core_writes("--sync-fixtures")
     pool = None
     fpl_client = FplApiClient(requests_per_second=1.0, max_concurrent=5)
 

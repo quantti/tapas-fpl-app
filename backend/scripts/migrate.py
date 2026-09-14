@@ -16,6 +16,8 @@ from pathlib import Path
 import asyncpg
 from dotenv import load_dotenv
 
+from app.core_writes import require_disposable_database
+
 # Load local environment
 load_dotenv(".env.local")
 load_dotenv(".env")
@@ -106,6 +108,7 @@ async def show_status(conn: asyncpg.Connection) -> None:
 
 async def reset_database(conn: asyncpg.Connection) -> None:
     """Drop all tables and re-run migrations. DANGEROUS!"""
+    require_disposable_database(os.getenv("DATABASE_URL"), "migrate --reset")
     print("WARNING: This will DROP ALL TABLES and re-run migrations!")
     confirm = input("Type 'yes' to confirm: ")
     if confirm.lower() != "yes":

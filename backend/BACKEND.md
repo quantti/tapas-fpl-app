@@ -16,6 +16,13 @@ See [`DB.md` → Data Availability Quick Reference](./DB.md#%EF%B8%8F-data-avail
 
 **Rule of thumb**: If it's not live match data, it's probably in the DB.
 
+## Core-write ownership
+
+The assistant-owned sync handover is opt-in and not activated by deployment. Read
+[OWNED_CORE_CUTOVER.md](OWNED_CORE_CUTOVER.md) for flags, reader compatibility, drain/reconciliation
+and rollback gates. `FPL_CORE_WRITES_ENABLED=false` is an owner-approved operational switch, not
+a development default. The accompanying role SQL is review-only, not an automatic migration.
+
 ## Development
 
 ```bash

@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from app.dependencies import require_db
 from app.services.history import HistoryService
+from app.services.pfs_read import IncompletePfsData
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/history", tags=["history"])
@@ -303,6 +304,8 @@ async def get_league_history(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    except IncompletePfsData as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:
         logger.exception(f"Failed to get league history: {e}")
         raise HTTPException(
@@ -362,6 +365,8 @@ async def get_league_stats(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    except IncompletePfsData as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:
         logger.exception(f"Failed to get league stats: {e}")
         raise HTTPException(
@@ -400,6 +405,8 @@ async def get_manager_comparison(
     except ValueError as e:
         # Service raises ValueError for invalid manager comparison
         raise HTTPException(status_code=400, detail=str(e)) from e
+    except IncompletePfsData as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:
         logger.exception(f"Failed to get manager comparison: {e}")
         raise HTTPException(

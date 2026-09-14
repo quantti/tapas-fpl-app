@@ -267,15 +267,23 @@ class TestLuckIndexEdgeCases:
         result = calculate_luck_index(picks)
         assert result == pytest.approx(2.0, rel=0.01)
 
-    def test_luck_index_handles_null_xg_values(self):
-        """Some fixtures missing xG data should be skipped."""
+    def test_luck_index_returns_unknown_if_any_required_pick_is_incomplete(self):
         picks = [
             make_pick(player_id=1, xg=0.5, total_points=6),
             make_pick(player_id=2, xg=None, xa=None, total_points=4),
         ]
-        # Only first player counted
-        result = calculate_luck_index(picks)
-        assert result == pytest.approx(2.0, rel=0.01)
+
+        assert calculate_luck_index(picks) is None
+
+    def test_luck_index_does_not_treat_absent_component_as_zero(self):
+        """One missing component makes the derived metric unknown, not a partial sum."""
+        picks = [make_pick(xg=0.5, xa=None, total_points=6)]
+
+        assert calculate_luck_index(picks) is None
+        assert calculate_captain_xp_delta(
+            [make_pick(multiplier=2, is_captain=True, xg=0.5, xa=None)]
+        ) is None
+        assert calculate_squad_xp(picks) is None
 
     def test_luck_index_handles_double_gameweek(self):
         """Player has 2 fixtures in same GW should sum both fixture deltas."""
@@ -482,15 +490,13 @@ class TestCaptainDeltaEdgeCases:
         result = calculate_captain_xp_delta(picks)
         assert result is None
 
-    def test_captain_delta_handles_captain_null_xg(self):
-        """Captain's fixture missing xG should skip that GW."""
+    def test_captain_delta_returns_unknown_if_one_captain_is_incomplete(self):
         picks = [
             make_pick(gameweek=1, is_captain=True, multiplier=2, xg=0.5, total_points=10),
             make_pick(gameweek=2, is_captain=True, multiplier=2, xg=None, total_points=8),
         ]
-        # Only GW1 counted: 5 base - 2 appearance = 3, 3 - 2 = 1
-        result = calculate_captain_xp_delta(picks)
-        assert result == pytest.approx(1.0, rel=0.01)
+
+        assert calculate_captain_xp_delta(picks) is None
 
     def test_captain_delta_handles_single_gameweek_data(self):
         """Only 1 GW of data should still return a value."""
@@ -665,15 +671,13 @@ class TestSquadXpEdgeCases:
         result = calculate_squad_xp(picks)
         assert result is None
 
-    def test_squad_xp_handles_partial_xg_data(self):
-        """Some players have xG, others don't - use available data."""
+    def test_squad_xp_returns_unknown_if_one_starter_is_incomplete(self):
         picks = [
             make_pick(player_id=1, xg=0.5, xa=0.2),
             make_pick(player_id=2, xg=None, xa=None),
         ]
-        # Only first player: 0.7
-        result = calculate_squad_xp(picks)
-        assert result == pytest.approx(0.7, rel=0.01)
+
+        assert calculate_squad_xp(picks) is None
 
     def test_squad_xp_handles_player_with_multiple_fixtures(self):
         """DGW: player has 2 fixtures should sum xGI from both."""

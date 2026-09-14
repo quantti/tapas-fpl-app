@@ -137,6 +137,15 @@ python -m pytest               # Run tests
 - Cache aggressively — FPL data doesn't change frequently
 - Mobile-friendly — friends will likely view on phones
 
+### Core-write handover (not activated)
+
+`FPL_CORE_WRITES_ENABLED` defaults to `true`. Its `false` mode blocks every automated, embedded
+and manual core writer while preserving manager/league/chip and derived jobs. Do not change the
+production flag or grants without the reviewed single-writer sequence in
+`backend/OWNED_CORE_CUTOVER.md`. Drain old processes before enabling the assistant writer.
+PFS readers must use `app.services.pfs_read`: pending rows are unavailable evidence, not missing
+appearances; absent optional metrics and incomplete DGWs must never become zeros or partial totals.
+
 ### Multi-Season Architecture
 
 **IMPORTANT:** This app is designed for multi-season support. Every feature must consider season context.

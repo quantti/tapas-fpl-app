@@ -34,6 +34,7 @@ from app.services.calculations import (
     calculate_recovery_rate,
     calculate_squad_xp,
 )
+from app.services.pfs_read import IncompletePfsData, with_pfs_read
 
 logger = logging.getLogger(__name__)
 
@@ -97,10 +98,34 @@ _PLAYER_NAMES_SQL = """
 
 # Get player points per gameweek (for template captain lookup)
 _PLAYER_GW_POINTS_SQL = """
-    SELECT pfs.player_id, pfs.gameweek, pfs.total_points
-    FROM player_fixture_stats pfs
-    WHERE pfs.player_id = ANY($1) AND pfs.season_id = $2
-    ORDER BY pfs.player_id, pfs.gameweek
+    SELECT p.id AS player_id, gw.gameweek,
+           CASE WHEN COUNT(f.fixture_id) = 0 THEN 0
+                WHEN COUNT(f.fixture_id) = COUNT(pfs.fixture_id)
+                     AND BOOL_AND(pfs.evidence_available)
+                THEN SUM(pfs.total_points) END AS total_points
+    FROM player p
+    CROSS JOIN unnest($3::int[]) AS gw(gameweek)
+    LEFT JOIN LATERAL (
+        SELECT raw.fixture_id
+        FROM player_fixture_stats raw
+        WHERE raw.player_id = p.id AND raw.season_id = p.season_id
+          AND raw.gameweek = gw.gameweek
+        UNION
+        SELECT fx.id
+        FROM fixture fx
+        WHERE fx.season_id = p.season_id AND fx.gameweek = gw.gameweek
+          AND (fx.team_h = p.team_id OR fx.team_a = p.team_id)
+          AND NOT EXISTS (
+              SELECT 1 FROM player_fixture_stats raw
+              WHERE raw.player_id = p.id AND raw.season_id = p.season_id
+                AND raw.gameweek = gw.gameweek
+          )
+    ) f ON TRUE
+    LEFT JOIN pfs_read pfs ON pfs.player_id = p.id
+        AND pfs.fixture_id = f.fixture_id AND pfs.season_id = p.season_id
+    WHERE p.id = ANY($1) AND p.season_id = $2
+    GROUP BY p.id, gw.gameweek
+    ORDER BY p.id, gw.gameweek
 """
 
 # Get full history for managers
@@ -167,22 +192,48 @@ _MANAGER_CHIPS_SQL = """
     ORDER BY cu.manager_id, cu.gameweek
 """
 
-# Get captain picks (joins player_fixture_stats for actual points)
-# SUM handles DGWs where a player has multiple fixtures
-_CAPTAIN_PICKS_SQL = """
+# Physical PFS identities retain the player's historical team. The current player
+# team is only a fallback when a fixture has not published any PFS row yet.
+_PICK_FIXTURE_COVERAGE_JOIN = """
+    LEFT JOIN LATERAL (
+        SELECT raw.fixture_id
+        FROM player_fixture_stats raw
+        WHERE raw.player_id = mp.player_id AND raw.season_id = mgs.season_id
+          AND raw.gameweek = mgs.gameweek
+        UNION
+        SELECT fx.id
+        FROM fixture fx
+        WHERE fx.season_id = mgs.season_id AND fx.gameweek = mgs.gameweek
+          AND (fx.team_h = p.team_id OR fx.team_a = p.team_id)
+          AND NOT EXISTS (
+              SELECT 1 FROM player_fixture_stats raw
+              WHERE raw.player_id = mp.player_id AND raw.season_id = mgs.season_id
+                AND raw.gameweek = mgs.gameweek
+          )
+    ) f ON TRUE
+    LEFT JOIN pfs_read pfs
+        ON pfs.player_id = mp.player_id
+        AND pfs.fixture_id = f.fixture_id
+        AND pfs.season_id = mgs.season_id
+"""
+
+# Keep owned picks visible when PFS evidence is pending. Nullable points mean unknown,
+# while an available row whose points are zero remains a known appearance result.
+_CAPTAIN_PICKS_SQL = f"""
     SELECT mgs.manager_id,
            mgs.gameweek,
            mp.player_id,
            mp.position,
            mp.multiplier,
            mp.is_captain,
-           COALESCE(SUM(pfs.total_points), 0) AS points
+           CASE WHEN COUNT(f.fixture_id) = 0 THEN 0
+                WHEN COUNT(f.fixture_id) = COUNT(pfs.fixture_id)
+                     AND BOOL_AND(pfs.evidence_available)
+                THEN SUM(pfs.total_points) END AS points
     FROM manager_pick mp
     JOIN manager_gw_snapshot mgs ON mgs.id = mp.snapshot_id
-    LEFT JOIN player_fixture_stats pfs
-        ON pfs.player_id = mp.player_id
-        AND pfs.gameweek = mgs.gameweek
-        AND pfs.season_id = mgs.season_id
+    JOIN player p ON p.id = mp.player_id AND p.season_id = mgs.season_id
+    {_PICK_FIXTURE_COVERAGE_JOIN}
     WHERE mgs.manager_id = ANY($1)
       AND mgs.season_id = $2
       AND mp.is_captain = true
@@ -190,48 +241,66 @@ _CAPTAIN_PICKS_SQL = """
     ORDER BY mgs.manager_id, mgs.gameweek
 """
 
-# Get full picks (for include_picks option)
-# Joins player_fixture_stats for actual points, SUM handles DGWs
-_FULL_PICKS_SQL = """
+# Get full picks (for include_picks option); never drop a pick because its evidence is pending.
+_FULL_PICKS_SQL = f"""
     SELECT mgs.manager_id,
            mgs.gameweek,
            mp.player_id,
            mp.position,
            mp.multiplier,
            mp.is_captain,
-           COALESCE(SUM(pfs.total_points), 0) AS points
+           CASE WHEN COUNT(f.fixture_id) = 0 THEN 0
+                WHEN COUNT(f.fixture_id) = COUNT(pfs.fixture_id)
+                     AND BOOL_AND(pfs.evidence_available)
+                THEN SUM(pfs.total_points) END AS points
     FROM manager_pick mp
     JOIN manager_gw_snapshot mgs ON mgs.id = mp.snapshot_id
-    LEFT JOIN player_fixture_stats pfs
-        ON pfs.player_id = mp.player_id
-        AND pfs.gameweek = mgs.gameweek
-        AND pfs.season_id = mgs.season_id
+    JOIN player p ON p.id = mp.player_id AND p.season_id = mgs.season_id
+    {_PICK_FIXTURE_COVERAGE_JOIN}
     WHERE mgs.manager_id = ANY($1) AND mgs.season_id = $2
     GROUP BY mgs.manager_id, mgs.gameweek, mp.player_id, mp.position, mp.multiplier, mp.is_captain
     ORDER BY mgs.manager_id, mgs.gameweek, mp.position
 """
 
 # Get picks with xG data for Tier 3 metrics (luck_index, captain_xp_delta, squad_xp)
-# SUM handles DGWs where a player has multiple fixtures in same gameweek
-_XG_PICKS_SQL = """
+_XG_PICKS_SQL = f"""
     SELECT mgs.manager_id,
            mgs.gameweek,
            mp.player_id,
            mp.is_captain,
            mp.multiplier,
            p.element_type,
-           COALESCE(SUM(pfs.total_points), 0) AS total_points,
-           SUM(pfs.expected_goals) AS expected_goals,
-           SUM(pfs.expected_assists) AS expected_assists,
-           SUM(pfs.expected_goals_conceded) AS expected_goals_conceded,
-           COALESCE(SUM(pfs.minutes), 0) AS minutes
+           (COUNT(f.fixture_id) = 0 OR
+                (COUNT(f.fixture_id) = COUNT(pfs.fixture_id)
+                 AND COALESCE(BOOL_AND(pfs.evidence_available), FALSE)))
+                AS evidence_available,
+           CASE WHEN COUNT(f.fixture_id) = 0 THEN 0
+                WHEN COUNT(f.fixture_id) = COUNT(pfs.fixture_id)
+                     AND BOOL_AND(pfs.evidence_available)
+                THEN SUM(pfs.total_points) END AS total_points,
+           CASE WHEN COUNT(f.fixture_id) = 0 THEN 0
+                WHEN COUNT(f.fixture_id) = COUNT(pfs.fixture_id)
+                     AND BOOL_AND(pfs.evidence_available)
+                     AND COUNT(pfs.fixture_id) = COUNT(pfs.expected_goals)
+                THEN SUM(pfs.expected_goals) END AS expected_goals,
+           CASE WHEN COUNT(f.fixture_id) = 0 THEN 0
+                WHEN COUNT(f.fixture_id) = COUNT(pfs.fixture_id)
+                     AND BOOL_AND(pfs.evidence_available)
+                     AND COUNT(pfs.fixture_id) = COUNT(pfs.expected_assists)
+                THEN SUM(pfs.expected_assists) END AS expected_assists,
+           CASE WHEN COUNT(f.fixture_id) = 0 THEN 0
+                WHEN COUNT(f.fixture_id) = COUNT(pfs.fixture_id)
+                     AND BOOL_AND(pfs.evidence_available)
+                     AND COUNT(pfs.fixture_id) = COUNT(pfs.expected_goals_conceded)
+                THEN SUM(pfs.expected_goals_conceded) END AS expected_goals_conceded,
+           CASE WHEN COUNT(f.fixture_id) = 0 THEN 0
+                WHEN COUNT(f.fixture_id) = COUNT(pfs.fixture_id)
+                     AND BOOL_AND(pfs.evidence_available)
+                THEN SUM(pfs.minutes) END AS minutes
     FROM manager_pick mp
     JOIN manager_gw_snapshot mgs ON mgs.id = mp.snapshot_id
-    LEFT JOIN player_fixture_stats pfs
-        ON pfs.player_id = mp.player_id
-        AND pfs.gameweek = mgs.gameweek
-        AND pfs.season_id = mgs.season_id
     JOIN player p ON p.id = mp.player_id AND p.season_id = mgs.season_id
+    {_PICK_FIXTURE_COVERAGE_JOIN}
     WHERE mgs.manager_id = ANY($1) AND mgs.season_id = $2
     GROUP BY mgs.manager_id, mgs.gameweek, mp.player_id,
              mp.is_captain, mp.multiplier, p.element_type
@@ -485,7 +554,14 @@ class HistoryService:
             # 3. Optionally get picks
             pick_rows: list[Any] = []
             if include_picks:
-                pick_rows = await conn.fetch(_FULL_PICKS_SQL, manager_ids, season_id)
+                pick_rows = await conn.fetch(
+                    await with_pfs_read(conn, _FULL_PICKS_SQL), manager_ids, season_id
+                )
+
+        if include_picks and any(row["points"] is None for row in pick_rows):
+            raise IncompletePfsData(
+                "League pick history unavailable because player fixture evidence is incomplete"
+            )
 
         # Build response
         history_by_manager: dict[int, list[dict]] = {m["id"]: [] for m in members}
@@ -709,7 +785,9 @@ class HistoryService:
 
             # Run queries sequentially (asyncpg doesn't support parallel on same connection)
             history_rows = await conn.fetch(_MANAGER_HISTORY_SQL, manager_ids, season_id)
-            pick_rows = await conn.fetch(_CAPTAIN_PICKS_SQL, manager_ids, season_id)
+            pick_rows = await conn.fetch(
+                await with_pfs_read(conn, _CAPTAIN_PICKS_SQL), manager_ids, season_id
+            )
             gameweek_rows = await conn.fetch(_GAMEWEEKS_SQL, season_id)
 
             # Group data by manager (in-memory, fast)
@@ -738,7 +816,22 @@ class HistoryService:
             if all_player_ids:
                 player_ids_list = list(all_player_ids)
                 name_rows = await conn.fetch(_PLAYER_NAMES_SQL, player_ids_list, season_id)
-                points_rows = await conn.fetch(_PLAYER_GW_POINTS_SQL, player_ids_list, season_id)
+                relevant_gameweeks = sorted(
+                    {pick["gameweek"] for picks in picks_by_manager.values() for pick in picks}
+                )
+                points_rows = await conn.fetch(
+                    await with_pfs_read(conn, _PLAYER_GW_POINTS_SQL),
+                    player_ids_list,
+                    season_id,
+                    relevant_gameweeks,
+                )
+
+        if any(row["points"] is None for row in pick_rows) or any(
+            row["total_points"] is None for row in points_rows
+        ):
+            raise IncompletePfsData(
+                "Captain differential unavailable because player fixture evidence is incomplete"
+            )
 
         # Build lookups (outside connection block)
         player_names: dict[int, str] = {}
@@ -853,7 +946,9 @@ class HistoryService:
 
             # Fetch captain picks for both managers (for captain_points calculation)
             manager_ids = [manager_a, manager_b]
-            captain_picks = await conn.fetch(_CAPTAIN_PICKS_SQL, manager_ids, season_id)
+            captain_picks = await conn.fetch(
+                await with_pfs_read(conn, _CAPTAIN_PICKS_SQL), manager_ids, season_id
+            )
 
             # Fetch gameweeks for differential captain calculation
             gameweeks = await conn.fetch(_GAMEWEEKS_SQL, season_id)
@@ -887,7 +982,14 @@ class HistoryService:
             world_template = await conn.fetch(_WORLD_TEMPLATE_SQL, season_id)
 
             # Fetch xG picks for Tier 3 metrics (luck_index, captain_xp_delta, squad_xp)
-            xg_picks_raw = await conn.fetch(_XG_PICKS_SQL, manager_ids, season_id)
+            xg_picks_raw = await conn.fetch(
+                await with_pfs_read(conn, _XG_PICKS_SQL), manager_ids, season_id
+            )
+
+        if any(row["points"] is None for row in captain_picks):
+            raise IncompletePfsData(
+                "Manager comparison unavailable because captain fixture evidence is incomplete"
+            )
 
         # Build lookup for league ranks
         league_rank_lookup = {r["manager_id"]: r["rank"] for r in league_standings}
@@ -1035,6 +1137,7 @@ class HistoryService:
         xg_picks_typed: list[PickWithXg] = [
             PickWithXg(
                 element_type=row["element_type"],
+                evidence_available=row.get("evidence_available", True),
                 multiplier=row["multiplier"],
                 is_captain=row["is_captain"],
                 total_points=row["total_points"],

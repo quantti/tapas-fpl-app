@@ -2249,6 +2249,32 @@ class TestEdgeCases:
         assert result.total_points == 2280
 
 
+class TestEvidenceCoverage:
+    """Pending owned evidence must not be interpreted as a non-appearance."""
+
+    @pytest.mark.asyncio
+    async def test_pending_captain_dgw_leg_makes_whole_answer_unavailable(
+        self, set_and_forget_service: "SetAndForgetService", mock_saf_db: MockDB
+    ):
+        from app.services.pfs_read import IncompletePfsData
+
+        picks = make_standard_squad()
+        stats = [
+            {**make_fixture_stats(i, 1, 5, 90), "evidence_available": True}
+            for i in range(1, 16)
+        ]
+        stats.append(
+            {
+                **make_fixture_stats(1, 1, 0, 0, fixture_id=999),
+                "evidence_available": False,
+            }
+        )
+        mock_saf_db.conn.fetch.side_effect = [picks, stats, []]
+
+        with mock_saf_db, pytest.raises(IncompletePfsData, match="GW1"):
+            await set_and_forget_service.calculate(12345, 1, 1)
+
+
 class TestComparisonOutput:
     """Tests for comparison output (actual vs set-and-forget)."""
 
@@ -2369,7 +2395,7 @@ class TestLateJoiners:
                 )
 
         # Mock: first_gw=2 (late joiner), actual_points=115
-        mock_saf_db.conn.fetchval.side_effect = [2, 115]
+        mock_saf_db.conn.fetchval.side_effect = [2, False, False, 115]
         mock_saf_db.conn.fetch.side_effect = [picks, fixture_stats, []]
 
         with mock_saf_db:
@@ -2402,7 +2428,12 @@ class TestLateJoiners:
                 )
             )
 
-        mock_saf_db.conn.fetchval.side_effect = [2, 50]  # first_gw=2, actual=50
+        mock_saf_db.conn.fetchval.side_effect = [
+            2,
+            False,
+            False,
+            50,
+        ]  # first_gw=2, metadata absent, actual=50
         mock_saf_db.conn.fetch.side_effect = [picks, fixture_stats, []]
 
         with mock_saf_db:

@@ -17,6 +17,17 @@ test.describe('Accessibility', () => {
       await page.goto(path);
       await page.waitForLoadState('networkidle');
 
+      // The LIVE pulse used to fade text below AA at its midpoint. Sample that phase
+      // deterministically rather than letting animation timing decide whether CI passes.
+      await page.getByText('LIVE', { exact: true }).evaluateAll((badges) => {
+        for (const badge of badges) {
+          for (const animation of badge.getAnimations()) {
+            animation.pause();
+            animation.currentTime = 1000;
+          }
+        }
+      });
+
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
         .analyze();

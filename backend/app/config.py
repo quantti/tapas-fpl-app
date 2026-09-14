@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     supabase_key: str = ""
     database_url: str = ""
 
+    # Keep legacy Tapas core writers live until the reviewed ownership cutover.
+    fpl_core_writes_enabled: bool = True
+
     @property
     def db_connection_string(self) -> str:
         """Get database connection string (prefer DATABASE_URL if set)."""
