@@ -1,3 +1,10 @@
+# [0.44.0](https://github.com/quantti/tapas-fpl-app/compare/v0.43.0...v0.44.0) (2026-09-15)
+
+
+### Features
+
+* show live standings gap to leader and tighten mobile spacing ([be641c1](https://github.com/quantti/tapas-fpl-app/commit/be641c174e3336c69826584d83abfe6a37adbc8d))
+
 # [0.43.0](https://github.com/quantti/tapas-fpl-app/compare/v0.42.0...v0.43.0) (2026-09-14)
 
 
