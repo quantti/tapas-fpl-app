@@ -4,7 +4,7 @@
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: var(--space-12);
+  padding: 0;
   min-height: 100vh;
 
   @media (min-width: 640px) {

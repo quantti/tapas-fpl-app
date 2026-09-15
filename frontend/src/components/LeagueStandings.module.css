@@ -42,7 +42,7 @@
       width: 70px;
 
       @media (max-width: 640px) {
-        width: 56px;
+        width: 32px;
       }
     }
 
@@ -54,7 +54,7 @@
       width: 90px;
 
       @media (max-width: 640px) {
-        width: 70px;
+        width: 60px;
       }
 
       @media (max-width: 400px) {
@@ -66,7 +66,7 @@
       width: 60px;
 
       @media (max-width: 640px) {
-        width: 54px;
+        width: 32px;
       }
     }
 
@@ -74,7 +74,7 @@
       width: 55px;
 
       @media (max-width: 640px) {
-        width: 48px;
+        width: 36px;
       }
     }
 
@@ -82,7 +82,17 @@
       width: 70px;
 
       @media (max-width: 640px) {
-        width: 58px;
+        width: 44px;
+      }
+    }
+
+    .colGap {
+      width: 60px;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+
+      @media (max-width: 640px) {
+        width: 44px;
       }
     }
 
@@ -110,7 +120,7 @@
       letter-spacing: 0.05em;
 
       @media (max-width: 640px) {
-        padding: var(--space-8) var(--space-8);
+        padding: var(--space-8) var(--space-4);
       }
 
       &.center {
@@ -140,7 +150,7 @@
       vertical-align: middle;
 
       @media (max-width: 640px) {
-        padding: var(--space-8) var(--space-8);
+        padding: var(--space-8) var(--space-4);
         font-size: var(--font-size-xs);
       }
 
@@ -155,6 +165,12 @@
     align-items: center;
     gap: var(--space-4);
     white-space: nowrap;
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-2);
+    }
 
     .rankNumber {
       font-weight: 600;
@@ -201,6 +217,8 @@
       padding: 0;
       font-size: inherit;
       text-align: left;
+      overflow-wrap: anywhere;
+      min-width: 0;
 
       &:hover {
         color: var(--color-primary);
@@ -231,6 +249,7 @@
     }
 
     .playerName {
+      overflow-wrap: anywhere;
       font-size: var(--font-size-xs);
       color: var(--color-text-muted);
     }
@@ -301,6 +320,14 @@
     border-radius: var(--radius-sm);
     font-size: var(--font-size-xs);
     font-weight: 600;
+  }
+
+  @media (max-width: 640px) {
+    .captain,
+    .chip {
+      padding: var(--space-2) var(--space-4);
+      overflow-wrap: anywhere;
+    }
   }
 
   .muted {

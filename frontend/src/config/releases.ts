@@ -12,6 +12,19 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: 'Next Release',
+    date: '',
+    items: [
+      {
+        title: 'Gap to League Leader',
+        description:
+          'See live points behind the league leader, with tighter mobile spacing for a clearer standings table.',
+        type: 'feature',
+      },
+    ],
+  },
+
+  {
     version: '0.37.0',
     date: 'January 27, 2026',
     items: [
