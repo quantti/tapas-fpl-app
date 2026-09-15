@@ -133,6 +133,44 @@ test.describe('Dashboard - Mobile', () => {
   });
 });
 
+for (const width of [390, 1280]) {
+  test(`manager selection updates signed, colored gaps at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/');
+    await waitForPageReady(page);
+    const table = page.getByTestId('standings-table');
+    const rows = table.locator('tbody tr');
+    const totals = (await rows.locator('td:nth-child(4)').allTextContents()).map(Number);
+
+    for (const selectedIndex of [1, 2]) {
+      await rows.nth(selectedIndex).getByRole('button').click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(page.getByRole('dialog')).not.toBeVisible();
+
+      for (const [index, total] of totals.entries()) {
+        const gap = totals[selectedIndex] - total;
+        const cell = rows.nth(index).locator('td:nth-child(5)');
+        await expect(cell).toHaveText(gap > 0 ? `+${gap}` : String(gap));
+        if (gap !== 0) {
+          const expectedColor = await cell.evaluate(
+            (el, variable) => {
+              const probe = document.createElement('span');
+              probe.style.color = `var(${variable})`;
+              el.append(probe);
+              const color = getComputedStyle(probe).color;
+              probe.remove();
+              return color;
+            },
+            gap < 0 ? '--color-error' : '--color-success'
+          );
+          await expect(cell).toHaveCSS('color', expectedColor);
+        }
+      }
+    }
+  });
+}
+
 test.describe('Dashboard - Tablet', () => {
   test.use({ viewport: VIEWPORTS.TABLET });
 

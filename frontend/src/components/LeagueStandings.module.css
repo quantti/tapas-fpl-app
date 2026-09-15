@@ -138,7 +138,8 @@
         border-bottom: none;
       }
 
-      &:hover {
+      &:hover,
+      &.selected {
         background: var(--color-surface-hover);
       }
     }
@@ -156,6 +157,14 @@
 
       &.center {
         text-align: center;
+      }
+
+      &.ahead {
+        color: var(--color-error);
+      }
+
+      &.behind {
+        color: var(--color-success);
       }
     }
   }

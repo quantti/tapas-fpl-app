@@ -12,6 +12,19 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: 'Next Release',
+    date: '',
+    items: [
+      {
+        title: 'Compare Standings Against a Manager',
+        description:
+          'Click a manager to compare live point gaps: red negative gaps to teams ahead and green positive gaps to teams behind.',
+        type: 'feature',
+      },
+    ],
+  },
+
+  {
     version: '0.44.0',
     date: 'September 15, 2026',
     items: [

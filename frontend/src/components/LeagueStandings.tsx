@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { ChevronRight, CircleChevronUp, CircleChevronDown, ArrowRightLeft } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   calculateLiveManagerPoints,
@@ -48,6 +48,7 @@ export function LeagueStandings({
   onManagerClick,
   playersMap,
 }: Props) {
+  const [selectedManagerId, setSelectedManagerId] = useState<number | null>(null);
   const detailsMap = useMemo(
     () => new Map(managerDetails.map((m) => [m.managerId, m])),
     [managerDetails]
@@ -120,7 +121,11 @@ export function LeagueStandings({
     return results;
   }, [standings.standings.results, detailsMap, isLive, liveData, fixtures, playersMap]);
 
-  const leaderTotal = sortedResults[0]?.liveTotal ?? 0;
+  const selectedEntry = sortedResults.find((entry) => entry.entry === selectedManagerId);
+  const referenceTotal = (selectedEntry ?? sortedResults[0])?.liveTotal ?? 0;
+  const gapLabel = selectedEntry
+    ? `Points relative to ${selectedEntry.entry_name}`
+    : 'Points behind leader';
 
   return (
     <div className={styles.LeagueStandings}>
@@ -138,8 +143,8 @@ export function LeagueStandings({
             <th className={clsx(styles.headerCell, styles.center, styles.colTotal)}>Total</th>
             <th
               className={clsx(styles.headerCell, styles.center, styles.colGap)}
-              aria-label="Points behind leader"
-              title="Points behind leader"
+              aria-label={gapLabel}
+              title={gapLabel}
             >
               Gap
             </th>
@@ -155,10 +160,13 @@ export function LeagueStandings({
             // When not live, use the API rank
             const displayRank = isLive && liveData ? index + 1 : entry.rank;
             const rankChange = getRankChange(displayRank, entry.last_rank);
-            const gap = leaderTotal - entry.liveTotal;
+            const gap = referenceTotal - entry.liveTotal;
 
             return (
-              <tr key={entry.entry} className={styles.row}>
+              <tr
+                key={entry.entry}
+                className={clsx(styles.row, entry === selectedEntry && styles.selected)}
+              >
                 <td className={clsx(styles.cell, styles.colRank)}>
                   <div className={styles.rank}>
                     <span className={styles.rankNumber}>{displayRank}</span>
@@ -180,7 +188,10 @@ export function LeagueStandings({
                       type="button"
                       className={styles.teamName}
                       data-testid="team-name-button"
-                      onClick={() => onManagerClick?.(entry.entry)}
+                      onClick={() => {
+                        setSelectedManagerId(entry.entry);
+                        onManagerClick?.(entry.entry);
+                      }}
                     >
                       {entry.entry_name}
                       <ChevronRight size={14} className={styles.teamNameIcon} />
@@ -208,8 +219,16 @@ export function LeagueStandings({
                 <td className={clsx(styles.cell, styles.center, styles.colTotal)}>
                   <span className={styles.totalPoints}>{entry.liveTotal}</span>
                 </td>
-                <td className={clsx(styles.cell, styles.center, styles.colGap)}>
-                  {gap === 0 ? '0' : `+${gap}`}
+                <td
+                  className={clsx(
+                    styles.cell,
+                    styles.center,
+                    styles.colGap,
+                    selectedEntry && gap < 0 && styles.ahead,
+                    selectedEntry && gap > 0 && styles.behind
+                  )}
+                >
+                  {gap > 0 ? `+${gap}` : gap}
                 </td>
                 <td className={clsx(styles.cell, styles.center, styles.colOverallRank)}>
                   {details?.overallRank ? (
