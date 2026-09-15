@@ -1,6 +1,8 @@
 import { test, expect } from './fixtures/test-fixtures';
 import { waitForPageReady, VIEWPORTS } from './helpers/page-utils';
 
+const GAP_CELL = 'td:nth-child(5)';
+
 // =============================================================================
 // Dashboard Page Tests
 // =============================================================================
@@ -93,6 +95,27 @@ test.describe('Dashboard - Mobile', () => {
     await expect(table).toBeVisible({ timeout: 5000 });
   });
 
+  test('captain names and chip badges stay on one line', async ({ page }) => {
+    await page.setViewportSize({ width: 430, height: 844 });
+    const table = page.getByTestId('standings-table');
+    const captain = table.locator('tbody tr').first().locator('td:nth-child(7) span');
+    await expect(captain).toBeVisible();
+    for (const name of ['Haaland', 'João Pedro', 'Alexander-Arnold']) {
+      await captain.evaluate((el, text) => {
+        el.textContent = text;
+      }, name);
+      await expect(captain).toHaveCSS('white-space', 'nowrap');
+      expect(
+        await captain.evaluate(
+          (el) => el.getBoundingClientRect().width <= el.parentElement!.clientWidth
+        )
+      ).toBe(true);
+    }
+    const chip = table.locator('tbody tr').first().locator('td:nth-child(8) span');
+    await expect(chip).toHaveCSS('white-space', 'nowrap');
+    expect(await chip.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  });
+
   for (const width of [320, 390, 430]) {
     test(`leader gaps fit the table at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 844 });
@@ -100,7 +123,7 @@ test.describe('Dashboard - Mobile', () => {
       await expect(table.getByRole('columnheader', { name: 'Points behind leader' })).toBeVisible();
       const rows = table.locator('tbody tr');
       const totals = await rows.locator('td:nth-child(4)').allTextContents();
-      const gaps = await rows.locator('td:nth-child(5)').allTextContents();
+      const gaps = await rows.locator(GAP_CELL).allTextContents();
       expect(totals.length).toBeGreaterThan(1);
       expect(gaps).toEqual(
         totals.map((total) => {
@@ -142,15 +165,25 @@ for (const width of [390, 1280]) {
     const rows = table.locator('tbody tr');
     const totals = (await rows.locator('td:nth-child(4)').allTextContents()).map(Number);
 
+    await rows.nth(1).click({ position: { x: 8, y: 12 } });
+    await expect(page.getByRole('dialog')).not.toBeVisible();
+    await expect(rows.nth(1).locator(GAP_CELL)).toHaveText('0');
+    const comparisonButton = rows.nth(2).getByRole('button', { name: /Compare points with/ });
+    await comparisonButton.focus();
+    await page.keyboard.press('Enter');
+    await expect(comparisonButton).toHaveAttribute('aria-pressed', 'true');
+    await expect(rows.nth(2).locator(GAP_CELL)).toHaveText('0');
+    await expect(page.getByRole('dialog')).not.toBeVisible();
+
     for (const selectedIndex of [1, 2]) {
-      await rows.nth(selectedIndex).getByRole('button').click();
+      await rows.nth(selectedIndex).getByTestId('team-name-button').click();
       await expect(page.getByRole('dialog')).toBeVisible();
       await page.keyboard.press('Escape');
       await expect(page.getByRole('dialog')).not.toBeVisible();
 
       for (const [index, total] of totals.entries()) {
         const gap = totals[selectedIndex] - total;
-        const cell = rows.nth(index).locator('td:nth-child(5)');
+        const cell = rows.nth(index).locator(GAP_CELL);
         await expect(cell).toHaveText(gap > 0 ? `+${gap}` : String(gap));
         if (gap !== 0) {
           const expectedColor = await cell.evaluate(

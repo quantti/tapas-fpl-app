@@ -228,7 +228,15 @@ export function LeagueStandings({
                     selectedEntry && gap > 0 && styles.behind
                   )}
                 >
-                  {gap > 0 ? `+${gap}` : gap}
+                  <button
+                    type="button"
+                    className={styles.selectRow}
+                    aria-label={`Compare points with ${entry.entry_name}`}
+                    aria-pressed={entry === selectedEntry}
+                    onClick={() => setSelectedManagerId(entry.entry)}
+                  >
+                    {gap > 0 ? `+${gap}` : gap}
+                  </button>
                 </td>
                 <td className={clsx(styles.cell, styles.center, styles.colOverallRank)}>
                   {details?.overallRank ? (
@@ -261,7 +269,9 @@ export function LeagueStandings({
                 </td>
                 <td className={clsx(styles.cell, styles.center, styles.colCaptain)}>
                   {details?.captain ? (
-                    <span className={styles.captain}>{details.captain.web_name}</span>
+                    <span className={styles.captain} title={details.captain.web_name}>
+                      {details.captain.web_name}
+                    </span>
                   ) : (
                     <span className={styles.muted}>—</span>
                   )}

@@ -12,6 +12,19 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    version: 'Next Release',
+    date: '',
+    items: [
+      {
+        title: 'Standings Selection and Mobile Labels',
+        description:
+          'Select a comparison row without opening manager details, and keep mobile captain names and chip badges on one line.',
+        type: 'fix',
+      },
+    ],
+  },
+
+  {
     version: '0.45.0',
     date: 'September 15, 2026',
     items: [
