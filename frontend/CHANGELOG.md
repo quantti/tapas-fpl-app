@@ -1,3 +1,10 @@
+# [0.45.0](https://github.com/quantti/tapas-fpl-app/compare/v0.44.0...v0.45.0) (2026-09-15)
+
+
+### Features
+
+* compare live standings gaps against selected manager ([132eced](https://github.com/quantti/tapas-fpl-app/commit/132eceddb040eecc8db134154ce19c45f453cf38))
+
 # [0.44.0](https://github.com/quantti/tapas-fpl-app/compare/v0.43.0...v0.44.0) (2026-09-15)
 
 
