@@ -46,12 +46,11 @@ test.describe('Dashboard - Mobile', () => {
     expect(bodyWidth).toBeLessThanOrEqual(viewportWidth + 5);
   });
 
-  test('app container has mobile padding', async ({ page }) => {
+  test('app container has no mobile padding', async ({ page }) => {
     const appPadding = await page.locator('div.app').evaluate((el) => {
       return window.getComputedStyle(el).padding;
     });
-    // Should be 12px on mobile (var(--space-12))
-    expect(appPadding).toMatch(/12px/);
+    expect(appPadding).toBe('0px');
   });
 
   test('header displays logo', async ({ page }) => {
@@ -93,6 +92,37 @@ test.describe('Dashboard - Mobile', () => {
     const table = page.locator('table');
     await expect(table).toBeVisible({ timeout: 5000 });
   });
+
+  for (const width of [320, 390, 430]) {
+    test(`leader gaps fit the table at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      const table = page.getByTestId('standings-table');
+      await expect(table.getByRole('columnheader', { name: 'Points behind leader' })).toBeVisible();
+      const rows = table.locator('tbody tr');
+      const totals = await rows.locator('td:nth-child(4)').allTextContents();
+      const gaps = await rows.locator('td:nth-child(5)').allTextContents();
+      expect(totals.length).toBeGreaterThan(1);
+      expect(gaps).toEqual(
+        totals.map((total) => {
+          const gap = Number(totals[0]) - Number(total);
+          return gap === 0 ? '0' : `+${gap}`;
+        })
+      );
+      const fits = await table.evaluate((el) => {
+        const bounds = el.getBoundingClientRect();
+        return [...el.querySelectorAll('th, td')].every((cell) => {
+          const rect = cell.getBoundingClientRect();
+          return (
+            rect.width === 0 ||
+            (rect.left >= bounds.left &&
+              rect.right <= bounds.right + 1 &&
+              cell.scrollWidth <= cell.clientWidth + 1)
+          );
+        });
+      });
+      expect(fits).toBe(true);
+    });
+  }
 
   test('visual snapshot - mobile dashboard', async ({ page }) => {
     await page.waitForTimeout(500);

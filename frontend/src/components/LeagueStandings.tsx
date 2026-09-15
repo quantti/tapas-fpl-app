@@ -120,6 +120,8 @@ export function LeagueStandings({
     return results;
   }, [standings.standings.results, detailsMap, isLive, liveData, fixtures, playersMap]);
 
+  const leaderTotal = sortedResults[0]?.liveTotal ?? 0;
+
   return (
     <div className={styles.LeagueStandings}>
       <div className={styles.header}>
@@ -134,6 +136,13 @@ export function LeagueStandings({
             <th className={clsx(styles.headerCell, styles.colManager)}>Team & Manager</th>
             <th className={clsx(styles.headerCell, styles.center, styles.colGw)}>GW</th>
             <th className={clsx(styles.headerCell, styles.center, styles.colTotal)}>Total</th>
+            <th
+              className={clsx(styles.headerCell, styles.center, styles.colGap)}
+              aria-label="Points behind leader"
+              title="Points behind leader"
+            >
+              Gap
+            </th>
             <th className={clsx(styles.headerCell, styles.center, styles.colOverallRank)}>OR</th>
             <th className={clsx(styles.headerCell, styles.center, styles.colCaptain)}>C</th>
             <th className={clsx(styles.headerCell, styles.center, styles.colChip)}></th>
@@ -146,6 +155,7 @@ export function LeagueStandings({
             // When not live, use the API rank
             const displayRank = isLive && liveData ? index + 1 : entry.rank;
             const rankChange = getRankChange(displayRank, entry.last_rank);
+            const gap = leaderTotal - entry.liveTotal;
 
             return (
               <tr key={entry.entry} className={styles.row}>
@@ -197,6 +207,9 @@ export function LeagueStandings({
                 </td>
                 <td className={clsx(styles.cell, styles.center, styles.colTotal)}>
                   <span className={styles.totalPoints}>{entry.liveTotal}</span>
+                </td>
+                <td className={clsx(styles.cell, styles.center, styles.colGap)}>
+                  {gap === 0 ? '0' : `+${gap}`}
                 </td>
                 <td className={clsx(styles.cell, styles.center, styles.colOverallRank)}>
                   {details?.overallRank ? (
