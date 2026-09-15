@@ -1,3 +1,10 @@
+## [0.45.1](https://github.com/quantti/tapas-fpl-app/compare/v0.45.0...v0.45.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* select standings rows directly and prevent mobile badge wrapping ([d343652](https://github.com/quantti/tapas-fpl-app/commit/d34365201ac70d2c4e947bebe2851842a8da9a3a))
+
 # [0.45.0](https://github.com/quantti/tapas-fpl-app/compare/v0.44.0...v0.45.0) (2026-09-15)
 
 
