@@ -1,3 +1,10 @@
+## [0.45.2](https://github.com/quantti/tapas-fpl-app/compare/v0.45.1...v0.45.2) (2026-09-18)
+
+
+### Bug Fixes
+
+* wait for earlier bench players and handle blank gameweeks in auto-subs ([413a21f](https://github.com/quantti/tapas-fpl-app/commit/413a21f7ecfafa409cc5ca6cbf57a720cd1d064b))
+
 ## [0.45.1](https://github.com/quantti/tapas-fpl-app/compare/v0.45.0...v0.45.1) (2026-09-15)
 
 
