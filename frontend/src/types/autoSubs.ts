@@ -40,6 +40,7 @@ export interface AutoSubResult {
 export interface PlayerEligibility {
   playerId: number;
   elementType: number; // Position type (1=GK, 2=DEF, 3=MID, 4=FWD)
+  hasFixture: boolean; // Team plays this gameweek (false in a blank gameweek)
   fixtureFinished: boolean; // Their fixture is done
   hasContribution: boolean; // Had any scoring events (minutes, cards, etc.)
   webName: string;

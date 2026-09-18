@@ -863,6 +863,111 @@ describe('calculateAutoSubs', () => {
     expect(result.autoSubs).toHaveLength(0); // No sub until fixture finishes
   });
 
+  it('should NOT skip an earlier bench player whose fixture has not finished', () => {
+    const { picks, playersMap } = createStandardSquad();
+    // Bench DEF (13) plays later; bench MID (14) has already played
+    playersMap.set(13, createPlayer(13, 2, 50, 'BenchDEF'));
+    const fixtures = [
+      createFixture(1, 10, 20, true),
+      createFixture(2, 30, 40, true),
+      createFixture(3, 50, 60, false), // Not finished
+    ];
+
+    const liveData: LiveGameweek = {
+      elements: picks.map((p) => {
+        if (p.playerId === 6 || p.playerId === 12 || p.playerId === 13) {
+          return createLivePlayer(p.playerId, { minutes: 0 }, []);
+        }
+        return createLivePlayer(p.playerId, { minutes: 90 }, [
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
+        ]);
+      }),
+    };
+
+    const result = calculateAutoSubs(picks, liveData, fixtures, playersMap);
+
+    expect(result.autoSubs).toHaveLength(0); // Wait for bench DEF (13) before using 14
+  });
+
+  it('should skip an earlier bench player whose team has no fixture', () => {
+    const { picks, playersMap } = createStandardSquad();
+    playersMap.set(13, createPlayer(13, 2, 50, 'BenchDEF')); // Blank gameweek
+    const fixtures = [createFixture(1, 10, 20, true), createFixture(2, 30, 40, true)];
+
+    const liveData: LiveGameweek = {
+      elements: picks.map((p) => {
+        if (p.playerId === 6 || p.playerId === 12 || p.playerId === 13) {
+          return createLivePlayer(p.playerId, { minutes: 0 }, []);
+        }
+        return createLivePlayer(p.playerId, { minutes: 90 }, [
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
+        ]);
+      }),
+    };
+
+    const result = calculateAutoSubs(picks, liveData, fixtures, playersMap);
+
+    expect(result.autoSubs).toHaveLength(1);
+    expect(result.autoSubs[0].playerIn.playerId).toBe(14);
+  });
+
+  it('should sub out a starter whose team has no fixture (blank gameweek)', () => {
+    const { picks, playersMap } = createStandardSquad();
+    playersMap.set(6, createPlayer(6, 3, 50, 'MID1')); // Blank gameweek
+    const fixtures = [createFixture(1, 10, 20, true), createFixture(2, 30, 40, true)];
+
+    const liveData: LiveGameweek = {
+      elements: picks.map((p) => {
+        if (p.playerId === 6 || p.playerId === 12) {
+          return createLivePlayer(p.playerId, { minutes: 0 }, []);
+        }
+        return createLivePlayer(p.playerId, { minutes: 90 }, [
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
+        ]);
+      }),
+    };
+
+    const result = calculateAutoSubs(picks, liveData, fixtures, playersMap);
+
+    expect(result.autoSubs).toHaveLength(1);
+    expect(result.autoSubs[0].playerOut.playerId).toBe(6);
+    expect(result.autoSubs[0].playerIn.playerId).toBe(13);
+  });
+
+  it('should promote vice-captain when captain has no fixture (blank gameweek)', () => {
+    const { picks, playersMap } = createStandardSquad();
+    playersMap.set(10, createPlayer(10, 4, 50, 'FWD1')); // Captain blanks
+    const fixtures = [createFixture(1, 10, 20, true), createFixture(2, 30, 40, true)];
+
+    const liveData: LiveGameweek = {
+      elements: picks.map((p) => {
+        if (p.playerId === 10 || p.playerId === 12) {
+          return createLivePlayer(p.playerId, { minutes: 0 }, []);
+        }
+        return createLivePlayer(p.playerId, { minutes: 90 }, [
+          {
+            fixture: 1,
+            stats: [{ identifier: 'minutes', points: 2, value: 90 }],
+          },
+        ]);
+      }),
+    };
+
+    const result = calculateAutoSubs(picks, liveData, fixtures, playersMap);
+
+    expect(result.captainPromoted).toBe(true);
+    expect(result.adjustedPicks.find((p) => p.playerId === 11)?.multiplier).toBe(2);
+  });
+
   it('should handle multiple subs correctly', () => {
     const { picks, playersMap } = createStandardSquad();
     const fixtures = [createFixture(1, 10, 20, true), createFixture(2, 30, 40, true)];

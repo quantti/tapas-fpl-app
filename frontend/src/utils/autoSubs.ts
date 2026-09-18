@@ -126,6 +126,7 @@ export function getPlayerEligibility(
   return {
     playerId: pick.playerId,
     elementType: player.element_type,
+    hasFixture: (teamFixtureMap.get(player.team)?.length ?? 0) > 0,
     fixtureFinished,
     hasContribution: contributed,
     webName: player.web_name,
@@ -185,26 +186,18 @@ export function canSubstitute(
 }
 
 /**
- * Check if a bench player is eligible to substitute for a starter
+ * Check if a player is confirmed to have not played this gameweek:
+ * no contribution, and no fixture left to play (finished, or blank gameweek).
  */
-function isBenchPlayerEligible(
-  benchEligibility: PlayerEligibility | undefined,
-  starterEligibility: PlayerEligibility,
-  currentFormation: Record<number, number>,
-  usedBenchPlayers: Set<number>
-): boolean {
-  if (!benchEligibility) return false;
-  if (usedBenchPlayers.has(benchEligibility.playerId)) return false;
-  if (!benchEligibility.fixtureFinished || !benchEligibility.hasContribution) return false;
-  return canSubstitute(
-    starterEligibility.elementType,
-    benchEligibility.elementType,
-    currentFormation
-  );
+function didNotPlay(eligibility: PlayerEligibility | undefined): boolean {
+  if (!eligibility || eligibility.hasContribution) return false;
+  return !eligibility.hasFixture || eligibility.fixtureFinished;
 }
 
 /**
- * Find first eligible bench player for a starter needing substitution
+ * Find first eligible bench player for a starter needing substitution.
+ * Returns null if a higher-priority bench player could still come in
+ * (fixture not finished yet) - later bench players must wait for them.
  */
 function findEligibleBenchPlayer(
   bench: ManagerPick[],
@@ -215,15 +208,15 @@ function findEligibleBenchPlayer(
 ): { benchPick: ManagerPick; benchEligibility: PlayerEligibility } | null {
   for (const benchPick of bench) {
     const benchEligibility = eligibilityMap.get(benchPick.playerId);
+    if (!benchEligibility || usedBenchPlayers.has(benchEligibility.playerId)) continue;
     if (
-      isBenchPlayerEligible(
-        benchEligibility,
-        starterEligibility,
-        currentFormation,
-        usedBenchPlayers
-      )
+      !canSubstitute(starterEligibility.elementType, benchEligibility.elementType, currentFormation)
     ) {
-      return { benchPick, benchEligibility: benchEligibility! };
+      continue;
+    }
+    if (benchEligibility.hasFixture && !benchEligibility.fixtureFinished) return null;
+    if (benchEligibility.fixtureFinished && benchEligibility.hasContribution) {
+      return { benchPick, benchEligibility };
     }
   }
   return null;
@@ -248,8 +241,7 @@ function processCaptainPromotion(
   const vcEligibility = eligibilityMap.get(vcPick.playerId);
 
   const shouldPromote =
-    captainEligibility?.fixtureFinished &&
-    !captainEligibility.hasContribution &&
+    didNotPlay(captainEligibility) &&
     vcEligibility?.fixtureFinished &&
     vcEligibility.hasContribution;
 
@@ -324,10 +316,9 @@ export function calculateAutoSubs(
     .filter((p) => p.position > STARTING_XI_MAX_POSITION)
     .sort((a, b) => a.position - b.position);
 
-  const startersNeedingSub = starters.filter((pick) => {
-    const eligibility = eligibilityMap.get(pick.playerId);
-    return eligibility?.fixtureFinished && !eligibility.hasContribution;
-  });
+  const startersNeedingSub = starters.filter((pick) =>
+    didNotPlay(eligibilityMap.get(pick.playerId))
+  );
 
   const autoSubs: AutoSubstitution[] = [];
   const usedBenchPlayers = new Set<number>();
