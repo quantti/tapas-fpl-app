@@ -2395,7 +2395,7 @@ class TestLateJoiners:
                 )
 
         # Mock: first_gw=2 (late joiner), actual_points=115
-        mock_saf_db.conn.fetchval.side_effect = [2, False, False, 115]
+        mock_saf_db.conn.fetchval.side_effect = [2, False, False, False, False, 115]
         mock_saf_db.conn.fetch.side_effect = [picks, fixture_stats, []]
 
         with mock_saf_db:
@@ -2432,8 +2432,10 @@ class TestLateJoiners:
             2,
             False,
             False,
+            False,
+            False,
             50,
-        ]  # first_gw=2, metadata absent, actual=50
+        ]  # first_gw=2, four metadata probes absent, actual=50
         mock_saf_db.conn.fetch.side_effect = [picks, fixture_stats, []]
 
         with mock_saf_db:

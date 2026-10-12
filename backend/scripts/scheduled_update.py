@@ -703,6 +703,44 @@ async def derive_points_against(
     # Coverage validation and replacement share one repeatable-read snapshot so
     # an owner generation change cannot turn a validated result into a partial one.
     async with conn.transaction(isolation="repeatable_read"):
+        if await conn.fetchval("SELECT to_regclass('fpl_player_fixture_current') IS NOT NULL"):
+            if not await conn.fetchval("SELECT to_regclass('fpl_gameweek_stat_sync') IS NOT NULL"):
+                logger.error("Incremental Points Against lacks the gameweek population certificate")
+                return False
+            unfinished_population = await conn.fetchval(
+                """
+                SELECT EXISTS (
+                    SELECT 1 FROM fixture f
+                    JOIN season s ON s.id=f.season_id
+                    WHERE f.season_id=$1 AND f.gameweek <= $2 AND f.finished = true
+                      AND EXISTS (
+                          SELECT 1 FROM fpl_player_fixture_current c
+                          WHERE c.season_id=f.season_id AND c.fixture_id=f.id
+                      )
+                      AND NOT EXISTS (
+                          SELECT 1 FROM fpl_gameweek_stat_sync g
+                          WHERE g.season_id=f.season_id AND g.season_code=s.code
+                            AND g.gameweek=f.gameweek AND g.state='FINALIZED'
+                            AND g.source_signature=g.finalized_source_signature
+                            AND g.finalized_population_fingerprint IS NOT NULL
+                            AND g.finalized_row_revision_fingerprint IS NOT NULL
+                            AND g.finalized_mandatory_manifest_complete IS TRUE
+                            AND g.current_invalidation_revision =
+                                g.final_attempt_invalidation_revision
+                            AND g.current_invalidation_revision=g.finalized_invalidation_revision
+                      )
+                )
+                """,
+                season_id,
+                gameweek,
+            )
+            if unfinished_population:
+                logger.warning(
+                    "Incremental Points Against lacks finalized source population through GW%d; "
+                    "retaining previous publication",
+                    gameweek,
+                )
+                return False
         expected_rows = await conn.fetchval(
             """
             SELECT COUNT(*) * 2

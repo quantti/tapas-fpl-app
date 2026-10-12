@@ -8,7 +8,7 @@ from app.services.pfs_read import pfs_read_cte
 
 async def test_metadata_absent_keeps_legacy_rows():
     conn = AsyncMock()
-    conn.fetchval.side_effect = [False, False]
+    conn.fetchval.side_effect = [False, False, False, False]
 
     sql = await pfs_read_cte(conn)
 
@@ -19,7 +19,7 @@ async def test_metadata_absent_keeps_legacy_rows():
 
 async def test_owner_projection_is_season_qualified_and_current_generation_only():
     conn = AsyncMock()
-    conn.fetchval.side_effect = [True, True]
+    conn.fetchval.side_effect = [True, True, True, True]
 
     sql = await pfs_read_cte(conn)
 
@@ -36,7 +36,7 @@ async def test_owner_projection_is_season_qualified_and_current_generation_only(
 
 async def test_staging_discovery_is_legacy_not_owned():
     conn = AsyncMock()
-    conn.fetchval.side_effect = [True, True]
+    conn.fetchval.side_effect = [True, True, True, True]
 
     sql = await pfs_read_cte(conn)
 
@@ -46,7 +46,7 @@ async def test_staging_discovery_is_legacy_not_owned():
 
 async def test_component_presence_masks_absent_but_preserves_known_zero():
     conn = AsyncMock()
-    conn.fetchval.side_effect = [True, True]
+    conn.fetchval.side_effect = [True, True, True, True]
 
     sql = await pfs_read_cte(conn)
 
@@ -55,6 +55,23 @@ async def test_component_presence_masks_absent_but_preserves_known_zero():
     assert "THEN p.expected_goals END AS expected_goals" in sql
     assert "COALESCE(p.expected_goals" not in sql
     assert "(e.component_presence & 8) <> 0" in sql
+
+
+async def test_incremental_rows_require_pointer_page_and_physical_proof():
+    conn = AsyncMock()
+    conn.fetchval.side_effect = [True, True, True, True]
+
+    sql = await pfs_read_cte(conn)
+
+    assert "fpl_player_fixture_current c" in sql
+    assert "ie.generation = c.evidence_generation" in sql
+    assert "page_receipt.latest_generation >= c.source_run_generation" in sql
+    assert "c.physical_fingerprint = encode(sha256(" in sql
+    assert "c.row_state = 'VALID'" in sql
+    assert "NOT EXISTS (SELECT 1 FROM fpl_player_fixture_current" in sql
+    assert "NOT EXISTS (SELECT 1 FROM fpl_sync_receipt" in sql
+    assert "(ie.component_presence & 1) <> 0" in sql
+    assert "THEN p.expected_goals END AS expected_goals" in sql
 
 
 def test_history_picks_preserve_pending_rows_and_distinguish_zero_from_unknown():

@@ -18,17 +18,32 @@ ownership and other derived work. Manager jobs require the owner-published gamew
 2. Validate the assistant's staged source captures and rehearse publication in disposable Postgres.
    Do not require production publication before draining Tapas: that would overlap writers.
    A staging/discovery row alone is not ownership.
-3. Rehearse the readiness gate: each required finished fixture must have `state='VERIFIED'`, a
-   non-null `current_verified_generation`, and matching season-qualified player evidence rows.
-   Repeat this gate in production only after the switch; until then, retain safe refusals.
+3. For the legacy writer, rehearse the readiness gate: each required finished fixture must have
+   `state='VERIFIED'`, a non-null `current_verified_generation`, and matching season-qualified
+   player evidence. For the incremental importer, prove each provisional row with its season-qualified
+   current pointer, immutable generation, page interval/receipt and physical fingerprint. A
+   fixture-scoped population receipt fences unproved legacy fallback; a later player-page receipt
+   alone must not hide an unrelated earlier legacy or VERIFIED fixture. Missing optional components
+   remain NULL even if the physical column holds a retained value or zero.
+   Repeat the relevant gate only after switching; until then, retain safe refusals.
 4. Record baseline identities/counts and sampled values for all five core tables for reconciliation.
 5. Verify optional-component masks distinguish present zero from absent data. Do not approve a
    partial `SUM` as a complete metric.
 6. Review active manual sessions and acquire/check the scheduled-update advisory lock. Let any
    running Tapas core collection finish or terminate safely; do not switch during incremental PFS
    upserts or reset activity.
-7. Review and separately approve `OWNED_CORE_DB_ROLES_REVIEW.sql`. Do not execute it from this
-   repository or as part of application deployment.
+7. Review and separately approve `OWNED_CORE_DB_ROLES_REVIEW.sql`. Grant narrowly scoped SELECT
+   on `fpl_player_fixture_current`, `fpl_sync_receipt` and `fpl_gameweek_stat_sync` **before**
+   deploying the new Tapas reader; absent privileges must not be mistaken for legacy data. Do not
+   execute the template from this repository or as part of application deployment.
+
+Incremental Points Against cannot publish from two physically present fixture sides alone: a
+missing positive-appearance player would be silently omitted. It waits for the owned checked-GW
+`FINALIZED` population certificate with matching signature/invalidation revision; even then each
+PFS row must pass the read projection and both fixture sides must exist. The assistant invalidates
+that certificate in the same transaction as a changed compatibility source snapshot or changed PFS
+row. That single-writer invariant is a cutover gate, not something Tapas may assume while another
+writer remains active. No owner certificate means previous derived totals/status remain untouched.
 
 ## Switch
 
@@ -38,8 +53,9 @@ ownership and other derived work. Manager jobs require the owner-published gamew
 3. Set `FPL_CORE_WRITES_ENABLED=false` in every Tapas execution environment through a separately
    reviewed configuration change. Drain all processes started with the old value; changing a
    secret does not change an already-running process. Record process IDs, locks and final writes.
-4. Verify no old core writer remains, then apply reviewed, distinct-role permissions. Only now
-   may the owner set the assistant's explicit playing season, cutover confirmation and ACTIVE mode.
+4. Verify no old core writer remains, then apply reviewed, distinct-role permissions. For the
+   incremental importer, follow the assistant's operator-fenced OFF-epoch handoff before deploying
+   ACTIVE with the importer enabled; setting ACTIVE alone does not create a safe transfer.
 5. Reconcile the current season and apply the production readiness gate above. Missing evidence
    must continue to produce unavailable metrics/refusals, not a forced successful comparison.
 6. Restore the combined cron with core writes disabled. Confirm manager, chip, league and derived
