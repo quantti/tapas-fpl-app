@@ -213,15 +213,12 @@ def _incremental_projection(legacy: str, verified: str) -> str:
         AND {page} AND c.physical_fingerprint = {physical})"""
     fixture_marker = """NOT EXISTS (SELECT 1 FROM fpl_player_fixture_current own_fixture
         WHERE own_fixture.season_id = p.season_id AND own_fixture.fixture_id = p.fixture_id)"""
-    page_marker = """NOT EXISTS (SELECT 1 FROM fpl_sync_receipt own_page
-        WHERE own_page.season = s.code
-          AND own_page.publication_key = 'incremental-page:player:' || p.player_id
-          AND own_page.latest_generation IS NOT NULL
-          AND own_page.source_read_started_at IS NOT NULL
-          AND own_page.source_read_finished_at >= own_page.source_read_started_at)"""
+    population_marker = """NOT EXISTS (SELECT 1 FROM fpl_sync_receipt own_population
+        WHERE own_population.season = s.code
+          AND own_population.publication_key = 'incremental-population:fixture:' || p.fixture_id)"""
     old_proof = (
-        f"(c.fixture_id IS NULL AND {fixture_marker} AND {page_marker} "
-        f"AND (({legacy}) OR {verified}))"
+        f"(c.fixture_id IS NULL AND {fixture_marker} "
+        f"AND ({verified} OR (({legacy}) AND {population_marker})))"
     )
 
     def available(bit: int) -> str:

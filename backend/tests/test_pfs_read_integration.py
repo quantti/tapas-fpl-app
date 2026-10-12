@@ -151,6 +151,23 @@ async def test_genuine_legacy_and_verified_rows_keep_season_isolation(conn):
     assert verified["expected_goals"] == 0
     assert verified["expected_assists"] is None
 
+    # A later page for the same player must not erase an earlier VERIFIED fixture.
+    await conn.execute("""INSERT INTO fpl_sync_receipt VALUES
+        ('2026-27','incremental-page:player:12',91,
+         '2026-10-17 13:30+00','2026-10-17 13:31+00')""")
+    assert (await projection(conn, 1, 9))["evidence_available"] is True
+    await conn.execute("""INSERT INTO player_fixture_stats
+        (season_id,fixture_id,player_id,gameweek,player_team_id,opponent_team_id,
+         was_home,minutes,total_points,value)
+        VALUES (1,8,12,4,2,3,true,90,2,75)""")
+    assert (await projection(conn, 1, 8))["evidence_available"] is True
+    # A fixture-scoped population receipt marks this fixture as importer-owned,
+    # even before it has a current pointer for this player.
+    await conn.execute("""INSERT INTO fpl_sync_receipt VALUES
+        ('2026-27','incremental-population:fixture:8',92,
+         '2026-10-17 13:30+00','2026-10-17 13:31+00')""")
+    assert (await projection(conn, 1, 8))["evidence_available"] is False
+
     await conn.execute("""INSERT INTO fpl_player_fixture_current
         (season_id,season_code,fixture_id,player_id,row_state)
         VALUES (1,'2026-27',9,13,'WITHDRAWN')""")

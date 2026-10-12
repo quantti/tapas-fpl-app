@@ -21,8 +21,10 @@ ownership and other derived work. Manager jobs require the owner-published gamew
 3. For the legacy writer, rehearse the readiness gate: each required finished fixture must have
    `state='VERIFIED'`, a non-null `current_verified_generation`, and matching season-qualified
    player evidence. For the incremental importer, prove each provisional row with its season-qualified
-   current pointer, immutable generation, page interval/receipt and physical fingerprint. Missing
-   optional components remain NULL even if the physical column holds a retained value or zero.
+   current pointer, immutable generation, page interval/receipt and physical fingerprint. A
+   fixture-scoped population receipt fences unproved legacy fallback; a later player-page receipt
+   alone must not hide an unrelated earlier legacy or VERIFIED fixture. Missing optional components
+   remain NULL even if the physical column holds a retained value or zero.
    Repeat the relevant gate only after switching; until then, retain safe refusals.
 4. Record baseline identities/counts and sampled values for all five core tables for reconciliation.
 5. Verify optional-component masks distinguish present zero from absent data. Do not approve a
