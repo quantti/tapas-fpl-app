@@ -12,7 +12,8 @@ FROM <tapas_runtime_role>;
 
 GRANT SELECT ON TABLE
     season, team, player, gameweek, fixture, player_fixture_stats,
-    fpl_fixture_sync, fpl_player_fixture_evidence
+    fpl_fixture_sync, fpl_player_fixture_evidence,
+    fpl_player_fixture_current, fpl_sync_receipt, fpl_gameweek_stat_sync
 TO <tapas_runtime_role>;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
