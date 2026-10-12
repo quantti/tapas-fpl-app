@@ -26,9 +26,10 @@ async def conn():
             "(LIKE public.player_fixture_stats INCLUDING DEFAULTS)"
         )
         await connection.execute(
-            "ALTER TABLE player_fixture_stats ADD COLUMN defensive_contribution integer, "
-            "ADD COLUMN clearances_blocks_interceptions integer, ADD COLUMN recoveries integer, "
-            "ADD COLUMN tackles integer"
+            "ALTER TABLE player_fixture_stats "
+            "ADD COLUMN IF NOT EXISTS defensive_contribution integer, "
+            "ADD COLUMN IF NOT EXISTS clearances_blocks_interceptions integer, "
+            "ADD COLUMN IF NOT EXISTS recoveries integer, ADD COLUMN IF NOT EXISTS tackles integer"
         )
         await connection.execute("""CREATE TEMP TABLE fpl_fixture_sync (
             season_id integer, fixture_id integer, state text,
