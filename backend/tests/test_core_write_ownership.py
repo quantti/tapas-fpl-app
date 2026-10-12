@@ -226,7 +226,7 @@ def test_disposable_writer_is_blocked_when_core_writes_disabled(
 async def test_incomplete_pa_derivation_retains_previous_publication(monkeypatch):
     conn = AsyncMock()
     conn.transaction = MagicMock(return_value=AsyncContextManagerMock())
-    conn.fetchval.side_effect = [2, 1]
+    conn.fetchval.side_effect = [False, 2, 1]
     monkeypatch.setattr(
         scheduled_update, "pfs_read_cte", AsyncMock(return_value="pfs_read AS (SELECT 1)")
     )
@@ -239,7 +239,7 @@ async def test_incomplete_pa_derivation_retains_previous_publication(monkeypatch
 
 async def test_complete_pa_derivation_writes_only_derived_tables(monkeypatch):
     conn = AsyncMock()
-    conn.fetchval.side_effect = [2, 2]
+    conn.fetchval.side_effect = [False, 2, 2]
     conn.transaction = MagicMock(return_value=AsyncContextManagerMock())
     monkeypatch.setattr(
         scheduled_update, "pfs_read_cte", AsyncMock(return_value="pfs_read AS (SELECT 1)")
