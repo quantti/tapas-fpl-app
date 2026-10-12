@@ -101,6 +101,13 @@ async def test_proved_new_row_masks_missing_optionals_and_never_falls_back(conn)
     assert proved["expected_assists"] is None
     assert proved["expected_assists_available"] is False
 
+    fingerprint = await conn.fetchval(
+        "SELECT physical_fingerprint FROM fpl_player_fixture_current WHERE fixture_id=7"
+    )
+    await conn.execute("UPDATE fpl_player_fixture_current SET physical_fingerprint=NULL")
+    assert (await projection(conn, 1, 7))["evidence_available"] is False
+    await conn.execute("UPDATE fpl_player_fixture_current SET physical_fingerprint=$1", fingerprint)
+
     await conn.execute("UPDATE fpl_sync_receipt SET latest_generation=90")
     assert (await projection(conn, 1, 7))["evidence_available"] is False
     await conn.execute("UPDATE fpl_sync_receipt SET latest_generation=91")

@@ -263,8 +263,8 @@ def _incremental_projection(legacy: str, verified: str) -> str:
          AND ie.fixture_id = c.fixture_id AND ie.player_id = c.player_id
          AND ie.generation = c.evidence_generation
         LEFT JOIN season s ON s.id = p.season_id
-        CROSS JOIN LATERAL (SELECT {current_proof} AS current_valid,
-                                  {old_proof} AS old_valid) v
+        CROSS JOIN LATERAL (SELECT COALESCE({current_proof}, FALSE) AS current_valid,
+                                  COALESCE({old_proof}, FALSE) AS old_valid) v
     )"""
 
 
