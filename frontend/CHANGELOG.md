@@ -1,3 +1,10 @@
+## [0.45.3](https://github.com/quantti/tapas-fpl-app/compare/v0.45.2...v0.45.3) (2026-10-12)
+
+
+### Bug Fixes
+
+* prove incremental PFS rows and gate Points Against ([aa4ce30](https://github.com/quantti/tapas-fpl-app/commit/aa4ce30567a222be07d8c98efae3746e021ed7dd))
+
 ## [0.45.2](https://github.com/quantti/tapas-fpl-app/compare/v0.45.1...v0.45.2) (2026-09-18)
 
 
